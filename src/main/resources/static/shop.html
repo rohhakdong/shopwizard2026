@@ -820,7 +820,7 @@ createApp({
 
       try {
         const tossPayments = TossPayments(TOSS_CLIENT_KEY);
-        const customerKey  = custInfo.value ? String(custInfo.value.custId) : TossPayments.ANONYMOUS;
+        const customerKey  = custInfo.value ? 'CUST-' + custInfo.value.custId : TossPayments.ANONYMOUS;
         const payment      = tossPayments.payment({ customerKey });
 
         const methodMap = { card: 'CARD', trans: 'TRANSFER', vbank: 'VIRTUAL_ACCOUNT' };
@@ -839,7 +839,7 @@ createApp({
       } catch(e) {
         localStorage.removeItem('pendingOrder');
         if (e.code !== 'PAY_PROCESS_CANCELED') {
-          toast('결제 오류: ' + (e.message || '알 수 없는 오류'), 'error');
+          toast('결제 오류: ' + (e.message || e.code || '알 수 없는 오류'), 'error');
         }
       }
     };
