@@ -93,7 +93,9 @@
         LEFT OUTER JOIN shopion.tPrfCustGroup CG ON C.CustGroupCode = CG.CustGroupCode
         LEFT OUTER JOIN shopion.tStrChnl Ch ON C.ChnlCode = Ch.ChnlCode
         WHERE C.LoginId = #{loginId}
+        <if test="memberChnlCode != null and memberChnlCode != ''">
         AND EXISTS (SELECT M.ChnlCode FROM shopion.tStrChnl M WHERE M.ChnlCode = C.ChnlCode AND M.MemberChnlCode = #{memberChnlCode})
+        </if>
     </select>
 
     <select id="selectForIdpw" parameterType="map" resultType="com.shopwizard.profile.model.Cust">
