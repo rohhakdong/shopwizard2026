@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWizard</title>
+  <link rel="stylesheet" href="/css/shop.css">
+</head>
+<body>
+<div id="app" v-cloak>
+
+  <!-- ── 헤더 ─────────────────────────────────────────────────── -->
+  <header class="shop-header">
+    <div class="shop-logo" @click="go('home')" style="cursor:pointer">🛒 ShopWizard</div>
+    <div class="shop-search-wrap">
+      <input type="text" v-model="searchKeyword" placeholder="상품명, 브랜드 검색..."
+        @keydown.enter="doSearch">
+      <button @click="doSearch">🔍</button>
+    </div>
+    <div class="header-actions">
+      <button @click="go('cart')">
+        <span class="cart-badge">
+          <span class="icon">🛒</span>
+          <span class="badge" v-if="cartCount > 0">{{ cartCount }}</span>
+        </span>
+        <span>장바구니</span>
+      </button>
+      <template v-if="custInfo">
+        <button @click="go('mypage')">
+          <span class="icon">👤</span>
+          <span>{{ custInfo.name }}</span>
+        </button>
+        <button @click="logout">
+          <span class="icon">🚪</span>
+          <span>로그아웃</span>
+        </button>
+      </template>
+      <template v-else>
+        <button class="btn-login-header" @click="go('login')">로그인</button>
+      </template>
+    </div>
+  </header>
+
+  <!-- ── 메인 ──────────────────────────────────────────────────── -->
+  <main class="shop-main">
+
+    <!-- 홈 / 상품 목록 -->
+    <div v-if="view === 'home' || view === 'search'">
+      <div class="filter-bar">
+        <select v-model="filter.shopCode" @change="loadProds(1)" style="width:130px">
+          <option value="">전체 쇼핑몰</option>
+          <option v-for="s in shopList" :key="s.shopCode" :value="s.shopCode">{{ s.shopName }}</option>
+        </select>
+        <input v-model="filter.keyword" placeholder="검색어" style="width:160px"
+          @keydown.enter="loadProds(1)">
+        <select v-model="filter.saleYn" @change="loadProds(1)" style="width:100px">
+          <option value="">전체</option>
+          <option value="1">판매중</option>
+          <option value="0">판매중지</option>
+        </select>
+        <span class="result-count" v-if="prodTotal > 0">총 {{ prodTotal.toLocaleString() }}개</span>
+      </div>
+
+      <div v-if="prodLoading" style="text-align:center;padding:60px;color:var(--text-muted)">불러오는 중...</div>
+      <div v-else-if="prodList.length === 0" class="empty-box">
+        <div class="icon">📦</div>
+        <div>상품이 없습니다</div>
+      </div>
+      <div v-else class="prod-grid">
+        <div class="prod-card" v-for="p in prodList" :key="p.prodCode" @click="openProd(p.prodCode)">
+          <div class="prod-card-img">
+            <img v-if="p.imgUrl" :src="p.imgUrl" :alt="p.prodName" loading="lazy">
+            <span v-else class="no-img">📦</span>
+          </div>
+          <div class="prod-card-body">
+            <div class="prod-card-brand">{{ p.brandName || p.shopName }}</div>
+            <div class="prod-card-name">{{ p.prodName }}</div>
+            <div class="prod-card-price">
+              <span v-if="p.listPrice && p.listPrice !== p.salePrice" class="prev-price">
+                {{ p.listPrice.toLocaleString() }}원
+              </span><br v-if="p.listPrice && p.listPrice !== p.salePrice">
+              {{ p.salePrice ? p.salePrice.toLocaleString() + '원' : '가격문의' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination" v-if="prodPages > 1">
+        <button class="page-btn" v-if="prodPageBlock > 0" @click="loadProds((prodPageBlock)*10)">‹</button>
+        <button class="page-btn"
+          v-for="p in prodPageNums" :key="p"
+          :class="{active: p === prodPage}"
+          @click="loadProds(p)">{{ p }}</button>
+        <button class="page-btn" v-if="prodPageBlock*10+10 < prodPages" @click="loadProds(prodPageBlock*10+11)">›</button>
+      </div>
+    </div>
+
+    <!-- 상품 상세 -->
+    <div v-if="view === 'prod'">
+      <button class="btn btn-gray btn-sm" @click="goBack" style="margin-bottom:16px">← 목록으로</button>
+      <div v-if="prodLoading" style="text-align:center;padding:60px;color:var(--text-muted)">불러오는 중...</div>
+      <div v-else-if="prodDetail" class="prod-detail">
+        <div class="prod-detail-img">
+          <img v-if="prodDetail.imgUrl" :src="prodDetail.imgUrl" :alt="prodDetail.prodName">
+          <span v-else class="no-img">📦</span>
+        </div>
+        <div class="prod-detail-info">
+          <div class="prod-detail-brand">{{ prodDetail.brandName || prodDetail.shopName }}</div>
+          <h2>{{ prodDetail.prodName }}</h2>
+          <div class="prod-price-row">
+            <div v-if="prodDetail.listPrice && prodDetail.listPrice !== prodDetail.salePrice"
+              class="list-price">{{ prodDetail.listPrice.toLocaleString() }}원</div>
+            <div class="sale-price">{{ prodDetail.salePrice ? prodDetail.salePrice.toLocaleString() + '원' : '가격문의' }}</div>
+          </div>
+
+          <!-- 옵션 선택 -->
+          <div v-if="prodItems.length > 1">
+            <div class="prod-option-label">옵션 선택</div>
+            <select class="prod-option-select" v-model="selectedItemCode" @change="onItemChange">
+              <option value="">-- 옵션을 선택하세요 --</option>
+              <option v-for="item in prodItems" :key="item.itemCode"
+                :value="item.itemCode"
+                :disabled="item.saleYn === 0 || item.supplyQty === 0">
+                {{ itemLabel(item) }}
+                {{ item.saleYn === 0 || item.supplyQty === 0 ? '(품절)' : '' }}
+              </option>
+            </select>
+          </div>
+
+          <div class="prod-qty-row">
+            <button class="qty-btn" @click="qty = Math.max(1, qty-1)">−</button>
+            <input class="qty-input" type="number" v-model.number="qty" min="1">
+            <button class="qty-btn" @click="qty++">+</button>
+          </div>
+
+          <div class="prod-action-row">
+            <button class="btn-cart" @click="addToCart">장바구니 담기</button>
+            <button class="btn-order" @click="buyNow">바로 구매</button>
+          </div>
+
+          <div style="margin-top:16px;font-size:13px;color:var(--text-muted)">
+            <div v-if="prodDetail.supplyQty != null">재고: {{ prodDetail.supplyQty }}개</div>
+            <div v-if="prodDetail.deliMethod">배송방법: {{ prodDetail.deliMethod }}</div>
+            <div v-if="prodDetail.deliFeeAmt != null">배송비: {{ prodDetail.deliFeeAmt === 0 ? '무료' : prodDetail.deliFeeAmt.toLocaleString() + '원' }}</div>
+          </div>
+        </div>
+      </div>
+      <div v-if="prodDetail && prodDetail.prodDesc" class="prod-desc" v-html="prodDetail.prodDesc"></div>
+    </div>
+
+    <!-- 장바구니 -->
+    <div v-if="view === 'cart'">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:20px">장바구니</h2>
+      <div v-if="cartList.length === 0" class="empty-box">
+        <div class="icon">🛒</div>
+        <div>장바구니가 비어있습니다</div>
+        <button class="btn btn-primary" style="margin-top:16px" @click="go('home')">쇼핑 계속하기</button>
+      </div>
+      <div v-else>
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th></th><th>상품</th><th>옵션</th>
+              <th style="text-align:right">단가</th>
+              <th style="text-align:center">수량</th>
+              <th style="text-align:right">금액</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in cartList" :key="item.basketNo">
+              <td>
+                <div class="cart-table-img">
+                  <img v-if="item.prodImg" :src="item.prodImg" :alt="item.prodName">
+                  <span v-else style="font-size:24px">📦</span>
+                </div>
+              </td>
+              <td>
+                <div style="font-size:14px;font-weight:500">{{ item.prodName }}</div>
+              </td>
+              <td style="font-size:13px;color:var(--text-muted)">{{ item.itemName || '-' }}</td>
+              <td style="text-align:right;font-size:14px">{{ item.salePrice ? item.salePrice.toLocaleString() + '원' : '-' }}</td>
+              <td style="text-align:center">
+                <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+                  <button class="qty-btn" style="width:26px;height:26px;font-size:14px"
+                    @click="changeCartQty(item, item.prodQty - 1)">−</button>
+                  <span>{{ item.prodQty }}</span>
+                  <button class="qty-btn" style="width:26px;height:26px;font-size:14px"
+                    @click="changeCartQty(item, item.prodQty + 1)">+</button>
+                </div>
+              </td>
+              <td style="text-align:right;font-size:14px;font-weight:600">
+                {{ item.salePrice ? (item.salePrice * item.prodQty).toLocaleString() + '원' : '-' }}
+              </td>
+              <td>
+                <button class="btn btn-sm btn-gray" @click="removeFromCart(item)">삭제</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="cart-total">
+          <span class="label">합계 </span>
+          <span class="amount">{{ cartTotalAmt.toLocaleString() }}원</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px">
+          <button class="btn btn-gray" @click="go('home')">쇼핑 계속</button>
+          <button class="btn btn-primary" @click="goOrder">주문하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 주문서 -->
+    <div v-if="view === 'order'">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:20px">주문서 작성</h2>
+      <div class="order-section">
+        <h3>주문 상품</h3>
+        <div class="order-prod-row" v-for="item in orderItems" :key="item.basketNo || item.prodCode">
+          <div class="cart-table-img">
+            <img v-if="item.prodImg" :src="item.prodImg" :alt="item.prodName">
+            <span v-else style="font-size:24px">📦</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:500">{{ item.prodName }}</div>
+            <div style="font-size:12px;color:var(--text-muted)">{{ item.itemName || '' }} / {{ item.prodQty }}개</div>
+          </div>
+          <div style="font-size:14px;font-weight:600">{{ item.salePrice ? (item.salePrice * item.prodQty).toLocaleString() + '원' : '-' }}</div>
+        </div>
+      </div>
+
+      <div class="order-section">
+        <h3>주문자 정보</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>이름</label>
+            <input type="text" v-model="orderForm.orderName" placeholder="주문자명">
+          </div>
+          <div class="form-group">
+            <label>연락처</label>
+            <input type="tel" v-model="orderForm.orderMobileNo" placeholder="010-0000-0000">
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" v-model="orderForm.orderEmail" placeholder="이메일 주소">
+          </div>
+        </div>
+      </div>
+
+      <div class="order-section">
+        <h3>배송지 정보</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>수취인</label>
+            <input type="text" v-model="orderForm.recverName" placeholder="수취인명">
+          </div>
+          <div class="form-group">
+            <label>연락처</label>
+            <input type="tel" v-model="orderForm.recverMobileNo" placeholder="010-0000-0000">
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="form-group">
+            <label>주소</label>
+            <input type="text" v-model="orderForm.recverAddr" placeholder="배송지 주소">
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="form-group">
+            <label>배송 메모</label>
+            <input type="text" v-model="orderForm.deliMemo" placeholder="배송 시 요청사항">
+          </div>
+        </div>
+      </div>
+
+      <div class="order-section">
+        <h3>결제 정보</h3>
+        <div class="order-summary-row">
+          <span>상품금액</span><span>{{ orderItemAmt.toLocaleString() }}원</span>
+        </div>
+        <div class="order-summary-row">
+          <span>배송비</span><span>{{ orderDeliAmt > 0 ? orderDeliAmt.toLocaleString() + '원' : '무료' }}</span>
+        </div>
+        <div class="order-summary-row total">
+          <span>결제금액</span><span>{{ (orderItemAmt + orderDeliAmt).toLocaleString() }}원</span>
+        </div>
+        <div style="margin-top:20px">
+          <div class="prod-option-label" style="margin-bottom:8px">결제수단</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <label v-for="m in payMethods" :key="m.value" style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer">
+              <input type="radio" v-model="orderForm.payMethod" :value="m.value"> {{ m.label }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+        <button class="btn btn-gray" @click="go('cart')">장바구니로</button>
+        <button class="btn btn-primary" style="min-width:140px" @click="submitOrder">
+          {{ (orderItemAmt + orderDeliAmt).toLocaleString() }}원 결제하기
+        </button>
+      </div>
+    </div>
+
+    <!-- 주문 완료 -->
+    <div v-if="view === 'order-done'" class="order-done">
+      <div class="icon">✅</div>
+      <h2>주문이 완료되었습니다!</h2>
+      <p>주문번호: <strong>{{ doneOrderNo }}</strong></p>
+      <div style="display:flex;justify-content:center;gap:10px">
+        <button class="btn btn-outline" @click="go('mypage')">주문 내역 보기</button>
+        <button class="btn btn-primary" @click="go('home')">쇼핑 계속하기</button>
+      </div>
+    </div>
+
+    <!-- 마이페이지 -->
+    <div v-if="view === 'mypage'">
+      <div v-if="!custInfo" class="empty-box">
+        <div class="icon">🔐</div>
+        <div>로그인이 필요합니다</div>
+        <button class="btn btn-primary" style="margin-top:16px" @click="go('login')">로그인하기</button>
+      </div>
+      <div v-else>
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">마이페이지</h2>
+        <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px">{{ custInfo.name }}님, 안녕하세요 👋</div>
+        <div class="mypage-nav">
+          <button :class="{active: myTab==='orders'}" @click="myTab='orders'; loadMyOrders()">주문내역</button>
+          <button :class="{active: myTab==='profile'}" @click="myTab='profile'">내 정보</button>
+        </div>
+
+        <!-- 주문 내역 탭 -->
+        <div v-if="myTab === 'orders'">
+          <div v-if="myOrderLoading" style="text-align:center;padding:40px;color:var(--text-muted)">불러오는 중...</div>
+          <div v-else-if="myOrders.length === 0" class="empty-box">
+            <div class="icon">📋</div>
+            <div>주문 내역이 없습니다</div>
+          </div>
+          <div v-else>
+            <div class="order-history-card" v-for="o in myOrders" :key="o.orderNo">
+              <div class="no">주문번호 {{ o.orderNo }} · {{ o.orderReciptDate ? o.orderReciptDate.substring(0,10) : '' }}</div>
+              <div class="prod-name">{{ o.prodName }}<span v-if="o.itemName" style="color:var(--text-muted);font-size:12px"> / {{ o.itemName }}</span></div>
+              <div class="meta">
+                <span>{{ o.prodQty }}개</span>
+                <span>{{ o.salePrice ? o.salePrice.toLocaleString() + '원' : '' }}</span>
+                <span class="state-badge" :class="orderStateClass(o.orderState)">{{ o.orderState }}</span>
+              </div>
+            </div>
+            <div class="pagination" v-if="myOrderPages > 1">
+              <button class="page-btn"
+                v-for="p in myOrderPageNums" :key="p"
+                :class="{active: p === myOrderPage}"
+                @click="loadMyOrders(p)">{{ p }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내 정보 탭 -->
+        <div v-if="myTab === 'profile'" style="max-width:480px">
+          <div class="order-section">
+            <h3>기본 정보</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>이름</label>
+                <input type="text" v-model="profileForm.custName">
+              </div>
+              <div class="form-group">
+                <label>아이디</label>
+                <input type="text" :value="custInfo.loginId" disabled style="background:#f8fafc">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>휴대전화</label>
+                <input type="tel" v-model="profileForm.mobilePhoneNo">
+              </div>
+              <div class="form-group">
+                <label>이메일</label>
+                <input type="email" v-model="profileForm.email">
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>주소</label>
+                <input type="text" v-model="profileForm.addr1">
+              </div>
+            </div>
+            <div style="text-align:right;margin-top:12px">
+              <button class="btn btn-primary" @click="saveProfile">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 로그인 -->
+    <div v-if="view === 'login'">
+      <div class="login-box">
+        <h2>로그인</h2>
+        <p>ShopWizard 회원 로그인</p>
+        <div class="form-row full" style="margin-bottom:12px">
+          <div class="form-group">
+            <label>아이디</label>
+            <input type="text" v-model="loginForm.loginId" placeholder="아이디 입력" @keydown.enter="doLogin">
+          </div>
+        </div>
+        <div class="form-row full" style="margin-bottom:20px">
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" v-model="loginForm.passwd" placeholder="비밀번호 입력" @keydown.enter="doLogin">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" @click="doLogin">로그인</button>
+        <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-muted)">
+          아직 회원이 아니신가요?
+          <a href="#" @click.prevent="go('register')" style="color:var(--primary);font-weight:600">회원가입</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 회원가입 -->
+    <div v-if="view === 'register'">
+      <div class="login-box" style="max-width:480px">
+        <h2>회원가입</h2>
+        <p>ShopWizard 회원이 되어보세요</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>이름 *</label>
+            <input type="text" v-model="regForm.custName" placeholder="이름">
+          </div>
+          <div class="form-group">
+            <label>아이디 *</label>
+            <input type="text" v-model="regForm.loginId" placeholder="아이디 (영문+숫자)">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>비밀번호 *</label>
+            <input type="password" v-model="regForm.passwd" placeholder="비밀번호">
+          </div>
+          <div class="form-group">
+            <label>비밀번호 확인 *</label>
+            <input type="password" v-model="regForm.passwdConfirm" placeholder="비밀번호 재입력">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" v-model="regForm.email" placeholder="이메일">
+          </div>
+          <div class="form-group">
+            <label>휴대전화</label>
+            <input type="tel" v-model="regForm.mobilePhoneNo" placeholder="010-0000-0000">
+          </div>
+        </div>
+        <div class="form-row full" style="margin-bottom:20px">
+          <div class="form-group">
+            <label>주소</label>
+            <input type="text" v-model="regForm.addr1" placeholder="주소">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" @click="doRegister">회원가입</button>
+        <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-muted)">
+          이미 회원이신가요?
+          <a href="#" @click.prevent="go('login')" style="color:var(--primary);font-weight:600">로그인</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 토스트 -->
+  <div class="toast-wrap">
+    <div class="toast" :class="t.type" v-for="t in toasts" :key="t.id">{{ t.msg }}</div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+createApp({
+  setup() {
+    /* ── 상태 ── */
+    const view         = ref('home');
+    const prevView     = ref('home');
+    const custInfo     = ref(null);
+    const searchKeyword = ref('');
+    const toasts       = ref([]);
+
+    /* 상품 목록 */
+    const shopList  = ref([]);
+    const prodList  = ref([]);
+    const prodTotal = ref(0);
+    const prodPage  = ref(1);
+    const prodLoading = ref(false);
+    const PAGE_SIZE = 20;
+    const filter = ref({ shopCode: '', keyword: '', saleYn: '1' });
+
+    const prodPages    = computed(() => Math.ceil(prodTotal.value / PAGE_SIZE));
+    const prodPageBlock = computed(() => Math.floor((prodPage.value - 1) / 10));
+    const prodPageNums = computed(() => {
+      const s = prodPageBlock.value * 10 + 1;
+      const e = Math.min(s + 9, prodPages.value);
+      return Array.from({ length: e - s + 1 }, (_, i) => s + i);
+    });
+
+    /* 상품 상세 */
+    const prodDetail      = ref(null);
+    const prodItems       = ref([]);
+    const selectedItemCode = ref('');
+    const qty             = ref(1);
+
+    /* 장바구니 */
+    const cartList  = ref([]);
+    const cartCount = computed(() => cartList.value.reduce((s, i) => s + (i.prodQty || 1), 0));
+    const cartTotalAmt = computed(() => cartList.value.reduce((s, i) => s + (i.salePrice || 0) * (i.prodQty || 1), 0));
+
+    /* 주문 */
+    const orderItems  = ref([]);
+    const orderForm   = ref({ orderName:'', orderMobileNo:'', orderEmail:'', recverName:'', recverMobileNo:'', recverAddr:'', deliMemo:'', payMethod:'card' });
+    const doneOrderNo = ref('');
+    const payMethods  = [
+      { value: 'card',  label: '신용카드' },
+      { value: 'trans', label: '계좌이체' },
+      { value: 'vbank', label: '가상계좌' },
+    ];
+    const orderItemAmt = computed(() => orderItems.value.reduce((s, i) => s + (i.salePrice || 0) * (i.prodQty || 1), 0));
+    const orderDeliAmt = computed(() => {
+      const first = orderItems.value[0];
+      return (first && first.deliFeeAmt) ? first.deliFeeAmt : 0;
+    });
+
+    /* 마이페이지 */
+    const myTab        = ref('orders');
+    const myOrders     = ref([]);
+    const myOrderPage  = ref(1);
+    const myOrderTotal = ref(0);
+    const myOrderLoading = ref(false);
+    const MY_PAGE_SIZE = 10;
+    const myOrderPages = computed(() => Math.ceil(myOrderTotal.value / MY_PAGE_SIZE));
+    const myOrderPageNums = computed(() => {
+      const s = Math.floor((myOrderPage.value - 1) / 10) * 10 + 1;
+      const e = Math.min(s + 9, myOrderPages.value);
+      return Array.from({ length: e - s + 1 }, (_, i) => s + i);
+    });
+    const profileForm = ref({ custName:'', mobilePhoneNo:'', email:'', addr1:'' });
+
+    /* 로그인/회원가입 */
+    const loginForm = ref({ loginId:'', passwd:'' });
+    const regForm   = ref({ custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', addr1:'' });
+
+    /* ── 유틸 ── */
+    const toast = (msg, type = 'info') => {
+      const id = Date.now();
+      toasts.value.push({ id, msg, type });
+      setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3000);
+    };
+
+    const api = async (method, url, data) => {
+      const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
+      if (data && method !== 'GET') opts.body = JSON.stringify(data);
+      const fullUrl = method === 'GET' && data
+        ? url + '?' + new URLSearchParams(data).toString()
+        : url;
+      const res = await fetch(fullUrl, opts);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    };
+
+    /* ── 라우팅 ── */
+    const go = (v) => { prevView.value = view.value; view.value = v; window.scrollTo(0, 0); };
+    const goBack = () => go(prevView.value === view.value ? 'home' : prevView.value);
+
+    /* ── 초기화 ── */
+    onMounted(async () => {
+      await checkLogin();
+      await loadShops();
+      await loadProds(1);
+    });
+
+    const checkLogin = async () => {
+      try {
+        const r = await api('GET', '/auth/cust/me');
+        if (r.authenticated) {
+          custInfo.value = r;
+          await loadCart();
+        }
+      } catch(_) {}
+    };
+
+    /* ── 쇼핑몰 목록 ── */
+    const loadShops = async () => {
+      try {
+        shopList.value = await api('GET', '/company/shop', {});
+      } catch(_) {}
+    };
+
+    /* ── 상품 목록 ── */
+    const loadProds = async (page = 1) => {
+      prodPage.value = page;
+      prodLoading.value = true;
+      try {
+        const params = {
+          pProdName:  filter.value.keyword || '',
+          pShopCode:  filter.value.shopCode || '',
+          pSaleYn:    filter.value.saleYn !== '' ? filter.value.saleYn : '',
+          pPageOffset: (page - 1) * PAGE_SIZE,
+          pPageSize:   PAGE_SIZE,
+        };
+        prodTotal.value = await api('GET', '/product/prod/count', params);
+        prodList.value  = prodTotal.value > 0
+          ? await api('GET', '/product/prod/list', params)
+          : [];
+      } catch(e) {
+        toast('상품을 불러오지 못했습니다: ' + e.message, 'error');
+      } finally {
+        prodLoading.value = false;
+      }
+    };
+
+    const doSearch = () => {
+      filter.value.keyword = searchKeyword.value;
+      go('search');
+      loadProds(1);
+    };
+
+    /* ── 상품 상세 ── */
+    const openProd = async (prodCode) => {
+      go('prod');
+      prodLoading.value = true;
+      prodDetail.value = null;
+      prodItems.value = [];
+      selectedItemCode.value = '';
+      qty.value = 1;
+      try {
+        const [detail, items] = await Promise.all([
+          api('GET', '/product/prod', { pProdCode: prodCode }),
+          api('GET', '/product/proditem/list', { pProdCode: prodCode }),
+        ]);
+        prodDetail.value = detail;
+        prodItems.value  = items || [];
+        if (prodItems.value.length === 1) selectedItemCode.value = String(prodItems.value[0].itemCode);
+      } catch(e) {
+        toast('상품 정보를 불러오지 못했습니다', 'error');
+      } finally {
+        prodLoading.value = false;
+      }
+    };
+
+    const itemLabel = (item) => {
+      const vals = [item.attrVal1, item.attrVal2, item.attrVal3, item.attrVal4].filter(Boolean);
+      const label = vals.join(' / ');
+      const extra = item.optionPrice ? ` (+${item.optionPrice.toLocaleString()}원)` : '';
+      return label + extra || `옵션 ${item.itemCode}`;
+    };
+
+    const onItemChange = () => { qty.value = 1; };
+
+    /* ── 장바구니 ── */
+    const loadCart = async () => {
+      if (!custInfo.value) return;
+      try {
+        cartList.value = await api('GET', '/order/basket/list', { custId: custInfo.value.custId }) || [];
+      } catch(_) {}
+    };
+
+    const addToCart = async () => {
+      if (!custInfo.value) { toast('로그인 후 이용하세요', 'info'); go('login'); return; }
+      if (prodItems.value.length > 1 && !selectedItemCode.value) { toast('옵션을 선택해주세요', 'info'); return; }
+      try {
+        const item = prodItems.value.find(i => String(i.itemCode) === String(selectedItemCode.value)) || prodItems.value[0];
+        await api('POST', '/order/basket', {
+          custId:    custInfo.value.custId,
+          prodCode:  prodDetail.value.prodCode,
+          prodName:  prodDetail.value.prodName,
+          prodImg:   prodDetail.value.imgUrl || '',
+          itemCode:  item ? item.itemCode : null,
+          itemName:  item ? itemLabel(item) : '',
+          prodQty:   qty.value,
+          salePrice: prodDetail.value.salePrice,
+          listPrice: prodDetail.value.listPrice,
+          supplyPrice: prodDetail.value.supplyPrice,
+          deliFeeAmt:  prodDetail.value.deliFeeAmt || 0,
+          chnlCode:  '',
+          shopCode:  prodDetail.value.shopCode || '',
+          registId:  custInfo.value.loginId,
+          registName: custInfo.value.name,
+        });
+        await loadCart();
+        toast('장바구니에 담았습니다 🛒', 'success');
+      } catch(e) {
+        toast('장바구니 담기 실패: ' + e.message, 'error');
+      }
+    };
+
+    const buyNow = async () => {
+      if (!custInfo.value) { toast('로그인 후 이용하세요', 'info'); go('login'); return; }
+      if (prodItems.value.length > 1 && !selectedItemCode.value) { toast('옵션을 선택해주세요', 'info'); return; }
+      const item = prodItems.value.find(i => String(i.itemCode) === String(selectedItemCode.value)) || prodItems.value[0];
+      orderItems.value = [{
+        prodCode:  prodDetail.value.prodCode,
+        prodName:  prodDetail.value.prodName,
+        prodImg:   prodDetail.value.imgUrl || '',
+        itemCode:  item ? item.itemCode : null,
+        itemName:  item ? itemLabel(item) : '',
+        prodQty:   qty.value,
+        salePrice: prodDetail.value.salePrice,
+        deliFeeAmt: prodDetail.value.deliFeeAmt || 0,
+        shopCode:  prodDetail.value.shopCode || '',
+      }];
+      prefillOrderForm();
+      go('order');
+    };
+
+    const changeCartQty = async (item, newQty) => {
+      if (newQty < 1) return;
+      try {
+        await api('PUT', '/order/basket', { basketNo: item.basketNo, prodQty: newQty,
+          changeId: custInfo.value.loginId, changeName: custInfo.value.name });
+        item.prodQty = newQty;
+      } catch(e) { toast('수량 변경 실패', 'error'); }
+    };
+
+    const removeFromCart = async (item) => {
+      try {
+        await api('DELETE', '/order/basket', { basketNo: item.basketNo });
+        await loadCart();
+        toast('삭제되었습니다');
+      } catch(e) { toast('삭제 실패', 'error'); }
+    };
+
+    const goOrder = () => {
+      if (!custInfo.value) { toast('로그인 후 이용하세요', 'info'); go('login'); return; }
+      orderItems.value = [...cartList.value];
+      prefillOrderForm();
+      go('order');
+    };
+
+    const prefillOrderForm = () => {
+      if (custInfo.value) {
+        orderForm.value.orderName     = custInfo.value.name || '';
+        orderForm.value.recverName    = custInfo.value.name || '';
+      }
+    };
+
+    /* ── 주문 제출 ── */
+    const submitOrder = async () => {
+      const f = orderForm.value;
+      if (!f.orderName || !f.recverName || !f.recverAddr) {
+        toast('필수 항목을 입력해주세요', 'error'); return;
+      }
+      try {
+        const items = orderItems.value.map(i => ({
+          prodCode:    i.prodCode,
+          prodName:    i.prodName,
+          itemCode:    i.itemCode,
+          itemName:    i.itemName,
+          prodQty:     i.prodQty,
+          salePrice:   i.salePrice,
+          shopCode:    i.shopCode || '',
+        }));
+        const body = {
+          custId:          custInfo.value ? parseInt(custInfo.value.custId) : null,
+          orderName:       f.orderName,
+          orderMobileNo:   f.orderMobileNo,
+          orderEmail:      f.orderEmail,
+          recverName:      f.recverName,
+          recverMobileNo:  f.recverMobileNo,
+          recverAddr:      f.recverAddr,
+          deliMemo:        f.deliMemo,
+          payMethod:       f.payMethod,
+          totalAmt:        orderItemAmt.value + orderDeliAmt.value,
+          registId:        custInfo.value?.loginId || '',
+          registName:      custInfo.value?.name || '',
+          orderProds:      items,
+        };
+        const result = await api('POST', '/order/order', body);
+        doneOrderNo.value = result?.orderNo || '';
+        /* 장바구니에서 주문한 경우 장바구니 비우기 */
+        if (cartList.value.length > 0 && orderItems.value.length === cartList.value.length) {
+          try { await api('DELETE', '/order/basket/clean', { custId: custInfo.value.custId }); } catch(_) {}
+          await loadCart();
+        }
+        go('order-done');
+      } catch(e) {
+        toast('주문 실패: ' + e.message, 'error');
+      }
+    };
+
+    /* ── 마이페이지 ── */
+    const loadMyOrders = async (page = 1) => {
+      if (!custInfo.value) return;
+      myOrderPage.value = page;
+      myOrderLoading.value = true;
+      try {
+        const params = {
+          pOrderName: custInfo.value.name,
+          pSvcCode: '',
+          topCnt: (page - 1) * MY_PAGE_SIZE,
+          countPerPage: MY_PAGE_SIZE,
+          pNotDependOnDate: 'Y',
+        };
+        myOrderTotal.value = await api('GET', '/order/orderprod/count', params);
+        myOrders.value = myOrderTotal.value > 0
+          ? await api('GET', '/order/orderprod/list', { ...params, pSvcCode: '' })
+          : [];
+      } catch(e) {
+        toast('주문내역 조회 실패', 'error');
+      } finally {
+        myOrderLoading.value = false;
+      }
+    };
+
+    const orderStateClass = (state) => {
+      const m = { '주문접수':'state-gray','지불완료':'state-blue','발주시작':'state-orange','배송완료':'state-green','주문취소':'state-red','환불완료':'state-red' };
+      return m[state] || 'state-gray';
+    };
+
+    const saveProfile = async () => {
+      try {
+        await api('PUT', '/profile/cust', {
+          custId:        parseInt(custInfo.value.custId),
+          custName:      profileForm.value.custName,
+          mobilePhoneNo: profileForm.value.mobilePhoneNo,
+          email:         profileForm.value.email,
+          addr1:         profileForm.value.addr1,
+          changeId:      custInfo.value.loginId,
+          changeName:    custInfo.value.name,
+        });
+        toast('저장되었습니다', 'success');
+      } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
+    };
+
+    /* ── 로그인 / 로그아웃 / 회원가입 ── */
+    const doLogin = async () => {
+      if (!loginForm.value.loginId || !loginForm.value.passwd) { toast('아이디와 비밀번호를 입력하세요', 'error'); return; }
+      try {
+        const r = await api('POST', '/auth/cust/login', { loginId: loginForm.value.loginId, passwd: loginForm.value.passwd, chnlCode: '', useMd5: false });
+        if (!r.success) { toast(r.message || '로그인 실패', 'error'); return; }
+        custInfo.value = { ...r.cust, name: r.cust.custName };
+        await loadCart();
+        loginForm.value = { loginId:'', passwd:'' };
+        toast(`${custInfo.value.name}님, 환영합니다! 🎉`, 'success');
+        go('home');
+      } catch(e) { toast('로그인 실패: ' + e.message, 'error'); }
+    };
+
+    const logout = async () => {
+      try {
+        await api('POST', '/auth/cust/logout');
+        custInfo.value = null;
+        cartList.value = [];
+        toast('로그아웃되었습니다');
+        go('home');
+      } catch(_) {}
+    };
+
+    const doRegister = async () => {
+      const f = regForm.value;
+      if (!f.custName || !f.loginId || !f.passwd) { toast('필수 항목을 입력해주세요', 'error'); return; }
+      if (f.passwd !== f.passwdConfirm) { toast('비밀번호가 일치하지 않습니다', 'error'); return; }
+      try {
+        await api('POST', '/profile/cust', {
+          custName: f.custName, loginId: f.loginId, passwd: f.passwd,
+          email: f.email, mobilePhoneNo: f.mobilePhoneNo, addr1: f.addr1,
+          state: 1, registId: f.loginId, registName: f.custName,
+        });
+        toast('회원가입이 완료되었습니다! 로그인해주세요', 'success');
+        loginForm.value.loginId = f.loginId;
+        regForm.value = { custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', addr1:'' };
+        go('login');
+      } catch(e) { toast('회원가입 실패: ' + e.message, 'error'); }
+    };
+
+    return {
+      view, prevView, custInfo, searchKeyword, toasts,
+      shopList, prodList, prodTotal, prodPage, prodLoading, filter,
+      prodPages, prodPageBlock, prodPageNums,
+      prodDetail, prodItems, selectedItemCode, qty,
+      cartList, cartCount, cartTotalAmt,
+      orderItems, orderForm, doneOrderNo, payMethods, orderItemAmt, orderDeliAmt,
+      myTab, myOrders, myOrderPage, myOrderTotal, myOrderLoading, myOrderPages, myOrderPageNums,
+      profileForm, loginForm, regForm,
+      go, goBack, doSearch, loadProds, openProd, itemLabel, onItemChange,
+      addToCart, buyNow, changeCartQty, removeFromCart, goOrder, submitOrder,
+      loadMyOrders, orderStateClass, saveProfile,
+      doLogin, logout, doRegister,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

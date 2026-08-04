@@ -32,8 +32,31 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 )
                 .excludePathPatterns(
                         "/auth/**",
+                        "/profile/cust",           // 회원가입 POST
                         "/profile/cust/login",
-                        "/profile/cust/logout"
+                        "/profile/cust/logout",
+                        "/profile/cust/byLoginId",
+                        // 고객 쇼핑 공개 API
+                        "/product/prod/list",
+                        "/product/prod/count",
+                        "/product/prod",
+                        "/product/proditem/list",
+                        "/catalog/prod-item/list",
+                        "/company/shop",
+                        // 고객 인증 필요 API (별도 인터셉터)
+                        "/order/basket/**",
+                        "/order/order",
+                        "/order/orderprod/list",
+                        "/order/orderprod/count",
+                        "/profile/cust/*/update"
+                );
+
+        // 고객 API 인증 체크: cust_id 쿠키 필요
+        registry.addInterceptor(new AuthInterceptor("cust_id"))
+                .addPathPatterns(
+                        "/order/basket/**",
+                        "/order/orderprod/list",
+                        "/order/orderprod/count"
                 );
     }
 }
