@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.StoreImgMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.StoreImg">
+        SELECT ChnlCode, StoreCode, StoreImgCode, StoreImgName, StoreImgDesc,
+               StoreImgLink, StoreImgWidth, StoreImgHeight, StoreImgHtml, NewwinYn,
+               Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrStoreImg
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pStoreCode != null and pStoreCode != ''">
+                AND StoreCode = #{pStoreCode}
+            </if>
+        </where>
+        ORDER BY StoreImgCode
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.store.model.StoreImg">
+        SELECT ChnlCode, StoreCode, StoreImgCode, StoreImgName, StoreImgDesc,
+               StoreImgLink, StoreImgWidth, StoreImgHeight, StoreImgHtml, NewwinYn,
+               Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrStoreImg
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+          AND StoreImgCode = #{pStoreImgCode}
+    </select>
+
+    <select id="selectStoreImgHtml" parameterType="map" resultType="string">
+        SELECT StoreImgHtml
+        FROM shopion.tStrStoreImg
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+          AND StoreImgCode = #{pStoreImgCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.StoreImg">
+        INSERT INTO shopion.tStrStoreImg (
+            ChnlCode, StoreCode, StoreImgCode, StoreImgName, StoreImgDesc,
+            StoreImgLink, StoreImgWidth, StoreImgHeight, StoreImgHtml, NewwinYn,
+            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{chnlCode}, #{storeCode}, #{storeImgCode}, #{storeImgName}, #{storeImgDesc},
+            #{storeImgLink}, #{storeImgWidth}, #{storeImgHeight}, #{storeImgHtml}, #{newwinYn},
+            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.StoreImg">
+        UPDATE shopion.tStrStoreImg
+        SET StoreImgName = #{storeImgName},
+            StoreImgDesc = #{storeImgDesc},
+            StoreImgLink = #{storeImgLink},
+            StoreImgWidth = #{storeImgWidth},
+            StoreImgHeight = #{storeImgHeight},
+            StoreImgHtml = #{storeImgHtml},
+            NewwinYn = #{newwinYn},
+            Remark = #{remark},
+            State = #{state},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE ChnlCode = #{chnlCode}
+          AND StoreCode = #{storeCode}
+          AND StoreImgCode = #{storeImgCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrStoreImg
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+          AND StoreImgCode = #{pStoreImgCode}
+    </delete>
+
+</mapper>

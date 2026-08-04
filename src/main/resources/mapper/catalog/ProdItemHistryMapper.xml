@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.ProdItemHistryMapper">
+
+    <resultMap id="ProdItemHistryResult" type="com.shopwizard.catalog.model.ProdItemHistry">
+        <result property="prodCode" column="ProdCode"/> <result property="itemCode" column="ItemCode"/> <result property="changeNo" column="ChangeNo"/>
+        <result property="attrVal1" column="AttrVal1"/> <result property="attrVal2" column="AttrVal2"/> <result property="attrVal3" column="AttrVal3"/> <result property="attrVal4" column="AttrVal4"/>
+        <result property="supplyQty" column="SupplyQty"/> <result property="saleYn" column="SaleYn"/> <result property="saleStopDate" column="SaleStopDate"/>
+        <result property="saleStartDate" column="SaleStartDate"/> <result property="saleEndDate" column="SaleEndDate"/>
+        <result property="remark" column="Remark"/> <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ProdItemHistryResult">
+        SELECT * FROM shopwizard.tCatProdItemHistry
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+            <if test="pItemCode != null and pItemCode != ''">AND ItemCode = #{pItemCode}</if>
+            <if test="pChangeNo != null and pChangeNo != ''">AND ChangeNo = #{pChangeNo}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatProdItemHistry
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+            <if test="pItemCode != null and pItemCode != ''">AND ItemCode = #{pItemCode}</if>
+            <if test="pChangeNo != null and pChangeNo != ''">AND ChangeNo = #{pChangeNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ProdItemHistryResult">
+        SELECT * FROM shopwizard.tCatProdItemHistry
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode} AND ChangeNo = #{changeNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.ProdItemHistry">
+        INSERT INTO shopwizard.tCatProdItemHistry (
+            ProdCode, ItemCode, ChangeNo, AttrVal1, AttrVal2, AttrVal3, AttrVal4,
+            SupplyQty, SaleYn, SaleStopDate, SaleStartDate, SaleEndDate,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{prodCode}, #{itemCode}, #{changeNo}, #{attrVal1}, #{attrVal2}, #{attrVal3}, #{attrVal4},
+            #{supplyQty}, #{saleYn}, #{saleStopDate}, #{saleStartDate}, #{saleEndDate},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.ProdItemHistry">
+        UPDATE shopwizard.tCatProdItemHistry SET
+            AttrVal1 = #{attrVal1}, AttrVal2 = #{attrVal2}, AttrVal3 = #{attrVal3}, AttrVal4 = #{attrVal4},
+            SupplyQty = #{supplyQty}, SaleYn = #{saleYn}, SaleStopDate = #{saleStopDate},
+            SaleStartDate = #{saleStartDate}, SaleEndDate = #{saleEndDate},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode} AND ChangeNo = #{changeNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.catalog.model.ProdItemHistry">
+        DELETE FROM shopwizard.tCatProdItemHistry
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode} AND ChangeNo = #{changeNo}
+    </delete>
+
+</mapper>

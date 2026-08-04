@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.EstimtMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Estimt">
+        SELECT * FROM shopion.tPrfEstimt
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pDeptCode != null and pDeptCode != ''">AND DeptCode = #{pDeptCode}</if>
+            <if test="pAccntId != null and pAccntId != ''">AND AccntId = #{pAccntId}</if>
+            <if test="pStartDate != null and pStartDate != ''">
+            <![CDATA[ AND StartDate <= DATE_FORMAT(#{pStartDate}, '%Y%m%d') ]]>
+            </if>
+            <if test="pEndDate != null and pEndDate != ''">
+            <![CDATA[ AND EndDate >= ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
+            </if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrfEstimt
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pDeptCode != null and pDeptCode != ''">AND DeptCode = #{pDeptCode}</if>
+            <if test="pAccntId != null and pAccntId != ''">AND AccntId = #{pAccntId}</if>
+            <if test="pStartDate != null and pStartDate != ''">
+            <![CDATA[ AND StartDate <= DATE_FORMAT(#{pStartDate}, '%Y%m%d') ]]>
+            </if>
+            <if test="pEndDate != null and pEndDate != ''">
+            <![CDATA[ AND EndDate >= ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.Estimt">
+        SELECT * FROM shopion.tPrfEstimt
+        WHERE CompCode = #{compCode} AND BranchId = #{branchId} AND DeptCode = #{deptCode}
+        AND AccntId = #{accntId} AND StartDate = #{startDate} AND EndDate = #{endDate}
+    </select>
+
+    <select id="selectListStatDept" parameterType="map" resultType="com.shopwizard.profile.model.Estimt">
+        SELECT E.CompCode, E.BranchId, E.DeptCode, E.AccntId, A.AccntName, SUM(E.EstimtAmt) AS EstimtAmt, 0 AS UseAmt
+        FROM shopion.tPrfEstimt E
+        INNER JOIN shopion.tPrfAccnt A ON A.AccntId = E.AccntId
+        INNER JOIN shopion.tPrfCust C ON E.CompCode = C.CompCode AND E.BranchId = C.BranchId AND E.DeptCode = C.DeptCode
+        WHERE C.CustId = #{pCustId}
+        <if test="pStartDate != null and pStartDate != ''">
+        <![CDATA[ AND E.StartDate <= DATE_FORMAT(#{pStartDate}, '%Y%m%d') ]]>
+        </if>
+        <if test="pEndDate != null and pEndDate != ''">
+        <![CDATA[ AND E.EndDate >= ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
+        </if>
+        GROUP BY E.CompCode, E.BranchId, E.DeptCode, E.AccntId, A.AccntName
+    </select>
+
+    <select id="selectMonthlyTotalAmtDeptAccnt" parameterType="map" resultType="java.lang.Double">
+        SELECT IFNULL(SUM(EstimtAmt),0)
+        FROM shopion.tPrfEstimt E
+        INNER JOIN shopion.tPrfCust C ON C.CompCode = E.CompCode AND C.BranchId = E.BranchId AND C.DeptCode = E.DeptCode
+        WHERE C.CustId = #{custId}
+        AND E.AccntId = #{accntId}
+        <![CDATA[ AND E.StartDate <= DATE_FORMAT(#{pStartDate}, '%Y%m%d') ]]>
+        <![CDATA[ AND E.EndDate >= ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Estimt">
+        INSERT INTO shopion.tPrfEstimt (
+            CompCode, BranchId, DeptCode, AccntId, StartDate, EndDate, EstimtAmt,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{compCode}, #{branchId}, #{deptCode}, #{accntId}, #{startDate}, #{endDate}, #{estimtAmt},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Estimt">
+        UPDATE shopion.tPrfEstimt SET
+            EstimtAmt = #{estimtAmt}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE CompCode = #{compCode} AND BranchId = #{branchId} AND DeptCode = #{deptCode}
+        AND AccntId = #{accntId} AND StartDate = #{startDate} AND EndDate = #{endDate}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfEstimt
+        WHERE CompCode = #{compCode} AND BranchId = #{branchId} AND DeptCode = #{deptCode}
+        AND AccntId = #{accntId} AND StartDate = #{startDate} AND EndDate = #{endDate}
+    </delete>
+
+</mapper>

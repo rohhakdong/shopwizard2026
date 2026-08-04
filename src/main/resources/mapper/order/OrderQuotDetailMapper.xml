@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderQuotDetailMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderQuotDetail">
+        SELECT *
+        FROM shopwizard.tOrdOrderQuotDetail
+        <where>
+            <if test="pQuotNo != null and pQuotNo != ''">AND QuotNo = #{pQuotNo}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderQuotDetail
+        <where>
+            <if test="pQuotNo != null and pQuotNo != ''">AND QuotNo = #{pQuotNo}</if>
+            <if test="pQuotSeq != null and pQuotSeq != ''">AND QuotSeq = #{pQuotSeq}</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd = #{pKeywrd}</if>
+            <if test="pCapa != null and pCapa != ''">AND Capa = #{pCapa}</if>
+            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode = #{pMatchUpriceCode}</if>
+            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName = #{pOrderProdName}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderQuotDetail">
+        SELECT * FROM shopwizard.tOrdOrderQuotDetail
+        WHERE QuotNo = #{quotNo} AND QuotSeq = #{quotSeq}
+    </select>
+
+    <select id="selectMax" parameterType="map" resultType="int">
+        SELECT IFNULL(MAX(QuotSeq),0) FROM shopwizard.tOrdOrderQuotDetail WHERE QuotNo = #{quotNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderQuotDetail">
+        INSERT INTO shopwizard.tOrdOrderQuotDetail (
+            QuotNo, QuotSeq, Keywrd, Capa, MatchUpriceCode, OrderProdName, OrderProdQty,
+            SupplyPrice, Cost, GiftYn, ResultType, ResultMessag, State, Remark,
+            RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{quotNo}, #{quotSeq}, #{keywrd}, #{capa}, #{matchUpriceCode}, #{orderProdName}, #{orderProdQty},
+            #{supplyPrice}, #{cost}, #{giftYn}, #{resultType}, #{resultMessag}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderQuotDetail">
+        UPDATE shopwizard.tOrdOrderQuotDetail SET
+            Keywrd = #{keywrd}, Capa = #{capa}, MatchUpriceCode = #{matchUpriceCode},
+            OrderProdName = #{orderProdName}, OrderProdQty = #{orderProdQty},
+            SupplyPrice = #{supplyPrice}, Cost = #{cost}, GiftYn = #{giftYn},
+            ResultType = #{resultType}, ResultMessag = #{resultMessag}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE QuotNo = #{quotNo} AND QuotSeq = #{quotSeq}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderQuotDetail">
+        DELETE FROM shopwizard.tOrdOrderQuotDetail WHERE QuotNo = #{quotNo} AND QuotSeq = #{quotSeq}
+    </delete>
+
+    <delete id="deleteByQuotNo" parameterType="map">
+        DELETE FROM shopwizard.tOrdOrderQuotDetail WHERE QuotNo = #{quotNo}
+    </delete>
+
+</mapper>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustGroupMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustGroup">
+        SELECT *
+        FROM shopion.tPrfCustGroup
+        <where>
+            <if test="pCustGroupCode != null and pCustGroupCode != ''">AND CustGroupCode = #{pCustGroupCode}</if>
+            <if test="pCustGroupName != null and pCustGroupName != ''">AND CustGroupName = #{pCustGroupName}</if>
+            <if test="pCustGroupDesc != null and pCustGroupDesc != ''">AND CustGroupDesc = #{pCustGroupDesc}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustGroup
+        <where>
+            <if test="pCustGroupCode != null and pCustGroupCode != ''">AND CustGroupCode = #{pCustGroupCode}</if>
+            <if test="pCustGroupName != null and pCustGroupName != ''">AND CustGroupName = #{pCustGroupName}</if>
+            <if test="pCustGroupDesc != null and pCustGroupDesc != ''">AND CustGroupDesc = #{pCustGroupDesc}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="string" resultType="com.shopwizard.profile.model.CustGroup">
+        SELECT *
+        FROM shopion.tPrfCustGroup
+        WHERE CustGroupCode = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustGroup">
+        INSERT INTO shopion.tPrfCustGroup (
+            CustGroupCode, CustGroupName, CustGroupDesc,
+            CustDiscntRate, CustSaveRate, CustDiscntStartDate, CustDiscntEndDate,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{custGroupCode}, #{custGroupName}, #{custGroupDesc},
+            #{custDiscntRate}, #{custSaveRate}, #{custDiscntStartDate}, #{custDiscntEndDate},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustGroup">
+        UPDATE shopion.tPrfCustGroup SET
+            CustGroupName = #{custGroupName}, CustGroupDesc = #{custGroupDesc},
+            CustDiscntRate = #{custDiscntRate}, CustSaveRate = #{custSaveRate},
+            CustDiscntStartDate = #{custDiscntStartDate}, CustDiscntEndDate = #{custDiscntEndDate},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustGroupCode = #{custGroupCode}
+    </update>
+
+    <delete id="delete" parameterType="string">
+        DELETE FROM shopion.tPrfCustGroup
+        WHERE CustGroupCode = #{value}
+    </delete>
+
+</mapper>

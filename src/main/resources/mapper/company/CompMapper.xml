@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.CompMapper">
+
+    <resultMap id="CompResult" type="com.shopwizard.company.model.Comp">
+        <result property="compCode" column="CompCode"/>
+        <result property="compType" column="CompType"/>
+        <result property="corpCode" column="CorpCode"/>
+        <result property="mordrSaleCode" column="MordrSaleCode"/>
+        <result property="medApplncSaleCode" column="MedApplncSaleCode"/>
+        <result property="healthFunctnFoodCode" column="HealthFunctnFoodCode"/>
+        <result property="compName" column="CompName"/>
+        <result property="compDesc" column="CompDesc"/>
+        <result property="prsdntName" column="PrsdntName"/>
+        <result property="zipcode" column="Zipcode"/>
+        <result property="addr1" column="Addr1"/>
+        <result property="addr2" column="Addr2"/>
+        <result property="status" column="Status"/>
+        <result property="cate" column="Cate"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="faxNo" column="FaxNo"/>
+        <result property="email" column="Email"/>
+        <result property="homepg" column="Homepg"/>
+        <result property="reciptBank" column="ReciptBank"/>
+        <result property="reciptAccnt" column="ReciptAccnt"/>
+        <result property="reciptDepost" column="ReciptDepost"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="CompResult">
+        SELECT *
+        FROM shopwizard.tCmpComp
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pCompName != null and pCompName != ''">AND CompName LIKE CONCAT('%',#{pCompName},'%')</if>
+            <if test="pState != null and pState != ''">AND State = #{pState}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpComp
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pCompName != null and pCompName != ''">AND CompName LIKE CONCAT('%',#{pCompName},'%')</if>
+            <if test="pState != null and pState != ''">AND State = #{pState}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="CompResult">
+        SELECT *
+        FROM shopwizard.tCmpComp
+        WHERE CompCode = #{compCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.Comp">
+        INSERT INTO shopwizard.tCmpComp (
+            SvcCode, CompCode, CompType, CorpCode,
+            MordrSaleCode, MedApplncSaleCode, HealthFunctnFoodCode,
+            CompName, CompDesc, PrsdntName,
+            Zipcode, Addr1, Addr2,
+            Status, Cate, PhoneNo,
+            FaxNo, Email, Homepg,
+            ReciptBank, ReciptAccnt, ReciptDepost,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{svcCode}, #{compCode}, #{compType}, #{corpCode},
+            #{mordrSaleCode}, #{medApplncSaleCode}, #{healthFunctnFoodCode},
+            #{compName}, #{compDesc}, #{prsdntName},
+            #{zipcode}, #{addr1}, #{addr2},
+            #{status}, #{cate}, #{phoneNo},
+            #{faxNo}, #{email}, #{homepg},
+            #{reciptBank}, #{reciptAccnt}, #{reciptDepost},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.Comp">
+        UPDATE shopwizard.tCmpComp SET
+            CompType = #{compType}, CorpCode = #{corpCode}, MordrSaleCode = #{mordrSaleCode},
+            MedApplncSaleCode = #{medApplncSaleCode}, HealthFunctnFoodCode = #{healthFunctnFoodCode},
+            CompName = #{compName}, CompDesc = #{compDesc}, PrsdntName = #{prsdntName},
+            Zipcode = #{zipcode}, Addr1 = #{addr1}, Addr2 = #{addr2},
+            Status = #{status}, Cate = #{cate}, PhoneNo = #{phoneNo},
+            FaxNo = #{faxNo}, Email = #{email}, Homepg = #{homepg},
+            ReciptBank = #{reciptBank}, ReciptAccnt = #{reciptAccnt}, ReciptDepost = #{reciptDepost},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CompCode = #{compCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopwizard.tCmpComp
+        WHERE CompCode = #{compCode}
+    </delete>
+
+</mapper>

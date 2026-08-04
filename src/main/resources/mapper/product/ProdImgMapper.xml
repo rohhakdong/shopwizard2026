@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdImgMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.ProdImg">
+        SELECT ProdCode, ImgCode, ImgName, ImgDesc, ImgLrg, ImgMdm, ImgSml, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        FROM shopion.tPrdProdImg
+        WHERE ProdCode = #{pProdCode}
+        <if test="pMainImgNotInclude == null or pMainImgNotInclude == ''">
+        UNION
+        SELECT ProdCode, '000' AS ImgCode, '기본' AS ImgName, '기본' AS ImgDesc, ImgUrl AS ImgLrg, ImgUrl280 AS ImgMdm, ImgUrl100 AS ImgSml, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        FROM shopion.tPrdProd
+        WHERE ProdCode = #{pProdCode}
+        </if>
+        ORDER BY ImgCode ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.ChnlMapper">
+
+    <resultMap id="ChnlResult" type="com.shopwizard.company.model.Chnl">
+        <result property="chnlCode" column="ChnlCode"/>
+        <result property="chnlName" column="ChnlName"/>
+        <result property="chnlDesc" column="ChnlDesc"/>
+        <result property="chnlUrl" column="ChnlUrl"/>
+        <result property="chnlPolicyCode" column="ChnlPolicyCode"/>
+        <result property="chnlPolicyName" column="ChnlPolicyName"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="compCode" column="CompCode"/>
+        <result property="saleCompCode" column="SaleCompCode"/>
+        <result property="saleCompName" column="SaleCompName"/>
+        <result property="logoImg" column="LogoImg"/>
+        <result property="mngrName" column="MngrName"/>
+        <result property="mngrPhoneNo" column="MngrPhoneNo"/>
+        <result property="mngrMobileNo" column="MngrMobileNo"/>
+        <result property="mngrFaxNo" column="MngrFaxNo"/>
+        <result property="mngrEmail" column="MngrEmail"/>
+        <result property="mallStartDate" column="MallStartDate"/>
+        <result property="mallEndDate" column="MallEndDate"/>
+        <result property="mngrMd" column="MngrMd"/>
+        <result property="slnkMallCode" column="SlnkMallCode"/>
+        <result property="loginId" column="LoginId"/>
+        <result property="passwd" column="Passwd"/>
+        <result property="adjustType" column="AdjustType"/>
+        <result property="adjustPeriodCode" column="AdjustPeriodCode"/>
+        <result property="adjustChnlCode" column="AdjustChnlCode"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ChnlResult">
+        SELECT C.*, SC.SaleCompName AS SaleCompName, CP.ChnlPolicyName AS ChnlPolicyName
+        FROM shopwizard.tCmpChnl C
+        LEFT OUTER JOIN shopwizard.tCmpSaleComp SC ON C.SaleCompCode = SC.SaleCompCode
+        LEFT OUTER JOIN shopwizard.tCmpChnlPolicy CP ON C.ChnlPolicyCode = CP.ChnlPolicyCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND C.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND C.ChnlCode = #{pChnlCode}</if>
+            <if test="pChnlName != null and pChnlName != ''">AND C.ChnlName LIKE CONCAT('%',#{pChnlName},'%')</if>
+            <if test="pSaleCompCode != null and pSaleCompCode != ''">AND C.SaleCompCode = #{pSaleCompCode}</if>
+            <if test="pState != null and pState != ''">AND C.State = #{pState}</if>
+            <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND C.AdjustPeriodCode = #{pAdjustPeriodCode}</if>
+            <if test="pMngrMd != null and pMngrMd != ''">AND C.MngrMd = #{pMngrMd}</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY C.ChnlName</otherwise>
+        </choose>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpChnl C
+        INNER JOIN shopwizard.tCmpSaleComp SC ON C.SaleCompCode = SC.SaleCompCode
+        INNER JOIN shopwizard.tCmpChnlPolicy CP ON C.ChnlPolicyCode = CP.ChnlPolicyCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND C.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND C.ChnlCode = #{pChnlCode}</if>
+            <if test="pChnlName != null and pChnlName != ''">AND C.ChnlName LIKE CONCAT('%',#{pChnlName},'%')</if>
+            <if test="pSaleCompCode != null and pSaleCompCode != ''">AND C.SaleCompCode = #{pSaleCompCode}</if>
+            <if test="pState != null and pState != ''">AND C.State = #{pState}</if>
+            <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND C.AdjustPeriodCode = #{pAdjustPeriodCode}</if>
+            <if test="pMngrMd != null and pMngrMd != ''">AND C.MngrMd = #{pMngrMd}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ChnlResult">
+        SELECT C.*, SC.SaleCompName AS SaleCompName, CP.ChnlPolicyName AS ChnlPolicyName
+        FROM shopwizard.tCmpChnl C
+        INNER JOIN shopwizard.tCmpSaleComp SC ON C.SaleCompCode = SC.SaleCompCode
+        INNER JOIN shopwizard.tCmpChnlPolicy CP ON C.ChnlPolicyCode = CP.ChnlPolicyCode
+        WHERE C.ChnlCode = #{chnlCode}
+    </select>
+
+    <select id="selectMax" parameterType="string" resultType="string">
+        SELECT MAX(ChnlCode)
+        FROM shopwizard.tCmpChnl
+        WHERE SaleCompCode = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.Chnl">
+        INSERT INTO shopwizard.tCmpChnl (
+            ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, CompCode, SaleCompCode,
+            LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail, MallStartDate, MallEndDate,
+            MngrMd, SlnkMallCode, LoginId, Passwd, AdjustType, AdjustPeriodCode, AdjustChnlCode,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{chnlCode}, #{chnlName}, #{chnlDesc}, #{chnlUrl}, #{chnlPolicyCode}, #{svcCode}, #{compCode}, #{saleCompCode},
+            #{logoImg}, #{mngrName}, #{mngrPhoneNo}, #{mngrMobileNo}, #{mngrFaxNo}, #{mngrEmail}, #{mallStartDate}, #{mallEndDate},
+            #{mngrMd}, #{slnkMallCode}, #{loginId}, #{passwd}, #{adjustType}, #{adjustPeriodCode}, #{adjustChnlCode},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertShopion" parameterType="com.shopwizard.company.model.Chnl">
+        INSERT INTO shopion.tStrChnl (
+            ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, CompCode, SaleCompCode,
+            LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail, MallStartDate, MallEndDate,
+            MngrMd, SlnkMallCode, LoginId, Passwd, AdjustType, AdjustPeriodCode, AdjustChnlCode,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{chnlCode}, #{chnlName}, #{chnlDesc}, #{chnlUrl}, #{chnlPolicyCode}, #{svcCode}, #{compCode}, #{saleCompCode},
+            #{logoImg}, #{mngrName}, #{mngrPhoneNo}, #{mngrMobileNo}, #{mngrFaxNo}, #{mngrEmail}, #{mallStartDate}, #{mallEndDate},
+            #{mngrMd}, #{slnkMallCode}, #{loginId}, #{passwd}, #{adjustType}, #{adjustPeriodCode}, #{adjustChnlCode},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.Chnl">
+        UPDATE shopwizard.tCmpChnl SET
+            ChnlName = #{chnlName}, ChnlDesc = #{chnlDesc}, ChnlUrl = #{chnlUrl},
+            ChnlPolicyCode = #{chnlPolicyCode}, CompCode = #{compCode}, SaleCompCode = #{saleCompCode},
+            LogoImg = #{logoImg}, MngrName = #{mngrName}, MngrPhoneNo = #{mngrPhoneNo},
+            MngrMobileNo = #{mngrMobileNo}, MngrFaxNo = #{mngrFaxNo}, MngrEmail = #{mngrEmail},
+            MallStartDate = #{mallStartDate}, MallEndDate = #{mallEndDate},
+            MngrMd = #{mngrMd}, SlnkMallCode = #{slnkMallCode}, LoginId = #{loginId}, Passwd = #{passwd},
+            AdjustType = #{adjustType}, AdjustPeriodCode = #{adjustPeriodCode}, AdjustChnlCode = #{adjustChnlCode},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ChnlCode = #{chnlCode}
+    </update>
+
+    <update id="updateShopion" parameterType="com.shopwizard.company.model.Chnl">
+        UPDATE shopion.tStrChnl SET
+            ChnlName = #{chnlName}, ChnlDesc = #{chnlDesc}, ChnlUrl = #{chnlUrl},
+            ChnlPolicyCode = #{chnlPolicyCode}, CompCode = #{compCode}, SaleCompCode = #{saleCompCode},
+            LogoImg = #{logoImg}, MngrName = #{mngrName}, MngrPhoneNo = #{mngrPhoneNo},
+            MngrMobileNo = #{mngrMobileNo}, MngrFaxNo = #{mngrFaxNo}, MngrEmail = #{mngrEmail},
+            MallStartDate = #{mallStartDate}, MallEndDate = #{mallEndDate},
+            MngrMd = #{mngrMd}, SlnkMallCode = #{slnkMallCode}, LoginId = #{loginId}, Passwd = #{passwd},
+            AdjustType = #{adjustType}, AdjustPeriodCode = #{adjustPeriodCode}, AdjustChnlCode = #{adjustChnlCode},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ChnlCode = #{chnlCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.Chnl">
+        DELETE FROM shopwizard.tCmpChnl
+        WHERE ChnlCode = #{chnlCode}
+    </delete>
+
+    <delete id="deleteShopion" parameterType="com.shopwizard.company.model.Chnl">
+        DELETE FROM shopion.tStrChnl
+        WHERE ChnlCode = #{chnlCode}
+    </delete>
+
+</mapper>

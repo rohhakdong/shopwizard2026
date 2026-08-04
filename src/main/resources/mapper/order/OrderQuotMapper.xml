@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderQuotMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderQuot">
+        SELECT OQ.*
+        FROM shopwizard.tOrdOrderQuot OQ
+        <where>
+            <if test="pQuotNo != null and pQuotNo != ''">AND OQ.QuotNo = #{pQuotNo}</if>
+            <if test="pChnlName != null and pChnlName != ''">AND OQ.ChnlName = #{pChnlName}</if>
+            <if test="pDealName != null and pDealName != ''">AND OQ.DealName = #{pDealName}</if>
+            <if test="pDealNo != null and pDealNo != ''">AND OQ.DealNo = #{pDealNo}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">
+                <choose>
+                    <when test="pMatchProdCodeEqual != null and pMatchProdCodeEqual != ''">AND OQ.MatchProdCode = #{pMatchProdCode}</when>
+                    <otherwise>AND OQ.MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</otherwise>
+                </choose>
+            </if>
+            <if test="pShopCode != null and pShopCode != ''">AND OQ.ShopCode = #{pShopCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND OQ.ProdCode = #{pProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND OQ.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pOptionName != null and pOptionName != ''">AND OQ.OptionName LIKE CONCAT('%',#{pOptionName},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (OQ.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND OQ.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderQuot OQ
+        <where>
+            <if test="pQuotNo != null and pQuotNo != ''">AND OQ.QuotNo = #{pQuotNo}</if>
+            <if test="pChnlName != null and pChnlName != ''">AND OQ.ChnlName = #{pChnlName}</if>
+            <if test="pDealName != null and pDealName != ''">AND OQ.DealName = #{pDealName}</if>
+            <if test="pDealNo != null and pDealNo != ''">AND OQ.DealNo = #{pDealNo}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">
+                <choose>
+                    <when test="pMatchProdCodeEqual != null and pMatchProdCodeEqual != ''">AND OQ.MatchProdCode = #{pMatchProdCode}</when>
+                    <otherwise>AND OQ.MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</otherwise>
+                </choose>
+            </if>
+            <if test="pShopCode != null and pShopCode != ''">AND OQ.ShopCode = #{pShopCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND OQ.ProdCode = #{pProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND OQ.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pOptionName != null and pOptionName != ''">AND OQ.OptionName LIKE CONCAT('%',#{pOptionName},'%')</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderQuot">
+        SELECT * FROM shopwizard.tOrdOrderQuot WHERE QuotNo = #{quotNo}
+    </select>
+
+    <select id="selectByQuotNo" parameterType="map" resultType="com.shopwizard.order.model.OrderQuot">
+        SELECT * FROM shopwizard.tOrdOrderQuot
+        <where>
+            <if test="pChnlName != null and pChnlName != ''">AND ChnlName = #{pChnlName}</if>
+            <if test="pDealName != null and pDealName != ''">AND DealName = #{pDealName}</if>
+            <if test="pDealNo != null and pDealNo != ''">AND DealNo = #{pDealNo}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND MatchProdCode = #{pMatchProdCode}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderQuot">
+        INSERT INTO shopwizard.tOrdOrderQuot (
+            ChnlName, DealName, MatchProdCode, ShopCode, DealNo, ProdCode, ProdName, OptionNo, OptionName,
+            SupplyPrice, Cost, OrderProdName, OrderProdQty, ResultType, ResultMessag, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{chnlName}, #{dealName}, #{matchProdCode}, #{shopCode}, #{dealNo}, #{prodCode}, #{prodName}, #{optionNo}, #{optionName},
+            #{supplyPrice}, #{cost}, #{orderProdName}, #{orderProdQty}, #{resultType}, #{resultMessag}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderQuot">
+        UPDATE shopwizard.tOrdOrderQuot SET
+            ChnlName = #{chnlName}, DealName = #{dealName}, MatchProdCode = #{matchProdCode}, ShopCode = #{shopCode},
+            DealNo = #{dealNo}, ProdCode = #{prodCode}, ProdName = #{prodName}, OptionNo = #{optionNo}, OptionName = #{optionName},
+            SupplyPrice = #{supplyPrice}, Cost = #{cost}, OrderProdName = #{orderProdName}, OrderProdQty = #{orderProdQty},
+            ResultType = #{resultType}, ResultMessag = #{resultMessag}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE QuotNo = #{quotNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderQuot">
+        DELETE FROM shopwizard.tOrdOrderQuot WHERE QuotNo = #{quotNo}
+    </delete>
+
+</mapper>

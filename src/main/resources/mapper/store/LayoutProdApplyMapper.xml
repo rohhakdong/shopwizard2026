@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.LayoutProdApplyMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.LayoutProdApply">
+        SELECT LP.DesignId, LP.LayoutCode, LP.ChnlCode, LP.ProdCode, LP.LocType, LP.ProdSeq,
+               LP.Remark, LP.State,
+               LP.RegistDate, LP.RegistId, LP.RegistName, LP.ChangeDate, LP.ChangeId, LP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.SupplyQty, PH.ImgUrl80,
+               PC.CpnAmt AS ProdCpnAmt, PT.PointAmt
+        FROM shopion.tStrLayoutProdApply LP
+        INNER JOIN shopion.tPrdProd PH ON LP.ProdCode = PH.ProdCode
+        LEFT JOIN shopion.tStrProdCpnProd CPP ON LP.ChnlCode = CPP.ChnlCode AND LP.ProdCode = CPP.ProdCode
+        LEFT JOIN shopion.tStrProdCpn PC ON CPP.CpnId = PC.CpnId
+        LEFT JOIN shopion.tStrPointProd PP ON LP.ChnlCode = PP.ChnlCode AND LP.ProdCode = PP.ProdCode
+        LEFT JOIN shopion.tStrPoint PT ON PP.PointId = PT.PointId
+        <where>
+            <if test="pDesignId != null">
+                AND LP.DesignId = #{pDesignId}
+            </if>
+            <if test="pLayoutCodeArr != null and pLayoutCodeArr.size() > 0">
+                AND LP.LayoutCode IN
+                <foreach collection="pLayoutCodeArr" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="pLayoutCode != null and pLayoutCode != ''">
+                AND LP.LayoutCode = #{pLayoutCode}
+            </if>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND LP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">
+                <choose>
+                    <when test="pSaleYn == '100'">
+                        AND PH.SaleYn > 0
+                    </when>
+                    <otherwise>
+                        AND PH.SaleYn = #{pSaleYn}
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pSupplyQty != null and pSupplyQty != ''">
+                AND PH.SupplyQty > 0
+            </if>
+        </where>
+        ORDER BY LP.ProdSeq
+        <if test="topCnt != null">
+            LIMIT #{topCnt}
+        </if>
+        <if test="startNum != null and countPerPage != null">
+            LIMIT #{startNum}, #{countPerPage}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tStrLayoutProdApply LP
+        INNER JOIN shopion.tPrdProd PH ON LP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pDesignId != null">
+                AND LP.DesignId = #{pDesignId}
+            </if>
+            <if test="pLayoutCode != null and pLayoutCode != ''">
+                AND LP.LayoutCode = #{pLayoutCode}
+            </if>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND LP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">
+                <choose>
+                    <when test="pSaleYn == '100'">
+                        AND PH.SaleYn > 0
+                    </when>
+                    <otherwise>
+                        AND PH.SaleYn = #{pSaleYn}
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.LayoutProdApply">
+        INSERT INTO shopion.tStrLayoutProdApply (
+            DesignId, LayoutCode, ChnlCode, ProdCode, LocType, ProdSeq,
+            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{designId}, #{layoutCode}, #{chnlCode}, #{prodCode}, #{locType}, #{prodSeq},
+            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.LayoutProdApply">
+        UPDATE shopion.tStrLayoutProdApply
+        SET LocType = #{locType},
+            ProdSeq = #{prodSeq},
+            Remark = #{remark},
+            State = #{state},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE DesignId = #{designId}
+          AND LayoutCode = #{layoutCode}
+          AND ChnlCode = #{chnlCode}
+          AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrLayoutProdApply
+        WHERE DesignId = #{pDesignId}
+          AND LayoutCode = #{pLayoutCode}
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND ChnlCode = #{pChnlCode}
+        </if>
+        <if test="prodCodes != null">
+            AND ProdCode IN
+            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </delete>
+
+</mapper>

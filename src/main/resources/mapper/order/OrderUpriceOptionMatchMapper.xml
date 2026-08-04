@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderUpriceOptionMatchMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderUpriceOptionMatch">
+        SELECT *
+        FROM shopwizard.tOrdOrderUpriceOptionMatch
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderUpriceOptionMatch
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderUpriceOptionMatch">
+        SELECT * FROM shopwizard.tOrdOrderUpriceOptionMatch
+        WHERE OrderNo = #{orderNo} AND OrderSeq = #{orderSeq}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderUpriceOptionMatch">
+        INSERT INTO shopwizard.tOrdOrderUpriceOptionMatch (
+            OrderNo, OrderSeq, Keywrd, Capa, Qty, MatchUpriceCode,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{orderNo}, #{orderSeq}, #{keywrd}, #{capa}, #{qty}, #{matchUpriceCode},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderUpriceOptionMatch">
+        UPDATE shopwizard.tOrdOrderUpriceOptionMatch SET
+            Keywrd = #{keywrd}, Capa = #{capa}, Qty = #{qty}, MatchUpriceCode = #{matchUpriceCode},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo} AND OrderSeq = #{orderSeq}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderUpriceOptionMatch">
+        DELETE FROM shopwizard.tOrdOrderUpriceOptionMatch WHERE OrderNo = #{orderNo} AND OrderSeq = #{orderSeq}
+    </delete>
+
+    <delete id="deleteByOrderNo" parameterType="map">
+        DELETE FROM shopwizard.tOrdOrderUpriceOptionMatch WHERE OrderNo = #{orderNo}
+    </delete>
+
+</mapper>

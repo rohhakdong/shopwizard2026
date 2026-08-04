@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustConcrnProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustConcrnProd">
+        SELECT CP.*
+        FROM shopion.tPrfCustConcrnProd CP
+        INNER JOIN shopion.tPrdProd P ON CP.ProdCode = P.ProdCode
+        INNER JOIN shopion.tPrfCust CI ON CP.CustId = CI.CustId
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+        </where>
+        AND P.SaleYn = 1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY CP.RegistDate DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustConcrnProd CP
+        INNER JOIN shopion.tPrdProd P ON CP.ProdCode = P.ProdCode
+        INNER JOIN shopion.tPrfCust CI ON CP.CustId = CI.CustId
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+        </where>
+        AND P.SaleYn = 1
+    </select>
+
+    <select id="selectListReport" parameterType="map" resultType="com.shopwizard.profile.model.CustConcrnProdReport">
+        SELECT P.ProdCode, P.ShopProdCode, P.ProdName, P.ProdUnit, P.ImgUrl80, P.AttrValStr1, P.BrandName, P.ModelName,
+               P.SalePrice, P.VatRate, P.MakerName, P.OriginName, P.DeliFeeType, P.DeliFeeAmt, P.SaleYn, P.RegistDate, P.ChangeDate,
+               COUNT(*) AS OrderCount, SUM(OP.ProdQty) AS OrderQty, MAX(O.OrderReciptDate) AS LastOrderDate
+        FROM shopion.tPrdProd P
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrProdCpn.*, tStrProdCpnProd.ProdCode, tStrProdCpnProd.ChnlCode
+            FROM shopion.tStrProdCpn
+            INNER JOIN shopion.tStrProdCpnProd ON shopion.tStrProdCpnProd.CpnId = shopion.tStrProdCpn.CpnId
+            AND shopion.tStrProdCpnProd.ChnlCode = #{pChnlCode}
+        ) PC ON P.ProdCode = PC.ProdCode
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrPoint.*, tStrPointProd.ProdCode, tStrPointProd.ChnlCode
+            FROM shopion.tStrPoint
+            INNER JOIN shopion.tStrPointProd ON shopion.tStrPointProd.PointId = shopion.tStrPoint.PointId
+            AND shopion.tStrPointProd.ChnlCode = #{pChnlCode}
+        ) PP ON P.ProdCode = PP.ProdCode
+        <if test="pCatalog == null or pCatalog == ''">
+        LEFT OUTER JOIN shopion.tOrdOrderProd OP ON OP.ProdCode = P.ProdCode
+        LEFT OUTER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo AND O.CustId = #{pCustId}
+        INNER JOIN shopion.tPrfCustConcrnProd CCP ON CCP.ProdCode = P.ProdCode AND CCP.CustId = #{pCustId}
+        </if>
+        <if test="pCatalog != null and pCatalog != ''">
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.ProdCode = P.ProdCode
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo AND O.CustId = #{pCustId}
+        </if>
+        WHERE P.SaleYn = 1
+        AND EXISTS (SELECT ProdCode FROM shopion.tPrdProdChnl WHERE ProdCode = P.ProdCode AND ChnlCode = #{pChnlCode})
+        AND EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = P.ProdCode AND CompCode = #{pCompCode})
+        GROUP BY P.ProdCode, P.ShopProdCode, P.BrandName, P.ModelName, P.SalePrice, P.VatRate, P.MakerName, P.OriginName, P.DeliFeeType, P.DeliFeeAmt, P.SaleYn, P.RegistDate, P.ChangeDate
+        <choose>
+            <when test="pCatalog == null or pCatalog == ''">ORDER BY P.RegistDate DESC</when>
+            <when test="pCatalog == 'MaxOrder'">ORDER BY COUNT(*) DESC</when>
+            <when test="pCatalog == 'MaxQty'">ORDER BY SUM(OP.ProdQty) DESC</when>
+        </choose>
+        LIMIT #{topCnt}, #{countPerPage}
+    </select>
+
+    <select id="selectCountReport" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM (
+        SELECT P.ProdCode
+        FROM shopion.tPrdProd P
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrProdCpn.*, tStrProdCpnProd.ProdCode, tStrProdCpnProd.ChnlCode
+            FROM shopion.tStrProdCpn
+            INNER JOIN shopion.tStrProdCpnProd ON shopion.tStrProdCpnProd.CpnId = shopion.tStrProdCpn.CpnId
+            AND shopion.tStrProdCpnProd.ChnlCode = #{pChnlCode}
+        ) PC ON P.ProdCode = PC.ProdCode
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrPoint.*, tStrPointProd.ProdCode, tStrPointProd.ChnlCode
+            FROM shopion.tStrPoint
+            INNER JOIN shopion.tStrPointProd ON shopion.tStrPointProd.PointId = shopion.tStrPoint.PointId
+            AND shopion.tStrPointProd.ChnlCode = #{pChnlCode}
+        ) PP ON P.ProdCode = PP.ProdCode
+        <if test="pCatalog == null or pCatalog == ''">
+        LEFT OUTER JOIN shopion.tOrdOrderProd OP ON OP.ProdCode = P.ProdCode
+        LEFT OUTER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo AND O.CustId = #{pCustId}
+        INNER JOIN shopion.tPrfCustConcrnProd CCP ON CCP.ProdCode = P.ProdCode AND CCP.CustId = #{pCustId}
+        </if>
+        <if test="pCatalog != null and pCatalog != ''">
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.ProdCode = P.ProdCode
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo AND O.CustId = #{pCustId}
+        </if>
+        WHERE P.SaleYn = 1
+        AND EXISTS (SELECT ProdCode FROM shopion.tPrdProdChnl WHERE ProdCode = P.ProdCode AND ChnlCode = #{pChnlCode})
+        AND EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = P.ProdCode AND CompCode = #{pCompCode})
+        GROUP BY P.ProdCode, P.ShopProdCode, P.BrandName, P.ModelName, P.SalePrice, P.VatRate, P.MakerName, P.OriginName, P.DeliFeeType, P.DeliFeeAmt, P.SaleYn, P.RegistDate, P.ChangeDate
+        ) T_COUNT
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CustConcrnProd">
+        SELECT CP.*
+        FROM shopion.tPrfCustConcrnProd CP
+        INNER JOIN shopion.tPrdProd P ON CP.ProdCode = P.ProdCode
+        WHERE CP.CustId = #{custId}
+        AND CP.ProdCode = #{prodCode}
+        AND P.SaleYn = 1
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustConcrnProd">
+        INSERT INTO shopion.tPrfCustConcrnProd (
+            CustId, ProdCode, ChnlCode, State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{custId}, #{prodCode}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustConcrnProd">
+        UPDATE shopion.tPrfCustConcrnProd SET
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+        AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCustConcrnProd
+        WHERE CustId = #{custId}
+        AND ProdCode = #{prodCode}
+    </delete>
+
+    <delete id="deleteByCustId" parameterType="int">
+        DELETE FROM shopion.tPrfCustConcrnProd
+        WHERE CustId = #{value}
+    </delete>
+
+</mapper>

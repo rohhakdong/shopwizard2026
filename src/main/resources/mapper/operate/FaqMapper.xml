@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.FaqMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.Faq">
+        SELECT * FROM shopion.tOprFaq
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pFaqNo != null and pFaqNo != ''">AND FaqNo = #{pFaqNo}</if>
+            <if test="pFaqTitle != null and pFaqTitle != ''">AND FaqTitle LIKE CONCAT('%',#{pFaqTitle},'%')</if>
+            <if test="pFaqCntnts != null and pFaqCntnts != ''">AND FaqCntnts LIKE CONCAT('%',#{pFaqCntnts},'%')</if>
+            <if test="pCustConsltType != null and pCustConsltType != ''">AND CustConsltType = #{pCustConsltType}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.operate.model.Faq">
+        SELECT * FROM shopion.tOprFaq WHERE FaqNo = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.Faq">
+        INSERT INTO shopion.tOprFaq (FaqNo, CustConsltType, FaqTypeDesc, FaqTitle, FaqCntnts, ChnlCode, State, Remark, RegistDate, RegistId, RegistName)
+        VALUES (#{faqNo}, #{custConsltType}, #{faqTypeDesc}, #{faqTitle}, #{faqCntnts}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.Faq">
+        UPDATE shopion.tOprFaq SET
+        CustConsltType = #{custConsltType}, FaqTypeDesc = #{faqTypeDesc}, FaqTitle = #{faqTitle},
+        FaqCntnts = #{faqCntnts}, ChnlCode = #{chnlCode}, State = #{state}, Remark = #{remark},
+        ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE FaqNo = #{faqNo}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tOprFaq WHERE FaqNo = #{value}
+    </delete>
+
+    <select id="selectFaqCntnts" parameterType="int" resultType="string">
+        SELECT FaqCntnts FROM shopion.tOprFaq WHERE FaqNo = #{value}
+    </select>
+
+</mapper>

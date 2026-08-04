@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.authority.mapper.MenuMapper">
+
+    <resultMap id="MenuResult" type="com.shopwizard.authority.model.Menu">
+        <result property="menuCode" column="MenuCode"/>
+        <result property="roleUid" column="RoleUid"/>
+        <result property="roleName" column="RoleName"/>
+        <result property="menuName" column="MenuName"/>
+        <result property="menuUri" column="MenuUri"/>
+        <result property="parentMenuCode" column="ParentMenuCode"/>
+        <result property="menuLevel" column="MenuLevel"/>
+        <result property="menuSeq" column="MenuSeq"/>
+        <result property="childCount" column="ChildCount"/>
+        <result property="menuCode1" column="MenuCode1"/>
+        <result property="menuName1" column="MenuName1"/>
+        <result property="menuCode2" column="MenuCode2"/>
+        <result property="menuName2" column="MenuName2"/>
+        <result property="menuCode3" column="MenuCode3"/>
+        <result property="menuName3" column="MenuName3"/>
+        <result property="menuCode4" column="MenuCode4"/>
+        <result property="menuName4" column="MenuName4"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="MenuResult">
+        SELECT *,
+        (SELECT COUNT(*) FROM wizardn.tAthMenu C WHERE C.RoleUid = tAthMenu.RoleUid AND C.ParentMenuCode = tAthMenu.MenuCode) AS ChildCount
+        FROM wizardn.tAthMenu
+        <where>
+            <choose>
+                <when test="pParentMenuCode != null and pParentMenuCode != ''">AND ParentMenuCode = #{pParentMenuCode}</when>
+                <otherwise>AND MenuLevel = 0</otherwise>
+            </choose>
+            <if test="pRoleUid != null and pRoleUid != ''">AND RoleUid = #{pRoleUid}</if>
+            <if test="pState != null and pState == 1">AND State = #{pState}</if>
+        </where>
+        ORDER BY MenuSeq, MenuCode
+    </select>
+
+    <select id="selectChildMax" parameterType="map" resultType="string">
+        SELECT IFNULL(MAX(MenuCode),'')
+        FROM wizardn.tAthMenu
+        <where>
+            <if test="roleUid != null and roleUid != ''">AND RoleUid = #{roleUid}</if>
+            <choose>
+                <when test="parentMenuCode != null and parentMenuCode != ''">AND ParentMenuCode = #{parentMenuCode}</when>
+                <otherwise>AND MenuLevel = 0</otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <select id="selectListTable" parameterType="map" resultMap="MenuResult">
+        SELECT tAthMenu1.MenuCode AS MenuCode1, tAthMenu1.MenuName AS MenuName1,
+               '' AS MenuCode2, '' AS MenuName2, '' AS MenuCode3, '' AS MenuName3, '' AS MenuCode4, '' AS MenuName4,
+               tAthMenu.MenuCode AS MenuCode, tAthMenu.MenuName AS MenuName
+        FROM wizardn.tAthMenu tAthMenu
+        INNER JOIN wizardn.tAthMenu tAthMenu1
+            ON SUBSTRING(tAthMenu1.MenuCode,1,4) = SUBSTRING(tAthMenu.MenuCode,1,4) AND tAthMenu1.MenuLevel = 0
+        WHERE tAthMenu.MenuLevel = 0
+        AND tAthMenu.RoleUid = #{pRoleUid} AND tAthMenu1.RoleUid = #{pRoleUid}
+        AND (tAthMenu.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu1.MenuName LIKE CONCAT('%',#{pMenuName},'%'))
+        UNION ALL
+        SELECT tAthMenu1.MenuCode AS MenuCode1, tAthMenu1.MenuName AS MenuName1,
+               tAthMenu2.MenuCode AS MenuCode2, tAthMenu2.MenuName AS MenuName2,
+               '' AS MenuCode3, '' AS MenuName3, '' AS MenuCode4, '' AS MenuName4,
+               tAthMenu.MenuCode AS MenuCode, tAthMenu.MenuName AS MenuName
+        FROM wizardn.tAthMenu tAthMenu
+        INNER JOIN wizardn.tAthMenu tAthMenu1
+            ON SUBSTRING(tAthMenu1.MenuCode,1,4) = SUBSTRING(tAthMenu.MenuCode,1,4) AND tAthMenu1.MenuLevel = 0
+        INNER JOIN wizardn.tAthMenu tAthMenu2
+            ON SUBSTRING(tAthMenu2.MenuCode,1,7) = SUBSTRING(tAthMenu.MenuCode,1,7) AND tAthMenu2.MenuLevel = 1
+        WHERE tAthMenu.MenuLevel = 1
+        AND tAthMenu.RoleUid = #{pRoleUid} AND tAthMenu1.RoleUid = #{pRoleUid} AND tAthMenu2.RoleUid = #{pRoleUid}
+        AND (tAthMenu.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu1.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu2.MenuName LIKE CONCAT('%',#{pMenuName},'%'))
+        UNION ALL
+        SELECT tAthMenu1.MenuCode AS MenuCode1, tAthMenu1.MenuName AS MenuName1,
+               tAthMenu2.MenuCode AS MenuCode2, tAthMenu2.MenuName AS MenuName2,
+               tAthMenu3.MenuCode AS MenuCode3, tAthMenu3.MenuName AS MenuName3,
+               '' AS MenuCode4, '' AS MenuName4,
+               tAthMenu.MenuCode AS MenuCode, tAthMenu.MenuName AS MenuName
+        FROM wizardn.tAthMenu tAthMenu
+        INNER JOIN wizardn.tAthMenu tAthMenu1
+            ON SUBSTRING(tAthMenu1.MenuCode,1,4) = SUBSTRING(tAthMenu.MenuCode,1,4) AND tAthMenu1.MenuLevel = 0
+        INNER JOIN wizardn.tAthMenu tAthMenu2
+            ON SUBSTRING(tAthMenu2.MenuCode,1,7) = SUBSTRING(tAthMenu.MenuCode,1,7) AND tAthMenu2.MenuLevel = 1
+        INNER JOIN wizardn.tAthMenu tAthMenu3
+            ON SUBSTRING(tAthMenu3.MenuCode,1,10) = SUBSTRING(tAthMenu.MenuCode,1,10) AND tAthMenu3.MenuLevel = 2
+        WHERE tAthMenu.MenuLevel = 2
+        AND tAthMenu.RoleUid = #{pRoleUid} AND tAthMenu1.RoleUid = #{pRoleUid} AND tAthMenu2.RoleUid = #{pRoleUid} AND tAthMenu3.RoleUid = #{pRoleUid}
+        AND (tAthMenu.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu1.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu2.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu3.MenuName LIKE CONCAT('%',#{pMenuName},'%'))
+        UNION ALL
+        SELECT tAthMenu1.MenuCode AS MenuCode1, tAthMenu1.MenuName AS MenuName1,
+               tAthMenu2.MenuCode AS MenuCode2, tAthMenu2.MenuName AS MenuName2,
+               tAthMenu3.MenuCode AS MenuCode3, tAthMenu3.MenuName AS MenuName3,
+               tAthMenu4.MenuCode AS MenuCode4, tAthMenu4.MenuName AS MenuName4,
+               tAthMenu.MenuCode AS MenuCode, tAthMenu.MenuName AS MenuName
+        FROM wizardn.tAthMenu tAthMenu
+        INNER JOIN wizardn.tAthMenu tAthMenu1
+            ON SUBSTRING(tAthMenu1.MenuCode,1,4) = SUBSTRING(tAthMenu.MenuCode,1,4) AND tAthMenu1.MenuLevel = 0
+        INNER JOIN wizardn.tAthMenu tAthMenu2
+            ON SUBSTRING(tAthMenu2.MenuCode,1,7) = SUBSTRING(tAthMenu.MenuCode,1,7) AND tAthMenu2.MenuLevel = 1
+        INNER JOIN wizardn.tAthMenu tAthMenu3
+            ON SUBSTRING(tAthMenu3.MenuCode,1,10) = SUBSTRING(tAthMenu.MenuCode,1,10) AND tAthMenu3.MenuLevel = 2
+        INNER JOIN wizardn.tAthMenu tAthMenu4
+            ON SUBSTRING(tAthMenu4.MenuCode,1,13) = SUBSTRING(tAthMenu.MenuCode,1,13) AND tAthMenu4.MenuLevel = 3
+        WHERE tAthMenu.MenuLevel = 3
+        AND tAthMenu.RoleUid = #{pRoleUid} AND tAthMenu1.RoleUid = #{pRoleUid} AND tAthMenu2.RoleUid = #{pRoleUid} AND tAthMenu3.RoleUid = #{pRoleUid} AND tAthMenu4.RoleUid = #{pRoleUid}
+        AND (tAthMenu.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu1.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu2.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu3.MenuName LIKE CONCAT('%',#{pMenuName},'%') OR tAthMenu4.MenuName LIKE CONCAT('%',#{pMenuName},'%'))
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.authority.model.Menu">
+        INSERT INTO wizardn.tAthMenu (
+            MenuCode, RoleUid, MenuName, MenuUri, ParentMenuCode, MenuLevel,
+            MenuSeq, State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{menuCode}, #{roleUid}, #{menuName}, #{menuUri}, #{parentMenuCode}, #{menuLevel},
+            #{menuSeq}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.authority.model.Menu">
+        UPDATE wizardn.tAthMenu SET
+            MenuName = #{menuName}, MenuUri = #{menuUri}, MenuSeq = #{menuSeq},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE RoleUid = #{roleUid}
+        AND MenuCode = #{menuCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM wizardn.tAthMenu
+        WHERE RoleUid = #{roleUid}
+        AND MenuCode = #{menuCode}
+    </delete>
+
+</mapper>

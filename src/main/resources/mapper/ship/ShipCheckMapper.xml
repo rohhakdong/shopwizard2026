@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.ship.mapper.ShipCheckMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.ShipCheck">
+        SELECT *
+        FROM shopwizard.tShpShipCheck
+        <where>
+            <if test="pShipCheckNo != null and pShipCheckNo != ''">AND ShipCheckNo = #{pShipCheckNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pShipCheckDesc != null and pShipCheckDesc != ''">AND ShipCheckDesc = #{pShipCheckDesc}</if>
+            <if test="pShipCheckDate != null and pShipCheckDate != ''">AND ShipCheckDate = #{pShipCheckDate}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[
+                AND (
+                    ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND
+                    ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+                )
+                ]]>
+            </if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+            LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpShipCheck
+        <where>
+            <if test="pShipCheckNo != null and pShipCheckNo != ''">AND ShipCheckNo = #{pShipCheckNo}</if>
+            <if test="pShipCheckDesc != null and pShipCheckDesc != ''">AND ShipCheckDesc = #{pShipCheckDesc}</if>
+            <if test="pShipCheckDate != null and pShipCheckDate != ''">AND ShipCheckDate = #{pShipCheckDate}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[
+                AND (
+                    ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND
+                    ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+                )
+                ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.ShipCheck">
+        SELECT *
+        FROM shopwizard.tShpShipCheck
+        WHERE ShipCheckNo = #{shipCheckNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.ShipCheck">
+        INSERT INTO shopwizard.tShpShipCheck (
+            ShopCode, ShipCheckDesc, ShipCheckDate, OrderCount, PrintCount, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{shopCode}, #{shipCheckDesc}, #{shipCheckDate}, #{orderCount}, #{printCount}, #{state}, #{remark}, #{registId}, #{registName}, #{registDate}, #{changeId}, #{changeName}, #{changeDate}
+        )
+    </insert>
+
+    <update id="updatePrintCount" parameterType="com.shopwizard.ship.model.ShipCheck">
+        UPDATE shopwizard.tShpShipCheck SET
+            PrintCount = PrintCount + 1, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ShipCheckNo = #{shipCheckNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.ship.model.ShipCheck">
+        DELETE FROM shopwizard.tShpShipCheck
+        WHERE ShipCheckNo = #{shipCheckNo}
+    </delete>
+
+</mapper>

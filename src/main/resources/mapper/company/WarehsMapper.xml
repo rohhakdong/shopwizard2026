@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.WarehsMapper">
+
+    <resultMap id="WarehsResult" type="com.shopwizard.company.model.Warehs">
+        <result property="warehsCode" column="WarehsCode"/>
+        <result property="warehsName" column="WarehsName"/>
+        <result property="adjustPeriodCode" column="AdjustPeriodCode"/>
+        <result property="loginId" column="LoginId"/>
+        <result property="passwd" column="Passwd"/>
+        <result property="mngrName" column="MngrName"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="mobileNo" column="MobileNo"/>
+        <result property="faxNo" column="FaxNo"/>
+        <result property="email" column="Email"/>
+        <result property="passwdChangeDate" column="PasswdChangeDate"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="WarehsResult">
+        SELECT W.*
+        FROM shopwizard.tCmpWarehs W
+        <if test="pShopCode != null and pShopCode != ''">
+        INNER JOIN shopwizard.tCmpShopWarehs SW ON SW.WarehsCode = W.WarehsCode
+        </if>
+        <where>
+            <if test="pWarehsCode != null and pWarehsCode != ''">AND W.WarehsCode = #{pWarehsCode}</if>
+            <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName = #{pWarehsName}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpWarehs W
+        <if test="pShopCode != null and pShopCode != ''">
+        INNER JOIN shopwizard.tCmpShopWarehs SW ON SW.WarehsCode = W.WarehsCode
+        </if>
+        <where>
+            <if test="pWarehsCode != null and pWarehsCode != ''">AND W.WarehsCode = #{pWarehsCode}</if>
+            <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName = #{pWarehsName}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="WarehsResult">
+        SELECT *
+        FROM shopwizard.tCmpWarehs
+        WHERE WarehsCode = #{warehsCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.Warehs">
+        INSERT INTO shopwizard.tCmpWarehs (
+            WarehsCode, WarehsName, AdjustPeriodCode, LoginId, Passwd,
+            MngrName, PhoneNo, MobileNo, FaxNo, Email,
+            PasswdChangeDate, SvcCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{warehsCode}, #{warehsName}, #{adjustPeriodCode}, #{loginId}, #{passwd},
+            #{mngrName}, #{phoneNo}, #{mobileNo}, #{faxNo}, #{email},
+            NOW(), #{svcCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.Warehs">
+        UPDATE shopwizard.tCmpWarehs SET
+            WarehsName = #{warehsName}, AdjustPeriodCode = #{adjustPeriodCode},
+            LoginId = #{loginId}, Passwd = #{passwd}, MngrName = #{mngrName},
+            PhoneNo = #{phoneNo}, MobileNo = #{mobileNo}, FaxNo = #{faxNo},
+            Email = #{email}, PasswdChangeDate = NOW(), SvcCode = #{svcCode},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE WarehsCode = #{warehsCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.Warehs">
+        DELETE FROM shopwizard.tCmpWarehs
+        WHERE WarehsCode = #{warehsCode}
+    </delete>
+
+</mapper>

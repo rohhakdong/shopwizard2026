@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderCashReciptMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderCashRecipt">
+        SELECT CR.*, O.OrderName, O.OrderState, CI.LoginId
+        FROM shopion.tOrdOrderCashRecipt CR
+        INNER JOIN shopion.tOrdOrder O ON CR.OrderNo = O.OrderNo
+        LEFT OUTER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND CR.OrderNo = #{pOrderNo}</if>
+            <if test="pCustId != null and pCustId != ''">AND O.CustId = #{pCustId}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND (CR.ReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND CR.ReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY CR.${sidx} ${sord}</when>
+            <otherwise>ORDER BY CR.OrderNo DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderCashRecipt">
+        SELECT *
+        FROM shopion.tOrdOrderCashRecipt
+        WHERE OrderNo = #{orderNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderCashRecipt">
+        INSERT INTO shopion.tOrdOrderCashRecipt (
+            OrderNo, ReciptType, ReciptNo, ReciptDate, ReciptAmt,
+            CustName, CustEmail, PgResultCode, PgResultMsg,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{orderNo}, #{reciptType}, #{reciptNo}, #{reciptDate}, #{reciptAmt},
+            #{custName}, #{custEmail}, #{pgResultCode}, #{pgResultMsg},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderCashRecipt">
+        UPDATE shopion.tOrdOrderCashRecipt SET
+            ReciptType = #{reciptType}, ReciptNo = #{reciptNo}, ReciptDate = #{reciptDate}, ReciptAmt = #{reciptAmt},
+            CustName = #{custName}, CustEmail = #{custEmail}, PgResultCode = #{pgResultCode}, PgResultMsg = #{pgResultMsg},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdOrderCashRecipt WHERE OrderNo = #{orderNo}
+    </delete>
+
+</mapper>

@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdMapper">
+
+    <sql id="prodBaseWhere">
+        <if test="pProdCode != null and pProdCode != ''">
+            AND (shopion.tPrdProd.ProdCode = #{pProdCode} OR shopion.tPrdProd.ShopProdCode = #{pProdCode} OR shopion.tPrdProd.ImpaProdCode = #{pProdCode})
+        </if>
+        <if test="pCateCode != null and pCateCode != ''">
+            <choose>
+                <when test="pChildIncluded != null and pChildIncluded != ''">
+                    AND SUBSTRING(shopion.tPrdProd.CateCode,1,(#{pCateLevel}+1)*3+1) = SUBSTRING(#{pCateCode},1,(#{pCateLevel}+1)*3+1)
+                </when>
+                <otherwise>AND shopion.tPrdProd.CateCode = #{pCateCode}</otherwise>
+            </choose>
+        </if>
+        <if test="pShopCode != null and pShopCode != ''">AND shopion.tPrdProd.ShopCode = #{pShopCode}</if>
+        <if test="pProdName != null and pProdName != ''">AND shopion.tPrdProd.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+        <if test="pBrandName != null and pBrandName != ''">AND shopion.tPrdProd.BrandName LIKE CONCAT('%',#{pBrandName},'%')</if>
+        <if test="pShopName != null and pShopName != ''">AND shopion.tPrdProd.ShopName LIKE CONCAT('%',#{pShopName},'%')</if>
+        <if test="pSaleYn != null and pSaleYn != ''">
+            <choose>
+                <when test="pSaleYn == '100'">AND shopion.tPrdProd.SaleYn > 0</when>
+                <otherwise>AND shopion.tPrdProd.SaleYn = #{pSaleYn}</otherwise>
+            </choose>
+        </if>
+        <if test="pSupplyQty != null and pSupplyQty != ''">AND shopion.tPrdProd.SupplyQty > 0</if>
+        <if test="pLimitChangeCount != null and pLimitChangeCount != ''">AND #{pLimitChangeCount} > shopion.tPrdProd.ChangeCount</if>
+        <if test="pPromotion == 'SALE'">AND shopion.tPrdProd.ListPrice > shopion.tPrdProd.SalePrice</if>
+        <if test="pPromotion == 'NOTSALE'">AND (shopion.tPrdProd.ListPrice = 0 OR shopion.tPrdProd.ListPrice = shopion.tPrdProd.SalePrice)</if>
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND EXISTS (SELECT ProdCode FROM shopion.tPrdProdChnl WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode})
+        </if>
+        <if test="pStoreCode != null and pStoreCode != ''">
+            <choose>
+                <when test="pStoreIncluded != null and pStoreIncluded != ''">
+                    AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND ChnlCode = #{pChnlCode})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tStrStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND ChnlCode = #{pChnlCode})
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pCompStoreCode != null and pCompStoreCode != ''">
+            <choose>
+                <when test="pCompStoreIncluded != null and pCompStoreIncluded != ''">
+                    AND NOT EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND CompCode = #{pCompCode})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND CompCode = #{pCompCode})
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pEventCode != null and pEventCode != ''">
+            <choose>
+                <when test="pEventIncluded != null and pEventIncluded != ''">
+                    AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrEventProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND EventCode = #{pEventCode})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tStrEventProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND EventCode = #{pEventCode})
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pLayoutCode != null and pLayoutCode != ''">
+            <choose>
+                <when test="pLayoutIncluded != null and pLayoutIncluded != ''">
+                    AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrLayoutProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND LayoutCode = #{pLayoutCode} AND ChnlCode = #{pChnlCode} AND DesignId = #{pDesignId})
+                </when>
+                <when test="pLayoutApplyIncluded != null and pLayoutApplyIncluded != ''">
+                    AND EXISTS (SELECT ProdCode FROM shopion.tStrLayoutProdApply WHERE ProdCode = shopion.tPrdProd.ProdCode AND LayoutCode = #{pLayoutCode} AND ChnlCode IN (SELECT ChnlCode FROM shopion.tStrChnl WHERE MemberChnlCode = #{pChnlCode}) AND DesignId = #{pDesignId})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tStrLayoutProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND LayoutCode = #{pLayoutCode} AND ChnlCode = #{pChnlCode} AND DesignId = #{pDesignId})
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pCpnId != null and pCpnId != ''">
+            <choose>
+                <when test="pProdCpnIncluded != null and pProdCpnIncluded != ''">
+                    AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrProdCpnProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND CpnId = #{pCpnId})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tStrProdCpnProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND CpnId = #{pCpnId})
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pPointId != null and pPointId != ''">
+            <choose>
+                <when test="pPointIncluded != null and pPointIncluded != ''">
+                    AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrPointProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND PointId = #{pPointId})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tStrPointProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND PointId = #{pPointId})
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.Prod">
+        SELECT *
+        FROM shopion.tPrdProd
+        <where>
+            <include refid="prodBaseWhere"/>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY ProdCode DESC</otherwise>
+        </choose>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT ${pPageOffset}, ${pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrdProd
+        <where>
+            <include refid="prodBaseWhere"/>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.product.model.Prod">
+        SELECT shopion.tPrdProd.*
+        <if test="pChnlCode != null and pChnlCode != ''">, C.*, P.*, DF.*</if>
+        FROM shopion.tPrdProd
+        <if test="pChnlCode != null and pChnlCode != ''">
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrProdCpn.*, tStrProdCpnProd.ProdCode, tStrProdCpnProd.ChnlCode
+            FROM shopion.tStrProdCpn
+            INNER JOIN shopion.tStrProdCpnProd ON shopion.tStrProdCpnProd.CpnId = shopion.tStrProdCpn.CpnId
+                AND shopion.tStrProdCpnProd.ProdCode = #{pProdCode}
+                AND shopion.tStrProdCpnProd.ChnlCode = #{pChnlCode}
+        ) C ON shopion.tPrdProd.ProdCode = C.ProdCode
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrPoint.*, tStrPointProd.ProdCode, tStrPointProd.ChnlCode
+            FROM shopion.tStrPoint
+            INNER JOIN shopion.tStrPointProd ON shopion.tStrPointProd.PointId = shopion.tStrPoint.PointId
+                AND shopion.tStrPointProd.ProdCode = #{pProdCode}
+                AND shopion.tStrPointProd.ChnlCode = #{pChnlCode}
+        ) P ON shopion.tPrdProd.ProdCode = P.ProdCode
+        LEFT OUTER JOIN shopion.tPrdProdDeliFee DF ON shopion.tPrdProd.DeliFeeId = DF.DeliFeeId
+        </if>
+        WHERE shopion.tPrdProd.ProdCode = #{pProdCode}
+    </select>
+
+    <select id="selectByShopProdCode" parameterType="map" resultType="com.shopwizard.product.model.Prod">
+        SELECT *
+        FROM shopion.tPrdProd
+        WHERE shopion.tPrdProd.ShopProdCode = #{pShopProdCode}
+    </select>
+
+    <select id="selectShopProdCode" parameterType="string" resultType="string">
+        SELECT ProdCode
+        FROM shopion.tPrdProd
+        WHERE shopion.tPrdProd.ShopProdCode = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.product.model.Prod">
+        INSERT INTO shopion.tPrdProd (
+            ProdCode, SupplyCode, SupplyName, ShopCode, ShopName, ShopProdCode, ImpaProdCode,
+            ProdName, ProdDsplName, Keywrd,
+            SaleYn, SupplyQty,
+            AttrName1, AttrName2, AttrName3,
+            AttrName4, AttrValStr1, AttrValStr2,
+            AttrValStr3, AttrValStr4, ListPrice,
+            PrevPrice, SalePrice, DiscntPrice,
+            DiscntStartDate, DiscntEndDate, SupplyPrice,
+            DiscntSupplyPrice, BuyPrice, NvPrice,
+            PvPrice, SaveAmt, VatRate,
+            VatAmt, OriginName, MakerName,
+            BrandName, ProdDesc,
+            ImgUrl, ImgUrl50, ImgUrl80,
+            ImgUrl100, ImgUrl160, ImgUrl220,
+            ImgUrl280, Memo01,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{prodCode}, #{supplyCode}, #{supplyName}, #{shopCode}, #{shopName}, #{shopProdCode}, #{impaProdCode},
+            #{prodName}, #{prodDsplName}, #{keywrd},
+            #{saleYn}, #{supplyQty},
+            #{attrName1}, #{attrName2}, #{attrName3},
+            #{attrName4}, #{attrValStr1}, #{attrValStr2},
+            #{attrValStr3}, #{attrValStr4}, #{listPrice},
+            #{prevPrice}, #{salePrice}, #{discntPrice},
+            #{discntStartDate}, #{discntEndDate}, #{supplyPrice},
+            #{discntSupplyPrice}, #{buyPrice}, #{nvPrice},
+            #{pvPrice}, #{saveAmt}, #{vatRate},
+            #{vatAmt}, #{originName}, #{makerName},
+            #{brandName}, #{prodDesc},
+            #{imgUrl}, #{imgUrl50}, #{imgUrl80},
+            #{imgUrl100}, #{imgUrl160}, #{imgUrl220},
+            #{imgUrl280}, #{memo01},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.product.model.Prod">
+        UPDATE shopion.tPrdProd SET
+            SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode}, ShopName = #{shopName},
+            ShopProdCode = #{shopProdCode}, ImpaProdCode = #{impaProdCode},
+            ProdName = #{prodName}, ProdDsplName = #{prodDsplName}, Keywrd = #{keywrd},
+            SaleYn = #{saleYn}, SupplyQty = #{supplyQty},
+            AttrName1 = #{attrName1}, AttrName2 = #{attrName2}, AttrName3 = #{attrName3},
+            AttrName4 = #{attrName4}, AttrValStr1 = #{attrValStr1}, AttrValStr2 = #{attrValStr2},
+            AttrValStr3 = #{attrValStr3}, AttrValStr4 = #{attrValStr4}, ListPrice = #{listPrice},
+            PrevPrice = #{prevPrice}, SalePrice = #{salePrice}, DiscntPrice = #{discntPrice},
+            DiscntStartDate = #{discntStartDate}, DiscntEndDate = #{discntEndDate},
+            SupplyPrice = #{supplyPrice}, DiscntSupplyPrice = #{discntSupplyPrice},
+            BuyPrice = #{buyPrice}, NvPrice = #{nvPrice}, PvPrice = #{pvPrice},
+            SaveAmt = #{saveAmt}, VatRate = #{vatRate}, VatAmt = #{vatAmt},
+            OriginName = #{originName}, MakerName = #{makerName}, BrandName = #{brandName},
+            ProdDesc = #{prodDesc}, ImgUrl = #{imgUrl},
+            ImgUrl50 = #{imgUrl50}, ImgUrl80 = #{imgUrl80},
+            ImgUrl100 = #{imgUrl100}, ImgUrl160 = #{imgUrl160},
+            ImgUrl220 = #{imgUrl220}, ImgUrl280 = #{imgUrl280}, Memo01 = #{memo01},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE ProdCode = #{prodCode}
+    </update>
+
+    <update id="updateReviewCntnts" parameterType="com.shopwizard.product.model.Prod">
+        UPDATE shopion.tPrdProd SET
+            ReviewCntnts = #{reviewCntnts},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="string">
+        DELETE FROM shopion.tPrdProd
+        WHERE ProdCode = #{value}
+    </delete>
+
+    <sql id="prodSearchWhere">
+        <if test="pProdName != null and pProdName != ''">
+            AND (shopion.tPrdProd.ProdDsplName LIKE CONCAT('%',#{pProdName},'%')
+            <if test="pShopProdCode != null and pShopProdCode != ''">
+                OR shopion.tPrdProd.ShopProdCode LIKE CONCAT('%',#{pShopProdCode},'%')
+                OR shopion.tPrdProd.ImpaProdCode LIKE CONCAT('%',#{pShopProdCode},'%')
+            </if>
+            <if test="pProdCode != null and pProdCode != ''">
+                OR shopion.tPrdProd.ProdCode LIKE CONCAT('%',#{pProdCode},'%')
+            </if>
+            )
+        </if>
+        <if test="pProdNameArr != null">
+            AND
+            <foreach collection="pProdNameArr" item="item" open="(" close=")" separator=" AND ">
+                shopion.tPrdProd.ProdDsplName LIKE CONCAT('%',#{item},'%')
+            </foreach>
+        </if>
+        <if test="pSaleYn != null and pSaleYn != ''">
+            <choose>
+                <when test="pSaleYn == '100'">AND shopion.tPrdProd.SaleYn > 0</when>
+                <otherwise>AND shopion.tPrdProd.SaleYn = #{pSaleYn}</otherwise>
+            </choose>
+        </if>
+        <if test="pSupplyQty != null and pSupplyQty != ''">AND shopion.tPrdProd.SupplyQty > 0</if>
+        <if test="pAddedProdName != null and pAddedProdName != ''">AND shopion.tPrdProd.ProdDsplName LIKE CONCAT('%',#{pAddedProdName},'%')</if>
+        <if test="pBrandName != null and pBrandName != ''">
+            <choose>
+                <when test="pBrandName == 'CASHCASHOTHER'">
+                    <choose>
+                        <when test="pStoreCode == 'G001000000000'">AND shopion.tPrdProd.BrandName NOT IN ('Audemars Piguet','BVLGARI','Cartier','Omega','VACHERON CONSTANTIN','ROLEX','PATEK PHILIPPE','Piaget','TAGHeuer')</when>
+                        <when test="pStoreCode == 'G002000000000'"><![CDATA[ AND shopion.tPrdProd.BrandName NOT IN ('Piaget','BVLGARI','Cartier','Damiani','GUCCI','Tiffany & Co','Chopard','Van Cleef & Arpels','CHAUMET') ]]></when>
+                        <when test="pStoreCode == 'G003000000000'">AND shopion.tPrdProd.BrandName NOT IN ('PRADA','Balenciaga','Etro','BOTTEGA VENETA','GUCCI','Marc Jacobs','HERMES','Chanel','Louis Vuitton')</when>
+                    </choose>
+                </when>
+                <otherwise>AND shopion.tPrdProd.BrandName LIKE CONCAT('%',#{pBrandName},'%')</otherwise>
+            </choose>
+        </if>
+        <if test="pCateCode != null and pCateCode != ''">
+            <choose>
+                <when test="pChildIncluded != null and pChildIncluded != ''">
+                    AND SUBSTRING(shopion.tPrdProd.CateCode,1,(#{pCateLevel}+1)*3+1) = SUBSTRING(#{pCateCode},1,(#{pCateLevel}+1)*3+1)
+                </when>
+                <otherwise>AND shopion.tPrdProd.CateCode = #{pCateCode}</otherwise>
+            </choose>
+        </if>
+        <if test="pGradeType != null and pGradeType != ''">AND shopion.tPrdProd.GradeType = #{pGradeType}</if>
+        <if test="pPriceLow != null and pPriceLow != 0"><![CDATA[ AND shopion.tPrdProd.SalePrice >= #{pPriceLow} ]]></if>
+        <if test="pPriceHigh != null and pPriceHigh != 0"><![CDATA[ AND shopion.tPrdProd.SalePrice <= #{pPriceHigh} ]]></if>
+        <if test="pSexualType != null and pSexualType != ''">AND shopion.tPrdProd.SexualType = CONCAT('%',#{pSexualType},'%')</if>
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND EXISTS (SELECT ProdCode FROM shopion.tPrdProdChnl WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode})
+        </if>
+        <if test="pStoreCode != null and pStoreCode != ''">
+            AND EXISTS (SELECT ProdCode FROM shopion.tStrStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND ChnlCode = #{pChnlCode})
+        </if>
+        <if test="pCompCode != null and pCompCode != ''">
+            <choose>
+                <when test="pCompStoreCode != null and pCompStoreCode != ''">
+                    AND EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pCompStoreCode} AND CompCode = #{pCompCode})
+                </when>
+                <otherwise>
+                    AND EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND CompCode = #{pCompCode})
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pCustId != null and pCustId != ''">
+            <if test="pSearchScope == 'CRN'">
+                AND EXISTS (SELECT ProdCode FROM shopion.tPrfCustConcrnProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND CustId = #{pCustId})
+            </if>
+            <if test="pSearchScope == 'ORD'">
+                AND EXISTS (SELECT ProdCode FROM shopion.tOrdOrder INNER JOIN shopion.tOrdOrderProd ON shopion.tOrdOrder.OrderNo = shopion.tOrdOrderProd.OrderNo WHERE shopion.tOrdOrderProd.ProdCode = shopion.tPrdProd.ProdCode AND shopion.tOrdOrder.CustId = #{pCustId})
+            </if>
+        </if>
+    </sql>
+
+    <select id="selectListSearch" parameterType="map" resultType="com.shopwizard.product.model.Prod">
+        SELECT shopion.tPrdProd.*, C.*, P.*
+        FROM shopion.tPrdProd
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrProdCpn.*, tStrProdCpnProd.ProdCode, tStrProdCpnProd.ChnlCode
+            FROM shopion.tStrProdCpn
+            INNER JOIN shopion.tStrProdCpnProd ON shopion.tStrProdCpnProd.CpnId = shopion.tStrProdCpn.CpnId
+                AND shopion.tStrProdCpnProd.ChnlCode = #{pChnlCode}
+        ) C ON shopion.tPrdProd.ProdCode = C.ProdCode
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrPoint.*, tStrPointProd.ProdCode, tStrPointProd.ChnlCode
+            FROM shopion.tStrPoint
+            INNER JOIN shopion.tStrPointProd ON shopion.tStrPointProd.PointId = shopion.tStrPoint.PointId
+                AND shopion.tStrPointProd.ChnlCode = #{pChnlCode}
+        ) P ON shopion.tPrdProd.ProdCode = P.ProdCode
+        <where>
+            <include refid="prodSearchWhere"/>
+        </where>
+        <if test="sidx != null and sidx != ''">
+            <choose>
+                <when test="sidx == 'ProdCode'">ORDER BY shopion.tPrdProd.ProdCode DESC</when>
+                <when test="sidx == 'ProdDsplName'">ORDER BY shopion.tPrdProd.ProdDsplName ASC</when>
+                <when test="sidx == 'SalePrice' and sord == 'ASC'">ORDER BY shopion.tPrdProd.SalePrice ASC</when>
+                <when test="sidx == 'SalePrice'">ORDER BY shopion.tPrdProd.SalePrice DESC</when>
+            </choose>
+        </if>
+        LIMIT #{topCnt}, #{countPerPage}
+    </select>
+
+    <select id="selectCountSearch" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrdProd
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrProdCpn.*, tStrProdCpnProd.ProdCode, tStrProdCpnProd.ChnlCode
+            FROM shopion.tStrProdCpn
+            INNER JOIN shopion.tStrProdCpnProd ON shopion.tStrProdCpnProd.CpnId = shopion.tStrProdCpn.CpnId
+                AND shopion.tStrProdCpnProd.ChnlCode = #{pChnlCode}
+        ) C ON shopion.tPrdProd.ProdCode = C.ProdCode
+        LEFT OUTER JOIN (
+            SELECT shopion.tStrPoint.*, tStrPointProd.ProdCode, tStrPointProd.ChnlCode
+            FROM shopion.tStrPoint
+            INNER JOIN shopion.tStrPointProd ON shopion.tStrPointProd.PointId = shopion.tStrPoint.PointId
+                AND shopion.tStrPointProd.ChnlCode = #{pChnlCode}
+        ) P ON shopion.tPrdProd.ProdCode = P.ProdCode
+        <where>
+            <include refid="prodSearchWhere"/>
+        </where>
+    </select>
+
+    <select id="selectListKeyword" parameterType="map" resultType="com.shopwizard.product.model.Prod">
+        SELECT DISTINCT ProdDsplName
+        FROM shopion.tPrdProd
+        <where>
+            <include refid="prodSearchWhere"/>
+        </where>
+        <if test="sidx != null and sidx != ''">
+            ORDER BY
+            <if test="pOrderByCashCash != null and pOrderByCashCash != ''">
+                CASE WHEN shopion.tPrdProd.SaleYn = 1 AND shopion.tPrdProd.SupplyQty > 0 THEN 0 ELSE 1 END,
+            </if>
+            shopion.tPrdProd.${sidx} ${sord}
+        </if>
+        LIMIT #{topCnt}, #{countPerPage}
+    </select>
+
+    <select id="selectListBrand" parameterType="map" resultType="com.shopwizard.product.model.Prod">
+        SELECT DISTINCT BrandName AS brandKorName
+        FROM shopion.tPrdProd
+        <where>
+            <if test="pBrandName != null and pBrandName != ''">AND shopion.tPrdProd.BrandName LIKE CONCAT('%',#{pBrandName},'%')</if>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND EXISTS (SELECT ProdCode FROM shopion.tPrdProdChnl WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode})
+            </if>
+            <if test="pStoreCode != null and pStoreCode != ''">
+                <choose>
+                    <when test="pStoreIncluded != null and pStoreIncluded != ''">
+                        AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND ChnlCode = #{pChnlCode})
+                    </when>
+                    <otherwise>
+                        AND EXISTS (SELECT ProdCode FROM shopion.tStrStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND ChnlCode = #{pChnlCode})
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pCompStoreCode != null and pCompStoreCode != ''">
+                <choose>
+                    <when test="pCompStoreIncluded != null and pCompStoreIncluded != ''">
+                        AND NOT EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND CompCode = #{pCompCode})
+                    </when>
+                    <otherwise>
+                        AND EXISTS (SELECT ProdCode FROM shopion.tPrfCompStoreProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND StoreCode = #{pStoreCode} AND CompCode = #{pCompCode})
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                <choose>
+                    <when test="pEventIncluded != null and pEventIncluded != ''">
+                        AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrEventProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND EventCode = #{pEventCode})
+                    </when>
+                    <otherwise>
+                        AND EXISTS (SELECT ProdCode FROM shopion.tStrEventProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND EventCode = #{pEventCode})
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pLayoutCode != null and pLayoutCode != ''">
+                <choose>
+                    <when test="pLayoutIncluded != null and pLayoutIncluded != ''">
+                        AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrLayoutProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND LayoutCode = #{pLayoutCode} AND ChnlCode = #{pChnlCode} AND DesignId = #{pDesignId})
+                    </when>
+                    <otherwise>
+                        AND EXISTS (SELECT ProdCode FROM shopion.tStrLayoutProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND LayoutCode = #{pLayoutCode} AND ChnlCode = #{pChnlCode} AND DesignId = #{pDesignId})
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pCpnId != null and pCpnId != ''">
+                <choose>
+                    <when test="pProdCpnIncluded != null and pProdCpnIncluded != ''">
+                        AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrProdCpnProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND CpnId = #{pCpnId})
+                    </when>
+                    <otherwise>
+                        AND EXISTS (SELECT ProdCode FROM shopion.tStrProdCpnProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND CpnId = #{pCpnId})
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pPointId != null and pPointId != ''">
+                <choose>
+                    <when test="pPointIncluded != null and pPointIncluded != ''">
+                        AND NOT EXISTS (SELECT ProdCode FROM shopion.tStrPointProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND PointId = #{pPointId})
+                    </when>
+                    <otherwise>
+                        AND EXISTS (SELECT ProdCode FROM shopion.tStrPointProd WHERE ProdCode = shopion.tPrdProd.ProdCode AND ChnlCode = #{pChnlCode} AND PointId = #{pPointId})
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        ORDER BY BrandName ASC
+    </select>
+
+    <select id="selectSupplyQty" parameterType="map" resultType="int">
+        SELECT SupplyQty FROM shopion.tPrdProd WHERE ProdCode = #{prodCode}
+    </select>
+
+    <select id="selectSupplyQtyItem" parameterType="map" resultType="int">
+        SELECT SupplyQty FROM shopion.tPrdProdItem WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </select>
+
+    <update id="updateSupplyQty" parameterType="map">
+        UPDATE shopion.tPrdProd SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode}
+    </update>
+
+    <update id="updateSupplyQtyItem" parameterType="map">
+        UPDATE shopion.tPrdProdItem SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <update id="updateCatSupplyQty" parameterType="map">
+        UPDATE shopwizard.tCatProd SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode}
+    </update>
+
+    <update id="updateCatSupplyQtyItem" parameterType="map">
+        UPDATE shopwizard.tCatProdItem SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <update id="updateSaleYn" parameterType="map">
+        UPDATE shopion.tPrdProd SET SaleYn = #{saleYn} WHERE ProdCode = #{prodCode}
+    </update>
+
+    <update id="updateSaleYnItem" parameterType="map">
+        UPDATE shopion.tPrdProdItem SET SaleYn = #{saleYn} WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <update id="updateCatSaleYn" parameterType="map">
+        UPDATE shopwizard.tCatProd SET SaleYn = #{saleYn} WHERE ProdCode = #{prodCode}
+    </update>
+
+    <update id="updateCatSaleYnItem" parameterType="map">
+        UPDATE shopwizard.tCatProdItem SET SaleYn = #{saleYn} WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <select id="selectListNaver" parameterType="map" resultType="map">
+        SELECT shopion.tPrdProd.ProdCode AS mapid
+             , shopion.tPrdProd.ProdName AS pname
+             , shopion.tPrdProd.SalePrice AS price
+             , shopion.tPrdProd.ProdCode AS pgurl
+             , shopion.tPrdProd.ImgUrl AS igurl
+             , shopwizard.vCatCatePath.CateName1 AS cate1
+             , shopwizard.vCatCatePath.CateName2 AS cate2
+             , shopwizard.vCatCatePath.CateName3 AS cate3
+             , shopwizard.vCatCatePath.CateName4 AS cate4
+             , shopwizard.vCatCatePath.CateCode1 AS caid1
+             , shopwizard.vCatCatePath.CateCode2 AS caid2
+             , shopwizard.vCatCatePath.CateCode3 AS caid3
+             , shopwizard.vCatCatePath.CateCode4 AS caid4
+             , shopion.tPrdProd.BrandName AS brand
+             , shopion.tPrdProd.MakerName AS maker
+             , shopion.tPrdProd.OriginName AS origi
+             , shopion.tPrdProd.DeliFeeAmt AS deliv
+             , '' AS coupo
+             , IF(shopion.tPrdProd.SaleYn = 1,'U','D') AS className
+             , shopion.tPrdProd.ChangeDate AS utime
+             , shopion.tPrdProd.ProdDesc AS prodDesc
+             , shopion.tPrdProd.SupplyQty AS qty
+             , shopion.tPrdProd.ImgUrl280 AS tgurl
+        FROM shopion.tPrdProd, shopwizard.vCatCatePath, shopion.tStrChnl, shopion.tPrdProdChnl
+        WHERE shopion.tPrdProd.CateCode = shopwizard.vCatCatePath.CateCode
+        AND shopion.tPrdProd.ProdCode = shopion.tPrdProdChnl.ProdCode
+        AND shopion.tPrdProdChnl.ChnlCode = shopion.tStrChnl.ChnlCode
+        AND shopion.tStrChnl.SvcCode = shopwizard.vCatCatePath.SvcCode
+        <if test="pChnlCode != null and pChnlCode != ''">AND shopion.tPrdProdChnl.ChnlCode = #{pChnlCode}</if>
+        <if test="pAll != null and pAll != ''">AND shopion.tPrdProd.SaleYn = 1</if>
+        <if test="pBrief != null and pBrief != ''">
+            <![CDATA[ AND (shopion.tPrdProd.SaleYn = 1 OR (shopion.tPrdProd.ChangeDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND shopion.tPrdProd.ChangeDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))) ]]>
+        </if>
+        <if test="pNew != null and pNew != ''">
+            <![CDATA[ AND (shopion.tPrdProd.SaleYn = 1 AND shopion.tPrdProd.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND shopion.tPrdProd.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
+        </if>
+        <if test="pProdCodeArr != null">
+            AND shopion.tPrdProd.ProdCode IN
+            <foreach collection="pProdCodeArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+    </select>
+
+</mapper>

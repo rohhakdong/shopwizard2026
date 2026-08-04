@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustPointDetailMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustPointDetail">
+        SELECT CP.*, CV.ConstrValDesc AS SaveReason, CI.CustName AS CustName, P.PointName AS PointName
+        FROM shopion.tPrfCustPointDetail CP
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cSaveReasonCode') CV ON CP.SaveReasonCode = CV.ConstrVal
+        INNER JOIN shopion.tPrfCust CI ON CP.CustId = CI.CustId
+        LEFT OUTER JOIN shopion.tStrPoint P ON CP.PointId = P.PointId
+        WHERE CP.State = 1
+        <![CDATA[ AND ( NOW() BETWEEN CP.ValidStartDate AND date_add(CP.ValidEndDate,interval+1 day) )]]>
+        <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+        <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+        <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+        <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY CP.${sidx} ${sord}</when>
+            <otherwise>ORDER BY CP.PointNo DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustPointDetail CP
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cSaveReasonCode') CV ON CP.SaveReasonCode = CV.ConstrVal
+        INNER JOIN shopion.tPrfCust CI ON CP.CustId = CI.CustId
+        LEFT OUTER JOIN shopion.tStrPoint P ON CP.PointId = P.PointId
+        WHERE CP.State = 1
+        <![CDATA[ AND ( NOW() BETWEEN CP.ValidStartDate AND date_add(CP.ValidEndDate,interval+1 day) )]]>
+        <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+        <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+        <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+        <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CustPointDetail">
+        SELECT CP.*, CV.ConstrValDesc AS SaveReason, CI.CustName AS CustName, P.PointName AS PointName
+        FROM shopion.tPrfCustPointDetail CP
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cSaveReasonCode') CV ON CP.SaveReasonCode = CV.ConstrVal
+        INNER JOIN shopion.tPrfCust CI ON CP.CustId = CI.CustId
+        LEFT OUTER JOIN shopion.tStrPoint P ON CP.PointId = P.PointId
+        WHERE CP.CustId = #{custId}
+        AND CP.PointNo = #{pointNo}
+    </select>
+
+    <select id="selectSum" parameterType="map" resultType="java.lang.Integer">
+        SELECT IFNULL(SUM(CP.PointAmt),0) AS PointAmt
+        FROM shopion.tPrfCustPointDetail CP
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cSaveReasonCode') CV ON CP.SaveReasonCode = CV.ConstrVal
+        INNER JOIN shopion.tPrfCust CI ON CP.CustId = CI.CustId
+        LEFT OUTER JOIN shopion.tStrPoint P ON CP.PointId = P.PointId
+        WHERE CP.CustId = #{pCustId}
+        AND CP.State = 1
+        <![CDATA[ AND ( CURDATE() BETWEEN CP.ValidStartDate AND CP.ValidEndDate )]]>
+        <if test="pExpireReady != null and pExpireReady != ''">
+        <![CDATA[ AND ( CP.ValidEndDate <= (INTERVAL 30 DAY + CURDATE()) )]]>
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustPointDetail">
+        INSERT INTO shopion.tPrfCustPointDetail (
+            CustId, PointAmt, SaveReasonCode, OrderNo, ValidStartDate, ValidEndDate,
+            AcquisDate, PointId, ChnlCode, State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{custId}, #{pointAmt}, #{saveReasonCode}, #{orderNo}, #{validStartDate}, #{validEndDate},
+            NOW(), #{pointId}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <insert id="insertSchedule" parameterType="map">
+        <![CDATA[
+        INSERT INTO shopion.tPrfCustPointDetail (
+            CustId, PointAmt, SaveReasonCode, OrderNo, OrderProdNo, ValidStartDate, ValidEndDate, AcquisDate, PointId, ChnlCode,
+            State, Remark, RegistDate, RegistId, RegistName
+        )
+        SELECT O.CustId, OP.PointSaveAmt, 'save' AS SaveReasonCode, O.OrderNo, OP.OrderProdNo,
+               now() AS ValidStartDate, DATE_ADD(now(), INTERVAL 1 year) AS ValidEndDate, now() AS AcquisDate, 0 AS PointId, O.ChnlCode,
+               1 AS State, '' AS Remark, now() AS RegistDate, 'system' AS RegistId, 'system' AS RegistName
+        FROM shopion.tOrdOrder O
+        INNER JOIN shopion.tOrdOrderProd OP ON O.OrderNo = OP.OrderNo
+        WHERE OP.PointSaveAmt > 0
+        AND O.ShipCmpletDate IS NOT NULL
+        AND O.CustId > 0
+        AND NOT EXISTS (SELECT * FROM shopion.tPrfCustPointDetail PD WHERE O.OrderNo = PD.OrderNo AND OP.OrderProdNo = PD.OrderProdNo AND PointAmt > 0)
+        ]]>
+    </insert>
+
+    <insert id="insertRefund" parameterType="map">
+        INSERT INTO shopion.tPrfCustPointDetail (
+            CustId, PointAmt, SaveReasonCode, OrderNo, OrderProdNo, ValidStartDate, ValidEndDate, AcquisDate, PointId, ChnlCode,
+            State, Remark, RegistDate, RegistId, RegistName
+        )
+        SELECT O.CustId, -1 * OP.PointSaveAmt, 'cancel' AS SaveReasonCode, O.OrderNo, OP.OrderProdNo,
+               now() AS ValidStartDate, DATE_ADD(now(), INTERVAL 1 year) AS ValidEndDate, now() AS AcquisDate, 0 AS PointId, O.ChnlCode,
+               1 AS State, '' AS Remark, now() AS RegistDate, 'system' AS RegistId, 'system' AS RegistName
+        FROM shopion.tOrdOrder O
+        INNER JOIN shopion.tOrdOrderProd OP ON O.OrderNo = OP.OrderNo
+        WHERE OP.PointSaveAmt > 0
+        AND O.ShipCmpletDate IS NOT NULL
+        AND O.RefundCmpletDate IS NOT NULL
+        AND O.CustId > 0
+        AND O.OrderNo = #{orderNo}
+        AND OP.OrderProdNo = #{orderProdNo}
+        <![CDATA[
+        AND NOT EXISTS (SELECT * FROM shopion.tPrfCustPointDetail PD WHERE O.OrderNo = PD.OrderNo AND OP.OrderProdNo = PD.OrderProdNo AND PointAmt < 0)
+        ]]>
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustPointDetail">
+        UPDATE shopion.tPrfCustPointDetail SET
+            PointAmt = #{pointAmt}, SaveReasonCode = #{saveReasonCode},
+            OrderNo = #{orderNo}, ValidStartDate = #{validStartDate}, ValidEndDate = #{validEndDate},
+            AcquisDate = #{acquisDate}, PointId = #{pointId}, ChnlCode = #{chnlCode},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+        AND PointNo = #{pointNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCustPointDetail
+        WHERE CustId = #{custId}
+        AND PointNo = #{pointNo}
+    </delete>
+
+</mapper>

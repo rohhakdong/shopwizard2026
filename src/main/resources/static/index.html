@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWizard 관리자</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    /* ── 레이아웃 ── */
+    .layout { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── 사이드바 ── */
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      background: #1e293b; color: #cbd5e1;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sidebar-logo {
+      height: var(--header-h); display: flex; align-items: center;
+      padding: 0 16px; border-bottom: 1px solid #334155;
+      font-size: 16px; font-weight: 700; color: #f8fafc; flex-shrink: 0;
+    }
+    .sidebar-nav { overflow-y: auto; flex: 1; padding: 8px 0; }
+    .nav-section { padding: 10px 16px 4px; font-size: 10px; font-weight: 700;
+                   text-transform: uppercase; color: #475569; letter-spacing: .08em; }
+    .nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; cursor: pointer; font-size: 13px;
+      transition: background .12s; border-radius: 0;
+    }
+    .nav-item:hover   { background: #334155; color: #f1f5f9; }
+    .nav-item.active  { background: var(--primary); color: #fff; }
+    .nav-item .icon   { width: 16px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer {
+      padding: 12px 16px; border-top: 1px solid #334155;
+      font-size: 12px; color: #64748b; flex-shrink: 0;
+    }
+    .sidebar-footer .user-name { font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+    .sidebar-footer .btn-logout {
+      width: 100%; padding: 6px; background: #334155; color: #94a3b8;
+      border: none; border-radius: var(--radius); cursor: pointer; font-size: 12px;
+    }
+    .sidebar-footer .btn-logout:hover { background: #475569; }
+
+    /* ── 메인 영역 ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── 헤더 ── */
+    .header {
+      height: var(--header-h); background: #fff; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px;
+      flex-shrink: 0; gap: 8px;
+    }
+    .breadcrumb { font-size: 13px; color: var(--text-muted); }
+    .breadcrumb span { color: var(--text); font-weight: 600; }
+
+    /* ── 컨텐츠 ── */
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── 대시보드 카드 그리드 ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+    .stat-card .label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-card .value { font-size: 28px; font-weight: 700; margin: 8px 0 4px; color: var(--text); }
+    .stat-card .sub   { font-size: 12px; color: var(--text-muted); }
+    .stat-card .icon-wrap { float: right; font-size: 28px; opacity: .15; }
+
+    /* ── 페이지 컨텐츠 (동적 로드 영역) ── */
+    #page-content { min-height: 200px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- 사이드바 -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">🧙 ShopWizard</div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <div class="user-name" id="userNameDisplay"></div>
+        <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+      </div>
+    </aside>
+
+    <!-- 메인 -->
+    <div class="main">
+      <header class="header">
+        <div class="breadcrumb" id="breadcrumb">
+          <span id="currentPageTitle">대시보드</span>
+        </div>
+      </header>
+      <main class="content">
+        <div id="page-content"></div>
+      </main>
+    </div>
+
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/pages/code-constr.js"></script>
+  <script src="/js/pages/auth-mngr.js"></script>
+  <script src="/js/pages/auth-role.js"></script>
+  <script src="/js/pages/auth-svc.js"></script>
+  <script src="/js/pages/auth-menu.js"></script>
+  <script src="/js/pages/auth-functn.js"></script>
+  <script src="/js/pages/catalog-prod.js"></script>
+  <script src="/js/pages/product-prod.js"></script>
+  <script src="/js/pages/order-list.js"></script>
+  <script src="/js/pages/store-store.js"></script>
+  <script src="/js/pages/company-shop.js"></script>
+  <script src="/js/pages/ship-direct.js"></script>
+  <script src="/js/pages/ship-return.js"></script>
+  <script src="/js/pages/adjust-list.js"></script>
+  <script>
+    // ── 메뉴 정의 ──────────────────────────────────────────────────────
+    const MENU = [
+      {
+        section: '주문',
+        items: [
+          { key: 'order-list',     label: '주문 목록',     icon: '📋', page: 'order/list' },
+        ]
+      },
+      {
+        section: '상품',
+        items: [
+          { key: 'product-prod',   label: '상품 관리',      icon: '📦', page: 'product/prod' },
+          { key: 'catalog-prod',   label: '카탈로그 상품',  icon: '📂', page: 'catalog/prod' },
+        ]
+      },
+      {
+        section: '배송',
+        items: [
+          { key: 'ship-direct',    label: '직배송 관리',    icon: '🚚', page: 'ship/direct' },
+          { key: 'ship-return',    label: '반품 관리',      icon: '↩️',  page: 'ship/return' },
+        ]
+      },
+      {
+        section: '정산',
+        items: [
+          { key: 'adjust',         label: '정산 관리',      icon: '💰', page: 'adjust/list' },
+        ]
+      },
+      {
+        section: '운영',
+        items: [
+          { key: 'store',          label: '스토어 관리',    icon: '🏪', page: 'store/list' },
+          { key: 'company-shop',   label: '쇼핑몰 관리',   icon: '🏢', page: 'company/shop' },
+        ]
+      },
+      {
+        section: '코드',
+        items: [
+          { key: 'code-constr',    label: '코드 관리',      icon: '🗂️', page: 'code/constr' },
+        ]
+      },
+      {
+        section: '권한',
+        items: [
+          { key: 'auth-mngr',      label: '관리자 계정',    icon: '👤', page: 'authority/mngr' },
+          { key: 'auth-role',      label: '역할 관리',      icon: '🔑', page: 'authority/role' },
+          { key: 'auth-svc',       label: '서비스 관리',    icon: '🏷️', page: 'authority/svc'  },
+          { key: 'auth-menu',      label: '메뉴 관리',      icon: '📌', page: 'authority/menu' },
+          { key: 'auth-functn',    label: '권한 관리',      icon: '🛡️', page: 'authority/functn' },
+        ]
+      },
+    ];
+
+    // ── 초기화 ────────────────────────────────────────────────────────
+    let info = null;
+
+    (async () => {
+      const ok = await Auth.requireLogin();
+      if (!ok) return;
+
+      info = await Auth.getInfo();
+      document.getElementById('userNameDisplay').textContent = info.name || info.loginId;
+
+      buildSidebar();
+      navigate('dashboard');
+    })();
+
+    // ── 사이드바 빌드 ─────────────────────────────────────────────────
+    function buildSidebar() {
+      const nav = document.getElementById('sidebarNav');
+
+      // 대시보드
+      const dash = document.createElement('div');
+      dash.className = 'nav-item';
+      dash.dataset.key = 'dashboard';
+      dash.innerHTML = `<span class="icon">🏠</span> 대시보드`;
+      dash.addEventListener('click', () => navigate('dashboard'));
+      nav.appendChild(dash);
+
+      MENU.forEach(group => {
+        const sec = document.createElement('div');
+        sec.className = 'nav-section';
+        sec.textContent = group.section;
+        nav.appendChild(sec);
+
+        group.items.forEach(item => {
+          const el = document.createElement('div');
+          el.className = 'nav-item';
+          el.dataset.key = item.key;
+          el.innerHTML = `<span class="icon">${item.icon}</span> ${item.label}`;
+          el.addEventListener('click', () => navigate(item.key, item));
+          nav.appendChild(el);
+        });
+      });
+    }
+
+    // ── 페이지 이동 ───────────────────────────────────────────────────
+    function navigate(key, item) {
+      // 활성 메뉴 표시
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.key === key);
+      });
+
+      const title = key === 'dashboard' ? '대시보드' : (item?.label || key);
+      document.getElementById('currentPageTitle').textContent = title;
+      document.title = `${title} – ShopWizard`;
+
+      const content = document.getElementById('page-content');
+
+      if (key === 'dashboard') {
+        renderDashboard(content);
+      } else if (key === 'code-constr') {
+        PageCodeConstr.render(content);
+      } else if (key === 'auth-mngr') {
+        PageAuthMngr.render(content);
+      } else if (key === 'auth-role') {
+        PageAuthRole.render(content);
+      } else if (key === 'auth-svc') {
+        PageAuthSvc.render(content);
+      } else if (key === 'auth-menu') {
+        PageAuthMenu.render(content);
+      } else if (key === 'auth-functn') {
+        PageAuthFunctn.render(content);
+      } else if (key === 'catalog-prod') {
+        PageCatalogProd.render(content);
+      } else if (key === 'product-prod') {
+        PageProductProd.render(content);
+      } else if (key === 'order-list') {
+        PageOrderList.render(content);
+      } else if (key === 'store') {
+        PageStoreStore.render(content);
+      } else if (key === 'company-shop') {
+        PageCompanyShop.render(content);
+      } else if (key === 'ship-direct') {
+        PageShipDirect.render(content);
+      } else if (key === 'ship-return') {
+        PageShipReturn.render(content);
+      } else if (key === 'adjust') {
+        PageAdjustList.render(content);
+      } else {
+        content.innerHTML = `
+          <div class="card">
+            <div class="card-header">${title}</div>
+            <div class="card-body" style="color:var(--text-muted);text-align:center;padding:60px">
+              이 화면은 준비 중입니다.<br>
+              <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px">${item?.page || key}</code>
+            </div>
+          </div>`;
+      }
+    }
+
+    // ── 대시보드 렌더 ─────────────────────────────────────────────────
+    async function renderDashboard(container) {
+      container.innerHTML = `
+        <div class="stat-grid">
+          <div class="stat-card"><div class="icon-wrap">📋</div><div class="label">금일 주문</div><div class="value" id="stat-order">-</div><div class="sub">건</div></div>
+          <div class="stat-card"><div class="icon-wrap">📦</div><div class="label">등록 상품</div><div class="value" id="stat-prod">-</div><div class="sub">개</div></div>
+          <div class="stat-card"><div class="icon-wrap">🚚</div><div class="label">배송 대기</div><div class="value" id="stat-ship">-</div><div class="sub">건</div></div>
+          <div class="stat-card"><div class="icon-wrap">👤</div><div class="label">관리자</div><div class="value" id="stat-mngr">-</div><div class="sub">명</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">시스템 정보</div>
+          <div class="card-body">
+            <table><tbody>
+              <tr><th style="width:140px">로그인 계정</th><td>${info.loginId}</td></tr>
+              <tr><th>역할 UID</th><td>${info.roleUid || '-'}</td></tr>
+              <tr><th>서비스 코드</th><td>${info.svcCode || '-'}</td></tr>
+              <tr><th>채널 코드</th><td>${info.chnlCode || '-'}</td></tr>
+              <tr><th>회사 코드</th><td>${info.compCode || '-'}</td></tr>
+              <tr><th>쇼핑몰 코드</th><td>${info.shopCode || '-'}</td></tr>
+            </tbody></table>
+          </div>
+        </div>`;
+
+      // 통계 비동기 로드
+      try {
+        const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const [orderCnt, prodCnt, mngrCnt] = await Promise.allSettled([
+          Api.get('/order/order/orderlist/count', { startDt: today, endDt: today }),
+          Api.get('/product/prod/count', {}),
+          Api.get('/authority/mngr/count', {}),
+        ]);
+        if (orderCnt.status === 'fulfilled') document.getElementById('stat-order').textContent = (orderCnt.value ?? 0).toLocaleString();
+        if (prodCnt.status === 'fulfilled')  document.getElementById('stat-prod').textContent  = (prodCnt.value  ?? 0).toLocaleString();
+        if (mngrCnt.status === 'fulfilled')  document.getElementById('stat-mngr').textContent  = (mngrCnt.value  ?? 0).toLocaleString();
+        document.getElementById('stat-ship').textContent = '-';
+      } catch (_) {}
+    }
+
+    // ── 로그아웃 ─────────────────────────────────────────────────────
+    async function doLogout() {
+      try { await Auth.logout(); } catch(_) {}
+      location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>

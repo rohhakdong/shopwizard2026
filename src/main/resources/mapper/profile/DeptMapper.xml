@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.DeptMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Dept">
+        SELECT *
+        , (SELECT COUNT(*) FROM shopion.tPrfDept C WHERE C.BranchId = shopion.tPrfDept.BranchId AND C.ParentDeptCode = shopion.tPrfDept.DeptCode) AS ChildCount
+        FROM shopion.tPrfDept
+        <where>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pAllCate == null or pAllCate == ''">
+                <if test="pParentDeptCode != null and pParentDeptCode != ''">AND ParentDeptCode = #{pParentDeptCode}</if>
+                <if test="pParentDeptCode == null or pParentDeptCode == ''">AND DeptLevel = 0</if>
+                <if test="pDeptCode != null and pDeptCode != ''">AND DeptCode = #{pDeptCode}</if>
+            </if>
+        </where>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfDept
+        <where>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pParentDeptCode != null and pParentDeptCode != ''">AND ParentDeptCode = #{pParentDeptCode}</if>
+            <if test="pParentDeptCode == null or pParentDeptCode == ''">AND DeptLevel = 0</if>
+            <if test="pDeptCode != null and pDeptCode != ''">AND DeptCode = #{pDeptCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.Dept">
+        SELECT *
+        , (SELECT COUNT(*) FROM shopion.tPrfDept C WHERE C.BranchId = shopion.tPrfDept.BranchId AND C.ParentDeptCode = shopion.tPrfDept.DeptCode) AS ChildCount
+        FROM shopion.tPrfDept
+        WHERE BranchId = #{branchId} AND DeptCode = #{deptCode}
+    </select>
+
+    <select id="selectDeptCodeMax" parameterType="map" resultType="string">
+        SELECT IFNULL(MAX(DeptCode),'')
+        FROM shopion.tPrfDept
+        <where>
+            <if test="branchId != null and branchId != ''">AND BranchId = #{branchId}</if>
+            <if test="parentDeptCode != null and parentDeptCode != ''">AND ParentDeptCode = #{parentDeptCode}</if>
+            <if test="parentDeptCode == null or parentDeptCode == ''">AND DeptLevel = 0</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Dept">
+        INSERT INTO shopion.tPrfDept (
+            BranchId, DeptCode, DeptName, DeptDesc, ParentDeptCode, DeptLevel, DeptSeq,
+            PhoneNo, FaxNo, Email, AccntCheckYn, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{branchId}, #{deptCode}, #{deptName}, #{deptDesc}, #{parentDeptCode}, #{deptLevel}, #{deptSeq},
+            #{phoneNo}, #{faxNo}, #{email}, #{accntCheckYn}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Dept">
+        UPDATE shopion.tPrfDept SET
+            DeptName = #{deptName}, DeptDesc = #{deptDesc}, DeptSeq = #{deptSeq},
+            PhoneNo = #{phoneNo}, FaxNo = #{faxNo}, Email = #{email},
+            AccntCheckYn = #{accntCheckYn}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE BranchId = #{branchId} AND DeptCode = #{deptCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfDept WHERE BranchId = #{branchId} AND DeptCode = #{deptCode}
+    </delete>
+
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdItemMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.ProdItem">
+        SELECT *
+        FROM shopion.tPrdProdItem
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+        </where>
+        AND SaleYn = 1
+        AND SupplyQty > 0
+        <choose>
+            <when test="pOrderBy == 'AttrVal'">ORDER BY AttrVal1, AttrVal2, AttrVal3, AttrVal4</when>
+            <otherwise>ORDER BY ItemCode ASC</otherwise>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.product.model.ProdItem">
+        SELECT *
+        FROM shopion.tPrdProdItem
+        WHERE ProdCode = #{pProdCode}
+        AND ItemCode = #{pItemCode}
+        AND SaleYn = 1
+        AND SupplyQty > 0
+    </select>
+
+</mapper>

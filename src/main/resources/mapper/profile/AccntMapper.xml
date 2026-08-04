@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.AccntMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Accnt">
+        SELECT *
+        FROM shopion.tPrfAccnt
+        <where>
+            <if test="pAccntId != null and pAccntId != ''">AND AccntId = #{pAccntId}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+        LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfAccnt
+        <where>
+            <if test="pAccntId != null and pAccntId != ''">AND AccntId = #{pAccntId}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.profile.model.Accnt">
+        SELECT *
+        FROM shopion.tPrfAccnt
+        WHERE AccntId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Accnt">
+        INSERT INTO shopion.tPrfAccnt (
+            AccntId, CompCode, AccntCode, AccntName, AccntDesc, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{accntId}, #{compCode}, #{accntCode}, #{accntName}, #{accntDesc}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Accnt">
+        UPDATE shopion.tPrfAccnt SET
+            CompCode = #{compCode}, AccntCode = #{accntCode}, AccntName = #{accntName},
+            AccntDesc = #{accntDesc}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE AccntId = #{accntId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrfAccnt
+        WHERE AccntId = #{value}
+    </delete>
+
+</mapper>

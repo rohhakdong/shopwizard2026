@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdDeliFeeMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.ProdDeliFee">
+        SELECT *
+        FROM shopion.tPrdProdDeliFee
+        <where>
+            <if test="pDeliFeeId != null and pDeliFeeId != ''">AND DeliFeeId = #{pDeliFeeId}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pDeliFeeName != null and pDeliFeeName != ''">AND DeliFeeName LIKE CONCAT('%',#{pDeliFeeName},'%')</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.product.model.ProdDeliFee">
+        SELECT *
+        FROM shopion.tPrdProdDeliFee
+        WHERE DeliFeeId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.product.model.ProdDeliFee">
+        INSERT INTO shopion.tPrdProdDeliFee (
+            DeliFeeId, DeliFeeName, DeliFeeDesc,
+            DeliFee1, LimitAmt1, DeliFee2,
+            LimitAmt2, DeliFee3, LimitAmt3,
+            DeliFeeType, VatRate, SvcCode,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{deliFeeId}, #{deliFeeName}, #{deliFeeDesc},
+            #{deliFee1}, #{limitAmt1}, #{deliFee2},
+            #{limitAmt2}, #{deliFee3}, #{limitAmt3},
+            #{deliFeeType}, #{vatRate}, #{svcCode},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.product.model.ProdDeliFee">
+        UPDATE shopion.tPrdProdDeliFee SET
+            DeliFeeName = #{deliFeeName}, DeliFeeDesc = #{deliFeeDesc},
+            DeliFee1 = #{deliFee1}, LimitAmt1 = #{limitAmt1},
+            DeliFee2 = #{deliFee2}, LimitAmt2 = #{limitAmt2},
+            DeliFee3 = #{deliFee3}, LimitAmt3 = #{limitAmt3},
+            DeliFeeType = #{deliFeeType}, VatRate = #{vatRate},
+            SvcCode = #{svcCode}, State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE DeliFeeId = #{deliFeeId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrdProdDeliFee
+        WHERE DeliFeeId = #{value}
+    </delete>
+
+</mapper>

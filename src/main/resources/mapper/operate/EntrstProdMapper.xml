@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.EntrstProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.EntrstProd">
+        SELECT * FROM shopion.tOprEntrstProd
+        <where>
+            <if test="pEntrstNo != null and pEntrstNo != ''">AND EntrstNo = #{pEntrstNo}</if>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+            <if test="pPrgresStateArr != null">
+                AND PrgresState IN
+                <foreach collection="pPrgresStateArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOprEntrstProd
+        <where>
+            <if test="pEntrstNo != null and pEntrstNo != ''">AND EntrstNo = #{pEntrstNo}</if>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.operate.model.EntrstProd">
+        SELECT * FROM shopion.tOprEntrstProd WHERE EntrstNo = #{entrstNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.EntrstProd">
+        INSERT INTO shopion.tOprEntrstProd (EntrstNo, CustId, ChnlCode, SvcCode, ProdName, ProdDesc, ProdImg1, ProdImg2, ProdLabel, PartDesc, BuyDate, BuyStore, BuyPrice, SaleHopePrice, PrevSaleHopePrice, PriceChangeDate, DeliMethod, DeliCompCode, DeliExpectDate, ReciptChnlCode, EntrstDate, PrgresState, SalePrice, SaleDate, SaleFee, SaleAdjustAmt, SaleAdjustDate, BankAccnt, LoanRqstDate, LoanRqstAmt, LoanFee, LoanAdjustAmt, LoanAdjustDate, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{entrstNo}, #{custId}, #{chnlCode}, #{svcCode}, #{prodName}, #{prodDesc}, #{prodImg1}, #{prodImg2}, #{prodLabel}, #{partDesc}, #{buyDate}, #{buyStore}, #{buyPrice}, #{saleHopePrice}, #{prevSaleHopePrice}, #{priceChangeDate}, #{deliMethod}, #{deliCompCode}, #{deliExpectDate}, #{reciptChnlCode}, #{entrstDate}, #{prgresState}, #{salePrice}, #{saleDate}, #{saleFee}, #{saleAdjustAmt}, #{saleAdjustDate}, #{bankAccnt}, #{loanRqstDate}, #{loanRqstAmt}, #{loanFee}, #{loanAdjustAmt}, #{loanAdjustDate}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.EntrstProd">
+        UPDATE shopion.tOprEntrstProd SET
+        EntrstNo = #{entrstNo}, CustId = #{custId}, ChnlCode = #{chnlCode}, SvcCode = #{svcCode}, ProdName = #{prodName}, ProdDesc = #{prodDesc}, ProdImg1 = #{prodImg1}, ProdImg2 = #{prodImg2}, ProdLabel = #{prodLabel}, PartDesc = #{partDesc}, BuyDate = #{buyDate}, BuyStore = #{buyStore}, BuyPrice = #{buyPrice}, SaleHopePrice = #{saleHopePrice}, PrevSaleHopePrice = #{prevSaleHopePrice}, PriceChangeDate = #{priceChangeDate}, DeliMethod = #{deliMethod}, DeliCompCode = #{deliCompCode}, DeliExpectDate = #{deliExpectDate}, ReciptChnlCode = #{reciptChnlCode}, EntrstDate = #{entrstDate}, PrgresState = #{prgresState}, SalePrice = #{salePrice}, SaleDate = #{saleDate}, SaleFee = #{saleFee}, SaleAdjustAmt = #{saleAdjustAmt}, SaleAdjustDate = #{saleAdjustDate}, BankAccnt = #{bankAccnt}, LoanRqstDate = #{loanRqstDate}, LoanRqstAmt = #{loanRqstAmt}, LoanFee = #{loanFee}, LoanAdjustAmt = #{loanAdjustAmt}, LoanAdjustDate = #{loanAdjustDate}, State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE EntrstNo = #{entrstNo}
+    </update>
+
+    <update id="updateByDeli" parameterType="map">
+        UPDATE shopion.tOprEntrstProd SET
+        DeliMethod = #{deliMethod}, DeliCompCode = #{deliCompCode}, DeliExpectDate = #{deliExpectDate},
+        ReciptChnlCode = #{reciptChnlCode}, EntrstDate = NOW(), PrgresState = #{prgresState},
+        ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE EntrstNo = #{entrstNo}
+    </update>
+
+    <update id="updateByPrice" parameterType="map">
+        UPDATE shopion.tOprEntrstProd SET
+        SaleHopePrice = #{saleHopePrice}, PrevSaleHopePrice = #{prevSaleHopePrice}, PriceChangeDate = NOW(),
+        ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE EntrstNo = #{entrstNo}
+    </update>
+
+    <update id="updateByBank" parameterType="map">
+        UPDATE shopion.tOprEntrstProd SET
+        BankAccnt = #{bankAccnt}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE EntrstNo = #{entrstNo}
+    </update>
+
+    <update id="updateByLoan" parameterType="map">
+        UPDATE shopion.tOprEntrstProd SET
+        PrgresState = #{prgresState}, LoanRqstDate = NOW(), LoanRqstAmt = #{loanRqstAmt},
+        ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE EntrstNo = #{entrstNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.operate.model.EntrstProd">
+        DELETE FROM shopion.tOprEntrstProd WHERE EntrstNo = #{entrstNo}
+    </delete>
+
+</mapper>

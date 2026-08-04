@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderPayMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderPay">
+        SELECT OP.*, CV.ConstrValDesc AS payTypeName
+        FROM shopion.tOrdOrderPay OP
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OP.PayType = CV.ConstrVal
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OP.OrderNo = #{pOrderNo}</if>
+            <if test="endDate != null">
+                <![CDATA[AND (OP.PayDate >= DATE_FORMAT(#{startDate}, '%Y%m%d') AND OP.PayDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+            <if test="pPayDate != null and pPayDate == 'NULL'">AND OP.PayDate IS NULL</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY OP.${sidx} ${sord}</when>
+            <otherwise>ORDER BY OP.OrderNo DESC, OP.PayNo ASC</otherwise>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderPay">
+        SELECT OP.*, CV.ConstrValDesc AS payTypeName
+        FROM shopion.tOrdOrderPay OP
+        LEFT OUTER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OP.PayType = CV.ConstrVal
+        WHERE OP.OrderNo = #{orderNo}
+        <if test="payNo != null">AND OP.PayNo = #{payNo}</if>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderPay">
+        INSERT INTO shopion.tOrdOrderPay (
+            OrderNo, PayNo, PayType, PayDate, PayAmt, PayFee,
+            CardComp, ApprovNo, ApprovDate, ReciptBank, ReciptName, ReciptNo, ReciptDate,
+            PgCode, PgOrderNo, PgTradeNo,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{orderNo}, #{payNo}, #{payType}, #{payDate}, #{payAmt}, #{payFee},
+            #{cardComp}, #{approvNo}, #{approvDate}, #{reciptBank}, #{reciptName}, #{reciptNo}, #{reciptDate},
+            #{pgCode}, #{pgOrderNo}, #{pgTradeNo},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderPay">
+        UPDATE shopion.tOrdOrderPay SET
+            PayType = #{payType}, PayDate = #{payDate}, PayAmt = #{payAmt}, PayFee = #{payFee},
+            CardComp = #{cardComp}, ApprovNo = #{approvNo}, ApprovDate = #{approvDate},
+            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptNo = #{reciptNo}, ReciptDate = #{reciptDate},
+            PgCode = #{pgCode}, PgOrderNo = #{pgOrderNo}, PgTradeNo = #{pgTradeNo},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND PayNo = #{payNo}
+    </update>
+
+    <update id="updateOrderPayRecipt" parameterType="map">
+        UPDATE shopion.tOrdOrderPay SET
+            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptNo = #{reciptNo},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+    </update>
+
+    <update id="updateOrderPayReciptAuto" parameterType="map">
+        UPDATE shopion.tOrdOrderPay SET
+            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptNo = #{reciptNo},
+            ReciptDate = NOW(),
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdOrderPay WHERE OrderNo = #{orderNo}
+    </delete>
+
+</mapper>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderProdApprovLineMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProdApprovLine">
+        SELECT *
+        FROM shopion.tOrdOrderProdApprovLine
+        <where>
+            <if test="orderNo != null">AND OrderNo = #{orderNo}</if>
+            <if test="orderProdNo != null">AND OrderProdNo = #{orderProdNo}</if>
+        </where>
+        ORDER BY ApprovLevel ASC
+    </select>
+
+    <select id="count" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProdApprovLine
+        <where>
+            <if test="orderNo != null">AND OrderNo = #{orderNo}</if>
+            <if test="orderProdNo != null">AND OrderProdNo = #{orderProdNo}</if>
+        </where>
+    </select>
+
+    <select id="countReady" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProdApprovLine
+        WHERE ApprovResult IS NULL
+        <if test="orderNo != null">AND OrderNo = #{orderNo}</if>
+        <if test="orderProdNo != null">AND OrderProdNo = #{orderProdNo}</if>
+    </select>
+
+    <select id="countApprov" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProdApprovLine
+        WHERE ApprovResult = 'A'
+        <if test="orderNo != null">AND OrderNo = #{orderNo}</if>
+        <if test="orderProdNo != null">AND OrderProdNo = #{orderProdNo}</if>
+    </select>
+
+    <select id="countReject" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProdApprovLine
+        WHERE ApprovResult = 'R'
+        <if test="orderNo != null">AND OrderNo = #{orderNo}</if>
+        <if test="orderProdNo != null">AND OrderProdNo = #{orderProdNo}</if>
+    </select>
+
+    <insert id="insert" parameterType="map">
+        INSERT INTO shopion.tOrdOrderProdApprovLine (
+            OrderNo, OrderProdNo, ApprovLevel, ApprovCustId, ApprovCustName,
+            State, RegistId, RegistName, RegistDate
+        )
+        SELECT
+            #{orderNo}, #{orderProdNo}, AL.ApprovLevel, AL.CustId, AL.CustName,
+            1, #{registId}, #{registName}, NOW()
+        FROM shopion.tPrfCustApprovLine AL
+        WHERE AL.CustId = (SELECT CustId FROM shopion.tOrdOrder WHERE OrderNo = #{orderNo})
+    </insert>
+
+    <update id="updateApprov" parameterType="map">
+        UPDATE shopion.tOrdOrderProdApprovLine SET
+            ApprovResult = 'A', ApprovDate = NOW(), ApprovMemo = #{approvMemo},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND ApprovCustId = #{approvCustId}
+    </update>
+
+    <update id="updateReject" parameterType="map">
+        UPDATE shopion.tOrdOrderProdApprovLine SET
+            ApprovResult = 'R', ApprovDate = NOW(), ApprovMemo = #{approvMemo},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND ApprovCustId = #{approvCustId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdOrderProdApprovLine
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        <if test="approvLevel != null">AND ApprovLevel = #{approvLevel}</if>
+    </delete>
+
+</mapper>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.ProdCpnProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.ProdCpnProd">
+        SELECT CP.CpnId, CP.ChnlCode, CP.ProdCode, CP.Remark, CP.State,
+               CP.RegistDate, CP.RegistId, CP.RegistName, CP.ChangeDate, CP.ChangeId, CP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.ImgUrl80
+        FROM shopion.tStrProdCpnProd CP
+        INNER JOIN shopion.tPrdProd PH ON CP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pCpnId != null">
+                AND CP.CpnId = #{pCpnId}
+            </if>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND CP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">
+                AND PH.SaleYn = #{pSaleYn}
+            </if>
+        </where>
+        ORDER BY CP.ProdCode
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.ProdCpnProd">
+        INSERT INTO shopion.tStrProdCpnProd (
+            CpnId, ChnlCode, ProdCode, Remark, State,
+            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{cpnId}, #{chnlCode}, #{prodCode}, #{remark}, #{state},
+            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrProdCpnProd
+        WHERE CpnId = #{pCpnId}
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND ChnlCode = #{pChnlCode}
+        </if>
+        <if test="prodCodes != null">
+            AND ProdCode IN
+            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </delete>
+
+</mapper>

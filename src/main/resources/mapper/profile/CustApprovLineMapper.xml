@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustApprovLineMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustApprovLine">
+        SELECT AL.*, C.CustName, Comp.CompName, B.BranchName, D.DeptName, Dt.DutyName
+        FROM shopion.tPrfCustApprovLine AL
+        INNER JOIN shopion.tPrfCust C ON C.CustId = AL.ApprovCustId
+        INNER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        INNER JOIN shopion.tPrfBranch B ON C.BranchId = B.BranchId
+        INNER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        INNER JOIN shopion.tPrfDuty Dt ON C.DutyId = Dt.DutyId
+        <where>
+            <if test="pCustId != null and pCustId != ''">AND AL.CustId = #{pCustId}</if>
+            <if test="pApprovLevel != null and pApprovLevel != ''">AND AL.ApprovLevel = #{pApprovLevel}</if>
+        </where>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustApprovLine
+        <where>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+            <if test="pApprovLevel != null and pApprovLevel != ''">AND ApprovLevel = #{pApprovLevel}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CustApprovLine">
+        SELECT *
+        FROM shopion.tPrfCustApprovLine
+        WHERE CustId = #{custId}
+        AND ApprovLevel = #{approvLevel}
+    </select>
+
+    <select id="selectApprovLevelMax" parameterType="int" resultType="java.lang.Integer">
+        SELECT IFNULL(MAX(ApprovLevel),0) + 10
+        FROM shopion.tPrfCustApprovLine
+        WHERE CustId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustApprovLine">
+        INSERT INTO shopion.tPrfCustApprovLine (
+            CustId, ApprovLevel, ApprovCustId, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{custId}, #{approvLevel}, #{approvCustId}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustApprovLine">
+        UPDATE shopion.tPrfCustApprovLine SET
+            ApprovType = #{approvType}, FinalYn = #{finalYn}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE CustId = #{custId}
+        AND ApprovLevel = #{approvLevel}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCustApprovLine
+        WHERE CustId = #{custId}
+        <if test="approvLevels != null and approvLevels.size() > 0">
+        AND ApprovLevel IN
+        <foreach collection="approvLevels" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+        </if>
+    </delete>
+
+</mapper>

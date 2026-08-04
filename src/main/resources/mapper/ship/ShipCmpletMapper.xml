@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.ship.mapper.ShipCmpletMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.ShipCmplet">
+        SELECT *
+        FROM shopwizard.tShpShipCmplet
+        <where>
+            <if test="pShipNo != null and pShipNo != ''">AND ShipNo = #{pShipNo}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+            LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpShipCmplet
+        <where>
+            <if test="pShipNo != null and pShipNo != ''">AND ShipNo = #{pShipNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.ShipCmplet">
+        SELECT *
+        FROM shopwizard.tShpShipCmplet
+        WHERE ShipNo = #{shipNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.ShipCmplet">
+        INSERT INTO shopwizard.tShpShipCmplet (
+            ShipNo, OrderNo, OrderProdNo, OrderChangeNo, ShipCmpletDate, BarcodNo, ExecMessag, AdjustSelectDate, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{shipNo}, #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{shipCmpletDate}, #{barcodNo}, #{execMessag}, #{adjustSelectDate}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.ship.model.ShipCmplet">
+        UPDATE shopwizard.tShpShipCmplet SET
+            ShipNo = #{shipNo}, OrderNo = #{orderNo}, OrderProdNo = #{orderProdNo}, OrderChangeNo = #{orderChangeNo},
+            ShipCmpletDate = #{shipCmpletDate}, BarcodNo = #{barcodNo}, ExecMessag = #{execMessag},
+            AdjustSelectDate = #{adjustSelectDate}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ShipNo = #{shipNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.ship.model.ShipCmplet">
+        DELETE FROM shopwizard.tShpShipCmplet
+        WHERE ShipNo = #{shipNo}
+    </delete>
+
+</mapper>

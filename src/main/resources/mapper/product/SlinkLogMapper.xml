@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.SlinkLogMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.SlinkLog">
+        SELECT * FROM shopwizard.tPrdSlinkLog
+        <where>
+            <if test="pLogNo != null and pLogNo != ''">AND LogNo = #{pLogNo}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tPrdSlinkLog
+        <where>
+            <if test="pLogNo != null and pLogNo != ''">AND LogNo = #{pLogNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.product.model.SlinkLog">
+        SELECT * FROM shopwizard.tPrdSlinkLog WHERE LogNo = #{logNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.product.model.SlinkLog">
+        INSERT INTO shopwizard.tPrdSlinkLog (LogType, ProdCode, CateCode, ProdName, SaleYn, OrderNo, OrderProdNo, OrderChangeNo, DeliCompName, InvNo, ResultType, ResultMessag, CallUrl, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES (#{logType}, #{prodCode}, #{cateCode}, #{prodName}, #{saleYn}, #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{deliCompName}, #{invNo}, #{resultType}, #{resultMessag}, #{callUrl}, 1, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.product.model.SlinkLog">
+        UPDATE shopwizard.tPrdSlinkLog SET LogType = #{logType}, ProdCode = #{prodCode}, CateCode = #{cateCode}, ProdName = #{prodName}, SaleYn = #{saleYn}, OrderNo = #{orderNo}, OrderProdNo = #{orderProdNo}, OrderChangeNo = #{orderChangeNo}, DeliCompName = #{deliCompName}, InvNo = #{invNo}, ResultType = #{resultType}, ResultMessag = #{resultMessag}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE LogNo = #{logNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.product.model.SlinkLog">
+        DELETE FROM shopwizard.tPrdSlinkLog WHERE LogNo = #{logNo}
+    </delete>
+
+</mapper>

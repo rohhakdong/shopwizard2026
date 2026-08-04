@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.CustConsltMapper">
+
+    <sql id="joinByCodeType">
+        <choose>
+            <when test="pCodeType == 'cCustConsltTypeIncludeCashCash'">
+                INNER JOIN wizardn.tCodConstrVal CV ON CC.CustConsltType = CV.ConstrVal AND CV.ConstrCode IN('cCustConsltType','cCashcashType')
+            </when>
+            <otherwise>
+                INNER JOIN wizardn.tCodConstrVal CV ON CC.CustConsltType = CV.ConstrVal AND CV.ConstrCode = #{pCodeType}
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="whereClause">
+        <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND ( CC.ChnlCode = #{pChnlCode}
+            <if test="pShopCode != null and pShopCode != ''">OR P.ShopCode = #{pShopCode}</if>
+            )
+        </if>
+        <if test="pCustConsltNo != null and pCustConsltNo != ''">AND CC.CustConsltNo = #{pCustConsltNo}</if>
+        <if test="pOrderNo != null and pOrderNo != '' and pOrderNo.toString() != '0'">AND CC.OrderNo = #{pOrderNo}</if>
+        <if test="pConsltTitle != null and pConsltTitle != ''">AND CC.ConsltTitle LIKE CONCAT('%',#{pConsltTitle},'%')</if>
+        <if test="pConsltCntnts != null and pConsltCntnts != ''">AND CC.ConsltCntnts LIKE CONCAT('%',#{pConsltCntnts},'%')</if>
+        <if test="pProdCode != null and pProdCode != ''">AND CC.ProdCode = #{pProdCode}</if>
+        <if test="pCustName != null and pCustName != ''">AND CC.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+        <if test="pCustPhoneNo != null and pCustPhoneNo != ''">AND CC.CustPhoneNo = #{pCustPhoneNo}</if>
+        <if test="pCustId != null and pCustId != ''">AND CC.CustId = #{pCustId}</if>
+        <if test="pCustConsltType != null and pCustConsltType != ''">AND CC.CustConsltType = #{pCustConsltType}</if>
+        <if test="pAnswrYn != null and pAnswrYn == '1'">AND ( CC.AnswrCntnts != '' AND CC.AnswrCntnts IS NOT NULL )</if>
+        <if test="pAnswrYn != null and pAnswrYn == '0'">AND ( CC.AnswrCntnts = '' OR CC.AnswrCntnts IS NULL )</if>
+        <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+            <![CDATA[AND ( CC.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND CC.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) )]]>
+        </if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.CustConslt">
+        SELECT * FROM (
+            SELECT CC.*, CV.ConstrValDesc AS CustConsltTypeName, CR.ConstrValDesc AS CustConsltReasonTypeName,
+            CM.ConstrValDesc AS ConsltMediaTypeName, P.ProdName, P.ImgUrl50 AS ProdImg, P.ShopName, P.ShopProdCode, Ch.ChnlName
+            FROM shopion.tOprCustConslt CC
+            INNER JOIN shopion.tStrChnl Ch ON Ch.ChnlCode = CC.ChnlCode
+            <include refid="joinByCodeType"/>
+            LEFT OUTER JOIN wizardn.tCodConstrVal CR ON CC.CustConsltReasonType = CR.ConstrVal AND CR.ConstrCode = 'cCustConsltReasonType'
+            LEFT OUTER JOIN wizardn.tCodConstrVal CM ON CC.ConsltMediaType = CM.ConstrVal AND CM.ConstrCode = 'cConsltMediaType'
+            LEFT OUTER JOIN shopion.tPrdProd P ON CC.ProdCode = P.ProdCode
+            <where><include refid="whereClause"/></where>
+        ) tab1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY CustConsltNo DESC</otherwise>
+        </choose>
+        <if test="topCnt != null and topCnt != ''">LIMIT #{topCnt}, #{countPerPage}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOprCustConslt CC
+        INNER JOIN shopion.tStrChnl Ch ON Ch.ChnlCode = CC.ChnlCode
+        <include refid="joinByCodeType"/>
+        LEFT OUTER JOIN wizardn.tCodConstrVal CR ON CC.CustConsltReasonType = CR.ConstrVal AND CR.ConstrCode = 'cCustConsltReasonType'
+        LEFT OUTER JOIN wizardn.tCodConstrVal CM ON CC.ConsltMediaType = CM.ConstrVal AND CM.ConstrCode = 'cConsltMediaType'
+        LEFT OUTER JOIN shopion.tPrdProd P ON CC.ProdCode = P.ProdCode
+        <where><include refid="whereClause"/></where>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.operate.model.CustConslt">
+        SELECT CC.*, CV.ConstrValDesc AS CustConsltTypeName
+        FROM shopion.tOprCustConslt CC
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cCustConsltType') CV ON CC.CustConsltType = CV.ConstrVal
+        WHERE CustConsltNo = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.CustConslt">
+        INSERT INTO shopion.tOprCustConslt (CustConsltType, CustConsltReasonType, ConsltMediaType, CustId, CustName,
+        CustEmail, CustPhoneNo, CustMobileNo, ConsltChnlCode, ConsltTitle, ConsltCntnts, ConsltDate,
+        MngrId, MngrName, MngrEmail, AnswrTitle, AnswrCntnts, AnswrDate,
+        OrderNo, OrderProdNo, OrderChangeNo, ProdCode, ItemCode, ItemName,
+        DeliFeeType, DeliFee, ChnlCode, State, Remark, RegistDate, RegistId, RegistName)
+        VALUES (#{custConsltType}, #{custConsltReasonType}, #{consltMediaType}, #{custId}, #{custName},
+        #{custEmail}, #{custPhoneNo}, #{custMobileNo}, #{consltChnlCode}, #{consltTitle}, #{consltCntnts}, NOW(),
+        #{mngrId}, #{mngrName}, #{mngrEmail}, #{answrTitle}, #{answrCntnts}, #{answrDate},
+        #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{prodCode}, #{itemCode}, #{itemName},
+        #{deliFeeType}, #{deliFee}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.CustConslt">
+        UPDATE shopion.tOprCustConslt SET
+        MngrId = #{mngrId}, MngrName = #{mngrName}, MngrEmail = #{mngrEmail}, ProdCode = #{prodCode},
+        AnswrTitle = #{answrTitle}, AnswrCntnts = #{answrCntnts}, AnswrDate = NOW(),
+        State = #{state}, Remark = #{remark}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustConsltNo = #{custConsltNo}
+    </update>
+
+    <update id="move" parameterType="com.shopwizard.operate.model.CustConslt">
+        UPDATE shopion.tOprCustConslt SET
+        ChnlCode = #{chnlCode}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustConsltNo = #{custConsltNo}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tOprCustConslt WHERE CustConsltNo = #{value}
+    </delete>
+
+    <select id="countByCustId" parameterType="int" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOprCustConslt WHERE CustId = #{value} AND AnswrDate IS NULL
+    </select>
+
+    <select id="selectListDashboard" parameterType="map" resultType="com.shopwizard.operate.model.CustConsltDashBoard">
+        SELECT Cs.ChnlCode, Ch.ChnlName,
+        SUM(CASE WHEN DATEDIFF(NOW(),Cs.ConsltDate) = 0 THEN 1 ELSE 0 END) AS TodayConsltCount,
+        SUM(CASE WHEN DATEDIFF(NOW(),Cs.AnswrDate) = 0 THEN 1 ELSE 0 END) AS TodayAnswrCount,
+        SUM(CASE WHEN Cs.AnswrDate IS NULL THEN 1 ELSE 0 END) AS NoAnswrCount,
+        SUM(CASE WHEN DATEDIFF(NOW(),Cs.AnswrDate) > 10 THEN 1 ELSE 0 END) AS LongDelayCount
+        FROM shopion.tOprCustConslt Cs
+        INNER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = Cs.ChnlCode
+        <if test="pShopCode != null and pShopCode != ''">
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = Cs.OrderNo
+        </if>
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND Cs.ChnlCode = #{pChnlCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND OP.ShopCode = #{pShopCode}</if>
+        </where>
+        GROUP BY Cs.ChnlCode, Ch.ChnlName
+        ORDER BY 6 DESC, 5 DESC, 3 DESC, 2
+    </select>
+
+</mapper>

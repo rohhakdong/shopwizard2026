@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.ProdCodeMatchMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.ProdCodeMatch">
+        SELECT *
+        FROM shopwizard.tOrdProdCodeMatch
+        <where>
+            <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdProdCodeMatch
+        <where>
+            <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.ProdCodeMatch">
+        SELECT * FROM shopwizard.tOrdProdCodeMatch WHERE ProdName = #{prodName}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.ProdCodeMatch">
+        INSERT INTO shopwizard.tOrdProdCodeMatch (
+            ProdName, ProdOption, ProdCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{prodName}, #{prodOption}, #{prodCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.ProdCodeMatch">
+        UPDATE shopwizard.tOrdProdCodeMatch SET
+            ProdName = #{prodName}, ProdOption = #{prodOption}, ProdCode = #{prodCode},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdName = #{prodName}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.ProdCodeMatch">
+        DELETE FROM shopwizard.tOrdProdCodeMatch WHERE ProdName = #{prodName}
+    </delete>
+
+</mapper>

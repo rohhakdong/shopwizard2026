@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.StoreMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.Store">
+        SELECT S.ChnlCode, S.StoreCode, S.StoreName, S.StoreDesc, S.ParentStoreCode,
+               S.StoreLevel, S.StoreSeq, S.AdultYn, S.TmplCode, S.State, S.Remark,
+               S.RegistDate, S.RegistId, S.RegistName, S.ChangeDate, S.ChangeId, S.ChangeName,
+               (SELECT COUNT(*) FROM shopion.tStrStore C WHERE C.ChnlCode = S.ChnlCode AND C.ParentStoreCode = S.StoreCode) AS ChildCount
+        FROM shopion.tStrStore S
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND S.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pParentStoreCode != null and pParentStoreCode != ''">
+                AND S.ParentStoreCode = #{pParentStoreCode}
+            </if>
+            <if test="pParentStoreCode == null or pParentStoreCode == ''">
+                AND S.StoreLevel = 0
+            </if>
+            <if test="pFinalYn == null or pFinalYn == ''">
+                AND NOT EXISTS (
+                    SELECT 1 FROM shopion.tStrStore CS
+                    WHERE CS.ChnlCode = S.ChnlCode AND CS.ParentStoreCode = S.StoreCode
+                )
+            </if>
+        </where>
+        ORDER BY S.StoreSeq
+    </select>
+
+    <select id="selectStoreCodeMax" parameterType="map" resultType="string">
+        SELECT MAX(StoreCode)
+        FROM shopion.tStrStore
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pParentStoreCode != null and pParentStoreCode != ''">
+                AND ParentStoreCode = #{pParentStoreCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectListTable" parameterType="map" resultType="com.shopwizard.store.model.Store">
+        SELECT S3.ChnlCode, S3.StoreCode, S3.StoreName, S3.StoreDesc, S3.ParentStoreCode,
+               S3.StoreLevel, S3.StoreSeq, S3.AdultYn, S3.TmplCode, S3.State,
+               S0.StoreCode AS StoreCode1, S0.StoreName AS StoreName1,
+               S1.StoreCode AS StoreCode2, S1.StoreName AS StoreName2,
+               S2.StoreCode AS StoreCode3, S2.StoreName AS StoreName3,
+               S3.StoreCode AS StoreCode4, S3.StoreName AS StoreName4
+        FROM shopion.tStrStore S3
+        LEFT JOIN shopion.tStrStore S2 ON S3.ChnlCode = S2.ChnlCode AND S3.ParentStoreCode = S2.StoreCode
+        LEFT JOIN shopion.tStrStore S1 ON S2.ChnlCode = S1.ChnlCode AND S2.ParentStoreCode = S1.StoreCode
+        LEFT JOIN shopion.tStrStore S0 ON S1.ChnlCode = S0.ChnlCode AND S1.ParentStoreCode = S0.StoreCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND S3.ChnlCode = #{pChnlCode}
+            </if>
+        </where>
+        ORDER BY S3.StoreLevel, S3.StoreSeq
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.store.model.Store">
+        SELECT ChnlCode, StoreCode, StoreName, StoreDesc, ParentStoreCode,
+               StoreLevel, StoreSeq, AdultYn, TmplCode, State, Remark,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrStore
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+    </select>
+
+    <select id="selectListLevel" parameterType="map" resultType="com.shopwizard.store.model.Store">
+        SELECT ChnlCode, StoreCode, StoreName, StoreDesc, ParentStoreCode,
+               StoreLevel, StoreSeq, AdultYn, TmplCode, State, Remark,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrStore
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pStoreLevel != null">
+                AND StoreLevel = #{pStoreLevel}
+            </if>
+        </where>
+        ORDER BY StoreLevel, StoreSeq
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.Store">
+        INSERT INTO shopion.tStrStore (
+            ChnlCode, StoreCode, StoreName, StoreDesc, ParentStoreCode,
+            StoreLevel, StoreSeq, AdultYn, TmplCode, State, Remark,
+            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{chnlCode}, #{storeCode}, #{storeName}, #{storeDesc}, #{parentStoreCode},
+            #{storeLevel}, #{storeSeq}, #{adultYn}, #{tmplCode}, #{state}, #{remark},
+            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.Store">
+        UPDATE shopion.tStrStore
+        SET StoreName = #{storeName},
+            StoreDesc = #{storeDesc},
+            ParentStoreCode = #{parentStoreCode},
+            StoreLevel = #{storeLevel},
+            StoreSeq = #{storeSeq},
+            AdultYn = #{adultYn},
+            TmplCode = #{tmplCode},
+            State = #{state},
+            Remark = #{remark},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE ChnlCode = #{chnlCode}
+          AND StoreCode = #{storeCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrStore
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+    </delete>
+
+</mapper>

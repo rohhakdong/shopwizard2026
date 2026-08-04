@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.adjust.mapper.AdjustMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.adjust.model.Adjust">
+        SELECT * FROM shopwizard.tAdjAdjust
+        WHERE <![CDATA[AdjustStartDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustStartDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        AND <![CDATA[AdjustEndDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustEndDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        <if test="pAdjustNo != null and pAdjustNo != ''">AND AdjustNo = #{pAdjustNo}</if>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT ${pPageOffset}, ${pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjust
+        WHERE <![CDATA[AdjustStartDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustStartDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        AND <![CDATA[AdjustEndDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustEndDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        <if test="pAdjustNo != null and pAdjustNo != ''">AND AdjustNo = #{pAdjustNo}</if>
+    </select>
+
+    <select id="selectListBranchSale" parameterType="map" resultType="com.shopwizard.adjust.model.Adjust">
+        SELECT A.AdjustNo, A.AdjustStartDate, A.AdjustEndDate, B.BranchId, B.BranchCode, B.BranchName, A.VatRate,
+        SUM(D.SalePrice) AS SaleAmt, SUM(D.BuyPrice) AS BuyAmt, SUM(D.ProdMargin) AS ProdMargin,
+        A.TaxinvImg, A.TaxinvMemo, A.State, A.Remark, A.RegistId, A.RegistName, A.RegistDate, A.ChangeId, A.ChangeName, A.ChangeDate
+        FROM shopwizard.tAdjAdjust A
+        INNER JOIN shopwizard.tAdjAdjustDetail D ON A.AdjustNo = D.SaleAdjustNo
+        INNER JOIN shopion.tPrfBranch B ON A.BranchId = B.BranchId
+        INNER JOIN shopion.tPrfComp C ON A.CompCode = C.CompCode
+        <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        AND A.CompCode = #{pCompCode}
+        GROUP BY A.AdjustNo, B.BranchId, B.BranchCode, B.BranchName, D.VatRate
+    </select>
+
+    <select id="selectCountBranchSale" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjust A
+        INNER JOIN shopion.tPrfBranch B ON A.BranchId = B.BranchId
+        INNER JOIN shopion.tPrfComp C ON A.CompCode = C.CompCode
+        <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        AND A.CompCode = #{pCompCode}
+    </select>
+
+    <select id="selectListShopBuy" parameterType="map" resultType="com.shopwizard.adjust.model.Adjust">
+        SELECT A.AdjustNo, A.AdjustStartDate, A.AdjustEndDate, S.ShopCode, S.ShopName, A.VatRate,
+        SUM(D.SalePrice) AS SaleAmt, SUM(D.BuyPrice) AS BuyAmt, SUM(D.ProdMargin) AS ProdMargin, SUM(D.DeliFeeAmt) AS DeliFeeAmt,
+        A.State, A.Remark, A.RegistId, A.RegistName, A.RegistDate, A.ChangeId, A.ChangeName, A.ChangeDate
+        FROM shopwizard.tAdjAdjust A
+        INNER JOIN shopwizard.tAdjAdjustDetail D ON A.AdjustNo = D.AdjustNo
+        INNER JOIN shopwizard.tCmpShop S ON A.ShopCode = S.ShopCode
+        <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        <if test="pShopCode != null and pShopCode != ''">AND A.ShopCode = #{pShopCode}</if>
+        <if test="pAdjustPeriodType != null and pAdjustPeriodType != ''">AND S.adjustPeriodCode = #{pAdjustPeriodType}</if>
+        GROUP BY A.AdjustNo, S.ShopCode, S.ShopName, D.VatRate
+    </select>
+
+    <select id="selectCountShopBuy" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjust A
+        INNER JOIN shopwizard.tCmpShop S ON A.ShopCode = S.ShopCode
+        <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+        <if test="pShopCode != null and pShopCode != ''">AND A.ShopCode = #{pShopCode}</if>
+        <if test="pAdjustPeriodType != null and pAdjustPeriodType != ''">AND S.adjustPeriodCode = #{pAdjustPeriodType}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.adjust.model.Adjust">
+        SELECT * FROM shopwizard.tAdjAdjust WHERE AdjustNo = #{adjustNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.adjust.model.Adjust">
+        INSERT INTO shopwizard.tAdjAdjust (AdjustNo, SupplyCode, ShopCode, AdjustStartDate, AdjustEndDate, AdjustMonth, PayDate, ReciptBank, ReciptAccnt, ReciptDepost, ChnlCode, VatRate, AdjustPeriodCode, TaxinvCheckDate, TaxinvSect, TaxinvMemo, CompCode, BranchId, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES (#{adjustNo}, #{supplyCode}, #{shopCode}, #{adjustStartDate}, #{adjustEndDate}, #{adjustMonth}, #{payDate}, #{reciptBank}, #{reciptAccnt}, #{reciptDepost}, #{chnlCode}, #{vatRate}, #{adjustPeriodCode}, #{taxinvCheckDate}, #{taxinvSect}, #{taxinvMemo}, #{compCode}, #{branchId}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.adjust.model.Adjust">
+        UPDATE shopwizard.tAdjAdjust SET
+        TaxinvCheckDate = NOW(), TaxinvSect = #{taxinvSect}, TaxinvMemo = #{taxinvMemo}, TaxinvImg = #{taxinvImg},
+        State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE AdjustNo = #{adjustNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.adjust.model.Adjust">
+        DELETE FROM shopwizard.tAdjAdjust WHERE AdjustNo = #{adjustNo}
+    </delete>
+
+</mapper>

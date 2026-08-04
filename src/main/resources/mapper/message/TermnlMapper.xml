@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.message.mapper.TermnlMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.message.model.Termnl">
+        SELECT * FROM wizardn.tMsgTermnl
+        <where>
+            <if test="pTermnlCode != null and pTermnlCode != ''">AND TermnlCode = #{pTermnlCode}</if>
+            <if test="pTermnlName != null and pTermnlName != ''">AND TermnlName = #{pTermnlName}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM wizardn.tMsgTermnl
+        <where>
+            <if test="pTermnlCode != null and pTermnlCode != ''">AND TermnlCode = #{pTermnlCode}</if>
+            <if test="pTermnlName != null and pTermnlName != ''">AND TermnlName = #{pTermnlName}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.message.model.Termnl">
+        SELECT * FROM wizardn.tMsgTermnl WHERE TermnlCode = #{termnlCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.message.model.Termnl">
+        INSERT INTO wizardn.tMsgTermnl (TermnlCode, TermnlName, TermnlDesc, TermnlUrl, TermnlType, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{termnlCode}, #{termnlName}, #{termnlDesc}, #{termnlUrl}, #{termnlType}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.message.model.Termnl">
+        UPDATE wizardn.tMsgTermnl SET
+        TermnlCode = #{termnlCode}, TermnlName = #{termnlName}, TermnlDesc = #{termnlDesc}, TermnlUrl = #{termnlUrl},
+        TermnlType = #{termnlType}, State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE TermnlCode = #{termnlCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.message.model.Termnl">
+        DELETE FROM wizardn.tMsgTermnl WHERE TermnlCode = #{termnlCode}
+    </delete>
+
+</mapper>

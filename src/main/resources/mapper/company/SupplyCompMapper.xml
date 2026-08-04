@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.SupplyCompMapper">
+
+    <resultMap id="CompResult" type="com.shopwizard.company.model.Comp">
+        <result property="compCode" column="CompCode"/>
+        <result property="compType" column="CompType"/>
+        <result property="corpCode" column="CorpCode"/>
+        <result property="mordrSaleCode" column="MordrSaleCode"/>
+        <result property="medApplncSaleCode" column="MedApplncSaleCode"/>
+        <result property="healthFunctnFoodCode" column="HealthFunctnFoodCode"/>
+        <result property="compName" column="CompName"/>
+        <result property="compDesc" column="CompDesc"/>
+        <result property="prsdntName" column="PrsdntName"/>
+        <result property="zipcode" column="Zipcode"/>
+        <result property="addr1" column="Addr1"/>
+        <result property="addr2" column="Addr2"/>
+        <result property="status" column="Status"/>
+        <result property="cate" column="Cate"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="faxNo" column="FaxNo"/>
+        <result property="email" column="Email"/>
+        <result property="homepg" column="Homepg"/>
+        <result property="reciptBank" column="ReciptBank"/>
+        <result property="reciptAccnt" column="ReciptAccnt"/>
+        <result property="reciptDepost" column="ReciptDepost"/>
+        <result property="svcCode" column="SvcCode"/>
+    </resultMap>
+
+    <resultMap id="SupplyCompResult" type="com.shopwizard.company.model.SupplyComp">
+        <result property="supplyCode" column="SupplyCode"/>
+        <result property="supplyType" column="SupplyType"/>
+        <result property="supplyName" column="SupplyName"/>
+        <result property="applyStartDate" column="ApplyStartDate"/>
+        <result property="applyEndDate" column="ApplyEndDate"/>
+        <result property="mngrName" column="MngrName"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="mobileNo" column="MobileNo"/>
+        <result property="faxNo" column="FaxNo"/>
+        <result property="email" column="Email"/>
+        <result property="zipcode" column="Zipcode"/>
+        <result property="addr1" column="Addr1"/>
+        <result property="addr2" column="Addr2"/>
+        <result property="compCode" column="CompCode"/>
+        <result property="approvDate" column="ApprovDate"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <association property="comp" resultMap="CompResult"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="SupplyCompResult">
+        SELECT *
+        FROM shopwizard.tCmpSupplyComp SC
+        INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SC.SvcCode = #{pSvcCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND SC.CompCode = #{pCompCode}</if>
+            <if test="pSupplyCode != null and pSupplyCode != ''">AND SC.SupplyCode = #{pSupplyCode}</if>
+            <if test="pSupplyName != null and pSupplyName != ''">AND SC.SupplyName LIKE CONCAT('%',#{pSupplyName},'%')</if>
+            <if test="pState != null and pState != ''">AND SC.State = #{pState}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY SC.${sidx} ${sord}</if>
+        <if test="pPageSize != null">ORDER BY SC.SupplyCode LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpSupplyComp SC
+        INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SC.SvcCode = #{pSvcCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND SC.CompCode = #{pCompCode}</if>
+            <if test="pSupplyCode != null and pSupplyCode != ''">AND SC.SupplyCode = #{pSupplyCode}</if>
+            <if test="pSupplyName != null and pSupplyName != ''">AND SC.SupplyName LIKE CONCAT('%',#{pSupplyName},'%')</if>
+            <if test="pState != null and pState != ''">AND SC.State = #{pState}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="SupplyCompResult">
+        SELECT *
+        FROM shopwizard.tCmpSupplyComp SC
+        INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
+        WHERE SC.SupplyCode = #{supplyCode}
+    </select>
+
+    <select id="selectMax" parameterType="map" resultType="string">
+        SELECT MAX(SupplyCode)
+        FROM shopwizard.tCmpSupplyComp
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.SupplyComp">
+        INSERT INTO shopwizard.tCmpSupplyComp (
+            SupplyCode, SupplyType, SupplyName,
+            ApplyStartDate, ApplyEndDate, MngrName,
+            PhoneNo, MobileNo, FaxNo,
+            Email, Zipcode, Addr1,
+            Addr2, SvcCode, CompCode, ApprovDate,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{supplyCode}, #{supplyType}, #{supplyName},
+            #{applyStartDate}, #{applyEndDate}, #{mngrName},
+            #{phoneNo}, #{mobileNo}, #{faxNo},
+            #{email}, #{zipcode}, #{addr1},
+            #{addr2}, #{svcCode}, #{compCode}, #{approvDate},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.SupplyComp">
+        UPDATE shopwizard.tCmpSupplyComp SET
+            SupplyType = #{supplyType}, SupplyName = #{supplyName},
+            ApplyStartDate = #{applyStartDate}, ApplyEndDate = #{applyEndDate},
+            MngrName = #{mngrName}, PhoneNo = #{phoneNo},
+            MobileNo = #{mobileNo}, FaxNo = #{faxNo}, Email = #{email},
+            Zipcode = #{zipcode}, Addr1 = #{addr1}, Addr2 = #{addr2},
+            CompCode = #{compCode}, ApprovDate = #{approvDate},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE SupplyCode = #{supplyCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopwizard.tCmpSupplyComp
+        WHERE SupplyCode = #{supplyCode}
+    </delete>
+
+</mapper>

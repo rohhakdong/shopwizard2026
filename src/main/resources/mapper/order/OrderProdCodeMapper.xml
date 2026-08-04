@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderProdCodeMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProdCode">
+        SELECT *
+        FROM shopwizard.tOrdOrderProdCode
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode LIKE CONCAT('%',#{pProdCode},'%')</if>
+            <if test="pProdName != null and pProdName != ''">AND ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa1 != null and pCapa1 != ''">AND Capa1 = #{pCapa1}</if>
+            <if test="pCapa2 != null and pCapa2 != ''">AND Capa2 = #{pCapa2}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode LIKE CONCAT('%',#{pShopCode},'%')</if>
+            <if test="pUseYn != null and (pUseYn == '1' or pUseYn == '0')">AND UseYn = #{pUseYn}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderProdCode
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode LIKE CONCAT('%',#{pProdCode},'%')</if>
+            <if test="pProdName != null and pProdName != ''">AND ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa1 != null and pCapa1 != ''">AND Capa1 = #{pCapa1}</if>
+            <if test="pCapa2 != null and pCapa2 != ''">AND Capa2 = #{pCapa2}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode LIKE CONCAT('%',#{pShopCode},'%')</if>
+            <if test="pUseYn != null and (pUseYn == '1' or pUseYn == '0')">AND UseYn = #{pUseYn}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderProdCode">
+        SELECT * FROM shopwizard.tOrdOrderProdCode WHERE MatchProdCode = #{matchProdCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderProdCode">
+        INSERT INTO shopwizard.tOrdOrderProdCode (
+            MatchProdCode, ShopCode, ProdCode, ProdName, Keywrd, Capa1, Qty1, Capa2, Qty2,
+            UseYn, ResultType, ResultMessag, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{matchProdCode}, #{shopCode}, #{prodCode}, #{prodName}, #{keywrd}, #{capa1}, #{qty1}, #{capa2}, #{qty2},
+            #{useYn}, #{resultType}, #{resultMessag}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderProdCode">
+        UPDATE shopwizard.tOrdOrderProdCode SET
+            ShopCode = #{shopCode}, ProdCode = #{prodCode}, ProdName = #{prodName}, UseYn = #{useYn},
+            ResultType = #{resultType}, ResultMessag = #{resultMessag}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE MatchProdCode = #{matchProdCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderProdCode">
+        DELETE FROM shopwizard.tOrdOrderProdCode WHERE MatchProdCode = #{matchProdCode}
+    </delete>
+
+</mapper>

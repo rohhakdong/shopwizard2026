@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderUpriceMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderUprice">
+        SELECT *
+        FROM shopwizard.tOrdOrderUprice
+        <where>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
+            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa != null and pCapa != ''">AND Capa = #{pCapa}</if>
+            <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderUprice
+        <where>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
+            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa != null and pCapa != ''">AND Capa = #{pCapa}</if>
+            <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderUprice">
+        SELECT * FROM shopwizard.tOrdOrderUprice
+        <where>
+            <if test="matchUpriceCode != null and matchUpriceCode != ''">AND MatchUpriceCode = #{matchUpriceCode}</if>
+            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode != #{pMatchUpriceCode}</if>
+            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName = #{pOrderProdName}</if>
+            <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderUprice">
+        INSERT INTO shopwizard.tOrdOrderUprice (
+            MatchUpriceCode, ShopCode, OrderProdName, Keywrd, Capa, Uprice, UnitName,
+            UseYn, ResultType, ResultMessag, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{matchUpriceCode}, #{shopCode}, #{orderProdName}, #{keywrd}, #{capa}, #{uprice}, #{unitName},
+            #{useYn}, #{resultType}, #{resultMessag}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderUprice">
+        UPDATE shopwizard.tOrdOrderUprice SET
+            ShopCode = #{shopCode}, Uprice = #{uprice}, UnitName = #{unitName}, UseYn = #{useYn},
+            ResultType = #{resultType}, ResultMessag = #{resultMessag},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE MatchUpriceCode = #{matchUpriceCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderUprice">
+        DELETE FROM shopwizard.tOrdOrderUprice WHERE MatchUpriceCode = #{matchUpriceCode}
+    </delete>
+
+</mapper>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.ship.mapper.GiftOptionUpdateDetailMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.GiftOptionUpdateDetail">
+        SELECT *
+        FROM shopwizard.tShpGiftOptionUpdateDetail
+        <where>
+            <if test="pUpdateId != null and pUpdateId != ''">AND UpdateId = #{pUpdateId}</if>
+            <if test="pUpdateDetailNo != null and pUpdateDetailNo != ''">AND UpdateDetailNo = #{pUpdateDetailNo}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+            LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpGiftOptionUpdateDetail
+        <where>
+            <if test="pUpdateId != null and pUpdateId != ''">AND UpdateId = #{pUpdateId}</if>
+            <if test="pUpdateDetailNo != null and pUpdateDetailNo != ''">AND UpdateDetailNo = #{pUpdateDetailNo}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.GiftOptionUpdateDetail">
+        SELECT *
+        FROM shopwizard.tShpGiftOptionUpdateDetail
+        WHERE UpdateId = #{updateId}
+        AND UpdateDetailNo = #{updateDetailNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.GiftOptionUpdateDetail">
+        INSERT INTO shopwizard.tShpGiftOptionUpdateDetail (
+            UpdateId, UpdateDetailNo, OrderNo, ResultType, ResultMessag, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{updateId}, #{updateDetailNo}, #{orderNo}, #{resultType}, #{resultMessag}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.ship.model.GiftOptionUpdateDetail">
+        UPDATE shopwizard.tShpGiftOptionUpdateDetail SET
+            UpdateId = #{updateId}, UpdateDetailNo = #{updateDetailNo}, OrderNo = #{orderNo},
+            ResultType = #{resultType}, ResultMessag = #{resultMessag}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE UpdateId = #{updateId}
+        AND UpdateDetailNo = #{updateDetailNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.ship.model.GiftOptionUpdateDetail">
+        DELETE FROM shopwizard.tShpGiftOptionUpdateDetail
+        WHERE UpdateId = #{updateId}
+        AND UpdateDetailNo = #{updateDetailNo}
+    </delete>
+
+    <select id="selectShipDirectList" parameterType="map" resultType="com.shopwizard.ship.model.ShipDirect">
+        SELECT SD.OrderNo, SD.OrderProdNo, SD.ProdName, SD.ProdQty, SD.ListPrice, SD.OrderProdName, SD.OrderItemName, SD.OrderProdQty, SD.ChnlCode, Ch.ChnlName
+        FROM shopwizard.tShpShipDirect SD
+        INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
+        <![CDATA[
+        WHERE (
+            SD.ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND
+            SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+        )
+        AND SD.ShopCode = '3018508386A1'
+        ]]>
+    </select>
+
+    <select id="selectShipDirectPrintList" parameterType="map" resultType="com.shopwizard.ship.model.ShipDirect">
+        SELECT SD.OrderNo, SD.OrderProdNo, SD.ProdName, SD.ProdQty, SD.ListPrice, SD.OrderProdName, SD.OrderItemName, SD.OrderProdQty, SD.ChnlCode, Ch.ChnlName
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
+        WHERE SD.OrderNo = #{orderNo}
+    </select>
+
+    <update id="updateShipDirectPrint" parameterType="map">
+        UPDATE shopwizard.tShpShipDirectPrint
+        SET ItemName = #{gift}, NVPrice = #{optionAmt}, Remark = '사은품 문자열 생성',
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = 1
+    </update>
+
+    <update id="updateShipDirectPrintAutionno" parameterType="map">
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderShoplinker S ON SD.OrderNo = S.ShopionOrderNo
+        SET SD.ProdMemo01 = S.GoodAuctionno
+        <![CDATA[
+        WHERE (
+            SD.ShipCheckDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d') AND
+            SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+        )
+        AND SD.ShopCode = '3018508386A1'
+        ]]>
+    </update>
+
+</mapper>

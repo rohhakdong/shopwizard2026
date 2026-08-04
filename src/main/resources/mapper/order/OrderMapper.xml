@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.Order">
+        SELECT *
+        FROM shopion.tOrdOrder
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pRecverName != null and pRecverName != ''">AND RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY OrderNo DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.Order">
+        SELECT *
+        FROM shopion.tOrdOrder
+        WHERE OrderNo = #{orderNo}
+    </select>
+
+    <sql id="orderListJoins">
+        <if test="pSvcCode != null and pSvcCode != 'ANY001'">
+        INNER JOIN shopion.tOrdOrderPay OPay ON OPay.OrderNo = O.OrderNo AND OPay.PayNo = 1
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OPay.PayType = CV.ConstrVal
+        </if>
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        LEFT OUTER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+    </sql>
+
+    <sql id="orderListWhere">
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CI.CompCode = #{pCompCode}</if>
+            <if test="pOrderSearchValue != null and pOrderSearchValue != ''">
+                <choose>
+                    <when test="pOrderSearchCondType == '주문번호'">AND O.OrderNo = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '주문자명'">AND O.OrderName = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '수취인명'">AND O.RecverName = #{pOrderSearchValue}</when>
+                </choose>
+            </if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND O.OrderNo = #{pOrderNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pRecverName != null and pRecverName != ''">AND O.RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND O.CustId = #{pCustId}</if>
+            <if test="pOrderPhoneNo != null and pOrderPhoneNo != ''">
+                AND (O.OrderPhoneNo LIKE CONCAT('%',#{pOrderPhoneNo},'%') OR O.OrderMobileNo LIKE CONCAT('%',#{pOrderPhoneNo},'%'))
+            </if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                AND
+                <choose>
+                    <when test="pOrderDateType == 'P'">
+                        <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'S'">
+                        <![CDATA[(O.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'R'">
+                        <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[(O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pOrderStateArr != null">
+                AND O.OrderState IN
+                <foreach collection="pOrderStateArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="pOrderState != null and pOrderState != ''">AND O.OrderState = #{pOrderState}</if>
+            <if test="pCompareDate != null">
+                <![CDATA[AND (O.ShipCmpletDate >= DATE_FORMAT(#{pCompareDate}, '%Y%m%d') OR O.ShipCmpletDate IS NULL)]]>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectListOrderList" parameterType="map" resultType="com.shopwizard.order.model.Order">
+        SELECT * FROM (
+            SELECT
+                (SELECT SUM(OP.SalePrice) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo) AS orderAmt,
+                (SELECT MIN(ProdName) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo) AS prodName,
+                (SELECT COUNT(OP.OrderProdNo) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo) AS prodCount,
+                (SELECT SUM(ProdQty) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo) AS prodQty,
+                (SELECT COUNT(OP.OrderProdNo) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.OrderState = '주문접수') AS readyCount,
+                (SELECT COUNT(*) FROM shopion.tOrdOrderProdApprovLine OAL WHERE OAL.OrderNo = O.OrderNo AND OAL.ApprovResult = 'R') AS rejectCount,
+                (SELECT COUNT(OP.OrderProdNo) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.OrderState = '지불완료') AS approvCount,
+                (SELECT COUNT(OP.OrderProdNo) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.OrderState = '발주시작') AS deliCount,
+                (SELECT COUNT(OP.OrderProdNo) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.OrderState = '배송완료') AS completeCount,
+                (SELECT COUNT(OP.OrderProdNo) FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.OrderState IN ('주문취소','환불완료')) AS cancelCount,
+                <choose>
+                    <when test="pSvcCode != null and pSvcCode == 'ANY001'">
+                        '' AS payType, '' AS payTypeName, '' AS cardComp, '' AS reciptBank, '' AS approvNo, '' AS reciptName, 0 AS payFee, IFNULL(O.PayCmpletDate,'') AS payCmpletDate,
+                    </when>
+                    <otherwise>
+                        OPay.PayType AS payType, CV.ConstrValDesc AS payTypeName, OPay.CardComp AS cardComp, OPay.ReciptBank AS reciptBank,
+                        OPay.ApprovNo AS approvNo, OPay.ReciptName AS reciptName, OPay.PayFee AS payFee, IFNULL(O.PayCmpletDate,OPay.PayDate) AS payCmpletDate,
+                    </otherwise>
+                </choose>
+                O.OrderNo, O.CustId, O.LoginId, O.RecomId, O.OrderName, O.OrderCode,
+                O.OrderEmail, O.OrderPhoneNo, O.OrderMobileNo, O.OrderZipcode, O.OrderAddr1,
+                O.OrderAddr2, O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode,
+                O.RecverAddr1, O.RecverAddr2, O.MoneyUnit, O.DeliMemo, O.OrderMemo,
+                O.DeliHopeDate, O.OrderReciptDate, O.OrderCancelDate, O.ShipDirectDate, O.ShipCheckDate,
+                O.ShipCmpletDate, O.DeliCmpletDate, O.RefundReciptDate, O.RefundRqstDate, O.RefundCmpletDate,
+                O.AreaCode, O.OrderState, Ch.ChnlCode, Ch.ChnlName, Ch.ChnlUrl, Ch.MngrMd AS chnlChrgName,
+                O.Remark, O.State, O.ChangeDate, O.ChangeId, O.ChangeName, O.RegistDate, O.RegistId, O.RegistName
+            FROM shopion.tOrdOrder O
+            <include refid="orderListJoins"/>
+            <include refid="orderListWhere"/>
+        ) tab1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY orderNo DESC</otherwise>
+        </choose>
+        <if test="topCnt != null">LIMIT ${topCnt}, ${countPerPage}</if>
+    </select>
+
+    <select id="selectCountOrderList" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrder O
+        <include refid="orderListJoins"/>
+        <include refid="orderListWhere"/>
+    </select>
+
+    <select id="selectListPay" parameterType="map" resultType="com.shopwizard.order.model.Order">
+        SELECT O.*, OPay.PayType AS payType, CV.ConstrValDesc AS payTypeName, OPay.CardComp AS cardComp,
+               OPay.ReciptBank AS reciptBank, OPay.ApprovNo AS approvNo, OPay.ReciptName AS reciptName, OPay.PayFee AS payFee
+        FROM shopion.tOrdOrder O
+        INNER JOIN shopion.tOrdOrderPay OPay ON O.OrderNo = OPay.OrderNo
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OPay.PayType = CV.ConstrVal
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND O.OrderNo = #{pOrderNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pRecverName != null and pRecverName != ''">AND O.RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND O.CustId = #{pCustId}</if>
+            <if test="endDate != null">
+                <![CDATA[AND (OPay.PayDate >= DATE_FORMAT(#{startDate}, '%Y%m%d') AND OPay.PayDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY O.${sidx} ${sord}</if>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.Order">
+        INSERT INTO shopion.tOrdOrder (
+            OrderNo, CustId, LoginId, RecomId, OrderName, OrderCode, OrderEmail, OrderPhoneNo, OrderMobileNo,
+            OrderZipcode, OrderAddr1, OrderAddr2, RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode,
+            RecverAddr1, RecverAddr2, MoneyUnit, DeliMemo, OrderMemo, DeliHopeDate, OrderState,
+            OrderReciptDate, AreaCode, ChnlCode, State, Remark, RegistId, RegistName, RegistDate
+            <if test="orderState == '지불완료'">, PayCmpletDate</if>
+        ) VALUES (
+            #{orderNo}, #{custId}, #{loginId}, #{recomId}, #{orderName},
+            (SELECT CustCode FROM shopion.tPrfCust WHERE CustId = #{custId}),
+            #{orderEmail}, #{orderPhoneNo}, #{orderMobileNo},
+            #{orderZipcode}, #{orderAddr1}, #{orderAddr2}, #{recverName}, #{recverPhoneNo}, #{recverMobileNo}, #{recverZipcode},
+            #{recverAddr1}, #{recverAddr2}, #{moneyUnit}, #{deliMemo}, #{orderMemo}, #{deliHopeDate}, #{orderState},
+            #{orderReciptDate}, #{areaCode}, #{chnlCode}, 1, #{remark}, #{registId}, #{registName}, NOW()
+            <if test="orderState == '지불완료'">, #{payCmpletDate}</if>
+        )
+    </insert>
+
+    <update id="updateOrderCancel" parameterType="com.shopwizard.order.model.Order">
+        UPDATE shopion.tOrdOrder SET
+            OrderState = #{orderState}, OrderCancelDate = NOW(),
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderState != '결제오류'
+    </update>
+
+    <update id="updateOrderState" parameterType="map">
+        UPDATE shopion.tOrdOrder SET OrderState = #{orderState},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+            <if test="orderState == '지불완료'">, PayCmpletDate = NOW()</if>
+            <if test="orderState == '출고지시'">, ShipDirectDate = NOW()</if>
+            <if test="orderState == '발주확인'">, ShipCheckDate = NOW()</if>
+            <if test="orderState == '배송시작'">, ShipCmpletDate = NOW()</if>
+            <if test="orderState == '배송완료'">, DeliCmpletDate = NOW()</if>
+            <if test="orderState == '환불완료'">, RefundCmpletDate = NOW()</if>
+            <if test="orderState == '주문취소'">, OrderCancelDate = NOW()</if>
+        WHERE OrderNo = #{orderNo}
+        AND OrderState != '결제오류'
+    </update>
+
+    <update id="updateRefundCancel" parameterType="map">
+        UPDATE shopion.tOrdOrder SET OrderState = #{orderState},
+            RefundCmpletDate = NULL, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo}
+        AND OrderState != '결제오류'
+    </update>
+
+</mapper>

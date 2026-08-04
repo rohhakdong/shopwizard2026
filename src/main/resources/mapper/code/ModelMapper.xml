@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.code.mapper.ModelMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.code.model.Model">
+        SELECT *, '' AS DomainName FROM tCodModel
+        <where>
+            <if test="pSystemCode != null and pSystemCode != ''">AND SystemCode = #{pSystemCode}</if>
+            <if test="pDomainCode != null and pDomainCode != ''">AND DomainCode = #{pDomainCode}</if>
+            <if test="pModelName != null and pModelName != ''">
+                AND (CONCAT(IFNULL(KorWord1,''),IFNULL(KorWord2,''),IFNULL(KorWord3,''),IFNULL(KorWord4,''),IFNULL(KorWord5,'')) LIKE CONCAT('%',#{pModelName},'%')
+                OR CONCAT(IFNULL(EngAbbr1,''),IFNULL(EngAbbr2,''),IFNULL(EngAbbr3,''),IFNULL(EngAbbr4,''),IFNULL(EngAbbr5,'')) LIKE CONCAT('%',#{pModelName},'%'))
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.code.model.Model">
+        SELECT tCodModel.*, tCodConstrVal.ConstrValDesc AS DomainName
+        FROM tCodModel, tCodConstrVal
+        WHERE tCodModel.domainCode = tCodConstrVal.constrVal
+        AND tCodConstrVal.constrCode = 'cDomainType'
+        AND ModelId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.code.model.Model">
+        INSERT INTO tCodModel (SystemCode, DomainCode, KorWord1, KorWord2, KorWord3, KorWord4, KorWord5, EngAbbr1, EngAbbr2, EngAbbr3, EngAbbr4, EngAbbr5, AlterName, State, Remark, RegistDate, RegistId, RegistName)
+        VALUES (#{systemCode}, #{domainCode}, #{korWord1}, #{korWord2}, #{korWord3}, #{korWord4}, #{korWord5}, #{engAbbr1}, #{engAbbr2}, #{engAbbr3}, #{engAbbr4}, #{engAbbr5}, #{alterName}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.code.model.Model">
+        UPDATE tCodModel SET
+        DomainCode = #{domainCode}, KorWord1 = #{korWord1}, KorWord2 = #{korWord2}, KorWord3 = #{korWord3}, KorWord4 = #{korWord4},
+        KorWord5 = #{korWord5}, EngAbbr1 = #{engAbbr1}, EngAbbr2 = #{engAbbr2}, EngAbbr3 = #{engAbbr3}, EngAbbr4 = #{engAbbr4},
+        EngAbbr5 = #{engAbbr5}, AlterName = #{alterName}, State = #{state}, Remark = #{remark},
+        ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE ModelId = #{modelId}
+    </update>
+
+    <delete id="delete" parameterType="int">DELETE FROM tCodModel WHERE ModelId = #{value}</delete>
+
+    <update id="updateWordDict1" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModel SET EngAbbr1 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord1 = #{korWord}
+    </update>
+    <update id="updateWordDict2" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModel SET EngAbbr2 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord2 = #{korWord}
+    </update>
+    <update id="updateWordDict3" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModel SET EngAbbr3 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord3 = #{korWord}
+    </update>
+    <update id="updateWordDict4" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModel SET EngAbbr4 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord4 = #{korWord}
+    </update>
+    <update id="updateWordDict5" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModel SET EngAbbr5 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord5 = #{korWord}
+    </update>
+
+</mapper>

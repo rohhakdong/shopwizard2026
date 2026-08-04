@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.code.mapper.ModelAttrMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.code.model.ModelAttr">
+        SELECT * FROM tCodModelAttr
+        <where>
+            <if test="pModelId != null and pModelId != ''">AND ModelId = #{pModelId}</if>
+            <if test="pAttrName != null">AND CONCAT(KorWord1,KorWord2,KorWord3,KorWord4,KorWord5) LIKE CONCAT('%',#{pAttrName},'%')</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY AttrSeq, AttrId</otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.code.model.ModelAttr">
+        INSERT INTO tCodModelAttr (ModelId, KorWord1, KorWord2, KorWord3, KorWord4, KorWord5, EngAbbr1, EngAbbr2, EngAbbr3, EngAbbr4, EngAbbr5, AlterName, AttrSeq, DataType, DataLength, ConstrCode, ReqirdYn, SearchYn, ListYn, InputType, DefaltVal, PkYn, State, Remark, RegistDate, RegistId, RegistName)
+        VALUES (#{modelId}, #{korWord1}, #{korWord2}, #{korWord3}, #{korWord4}, #{korWord5}, #{engAbbr1}, #{engAbbr2}, #{engAbbr3}, #{engAbbr4}, #{engAbbr5}, #{alterName}, #{attrSeq}, #{dataType}, #{dataLength}, #{constrCode}, #{reqirdYn}, #{searchYn}, #{listYn}, #{inputType}, #{defaltVal}, #{pkYn}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.code.model.ModelAttr">
+        UPDATE tCodModelAttr SET
+        KorWord1 = #{korWord1}, KorWord2 = #{korWord2}, KorWord3 = #{korWord3}, KorWord4 = #{korWord4}, KorWord5 = #{korWord5},
+        EngAbbr1 = #{engAbbr1}, EngAbbr2 = #{engAbbr2}, EngAbbr3 = #{engAbbr3}, EngAbbr4 = #{engAbbr4}, EngAbbr5 = #{engAbbr5},
+        AlterName = #{alterName}, AttrSeq = #{attrSeq}, DataType = #{dataType}, DataLength = #{dataLength},
+        ConstrCode = #{constrCode}, ReqirdYn = #{reqirdYn}, SearchYn = #{searchYn}, ListYn = #{listYn},
+        InputType = #{inputType}, DefaltVal = #{defaltVal}, PkYn = #{pkYn}, State = #{state}, Remark = #{remark},
+        ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE ModelId = #{modelId} AND AttrId = #{attrId}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.code.model.ModelAttr">
+        DELETE FROM tCodModelAttr WHERE ModelId = #{modelId} AND AttrId = #{attrId}
+    </delete>
+
+    <update id="updateWordDict1" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModelAttr SET EngAbbr1 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord1 = #{korWord}
+    </update>
+    <update id="updateWordDict2" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModelAttr SET EngAbbr2 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord2 = #{korWord}
+    </update>
+    <update id="updateWordDict3" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModelAttr SET EngAbbr3 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord3 = #{korWord}
+    </update>
+    <update id="updateWordDict4" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModelAttr SET EngAbbr4 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord4 = #{korWord}
+    </update>
+    <update id="updateWordDict5" parameterType="com.shopwizard.code.model.WordDict">
+        UPDATE tCodModelAttr SET EngAbbr5 = #{engAbbr}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName} WHERE KorWord5 = #{korWord}
+    </update>
+
+</mapper>

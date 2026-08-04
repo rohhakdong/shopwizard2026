@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.SupplyCompBoardMapper">
+
+    <resultMap id="SupplyCompBoardResult" type="com.shopwizard.company.model.SupplyCompBoard">
+        <result property="boardNo" column="BoardNo"/>
+        <result property="mainId" column="MainId"/>
+        <result property="treeId" column="TreeId"/>
+        <result property="childId" column="ChildId"/>
+        <result property="linkId" column="LinkId"/>
+        <result property="title" column="Title"/>
+        <result property="cntnts" column="Cntnts"/>
+        <result property="email" column="Email"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="passwd" column="Passwd"/>
+        <result property="treeCheck" column="TreeCheck"/>
+        <result property="visiteCnt" column="VisiteCnt"/>
+        <result property="boardType" column="BoardType"/>
+        <result property="fileName" column="FileName"/>
+        <result property="docTypeCode" column="DocTypeCode"/>
+        <result property="chnlCode" column="ChnlCode"/>
+        <result property="supplyCode" column="SupplyCode"/>
+        <result property="supplyName" column="SupplyName"/>
+        <result property="shopCode" column="ShopCode"/>
+        <result property="shopName" column="ShopName"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="SupplyCompBoardResult">
+        SELECT *
+        FROM shopwizard.tCmpSupplyCompBoard
+        <where>
+            <if test="pSupplyCode != null and pSupplyCode != ''">AND SupplyCode = #{pSupplyCode}</if>
+            <if test="pSupplyName != null and pSupplyName != ''">AND SupplyName LIKE CONCAT('%',#{pSupplyName},'%')</if>
+        </where>
+        ORDER BY BoardNo DESC
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpSupplyCompBoard
+        <where>
+            <if test="pBoardNo != null and pBoardNo != ''">AND BoardNo = #{pBoardNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="SupplyCompBoardResult">
+        SELECT *
+        FROM shopwizard.tCmpSupplyCompBoard
+        WHERE BoardNo = #{boardNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.SupplyCompBoard">
+        INSERT INTO shopwizard.tCmpSupplyCompBoard (
+            BoardNo, MainId, TreeId, ChildId, LinkId, Title, Cntnts, Email, PhoneNo, Passwd,
+            TreeCheck, VisiteCnt, BoardType, FileName, DocTypeCode, ChnlCode,
+            SupplyCode, SupplyName, ShopCode, ShopName,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{boardNo}, #{mainId}, #{treeId}, #{childId}, #{linkId}, #{title}, #{cntnts}, #{email}, #{phoneNo}, #{passwd},
+            #{treeCheck}, #{visiteCnt}, #{boardType}, #{fileName}, #{docTypeCode}, #{chnlCode},
+            #{supplyCode}, #{supplyName}, #{shopCode}, #{shopName},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.SupplyCompBoard">
+        UPDATE shopwizard.tCmpSupplyCompBoard SET
+            MainId = #{mainId}, TreeId = #{treeId}, ChildId = #{childId}, LinkId = #{linkId},
+            Title = #{title}, Cntnts = #{cntnts}, Email = #{email}, PhoneNo = #{phoneNo},
+            Passwd = #{passwd}, TreeCheck = #{treeCheck}, VisiteCnt = #{visiteCnt},
+            BoardType = #{boardType}, FileName = #{fileName}, DocTypeCode = #{docTypeCode},
+            ChnlCode = #{chnlCode}, SupplyCode = #{supplyCode}, SupplyName = #{supplyName},
+            ShopCode = #{shopCode}, ShopName = #{shopName},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE BoardNo = #{boardNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.SupplyCompBoard">
+        DELETE FROM shopwizard.tCmpSupplyCompBoard
+        WHERE BoardNo = #{boardNo}
+    </delete>
+
+</mapper>

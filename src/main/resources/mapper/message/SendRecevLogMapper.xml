@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.message.mapper.SendRecevLogMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.message.model.SendRecevLog">
+        SELECT * FROM wizardn.tMsgSendRecevLog
+        <where>
+            <if test="pLogId != null and pLogId != ''">AND LogId = #{pLogId}</if>
+            <if test="pDocType != null and pDocType != ''">AND DocType = #{pDocType}</if>
+            <if test="pSendTermnlCode != null and pSendTermnlCode != ''">AND SendTermnlCode = #{pSendTermnlCode}</if>
+            <if test="pRecevTermnlCode != null and pRecevTermnlCode != ''">AND RecevTermnlCode = #{pRecevTermnlCode}</if>
+            <if test="pVal != null and pVal != ''">AND Val = #{pVal}</if>
+            <if test="pTransType != null and pTransType != ''">AND TransType = #{pTransType}</if>
+            <if test="pTransResultType != null and pTransResultType != ''">AND TransResultType = #{pTransResultType}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM wizardn.tMsgSendRecevLog
+        <where>
+            <if test="pLogId != null and pLogId != ''">AND LogId = #{pLogId}</if>
+            <if test="pDocType != null and pDocType != ''">AND DocType = #{pDocType}</if>
+            <if test="pSendTermnlCode != null and pSendTermnlCode != ''">AND SendTermnlCode = #{pSendTermnlCode}</if>
+            <if test="pRecevTermnlCode != null and pRecevTermnlCode != ''">AND RecevTermnlCode = #{pRecevTermnlCode}</if>
+            <if test="pVal != null and pVal != ''">AND Val = #{pVal}</if>
+            <if test="pTransType != null and pTransType != ''">AND TransType = #{pTransType}</if>
+            <if test="pTransResultType != null and pTransResultType != ''">AND TransResultType = #{pTransResultType}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.message.model.SendRecevLog">
+        SELECT * FROM wizardn.tMsgSendRecevLog WHERE LogId = #{logId}
+    </select>
+
+    <select id="selectTop" parameterType="string" resultType="com.shopwizard.message.model.SendRecevLog">
+        SELECT * FROM wizardn.tMsgSendRecevLog WHERE TransResultType = 'READY' AND DocType = #{value} ORDER BY LogId LIMIT 0, 1
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.message.model.SendRecevLog">
+        INSERT INTO wizardn.tMsgSendRecevLog (DocType, SendTermnlCode, RecevTermnlCode, TableName, Val, TransType, TransResultType, TransResultMessag, FileLoc, TransDate, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{docType}, #{sendTermnlCode}, #{recevTermnlCode}, #{tableName}, #{val}, #{transType}, #{transResultType}, #{transResultMessag}, #{fileLoc}, #{transDate}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.message.model.SendRecevLog">
+        UPDATE wizardn.tMsgSendRecevLog SET
+        LogId = #{logId}, DocType = #{docType}, SendTermnlCode = #{sendTermnlCode}, RecevTermnlCode = #{recevTermnlCode},
+        TableName = #{tableName}, Val = #{val}, TransType = #{transType}, TransResultType = #{transResultType},
+        TransResultMessag = #{transResultMessag}, FileLoc = #{fileLoc}, TransDate = #{transDate},
+        State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE LogId = #{logId}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.message.model.SendRecevLog">
+        DELETE FROM wizardn.tMsgSendRecevLog WHERE LogId = #{logId}
+    </delete>
+
+    <update id="updateTransResult" parameterType="int">
+        UPDATE wizardn.tMsgSendRecevLog SET TransResultType = 'OK', TransDate = NOW() WHERE LogId = #{value}
+    </update>
+
+    <update id="updateTransError" parameterType="map">
+        UPDATE wizardn.tMsgSendRecevLog SET TransResultType = 'ERROR', TransResultMessag = #{errorMessage}, TransDate = NOW() WHERE LogId = #{logId}
+    </update>
+
+</mapper>

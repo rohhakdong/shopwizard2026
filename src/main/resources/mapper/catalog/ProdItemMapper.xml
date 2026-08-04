@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.ProdItemMapper">
+
+    <resultMap id="ProdItemResult" type="com.shopwizard.catalog.model.ProdItem">
+        <result property="prodCode" column="ProdCode"/> <result property="itemCode" column="ItemCode"/>
+        <result property="attrVal1" column="AttrVal1"/> <result property="attrVal2" column="AttrVal2"/> <result property="attrVal3" column="AttrVal3"/> <result property="attrVal4" column="AttrVal4"/>
+        <result property="supplyQty" column="SupplyQty"/> <result property="leadTime" column="LeadTime"/> <result property="leadTimeReason" column="LeadTimeReason"/>
+        <result property="saleYn" column="SaleYn"/> <result property="saleStopDate" column="SaleStopDate"/>
+        <result property="reservReason" column="ReservReason"/> <result property="reservStartDate" column="ReservStartDate"/> <result property="reservEndDate" column="ReservEndDate"/>
+        <result property="reservSupplyDate" column="ReservSupplyDate"/> <result property="reservSupplyQty" column="ReservSupplyQty"/>
+        <result property="salePrice" column="SalePrice"/> <result property="supplyPrice" column="SupplyPrice"/> <result property="buyPrice" column="BuyPrice"/> <result property="optionPrice" column="OptionPrice"/>
+        <result property="remark" column="Remark"/> <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ProdItemResult">
+        SELECT * FROM shopwizard.tCatProdItem
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+            <if test="pItemCode != null and pItemCode != ''">AND ItemCode = #{pItemCode}</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY ItemCode</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatProdItem
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+            <if test="pItemCode != null and pItemCode != ''">AND ItemCode = #{pItemCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ProdItemResult">
+        SELECT * FROM shopwizard.tCatProdItem WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </select>
+
+    <select id="selectItemCodeByAttrVal" parameterType="map" resultType="string">
+        SELECT ItemCode FROM shopwizard.tCatProdItem
+        WHERE ProdCode = #{prodCode} AND AttrVal1 = #{attrVal1} AND AttrVal2 = #{attrVal2} AND AttrVal3 = #{attrVal3} AND AttrVal4 = #{attrVal4}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.ProdItem">
+        INSERT INTO shopwizard.tCatProdItem (
+            ProdCode, ItemCode, AttrVal1, AttrVal2, AttrVal3, AttrVal4,
+            SupplyQty, LeadTime, LeadTimeReason, SaleYn, SaleStopDate,
+            ReservReason, ReservStartDate, ReservEndDate, ReservSupplyDate, ReservSupplyQty,
+            SalePrice, SupplyPrice, BuyPrice, OptionPrice,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{prodCode}, #{itemCode}, #{attrVal1}, #{attrVal2}, #{attrVal3}, #{attrVal4},
+            #{supplyQty}, #{leadTime}, #{leadTimeReason}, #{saleYn}, #{saleStopDate},
+            #{reservReason}, #{reservStartDate}, #{reservEndDate}, #{reservSupplyDate}, #{reservSupplyQty},
+            #{salePrice}, #{supplyPrice}, #{buyPrice}, #{optionPrice},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.ProdItem">
+        UPDATE shopwizard.tCatProdItem SET
+            AttrVal1 = #{attrVal1}, AttrVal2 = #{attrVal2}, AttrVal3 = #{attrVal3}, AttrVal4 = #{attrVal4},
+            SupplyQty = #{supplyQty}, LeadTime = #{leadTime}, LeadTimeReason = #{leadTimeReason},
+            SaleYn = #{saleYn}, SaleStopDate = #{saleStopDate},
+            ReservReason = #{reservReason}, ReservStartDate = #{reservStartDate}, ReservEndDate = #{reservEndDate},
+            ReservSupplyDate = #{reservSupplyDate}, ReservSupplyQty = #{reservSupplyQty},
+            SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice}, OptionPrice = #{optionPrice},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <update id="updateItemlist" parameterType="map">
+        UPDATE shopwizard.tCatProdItem SET
+            SupplyQty = #{supplyQty}, SaleYn = #{saleYn},
+            OptionPrice = #{optionPrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.catalog.model.ProdItem">
+        DELETE FROM shopwizard.tCatProdItem WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </delete>
+
+    <update id="disable" parameterType="string">
+        UPDATE shopwizard.tCatProdItem SET SaleYn = 0, SaleStopDate = NOW() WHERE ProdCode = #{value}
+    </update>
+
+    <update id="enable" parameterType="map">
+        UPDATE shopwizard.tCatProdItem SET SaleYn = 1, SaleStopDate = NULL WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
+    <insert id="copy2Shopion" parameterType="map">
+        INSERT INTO shopion.tPrdProdItem (
+            ProdCode, ItemCode, AttrVal1, AttrVal2, AttrVal3, AttrVal4,
+            SupplyQty, LeadTime, LeadTimeReason, SaleYn, SaleStopDate,
+            ReservReason, ReservStartDate, ReservEndDate, ReservSupplyDate, ReservSupplyQty,
+            SalePrice, SupplyPrice, BuyPrice, OptionPrice, State, Remark, RegistId, RegistName, RegistDate
+        )
+        SELECT ProdCode, ItemCode, AttrVal1, AttrVal2, AttrVal3, AttrVal4,
+               SupplyQty, LeadTime, LeadTimeReason, SaleYn, SaleStopDate,
+               ReservReason, ReservStartDate, ReservEndDate, ReservSupplyDate, ReservSupplyQty,
+               SalePrice, SupplyPrice, BuyPrice, OptionPrice, State, Remark, #{registId}, #{registName}, NOW()
+        FROM shopwizard.tCatProdItem WHERE ProdCode = #{prodCode}
+    </insert>
+
+    <delete id="delete2Shopion" parameterType="string">
+        DELETE FROM shopion.tPrdProdItem WHERE ProdCode = #{value}
+    </delete>
+
+</mapper>

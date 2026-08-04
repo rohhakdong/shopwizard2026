@@ -1,0 +1,884 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderProdMapper">
+
+    <sql id="payJoin">
+        <if test="pSvcCode != null and pSvcCode != 'ANY001'">
+        INNER JOIN shopion.tOrdOrderPay OPay ON OPay.OrderNo = O.OrderNo AND OPay.PayNo = 1
+        INNER JOIN wizardn.tCodConstrVal CV ON OPay.PayType = CV.ConstrVal AND CV.ConstrCode = 'cPayType'
+        </if>
+    </sql>
+
+    <sql id="prodShopJoin">
+        <if test="pSvcCode != null and pSvcCode != 'ANY001'">
+            <choose>
+                <when test="pDirectType != null and pDirectType == '출고지시'">
+                INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+                INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+                </when>
+                <when test="pOrderState != null and pOrderState == '지불완료'">
+                LEFT OUTER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+                LEFT OUTER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+                </when>
+                <otherwise>
+                INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+                INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pSvcCode != null and pSvcCode == 'ANY001'">
+        INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+        INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+        </if>
+    </sql>
+
+    <sql id="custJoin">
+        <if test="pCompCode != null and pCompCode != ''">
+        INNER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+        </if>
+        <if test="(pCompCode == null or pCompCode == '') and pCustName != null and pCustName != ''">
+        INNER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+        </if>
+        <if test="(pCompCode == null or pCompCode == '') and (pCustName == null or pCustName == '') and pLoginId != null and pLoginId != ''">
+        INNER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+        </if>
+    </sql>
+
+    <sql id="orderProdWhere">
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CI.CompCode = #{pCompCode}</if>
+            <if test="pOrderSearchValue != null and pOrderSearchValue != ''">
+                <choose>
+                    <when test="pOrderSearchCondType == '상품코드'">AND OP.ProdCode = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '상품명'">AND OP.ProdName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '주문번호'">AND O.OrderNo = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '주문자명'">AND O.OrderName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '수취인명'">AND O.RecverName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '전화번호'">
+                        AND (O.OrderPhoneNo = #{pOrderSearchValue} OR O.OrderMobileNo = #{pOrderSearchValue}
+                             OR O.RecverPhoneNo = #{pOrderSearchValue} OR O.RecverMobileNo = #{pOrderSearchValue})
+                    </when>
+                    <when test="pOrderSearchCondType == '채널주문번호'">AND OP.ChnlOrderNo LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                </choose>
+            </if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND O.OrderNo = #{pOrderNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pProdName != null and pProdName != ''">AND OP.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pRecverName != null and pRecverName != ''">AND O.RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>
+            <if test="pCustId != null and pCustId != ''">
+                <if test="pCustId.toString() != '0'">AND O.CustId = #{pCustId}</if>
+                <if test="pCustId.toString() == '0'">
+                    AND O.CustId = #{pCustId}
+                    <if test="pOrderNo != null and pOrderNo != ''">AND O.OrderNo = #{pOrderNo}</if>
+                    <if test="pOrderNo == null or pOrderNo == ''">
+                        <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+                        <if test="pOrderName == null or pOrderName == ''">AND O.OrderName = '######'</if>
+                        <if test="pOrderPhoneNo != null and pOrderPhoneNo != ''">
+                            AND (O.OrderPhoneNo LIKE CONCAT('%',#{pOrderPhoneNo},'%') OR O.OrderMobileNo LIKE CONCAT('%',#{pOrderPhoneNo},'%'))
+                        </if>
+                        <if test="pOrderPhoneNo == null or pOrderPhoneNo == ''">AND O.OrderPhoneNo = '######'</if>
+                    </if>
+                </if>
+            </if>
+            <if test="pOrderPhoneNo != null and pOrderPhoneNo != ''">
+                AND (O.OrderPhoneNo LIKE CONCAT('%',#{pOrderPhoneNo},'%') OR O.OrderMobileNo LIKE CONCAT('%',#{pOrderPhoneNo},'%'))
+            </if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                AND
+                <choose>
+                    <when test="pOrderDateType == 'P'">
+                        <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'S'">
+                        <![CDATA[(OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'R'">
+                        <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[(O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pOrderStateArr != null">
+                AND OP.OrderState IN
+                <foreach collection="pOrderStateArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="pOrderState != null and pOrderState != ''">AND OP.OrderState = #{pOrderState}</if>
+            <if test="pPayTypeArr != null">
+                AND OPay.PayType IN
+                <foreach collection="pPayTypeArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="pCompareDate != null">
+                <![CDATA[AND (OP.ShipCmpletDate >= DATE_FORMAT(#{pCompareDate}, '%Y%m%d') OR OP.ShipCmpletDate IS NULL)]]>
+            </if>
+            <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
+            <if test="pSocialYn != null and (pSocialYn == 'V' or pSocialYn == 'Y')">
+                AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
+            </if>
+            <if test="pSocialYn != null and pSocialYn == 'N'">
+                AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
+            </if>
+            <if test="p2BoxSearchValue == null or p2BoxSearchValue == ''">
+                <if test="pShopCode != null and pShopCode != ''">AND OP.ShopCode = #{pShopCode}</if>
+            </if>
+            <if test="p2BoxSearchValue != null and p2BoxSearchValue != ''">
+                AND OP.ProdName LIKE '%2박스%' AND OP.ProdName LIKE '%피죤%' AND OP.ProdName NOT LIKE '%제습제%'
+            </if>
+            <if test="pShopCode != null and pShopCode == '3018508386A1' and pSocialYn != null and pSocialYn != ''">
+                <choose>
+                    <when test="pSocialYn == 'H'">AND Ch.ChnlName IN ('홈앤쇼핑')</when>
+                    <otherwise>AND Ch.ChnlName NOT IN ('홈앤쇼핑')</otherwise>
+                </choose>
+            </if>
+            <if test="pApprovCustId != null and pApprovCustId != ''">
+                AND EXISTS (
+                    SELECT * FROM shopion.tOrdOrderProdApprovLine OAL
+                    WHERE OAL.OrderNo = OP.OrderNo AND OAL.OrderProdNo = OP.OrderProdNo
+                    AND OAL.ApprovCustId = #{pApprovCustId}
+                    <if test="pApprovResult != null and pApprovResult != ''">AND OAL.ApprovResult = #{pApprovResult}</if>
+                    <if test="pApprovResult == null or pApprovResult == ''">AND OAL.ApprovResult IS NULL</if>
+                    AND NOT EXISTS (
+                        SELECT * FROM shopion.tOrdOrderProdApprovLine OALprev
+                        WHERE OAL.OrderNo = OALprev.OrderNo AND OAL.OrderProdNo = OALprev.OrderProdNo
+                        AND OAL.ApprovLevel > OALprev.ApprovLevel
+                        AND (OALprev.ApprovResult IS NULL OR OALprev.ApprovResult = 'R')
+                    )
+                )
+                AND OP.OrderState = '주문접수'
+            </if>
+            <if test="pAdjustSelect != null and pAdjustSelect == 'N'">
+                AND NOT EXISTS (
+                    SELECT * FROM shopwizard.tAdjAdjustDetail
+                    WHERE shopwizard.tAdjAdjustDetail.OrderNo = OP.OrderNo
+                    AND shopwizard.tAdjAdjustDetail.OrderProdNo = OP.OrderProdNo
+                    AND shopwizard.tAdjAdjustDetail.SaleAdjustCloseDate IS NOT NULL
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT * FROM (
+            SELECT OP.*,
+            <choose>
+                <when test="pSvcCode != null and pSvcCode == 'ANY001'">
+                    '' AS payType, '' AS payTypeName, '' AS cardComp, '' AS reciptBank, '' AS payCompName, '' AS approvNo, '' AS reciptName, 0 AS payFee, IFNULL(O.PayCmpletDate,'') AS payCmpletDate,
+                </when>
+                <otherwise>
+                    OPay.PayType AS payType, CV.ConstrValDesc AS payTypeName, OPay.CardComp AS cardComp, OPay.ReciptBank AS reciptBank,
+                    CASE WHEN OPay.CardComp IS NULL OR OPay.CardComp = '' THEN OPay.ReciptBank ELSE OPay.CardComp END AS payCompName,
+                    OPay.ApprovNo AS approvNo, OPay.ReciptName AS reciptName, OPay.PayFee AS payFee, IFNULL(O.PayCmpletDate,OPay.PayDate) AS payCmpletDate,
+                </otherwise>
+            </choose>
+                O.CustId, O.LoginId, O.RecomId, O.OrderName, O.OrderCode,
+                O.OrderEmail, O.OrderPhoneNo, O.OrderMobileNo, O.OrderZipcode, O.OrderAddr1,
+                O.OrderAddr2, O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode,
+                O.RecverAddr1, O.RecverAddr2, O.MoneyUnit, O.DeliMemo, O.OrderMemo,
+                O.DeliHopeDate, O.OrderReciptDate, O.OrderCancelDate, O.AreaCode,
+            <choose>
+                <when test="pHideDeliInfo != null and pHideDeliInfo == 'YES'">'' AS deliCompDesc, '' AS linkUrl, '' AS invNoVar,</when>
+                <otherwise>DC.DeliCompDesc, DC.LinkUrl, DC.InvNoVar,</otherwise>
+            </choose>
+                P.BuyPrice AS registBuyPrice, Ch.ChnlCode, Ch.ChnlName, Ch.ChnlUrl, Ch.MngrMd AS chnlChrgName, S.MngrMd AS shopChrgName
+            <choose>
+                <when test="pSvcCode != null and (pSvcCode == 'CSH001' or pSvcCode == 'SOH001')">, ODF.DeliFeeName</when>
+                <otherwise>, '' AS deliFeeName</otherwise>
+            </choose>
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            <include refid="payJoin"/>
+            <include refid="prodShopJoin"/>
+            <if test="pHideDeliInfo == null or pHideDeliInfo != 'YES'">
+            LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON OP.DeliCompCode = DC.DeliCompCode
+            </if>
+            <if test="pSvcCode != null and (pSvcCode == 'CSH001' or pSvcCode == 'SOH001')">
+            INNER JOIN shopion.tOrdOrderDeliFee ODF ON OP.DeliFeeId = ODF.DeliFeeId AND OP.OrderNo = ODF.OrderNo
+            </if>
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            <include refid="custJoin"/>
+            <include refid="orderProdWhere"/>
+        ) tab1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY orderNo DESC, orderProdNo ASC</otherwise>
+        </choose>
+        <if test="topCnt != null">LIMIT #{topCnt}, #{countPerPage}</if>
+    </select>
+
+    <select id="selectListCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        <include refid="payJoin"/>
+        <include refid="prodShopJoin"/>
+        <if test="pHideDeliInfo == null or pHideDeliInfo != 'YES'">
+        LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON OP.DeliCompCode = DC.DeliCompCode
+        </if>
+        <if test="pSvcCode != null and (pSvcCode == 'CSH001' or pSvcCode == 'SOH001')">
+        INNER JOIN shopion.tOrdOrderDeliFee ODF ON OP.DeliFeeId = ODF.DeliFeeId AND OP.OrderNo = ODF.OrderNo
+        </if>
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <include refid="custJoin"/>
+        <include refid="orderProdWhere"/>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT OP.*,
+        <choose>
+            <when test="pSvcCode != null and pSvcCode == 'ANY001'">'' AS payType, '' AS payTypeName, '' AS cardComp, '' AS reciptBank, '' AS approvNo, '' AS reciptName, '' AS payFee,</when>
+            <otherwise>OPay.PayType AS payType, CV.ConstrValDesc AS payTypeName, OPay.CardComp AS cardComp, OPay.ReciptBank AS reciptBank, OPay.ApprovNo AS approvNo, OPay.ReciptName AS reciptName, OPay.PayFee AS payFee,</otherwise>
+        </choose>
+            O.CustId, O.LoginId, O.RecomId, O.OrderName, O.OrderCode,
+            O.OrderEmail, O.OrderPhoneNo, O.OrderMobileNo, O.OrderZipcode, O.OrderAddr1,
+            O.OrderAddr2, O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode,
+            O.RecverAddr1, O.RecverAddr2, O.MoneyUnit, O.DeliMemo, O.OrderMemo,
+            O.DeliHopeDate, O.OrderReciptDate, O.PayCmpletDate, O.OrderCancelDate, O.AreaCode,
+            DC.DeliCompName, DC.DeliCompDesc, DC.LinkUrl, DC.InvNoVar, P.BuyPrice AS registBuyPrice,
+            Ch.ChnlCode, Ch.ChnlName, Ch.ChnlUrl, Ch.MngrMd AS chnlChrgName, S.MngrMd AS shopChrgName, ODF.DeliFeeName
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <if test="pSvcCode != null and pSvcCode != 'ANY001'">
+        INNER JOIN shopion.tOrdOrderPay OPay ON OPay.OrderNo = O.OrderNo AND OPay.PayNo = 1
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OPay.PayType = CV.ConstrVal
+        </if>
+        LEFT OUTER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+        LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON OP.DeliCompCode = DC.DeliCompCode
+        LEFT OUTER JOIN shopion.tOrdOrderDeliFee ODF ON OP.DeliFeeId = ODF.DeliFeeId AND OP.OrderNo = ODF.OrderNo
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+        LEFT OUTER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+        WHERE OP.OrderNo = #{orderNo}
+        AND OP.OrderProdNo = #{orderProdNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderProd">
+        INSERT INTO shopion.tOrdOrderProd (
+            OrderNo, OrderProdNo, SupplyCode, SupplyName, ShopCode,
+            ShopName, BundleYn, StoreCode, ProdCode, ShopProdCode, ProdName,
+            ProdImg, ItemCode, ItemName, MakerName, ModelName, ProdUnit, ProdMemo01,
+            ProdQty, ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnId,
+            ProdCpnId, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt,
+            SupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt,
+            VatRate, VatAmt, ReciptAmt, GiftRefundAmt, ProdMargin, ChnlMargin,
+            NetMargin, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode, PromotFeeAmt,
+            PrevInvNo, InvNo, InvChangeReason, InvChangeReasonDetail, OrderState, ExchngReason,
+            ExchngReasonDetail, ReturnReason, ReturnReasonDetail,
+            ShipDirectDate, ShipCheckDate, ShipCancelReciptDate,
+            ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate,
+            ReturnReciptDate, ReturnRqstDate, ReturnCmpletDate,
+            ExchngReciptDate, ExchngRecvRqstDate, ExchngRqstDate,
+            ExchngRecvCmpletDate, ExchngCmpletDate, DeliCmpletDate,
+            RefundReciptDate, RefundRqstDate, RefundCmpletDate,
+            ChnlOrderNo, ChnlOrderProdNo, UploadOrderNo, SlnkOrderCode, ReviewYn, AccntId,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{orderNo}, #{orderProdNo}, #{supplyCode}, #{supplyName}, #{shopCode},
+            #{shopName}, #{bundleYn}, #{storeCode}, #{prodCode}, #{shopProdCode}, #{prodName},
+            #{prodImg}, #{itemCode}, #{itemName}, #{makerName}, #{modelName}, #{prodUnit}, #{prodMemo01},
+            #{prodQty}, #{listPrice}, #{prevPrice}, #{salePrice}, #{saleDiscntAmt}, #{custCpnId},
+            #{prodCpnId}, #{custCpnDiscntAmt}, #{prodCpnDiscntAmt}, #{pointUseAmt},
+            #{supplyPrice}, #{buyPrice}, #{nvPrice}, #{pvPrice}, #{pointSaveAmt},
+            #{vatRate}, #{vatAmt}, #{reciptAmt}, #{giftRefundAmt}, #{prodMargin}, #{chnlMargin},
+            #{netMargin}, #{deliFeeId}, #{deliFeeType}, #{deliFeeAmt}, #{deliCompCode}, #{promotFeeAmt},
+            #{prevInvNo}, #{invNo}, #{invChangeReason}, #{invChangeReasonDetail}, #{orderState}, #{exchngReason},
+            #{exchngReasonDetail}, #{returnReason}, #{returnReasonDetail},
+            #{shipDirectDate}, #{shipCheckDate}, #{shipCancelReciptDate},
+            #{shipCancelRqstDate}, #{shipCancelCmpletDate}, #{shipCmpletDate},
+            #{returnReciptDate}, #{returnRqstDate}, #{returnCmpletDate},
+            #{exchngReciptDate}, #{exchngRecvRqstDate}, #{exchngRqstDate},
+            #{exchngRecvCmpletDate}, #{exchngCmpletDate}, #{deliCmpletDate},
+            #{refundReciptDate}, #{refundRqstDate}, #{refundCmpletDate},
+            #{chnlOrderNo}, #{chnlOrderProdNo}, #{uploadOrderNo}, #{slnkOrderCode}, #{reviewYn}, #{accntId},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderProd">
+        UPDATE shopion.tOrdOrderProd SET
+            SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode},
+            ShopName = #{shopName}, BundleYn = #{bundleYn}, StoreCode = #{storeCode},
+            ProdCode = #{prodCode}, ShopProdCode = #{shopProdCode}, ProdName = #{prodName},
+            ProdImg = #{prodImg}, ItemCode = #{itemCode}, ItemName = #{itemName},
+            MakerName = #{makerName}, ModelName = #{modelName}, ProdUnit = #{prodUnit}, ProdMemo01 = #{prodMemo01},
+            ProdQty = #{prodQty}, ListPrice = #{listPrice}, PrevPrice = #{prevPrice},
+            SalePrice = #{salePrice}, SaleDiscntAmt = #{saleDiscntAmt}, CustCpnId = #{custCpnId},
+            ProdCpnId = #{prodCpnId}, CustCpnDiscntAmt = #{custCpnDiscntAmt}, ProdCpnDiscntAmt = #{prodCpnDiscntAmt}, PointUseAmt = #{pointUseAmt},
+            SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice},
+            NvPrice = #{nvPrice}, PvPrice = #{pvPrice}, PointSaveAmt = #{pointSaveAmt},
+            VatRate = #{vatRate}, VatAmt = #{vatAmt}, ReciptAmt = #{reciptAmt},
+            GiftRefundAmt = #{giftRefundAmt}, ProdMargin = #{prodMargin}, ChnlMargin = #{chnlMargin},
+            NetMargin = #{netMargin}, DeliFeeId = #{deliFeeId}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, DeliCompCode = #{deliCompCode},
+            PrevInvNo = #{prevInvNo}, InvNo = #{invNo}, InvChangeReason = #{invChangeReason},
+            InvChangeReasonDetail = #{invChangeReasonDetail}, OrderState = #{orderState}, ExchngReason = #{exchngReason},
+            ExchngReasonDetail = #{exchngReasonDetail}, ReturnReason = #{returnReason}, ReturnReasonDetail = #{returnReasonDetail},
+            ShipDirectDate = #{shipDirectDate}, ShipCheckDate = #{shipCheckDate}, ShipCancelReciptDate = #{shipCancelReciptDate},
+            ShipCancelRqstDate = #{shipCancelRqstDate}, ShipCancelCmpletDate = #{shipCancelCmpletDate}, ShipCmpletDate = #{shipCmpletDate},
+            ReturnReciptDate = #{returnReciptDate}, ReturnRqstDate = #{returnRqstDate}, ReturnCmpletDate = #{returnCmpletDate},
+            ExchngReciptDate = #{exchngReciptDate}, ExchngRecvRqstDate = #{exchngRecvRqstDate}, ExchngRqstDate = #{exchngRqstDate},
+            ExchngRecvCmpletDate = #{exchngRecvCmpletDate}, ExchngCmpletDate = #{exchngCmpletDate}, DeliCmpletDate = #{deliCmpletDate},
+            RefundReciptDate = #{refundReciptDate}, RefundRqstDate = #{refundRqstDate}, RefundCmpletDate = #{refundCmpletDate},
+            ChnlOrderNo = #{chnlOrderNo}, ChnlOrderProdNo = #{chnlOrderProdNo},
+            ReviewYn = #{reviewYn}, AccntId = #{accntId}, State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <update id="updatePrice" parameterType="com.shopwizard.order.model.OrderProd">
+        UPDATE shopion.tOrdOrderProd SET
+            SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode},
+            ShopName = #{shopName}, ProdCode = #{prodCode}, ShopProdCode = #{shopProdCode}, ProdName = #{prodName},
+            ProdImg = #{prodImg}, ItemCode = #{itemCode}, ItemName = #{itemName},
+            MakerName = #{makerName}, ModelName = #{modelName}, ProdUnit = #{prodUnit}, ProdMemo01 = #{prodMemo01},
+            ProdQty = #{prodQty}, SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice},
+            VatRate = #{vatRate}, VatAmt = #{vatAmt}, ProdMargin = #{prodMargin}, ChnlMargin = #{chnlMargin},
+            NetMargin = #{netMargin}, DeliFeeId = #{deliFeeId}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <update id="updatePriceShipDirect" parameterType="com.shopwizard.order.model.OrderProd">
+        UPDATE shopwizard.tShpShipDirect SET
+            SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode},
+            ShopName = #{shopName}, ProdCode = #{prodCode}, ShopProdCode = #{shopProdCode}, ProdName = #{prodName},
+            ProdImg = #{prodImg}, ItemCode = #{itemCode}, ItemName = #{itemName},
+            MakerName = #{makerName}, ModelName = #{modelName}, ProdUnit = #{prodUnit}, ProdMemo01 = #{prodMemo01},
+            ProdQty = #{prodQty}, SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice},
+            VatRate = #{vatRate}, VatAmt = #{vatAmt}, DeliFeeId = #{deliFeeId}, DeliFeeType = #{deliFeeType},
+            DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <update id="updatePriceShipDirectPrint" parameterType="com.shopwizard.order.model.OrderProd">
+        UPDATE shopwizard.tShpShipDirectPrint SET
+            SupplyPrice = #{supplyPrice},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <update id="updatePriceAdjustDetail" parameterType="com.shopwizard.order.model.OrderProd">
+        UPDATE shopwizard.tAdjAdjustDetail SET
+            SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode},
+            ShopName = #{shopName}, ProdCode = #{prodCode}, ShopProdCode = #{shopProdCode}, ProdName = #{prodName},
+            ProdImg = #{prodImg}, ItemCode = #{itemCode}, ItemName = #{itemName},
+            ProdQty = #{prodQty}, SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice},
+            VatRate = #{vatRate}, VatAmt = #{vatAmt}, ProdMargin = #{prodMargin}, ChnlMargin = #{chnlMargin},
+            NetMargin = #{netMargin}, DeliFeeId = #{deliFeeId}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdOrderProd
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </delete>
+
+    <select id="mypageSelectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT OP.*, '' AS shopChrgName, '' AS registBuyPrice, '' AS deliFeeName, Ch.ChnlCode, '' AS chnlName,
+               '' AS chnlChrgName, '' AS payType, '' AS payFee, '' AS reciptName, '' AS reciptBank,
+               '' AS approvNo, '' AS cardComp, '' AS payTypeName
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopion.tOrdOrderPay OPay ON OPay.OrderNo = O.OrderNo AND OPay.PayNo = 1
+        INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OPay.PayType = CV.ConstrVal
+        INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+        LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON OP.DeliCompCode = DC.DeliCompCode
+        LEFT OUTER JOIN shopion.tOrdOrderDeliFee ODF ON OP.DeliFeeId = ODF.DeliFeeId AND OP.OrderNo = ODF.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+        LEFT OUTER JOIN shopion.tPrfCust CI ON O.CustId = CI.CustId
+        WHERE OP.ReviewYn = 0
+        <if test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
+            AND O.CustId = #{pCustId}
+        </if>
+        <if test="pCustId == null or pCustId == ''">AND O.CustId = -99999</if>
+        <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+            <![CDATA[AND (O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+        </if>
+        <if test="pCustId != null and pCustId.toString() == '0'">
+            <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pOrderName == null or pOrderName == ''">AND O.OrderName = '------'</if>
+            <if test="pOrderPhoneNo != null and pOrderPhoneNo != ''">
+                AND (O.OrderPhoneNo LIKE CONCAT('%',#{pOrderPhoneNo},'%') OR O.OrderMobileNo LIKE CONCAT('%',#{pOrderPhoneNo},'%'))
+            </if>
+            <if test="pOrderPhoneNo == null or pOrderPhoneNo == ''">AND O.OrderPhoneNo = '------'</if>
+        </if>
+        ORDER BY OP.OrderNo DESC, OP.OrderProdNo ASC
+    </select>
+
+    <update id="mypageUpdate" parameterType="map">
+        UPDATE shopion.tOrdOrderProd SET
+            ReviewYn = 1,
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <select id="countByCustId" parameterType="int" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        WHERE O.CustId = #{custId}
+        AND RIGHT(OP.OrderState,2) IN ('접수','요청','지시')
+    </select>
+
+    <select id="selectMonthlyTotalAmt" parameterType="int" resultType="int">
+        SELECT IFNULL(SUM(SalePrice * ProdQty),0)
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        WHERE O.CustId = #{custId}
+        AND RIGHT(OP.OrderState,2) IN ('접수','요청','지시')
+        AND MONTH(OP.RegistDate) = MONTH(NOW())
+    </select>
+
+    <select id="selectMonthlyTotalAmtDeptAccnt" parameterType="map" resultType="int">
+        SELECT IFNULL(SUM(SalePrice * ProdQty),0)
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopion.tPrfCust OC ON OC.CustId = O.CustId
+        INNER JOIN shopion.tPrfCust C ON C.CompCode = OC.CompCode AND C.BranchId = OC.BranchId AND C.DeptCode = OC.DeptCode
+        WHERE C.CustId = #{custId}
+        AND RIGHT(OP.OrderState,2) IN ('접수','요청','지시')
+        AND YEAR(OP.RegistDate) = YEAR(NOW())
+        AND MONTH(OP.RegistDate) = MONTH(NOW())
+        AND OP.AccntId = #{accntId}
+    </select>
+
+    <select id="selectListDashboardAnyb" parameterType="map" resultType="com.shopwizard.order.model.OrderDashBoard">
+        SELECT '' AS shopCode, '' AS shopName,
+            IFNULL(SUM(CASE WHEN OP.OrderState = '주문접수' THEN 1 ELSE 0 END),0) AS orderReceiptCount,
+            IFNULL(SUM(CASE WHEN OP.OrderState = '지불완료' THEN 1 ELSE 0 END),0) AS payCmpletCount,
+            IFNULL(SUM(CASE WHEN OP.OrderState = '출고지시' THEN 1 ELSE 0 END),0) AS shipDirectCount,
+            IFNULL(SUM(CASE WHEN OP.OrderState = '발주확인' THEN 1 ELSE 0 END),0) AS shipCheckCount,
+            IFNULL(SUM(CASE WHEN OP.OrderState IN ('배송시작','배송완료') THEN 1 ELSE 0 END),0) AS shipCmpletCount,
+            IFNULL(SUM(CASE WHEN DATEDIFF(now(),O.PayCmpletDate) > 10 AND OP.ShipCmpletDate IS NULL THEN 1 ELSE 0 END),0) AS longDelayCount,
+            IFNULL(SUM(CASE WHEN DATEDIFF(now(),OP.ReturnReciptDate) > 10 AND OP.ReturnCmpletDate IS NULL THEN 1 ELSE 0 END),0) AS longReturnCount
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <include refid="custJoin"/>
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CI.CompCode = #{pCompCode}</if>
+            <if test="pCustId != null and pCustId != ''">AND O.CustId = #{pCustId}</if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                AND
+                <choose>
+                    <when test="pOrderDateType == 'P'">
+                        <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'S'">
+                        <![CDATA[(OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'R'">
+                        <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[(O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pOrderStateArr != null">
+                AND OP.OrderState IN
+                <foreach collection="pOrderStateArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="pOrderState != null and pOrderState != ''">AND OP.OrderState = #{pOrderState}</if>
+            <if test="pCompareDate != null">
+                <![CDATA[AND (OP.ShipCmpletDate >= DATE_FORMAT(#{pCompareDate}, '%Y%m%d') OR OP.ShipCmpletDate IS NULL)]]>
+            </if>
+            <if test="pShopCode != null and pShopCode != ''">AND OP.ShopCode = #{pShopCode}</if>
+            <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
+            <if test="pApprovCustId != null and pApprovCustId != ''">
+                AND EXISTS (
+                    SELECT * FROM shopion.tOrdOrderProdApprovLine OAL
+                    WHERE OAL.OrderNo = OP.OrderNo AND OAL.OrderProdNo = OP.OrderProdNo
+                    AND OAL.ApprovCustId = #{pApprovCustId}
+                    <if test="pApprovResult != null and pApprovResult != ''">AND OAL.ApprovResult = #{pApprovResult}</if>
+                    <if test="pApprovResult == null or pApprovResult == ''">AND OAL.ApprovResult IS NULL</if>
+                    AND NOT EXISTS (
+                        SELECT * FROM shopion.tOrdOrderProdApprovLine OALprev
+                        WHERE OAL.OrderNo = OALprev.OrderNo AND OAL.OrderProdNo = OALprev.OrderProdNo
+                        AND OAL.ApprovLevel > OALprev.ApprovLevel
+                        AND (OALprev.ApprovResult IS NULL OR OALprev.ApprovResult = 'R')
+                    )
+                )
+            </if>
+        </where>
+    </select>
+
+    <update id="updateReturnReason" parameterType="com.shopwizard.order.model.OrderProd">
+        UPDATE shopion.tOrdOrderProd
+        <set>
+            <if test="refundReciptDate != null and refundReciptDate != ''">RefundReciptDate = NOW(),</if>
+            <if test="shipCancelReciptDate != null and shipCancelReciptDate != ''">ShipCancelReciptDate = NOW(),</if>
+            <if test="returnReciptDate != null and returnReciptDate != ''">ReturnReciptDate = NOW(),</if>
+            <if test="orderState != null and orderState != ''">OrderState = #{orderState},</if>
+            <if test="returnReason != null and returnReason != ''">
+                ReturnReason = #{returnReason}, ReturnReasonDetail = #{returnReasonDetail},
+                ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+            </if>
+        </set>
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+    </update>
+
+    <update id="updateOrderState" parameterType="map">
+        UPDATE shopion.tOrdOrderProd
+        SET OrderState = #{orderState}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, Remark = #{remark}
+            <if test="orderState == '출고지시'">, ShipDirectDate = NOW()</if>
+            <if test="orderState == '발주확인'">, ShipCheckDate = NOW()</if>
+            <if test="orderState == '반품요청'">, ReturnRqstDate = NOW()</if>
+            <if test="orderState == '반품완료'">, ReturnCmpletDate = NOW()</if>
+            <if test="orderState == '배송완료'">, DeliCmpletDate = NOW()</if>
+            <if test="orderState == '환불완료'">, RefundCmpletDate = NOW()</if>
+        WHERE OrderNo = #{orderNo} AND OrderState != '결제오류'
+        <choose>
+            <when test="orderState == '지불완료'">AND OrderState = '주문접수'</when>
+            <otherwise>AND OrderProdNo = #{orderProdNo}</otherwise>
+        </choose>
+    </update>
+
+    <update id="updateOrderStateError" parameterType="map">
+        UPDATE shopion.tOrdOrderProd
+        SET OrderState = '결제오류', ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, Remark = #{remark}
+        WHERE OrderNo = #{orderNo}
+    </update>
+
+    <update id="updateRefundCancel" parameterType="map">
+        UPDATE shopion.tOrdOrderProd
+        SET OrderState = #{orderState}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName},
+            RefundCmpletDate = NULL, Remark = #{remark}
+            <if test="orderState != '지불완료'">, ReturnRqstDate = NULL, ReturnCmpletDate = NULL</if>
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderState != '결제오류'
+    </update>
+
+    <update id="updateShopInfo" parameterType="map">
+        UPDATE shopion.tOrdOrderProd
+        SET OrderState = #{orderState}, ShipDirectDate = NOW(), ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName},
+            SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode}, ShopName = #{shopName},
+            BuyPrice = #{buyPrice}, ProdMargin = #{prodMargin}, NetMargin = #{netMargin}
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderState != '결제오류'
+    </update>
+
+    <update id="updateInvoice" parameterType="map">
+        UPDATE shopion.tOrdOrderProd SET
+            DeliCompName = #{deliCompName},
+            DeliCompCode = (SELECT DeliCompCode FROM shopwizard.tCmpDeliComp WHERE DeliCompName = #{deliCompName}),
+            InvNo = #{invNo}, OrderState = #{orderState},
+            ShipCmpletDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderState = '발주확인'
+    </update>
+
+    <update id="updateCustConsltYn" parameterType="map">
+        UPDATE shopion.tOrdOrderProd SET
+            CustConsltYn = #{custConsltYn},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        AND ProdCode = #{prodCode}
+    </update>
+
+    <select id="countOrderStateDiffer" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProd
+        WHERE OrderNo = #{orderNo}
+        AND OrderState != #{orderState}
+    </select>
+
+    <sql id="statsDateWhere">
+        <where>
+            <if test="orderState != null">
+                AND OP.OrderState IN
+                <foreach collection="orderState" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                AND
+                <choose>
+                    <when test="pOrderDateType == 'P'">
+                        <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'S'">
+                        <![CDATA[(OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <when test="pOrderDateType == 'R'">
+                        <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[(O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND OP.ShopCode = #{pShopCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND OP.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pShopMDCode != null and pShopMDCode != ''">AND S.MngrMd = #{pShopMDCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode} AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlMDCode != null and pChnlMDCode != ''">AND Ch.MngrMd = #{pChnlMDCode}</if>
+        </where>
+    </sql>
+
+    <sql id="statsReferDate">
+        <choose>
+            <when test="pOrderDateType == 'P'">O.PayCmpletDate AS ReferDate,</when>
+            <when test="pOrderDateType == 'S'">OP.ShipCmpletDate AS ReferDate,</when>
+            <when test="pOrderDateType == 'R'">O.RefundCmpletDate AS ReferDate,</when>
+            <otherwise>O.OrderReciptDate AS ReferDate,</otherwise>
+        </choose>
+    </sql>
+
+    <select id="selectListStatisticsProd" parameterType="map" resultType="com.shopwizard.order.model.OrderDetlStats">
+        SELECT * FROM (
+        SELECT
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</when>
+                <when test="pSheetType == 'DT'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'MT'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'B'">StartDate, EndDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</when>
+                <otherwise>StartDate, EndDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</otherwise>
+            </choose>
+            Count(*) AS cnt, IFNULL(ROUND(SUM(ProdQty),0),0) AS prodQty, IFNULL(ROUND(SUM(SalePrice),0),0) AS salePrice,
+            IFNULL(ROUND(SUM(SupplyPrice),0),0) AS supplyPrice, IFNULL(ROUND(SUM(BuyPrice),0),0) AS buyPrice,
+            IFNULL(ROUND(SUM(DeliFeeAmt),0),0) AS deliFeeAmt, IFNULL(ROUND(SUM(PromotFeeAmt),0),0) AS promotFeeAmt,
+            IFNULL(ROUND(SUM(ProdMargin),0),0) AS prodMargin, IFNULL(ROUND(SUM(ChnlMargin),0),0) AS chnlMargin,
+            IFNULL(ROUND(SUM(NetMargin),0),0) AS netMargin,
+            IFNULL(ROUND((SUM(ProdMargin)*100/SUM(SalePrice)),2),0) AS prodMarginRate,
+            IFNULL(ROUND((SUM(ChnlMargin)*100/SUM(SalePrice)),2),0) AS chnlMarginRate,
+            IFNULL(ROUND((SUM(NetMargin)*100/SUM(SupplyPrice)),2),0) AS netMarginRate
+        FROM (
+            SELECT #{pStartDate} AS StartDate, #{pEndDate} AS EndDate,
+                <include refid="statsReferDate"/>
+                S.ShopName, OP.ProdCode, OP.ShopProdCode, P.ProdName, S.MngrMd AS ShopMDName,
+                OP.ProdQty, (OP.SalePrice+OP.NvPrice) AS SalePrice, OP.SupplyPrice, OP.BuyPrice,
+                OP.DeliFeeAmt, OP.PromotFeeAmt, OP.ProdMargin, OP.ChnlMargin, OP.NetMargin, S.ShopCode,
+                Ch.ChnlCode, Ch.ChnlName, Ch.MngrMd AS ChnlMDName
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+            INNER JOIN shopwizard.tCatProd P ON OP.ProdCode = P.ProdCode
+            <include refid="statsDateWhere"/>
+        ) T
+        GROUP BY
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d'), ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m'), ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</when>
+                <when test="pSheetType == 'DT'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d')</when>
+                <when test="pSheetType == 'MT'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m')</when>
+                <when test="pSheetType == 'B'">ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</when>
+                <otherwise>ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</otherwise>
+            </choose>
+        ) T_1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY startDate, endDate, ShopName, ShopMDName, ShopProdCode, ProdName</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectListStatisticsShop" parameterType="map" resultType="com.shopwizard.order.model.OrderDetlStats">
+        SELECT * FROM (
+        SELECT
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'DT'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'MT'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'B'">StartDate, EndDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <otherwise>StartDate, EndDate, '' AS chnlCode, '' AS chnlName, '' AS chnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</otherwise>
+            </choose>
+            Count(*) AS cnt, IFNULL(ROUND(SUM(ProdQty),0),0) AS prodQty, IFNULL(ROUND(SUM(SalePrice),0),0) AS salePrice,
+            IFNULL(ROUND(SUM(SupplyPrice),0),0) AS supplyPrice, IFNULL(ROUND(SUM(BuyPrice),0),0) AS buyPrice,
+            IFNULL(ROUND(SUM(DeliFeeAmt),0),0) AS deliFeeAmt, IFNULL(ROUND(SUM(PromotFeeAmt),0),0) AS promotFeeAmt,
+            IFNULL(ROUND(SUM(ProdMargin),0),0) AS prodMargin, IFNULL(ROUND(SUM(ChnlMargin),0),0) AS chnlMargin,
+            IFNULL(ROUND(SUM(NetMargin),0),0) AS netMargin,
+            IFNULL(ROUND((SUM(ProdMargin)*100/SUM(SalePrice)),2),0) AS prodMarginRate,
+            IFNULL(ROUND((SUM(ChnlMargin)*100/SUM(SalePrice)),2),0) AS chnlMarginRate,
+            IFNULL(ROUND((SUM(NetMargin)*100/SUM(SupplyPrice)),2),0) AS netMarginRate
+        FROM (
+            SELECT #{pStartDate} AS StartDate, #{pEndDate} AS EndDate,
+                <include refid="statsReferDate"/>
+                S.ShopName, OP.ProdCode, OP.ShopProdCode, OP.ProdName, S.MngrMd AS ShopMDName,
+                OP.ProdQty, (OP.SalePrice+OP.NvPrice) AS SalePrice, OP.SupplyPrice, OP.BuyPrice,
+                OP.DeliFeeAmt, OP.PromotFeeAmt, OP.ProdMargin, OP.ChnlMargin, OP.NetMargin, S.ShopCode,
+                Ch.ChnlCode, Ch.ChnlName, Ch.MngrMd AS ChnlMDName
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+            <include refid="statsDateWhere"/>
+        ) T
+        GROUP BY
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d'), ShopCode, ShopName, ShopMDName</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m'), ShopCode, ShopName, ShopMDName</when>
+                <when test="pSheetType == 'DT'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d')</when>
+                <when test="pSheetType == 'MT'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m')</when>
+                <when test="pSheetType == 'B'">ShopCode, ShopName, ShopMDName</when>
+                <otherwise>ShopCode, ShopName, ShopMDName</otherwise>
+            </choose>
+        ) T_1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY startDate, endDate, ShopName, ShopMDName</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectListStatisticsChnl" parameterType="map" resultType="com.shopwizard.order.model.OrderDetlStats">
+        SELECT * FROM (
+        SELECT
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, ChnlCode, ChnlName, ChnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, ChnlCode, ChnlName, ChnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'DT'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, '' AS ChnlCode, '' AS ChnlName, '' AS ChnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'MT'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, '' AS ChnlCode, '' AS ChnlName, '' AS ChnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'B'">StartDate, EndDate, ChnlCode, ChnlName, ChnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <otherwise>StartDate, EndDate, ChnlCode, ChnlName, ChnlMDName, '' AS ShopCode, '' AS ShopName, '' AS ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</otherwise>
+            </choose>
+            Count(*) AS cnt, IFNULL(ROUND(SUM(ProdQty),0),0) AS prodQty, IFNULL(ROUND(SUM(SalePrice),0),0) AS salePrice,
+            IFNULL(ROUND(SUM(SupplyPrice),0),0) AS supplyPrice, IFNULL(ROUND(SUM(BuyPrice),0),0) AS buyPrice,
+            IFNULL(ROUND(SUM(DeliFeeAmt),0),0) AS deliFeeAmt, IFNULL(ROUND(SUM(PromotFeeAmt),0),0) AS promotFeeAmt,
+            IFNULL(ROUND(SUM(ProdMargin),0),0) AS prodMargin, IFNULL(ROUND(SUM(ChnlMargin),0),0) AS chnlMargin,
+            IFNULL(ROUND(SUM(NetMargin),0),0) AS netMargin,
+            IFNULL(ROUND((SUM(ProdMargin)*100/SUM(SalePrice)),2),0) AS prodMarginRate,
+            IFNULL(ROUND((SUM(ChnlMargin)*100/SUM(SalePrice)),2),0) AS chnlMarginRate,
+            IFNULL(ROUND((SUM(NetMargin)*100/SUM(SupplyPrice)),2),0) AS netMarginRate
+        FROM (
+            SELECT #{pStartDate} AS StartDate, #{pEndDate} AS EndDate,
+                <include refid="statsReferDate"/>
+                S.ShopName, OP.ProdCode, OP.ShopProdCode, OP.ProdName, S.MngrMd AS ShopMDName,
+                OP.ProdQty, (OP.SalePrice+OP.NvPrice) AS SalePrice, OP.SupplyPrice, OP.BuyPrice,
+                OP.DeliFeeAmt, OP.PromotFeeAmt, OP.ProdMargin, OP.ChnlMargin, OP.NetMargin, S.ShopCode,
+                Ch.ChnlCode, Ch.ChnlName, Ch.MngrMd AS ChnlMDName
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+            <include refid="statsDateWhere"/>
+        ) T
+        GROUP BY
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d'), ChnlCode, ChnlName, ChnlMDName</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m'), ChnlCode, ChnlName, ChnlMDName</when>
+                <when test="pSheetType == 'DT'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d')</when>
+                <when test="pSheetType == 'MT'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m')</when>
+                <when test="pSheetType == 'B'">ChnlCode, ChnlName, ChnlMDName</when>
+                <otherwise>ChnlCode, ChnlName, ChnlMDName</otherwise>
+            </choose>
+        ) T_1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY startDate, endDate, ChnlName, ChnlMDName</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectListStatisticsChnlShop" parameterType="map" resultType="com.shopwizard.order.model.OrderDetlStats">
+        SELECT * FROM (
+        SELECT
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <when test="pSheetType == 'B'">StartDate, EndDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</when>
+                <otherwise>StartDate, EndDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, '' AS ProdCode, '' AS ShopProdCode, '' AS ProdName,</otherwise>
+            </choose>
+            Count(*) AS cnt, IFNULL(ROUND(SUM(ProdQty),0),0) AS prodQty, IFNULL(ROUND(SUM(SalePrice),0),0) AS salePrice,
+            IFNULL(ROUND(SUM(SupplyPrice),0),0) AS supplyPrice, IFNULL(ROUND(SUM(BuyPrice),0),0) AS buyPrice,
+            IFNULL(ROUND(SUM(DeliFeeAmt),0),0) AS deliFeeAmt, IFNULL(ROUND(SUM(PromotFeeAmt),0),0) AS promotFeeAmt,
+            IFNULL(ROUND(SUM(ProdMargin),0),0) AS prodMargin, IFNULL(ROUND(SUM(ChnlMargin),0),0) AS chnlMargin,
+            IFNULL(ROUND(SUM(NetMargin),0),0) AS netMargin,
+            IFNULL(ROUND((SUM(ProdMargin)*100/SUM(SalePrice)),2),0) AS prodMarginRate,
+            IFNULL(ROUND((SUM(ChnlMargin)*100/SUM(SalePrice)),2),0) AS chnlMarginRate,
+            IFNULL(ROUND((SUM(NetMargin)*100/SUM(SupplyPrice)),2),0) AS netMarginRate
+        FROM (
+            SELECT #{pStartDate} AS StartDate, #{pEndDate} AS EndDate,
+                <include refid="statsReferDate"/>
+                S.ShopName, OP.ProdCode, OP.ShopProdCode, OP.ProdName, S.MngrMd AS ShopMDName,
+                OP.ProdQty, (OP.SalePrice+OP.NvPrice) AS SalePrice, OP.SupplyPrice, OP.BuyPrice,
+                OP.DeliFeeAmt, OP.PromotFeeAmt, OP.ProdMargin, OP.ChnlMargin, OP.NetMargin, S.ShopCode,
+                Ch.ChnlCode, Ch.ChnlName, Ch.MngrMd AS ChnlMDName
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+            <include refid="statsDateWhere"/>
+        ) T
+        GROUP BY
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d'), ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m'), ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName</when>
+                <when test="pSheetType == 'B'">ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName</when>
+                <otherwise>ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName</otherwise>
+            </choose>
+        ) T_1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY startDate, endDate, ChnlName, ChnlMDName, ShopName, ShopMDName</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectListStatisticsChnlProd" parameterType="map" resultType="com.shopwizard.order.model.OrderDetlStats">
+        SELECT * FROM (
+        SELECT
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m-%d') AS endDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m') AS startDate, DATE_FORMAT(ReferDate,'%Y-%m') AS endDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</when>
+                <when test="pSheetType == 'B'">StartDate, EndDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</when>
+                <otherwise>StartDate, EndDate, ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName,</otherwise>
+            </choose>
+            Count(*) AS cnt, IFNULL(ROUND(SUM(ProdQty),0),0) AS prodQty, IFNULL(ROUND(SUM(SalePrice),0),0) AS salePrice,
+            IFNULL(ROUND(SUM(SupplyPrice),0),0) AS supplyPrice, IFNULL(ROUND(SUM(BuyPrice),0),0) AS buyPrice,
+            IFNULL(ROUND(SUM(DeliFeeAmt),0),0) AS deliFeeAmt, IFNULL(ROUND(SUM(PromotFeeAmt),0),0) AS promotFeeAmt,
+            IFNULL(ROUND(SUM(ProdMargin),0),0) AS prodMargin, IFNULL(ROUND(SUM(ChnlMargin),0),0) AS chnlMargin,
+            IFNULL(ROUND(SUM(NetMargin),0),0) AS netMargin,
+            IFNULL(ROUND((SUM(ProdMargin)*100/SUM(SalePrice)),2),0) AS prodMarginRate,
+            IFNULL(ROUND((SUM(ChnlMargin)*100/SUM(SalePrice)),2),0) AS chnlMarginRate,
+            IFNULL(ROUND((SUM(NetMargin)*100/SUM(SupplyPrice)),2),0) AS netMarginRate
+        FROM (
+            SELECT #{pStartDate} AS StartDate, #{pEndDate} AS EndDate,
+                <include refid="statsReferDate"/>
+                S.ShopName, OP.ProdCode, OP.ShopProdCode, P.ProdName, S.MngrMd AS ShopMDName,
+                OP.ProdQty, (OP.SalePrice+OP.NvPrice) AS SalePrice, OP.SupplyPrice, OP.BuyPrice,
+                OP.DeliFeeAmt, OP.PromotFeeAmt, OP.ProdMargin, OP.ChnlMargin, OP.NetMargin, S.ShopCode,
+                Ch.ChnlCode, Ch.ChnlName, Ch.MngrMd AS ChnlMDName
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+            INNER JOIN shopwizard.tCatProd P ON OP.ProdCode = P.ProdCode
+            <include refid="statsDateWhere"/>
+        ) T
+        GROUP BY
+            <choose>
+                <when test="pSheetType == 'D'">DATE_FORMAT(ReferDate,'%Y-%m-%d'), DATE_FORMAT(ReferDate,'%Y-%m-%d'), ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</when>
+                <when test="pSheetType == 'M'">DATE_FORMAT(ReferDate,'%Y-%m'), DATE_FORMAT(ReferDate,'%Y-%m'), ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</when>
+                <when test="pSheetType == 'B'">ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</when>
+                <otherwise>ChnlCode, ChnlName, ChnlMDName, ShopCode, ShopName, ShopMDName, ProdCode, ShopProdCode, ProdName</otherwise>
+            </choose>
+        ) T_1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY startDate, endDate, ChnlName, ChnlMDName, ShopName, ShopMDName, ShopProdCode, ProdName</otherwise>
+        </choose>
+    </select>
+
+</mapper>

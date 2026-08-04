@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.log.mapper.CustInfoMngrMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.log.model.CustInfoMngr">
+        SELECT * FROM wizardn.tLogCustInfoMngr
+        <where>
+            <if test="pRoleUid != null and pRoleUid != ''">AND RoleUid = #{pRoleUid}</if>
+            <if test="pMenuCode != null and pMenuCode != ''">AND MenuCode = #{pMenuCode}</if>
+            <if test="pFunctnUri != null and pFunctnUri != ''">AND FunctnUri = #{pFunctnUri}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.log.model.CustInfoMngr">
+        INSERT INTO wizardn.tLogCustInfoMngr (LogId, CustId, MenuName, SvcName, DaoName, TableName, OrderNo, MngrIpAddr, MngrUid, ExecCntnts, ExecResult, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES (#{logId}, #{custId}, #{menuName}, #{svcName}, #{daoName}, #{tableName}, #{orderNo}, #{mngrIpAddr}, #{mngrUid}, #{execCntnts}, #{execResult}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+</mapper>

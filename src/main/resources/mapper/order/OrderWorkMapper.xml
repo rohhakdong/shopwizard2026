@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderWorkMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderWork">
+        SELECT *
+        FROM shopwizard.tOrdOrderWork
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND OrderName = #{pOrderName}</if>
+            <if test="pRecverName != null and pRecverName != ''">AND RecverName = #{pRecverName}</if>
+            <if test="pChnlOrderNo != null and pChnlOrderNo != ''">AND ChnlOrderNo = #{pChnlOrderNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
+            <if test="pChnlName != null and pChnlName != ''">AND ChnlName = #{pChnlName}</if>
+            <if test="pSocialYn == 'Y' or pSocialYn == 'V'">
+                AND ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
+            </if>
+            <if test="pSocialYn == 'N'">
+                AND ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
+            </if>
+            <if test="pType == 'updateItemCode'">
+                AND NOT EXISTS ( SELECT OrderNo FROM shopwizard.tOrdCurrOrderProd WHERE shopwizard.tOrdCurrOrderProd.OrderNo = shopwizard.tOrdOrderWork.OrderNo )
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <when test="pType == 'updateProdCode'">ORDER BY CodeCheckYn, ShopProdCode, ProdName, ItemName</when>
+            <when test="pType == 'updateItemCode'">ORDER BY BuyPrice, ProdName, ItemName</when>
+        </choose>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderWork
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND OrderName = #{pOrderName}</if>
+            <if test="pRecverName != null and pRecverName != ''">AND RecverName = #{pRecverName}</if>
+            <if test="pChnlOrderNo != null and pChnlOrderNo != ''">AND ChnlOrderNo = #{pChnlOrderNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
+            <if test="pChnlName != null and pChnlName != ''">AND ChnlName = #{pChnlName}</if>
+            <if test="pSocialYn == 'Y' or pSocialYn == 'V'">
+                AND ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
+            </if>
+            <if test="pSocialYn == 'N'">
+                AND ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
+            </if>
+            <if test="pType == 'updateItemCode'">
+                AND NOT EXISTS ( SELECT OrderNo FROM shopwizard.tOrdCurrOrderProd WHERE shopwizard.tOrdCurrOrderProd.OrderNo = shopwizard.tOrdOrderWork.OrderNo )
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderWork">
+        SELECT * FROM shopwizard.tOrdOrderWork WHERE OrderNo = #{orderNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderWork">
+        INSERT INTO shopwizard.tOrdOrderWork (
+            OrderNo, OrderName, RecverName, ChnlOrderNo, ShopCode, ShopProdCode, ProdName, ItemName,
+            ProdQty, VatRate, SalePrice, SupplyPrice, BuyPrice, DeliFeeType, DeliFeeAmt, PromotFeeAmt,
+            ChnlName, DeliMemo, GiftDesc, ShipPlace, BundleYn, EventName
+        ) VALUES (
+            #{orderNo}, #{orderName}, #{recverName}, #{chnlOrderNo}, #{shopCode}, #{shopProdCode}, #{prodName}, #{itemName},
+            #{prodQty}, #{vatRate}, #{salePrice}, #{supplyPrice}, #{buyPrice}, #{deliFeeType}, #{deliFeeAmt}, #{promotFeeAmt},
+            #{chnlName}, #{deliMemo}, #{giftDesc}, #{shipPlace}, #{bundleYn}, #{eventName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderWork">
+        UPDATE shopwizard.tOrdOrderWork SET
+            OrderNo = #{orderNo}, OrderName = #{orderName}, RecverName = #{recverName}, ChnlOrderNo = #{chnlOrderNo},
+            ShopCode = #{shopCode}, ShopProdCode = #{shopProdCode}, ProdName = #{prodName}, ItemName = #{itemName},
+            ProdQty = #{prodQty}, VatRate = #{vatRate}, SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice},
+            BuyPrice = #{buyPrice}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChnlName = #{chnlName}, DeliMemo = #{deliMemo}, GiftDesc = #{giftDesc}, ShipPlace = #{shipPlace},
+            BundleYn = #{bundleYn}, EventName = #{eventName}
+        WHERE OrderNo = #{orderNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderWork">
+        DELETE FROM shopwizard.tOrdOrderWork WHERE OrderNo = #{orderNo}
+    </delete>
+
+</mapper>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderProdMatchMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProdMatch">
+        SELECT PM.*
+        FROM shopwizard.tOrdOrderProdMatch PM
+        INNER JOIN shopwizard.tOrdOrderProdCode PC ON PM.MatchProdCode = PC.MatchProdCode
+        <where>
+            <if test="pProdNameOrderWork != null and pProdNameOrderWork != ''">AND PM.ProdName = #{pProdNameOrderWork}</if>
+            <if test="pProdName != null and pProdName != ''">AND PM.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND PM.Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa1 != null and pCapa1 != ''">AND PM.Capa1 = #{pCapa1}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND PM.MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND PC.ShopCode LIKE CONCAT('%',#{pShopCode},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (PM.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND PM.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderProdMatch PM
+        INNER JOIN shopwizard.tOrdOrderProdCode PC ON PM.MatchProdCode = PC.MatchProdCode
+        <where>
+            <if test="pProdNameOrderWork != null and pProdNameOrderWork != ''">AND PM.ProdName = #{pProdNameOrderWork}</if>
+            <if test="pProdName != null and pProdName != ''">AND PM.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND PM.Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa1 != null and pCapa1 != ''">AND PM.Capa1 = #{pCapa1}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND PM.MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND PC.ShopCode LIKE CONCAT('%',#{pShopCode},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (PM.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND PM.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderProdMatch">
+        SELECT * FROM shopwizard.tOrdOrderProdMatch WHERE ProdName = #{prodName}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderProdMatch">
+        INSERT INTO shopwizard.tOrdOrderProdMatch (
+            ProdName, Keywrd, Capa1, Qty1, Capa2, Qty2, MatchProdCode, PrevProdName, PrevProdOption,
+            ChnlName, OrderNo, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{prodName}, #{keywrd}, #{capa1}, #{qty1}, #{capa2}, #{qty2}, #{matchProdCode}, #{prevProdName}, #{prevProdOption},
+            #{chnlName}, #{orderNo}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderProdMatch">
+        UPDATE shopwizard.tOrdOrderProdMatch SET
+            Keywrd = #{keywrd}, Capa1 = #{capa1}, Qty1 = #{qty1}, Capa2 = #{capa2}, Qty2 = #{qty2},
+            MatchProdCode = #{matchProdCode}, PrevProdName = #{prevProdName}, PrevProdOption = #{prevProdOption},
+            ChnlName = #{chnlName}, OrderNo = #{orderNo}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdName = #{prodName}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderProdMatch">
+        DELETE FROM shopwizard.tOrdOrderProdMatch WHERE ProdName = #{prodName}
+    </delete>
+
+    <delete id="deleteByMatchProdCode" parameterType="map">
+        DELETE FROM shopwizard.tOrdOrderProdMatch WHERE MatchProdCode = #{pMatchProdCode}
+    </delete>
+
+</mapper>

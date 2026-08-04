@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.stock.mapper.DailyStockStateMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.stock.model.DailyStockState">
+        SELECT shopwizard.tStkDailyStockState.*
+        FROM shopwizard.tStkDailyStockState
+        <where>
+            <if test="pStockDate != null and pStockDate != ''">AND StockDate = #{pStockDate}</if>
+            <if test="pWarehsCode != null and pWarehsCode != ''">AND WarehsCode = #{pWarehsCode}</if>
+            <if test="pBarCode != null and pBarCode != ''">AND BarCode = #{pBarCode}</if>
+            <if test="pStockName != null and pStockName != ''">AND StockName = #{pStockName}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND OrderName = #{pOrderName}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tStkDailyStockState
+        <where>
+            <if test="pStockDate != null and pStockDate != ''">AND StockDate = #{pStockDate}</if>
+            <if test="pWarehsCode != null and pWarehsCode != ''">AND WarehsCode = #{pWarehsCode}</if>
+            <if test="pBarCode != null and pBarCode != ''">AND BarCode = #{pBarCode}</if>
+            <if test="pStockName != null and pStockName != ''">AND StockName = #{pStockName}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND OrderName = #{pOrderName}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+        </where>
+    </select>
+
+    <select id="selectListCheck" parameterType="map" resultType="com.shopwizard.stock.model.DailyStockState">
+        SELECT * FROM (
+        SELECT S.StockDate, S.OrderName, S.ShipQty, IFNULL(C.ShipCheckQty,0) AS ShipCheckQty
+        FROM shopwizard.tStkDailyStockState S
+        LEFT OUTER JOIN (
+            SELECT SP.ProdName, SUM(SP.ProdQty) AS ShipCheckQty
+            FROM shopwizard.tShpShipDirectPrint SP
+            <![CDATA[
+            WHERE SP.ShipCheckDate >= DATE_FORMAT(#{pOrderStartDate}, '%Y-%m-%d') AND SP.ShipCheckDate < ADDDATE(DATE_FORMAT(#{pOrderEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+            AND SP.ShopCode = #{pShopCode}
+            GROUP BY SP.ProdName
+        ) C ON ( S.OrderName = C.ProdName )
+        <![CDATA[
+        WHERE S.StockDate >= DATE_FORMAT(#{pStockStartDate}, '%Y-%m-%d') AND S.StockDate < ADDDATE(DATE_FORMAT(#{pStockEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+        ]]>
+        AND S.ShopCode = #{pShopCode}
+        <if test="pQtyCheck != null and pQtyCheck != '' and pQtyCheck == 'E'">AND S.ShipQty = IFNULL(C.ShipCheckQty,0)</if>
+        <if test="pQtyCheck != null and pQtyCheck != '' and pQtyCheck == 'N'"><![CDATA[AND S.ShipQty <> IFNULL(C.ShipCheckQty,0)]]></if>
+        <if test="pQtyCheck != null and pQtyCheck != '' and pQtyCheck != 'E'">
+        UNION ALL
+        SELECT DATE_FORMAT(ShipCheckDate, '%Y-%m-%d') AS StockDate, ProdName AS OrderName, 0 AS ShipQty, SUM(ProdQty) AS ShipCheckQty
+        FROM shopwizard.tShpShipDirectPrint
+        <![CDATA[
+        WHERE ShipCheckDate >= DATE_FORMAT(#{pOrderStartDate}, '%Y-%m-%d') AND ShipCheckDate < ADDDATE(DATE_FORMAT(#{pOrderEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+        ]]>
+        AND ShopCode = #{pShopCode}
+        AND NOT EXISTS (
+            SELECT OrderName, ShipQty
+            FROM shopwizard.tStkDailyStockState
+            WHERE shopwizard.tStkDailyStockState.OrderName = shopwizard.tShpShipDirectPrint.ProdName
+            <![CDATA[
+            AND shopwizard.tStkDailyStockState.StockDate >= DATE_FORMAT(#{pStockStartDate}, '%Y-%m-%d') AND shopwizard.tStkDailyStockState.StockDate < ADDDATE(DATE_FORMAT(#{pStockEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+        )
+        GROUP BY DATE_FORMAT(ShipCheckDate, '%Y-%m-%d'), ProdName
+        </if>
+        ) ShipCheck
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCountCheck" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM (
+        SELECT S.StockDate, S.OrderName, S.ShipQty, IFNULL(C.ShipCheckQty,0) AS ShipCheckQty
+        FROM shopwizard.tStkDailyStockState S
+        LEFT OUTER JOIN (
+            SELECT SP.ProdName, SUM(SP.ProdQty) AS ShipCheckQty
+            FROM shopwizard.tShpShipDirectPrint SP
+            <![CDATA[
+            WHERE SP.ShipCheckDate >= DATE_FORMAT(#{pOrderStartDate}, '%Y-%m-%d') AND SP.ShipCheckDate < ADDDATE(DATE_FORMAT(#{pOrderEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+            AND SP.ShopCode = #{pShopCode}
+            GROUP BY SP.ProdName
+        ) C ON ( S.OrderName = C.ProdName )
+        WHERE S.StockDate = #{pStockDate}
+        AND S.ShopCode = #{pShopCode}
+        <if test="pQtyCheck != null and pQtyCheck != '' and pQtyCheck == 'E'">AND S.ShipQty = IFNULL(C.ShipCheckQty,0)</if>
+        <if test="pQtyCheck != null and pQtyCheck != '' and pQtyCheck == 'N'"><![CDATA[AND S.ShipQty <> IFNULL(C.ShipCheckQty,0)]]></if>
+        <if test="pQtyCheck != null and pQtyCheck != '' and pQtyCheck != 'E'">
+        UNION ALL
+        SELECT #{pStockDate} AS StockDate, ProdName AS OrderName, 0 AS ShipQty, SUM(ProdQty) AS ShipCheckQty
+        FROM shopwizard.tShpShipDirectPrint
+        <![CDATA[
+        WHERE ShipCheckDate >= DATE_FORMAT(#{pOrderStartDate}, '%Y-%m-%d') AND ShipCheckDate < ADDDATE(DATE_FORMAT(#{pOrderEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+        ]]>
+        AND ShopCode = #{pShopCode}
+        AND NOT EXISTS (
+            SELECT OrderName, ShipQty
+            FROM shopwizard.tStkDailyStockState
+            WHERE shopwizard.tStkDailyStockState.OrderName = shopwizard.tShpShipDirectPrint.ProdName
+            AND shopwizard.tStkDailyStockState.StockDate = #{pStockDate}
+        )
+        GROUP BY ProdName
+        </if>
+        ) ShipCheck
+    </select>
+
+    <select id="selectListShipDirect" parameterType="map" resultType="com.shopwizard.stock.model.DailyStockState">
+        SELECT StockDate, OrderName, SUM(ShipQty) AS ShipQty, SUM(ShipCheckQty) AS ShipCheckQty, SUM(ReEnterCheckQty) AS ReEnterCheckQty
+        FROM (
+            SELECT DATE_FORMAT(ShipCheckDate, '%Y-%m-%d') AS StockDate, ProdName AS OrderName, 0 AS ShipQty, SUM(ProdQty) AS ShipCheckQty, 0 AS ReEnterCheckQty
+            FROM shopwizard.tShpShipDirectPrint
+            <![CDATA[
+            WHERE ShipCheckDate >= DATE_FORMAT(#{pOrderStartDate}, '%Y-%m-%d') AND ShipCheckDate < ADDDATE(DATE_FORMAT(#{pOrderEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+            AND ShopCode = #{pShopCode}
+            GROUP BY DATE_FORMAT(ShipCheckDate, '%Y-%m-%d'), ProdName
+            UNION ALL
+            SELECT DATE_FORMAT(O.RefundCmpletDate, '%Y-%m-%d') AS StockDate, P.ProdName AS OrderName, 0 AS ShipQty, 0 AS ShipCheckQty, SUM(ProdQty) AS ReEnterCheckQty
+            FROM shopwizard.tShpShipDirectPrint P
+            INNER JOIN shopion.tOrdOrder O ON O.OrderNo = P.Orderno
+            <![CDATA[
+            WHERE O.RefundCmpletDate >= DATE_FORMAT(#{pOrderStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pOrderEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+            AND ShopCode = #{pShopCode}
+            GROUP BY DATE_FORMAT(O.RefundCmpletDate, '%Y-%m-%d'), ProdName
+        ) T_SUM
+        GROUP BY StockDate, OrderName
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.stock.model.DailyStockState">
+        SELECT *
+        FROM shopwizard.tStkDailyStockState
+        WHERE StockDate = #{pStockDate}
+        AND OrderName = #{pOrderName}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.stock.model.DailyStockState">
+        INSERT INTO shopwizard.tStkDailyStockState (
+            StockDate, OrderName, WarehsCode, BarCode, StockName, StockCost, BoxQty, CarryQty, EnterQty, ShipQty, ReEnterQty, BrokenQty, BadQty, CorrctQty, StockQty, StockAmt, MakeDate, ExpireDate, AccumBrokenQty, AccumShipQty, StockDesc, ShopCode, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{stockDate}, #{orderName}, #{warehsCode}, #{barCode}, #{stockName}, #{stockCost}, #{boxQty}, #{carryQty}, #{enterQty}, #{shipQty}, #{reEnterQty}, #{brokenQty}, #{badQty}, #{corrctQty}, #{stockQty}, #{stockAmt}, #{makeDate}, #{expireDate}, #{accumBrokenQty}, #{accumShipQty}, #{stockDesc}, #{shopCode}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertEnterQty" parameterType="com.shopwizard.stock.model.DailyStockState">
+        INSERT INTO shopwizard.tStkDailyStockState (
+            StockDate, OrderName,
+            WarehsCode, BarCode, StockName, StockCost, CarryQty, EnterQty,
+            BrokenQty, BadQty, StockQty, StockAmt, ExpireDate,
+            StockDesc, ShopCode, State, Remark, RegistId,
+            RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{stockDate}, #{orderName},
+            #{warehsCode}, #{barCode}, #{stockName}, #{stockCost}, #{carryQty}, #{enterQty},
+            #{brokenQty}, #{badQty}, #{stockQty}, #{stockAmt}, #{expireDate},
+            #{stockDesc}, #{shopCode}, #{state}, #{remark}, #{registId},
+            #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertShipQty" parameterType="com.shopwizard.stock.model.DailyStockState">
+        INSERT INTO shopwizard.tStkDailyStockState (
+            StockDate, OrderName,
+            StockCost, CarryQty, ShipQty, ReEnterQty, StockQty, StockAmt,
+            StockDesc, ShopCode, State, Remark, RegistId,
+            RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{stockDate}, #{orderName},
+            #{stockCost}, #{carryQty}, #{shipQty}, #{reEnterQty}, #{stockQty}, #{stockAmt},
+            #{stockDesc}, #{shopCode}, #{state}, #{remark}, #{registId},
+            #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.stock.model.DailyStockState">
+        UPDATE shopwizard.tStkDailyStockState SET
+            StockDate = #{stockDate}, OrderName = #{orderName}, WarehsCode = #{warehsCode}, BarCode = #{barCode},
+            StockName = #{stockName}, StockCost = #{stockCost}, BoxQty = #{boxQty}, CarryQty = #{carryQty},
+            EnterQty = #{enterQty}, ShipQty = #{shipQty}, ReEnterQty = #{reEnterQty}, BrokenQty = #{brokenQty},
+            BadQty = #{badQty}, CorrctQty = #{corrctQty}, StockQty = #{stockQty}, StockAmt = #{stockAmt},
+            MakeDate = #{makeDate}, ExpireDate = #{expireDate}, AccumBrokenQty = #{accumBrokenQty},
+            AccumShipQty = #{accumShipQty}, StockDesc = #{stockDesc}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE StockDate = #{stockDate}
+        AND OrderName = #{orderName}
+    </update>
+
+    <update id="updateEnterQty" parameterType="com.shopwizard.stock.model.DailyStockState">
+        UPDATE shopwizard.tStkDailyStockState SET
+            WarehsCode = #{warehsCode}, BarCode = #{barCode}, StockName = #{stockName}, StockCost = #{stockCost}, EnterQty = #{enterQty},
+            BrokenQty = #{brokenQty}, BadQty = #{badQty}, StockQty = #{stockQty}, StockAmt = #{stockAmt}, ExpireDate = #{expireDate},
+            StockDesc = #{stockDesc}, State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName},
+            ChangeDate = NOW()
+        WHERE StockDate = #{stockDate}
+        AND OrderName = #{orderName}
+    </update>
+
+    <update id="updateShipQty" parameterType="com.shopwizard.stock.model.DailyStockState">
+        UPDATE shopwizard.tStkDailyStockState SET
+            ShipQty = #{shipQty}, ReEnterQty = #{reEnterQty},
+            StockQty = #{stockQty}, StockAmt = #{stockAmt}, StockDesc = #{stockDesc}, State = #{state},
+            Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE StockDate = #{stockDate}
+        AND OrderName = #{orderName}
+    </update>
+
+    <update id="updateEnterQtyAfterDiff" parameterType="map">
+        UPDATE shopwizard.tStkDailyStockState SET
+            CarryQty = CarryQty + #{pDiffQty}, StockQty = StockQty + #{pDiffQty}, StockAmt = StockCost * StockQty,
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE StockDate > #{pStockDate}
+        AND OrderName = #{pOrderName}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.stock.model.DailyStockState">
+        DELETE FROM shopwizard.tStkDailyStockState
+        WHERE StockDate = #{stockDate}
+        AND OrderName = #{orderName}
+    </delete>
+
+</mapper>

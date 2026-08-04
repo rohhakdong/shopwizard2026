@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderBackupMapper">
+
+    <insert id="insertBackupStatics">
+        <![CDATA[
+        INSERT INTO shopion.tOrdOrderSmmryPrev201502
+            (ShipCmpletDate, ProdName, ShopProdCode, ShopName, ShopMdName, ChnlName, ChnlMdName,
+             OrderCnt, ProdQty, SalePrice, SupplyPrice, BuyPrice, DeliFeeAmt, PromotFeeAmt,
+             ProdMargin, NetMargin, ChnlMargin, ShopCode, ChnlCode, OrderState, ShopSvcCode, ChnlSvcCode)
+        SELECT  DATE(ShipCmpletDate) AS ShipCmpletDate,
+                ProdName, ShopProdCode, ShopName, ShopMDName, ChnlName, ChnlMDName,
+                COUNT(DISTINCT OrderNo) AS OrderCnt,
+                SUM(ProdQty)           AS ProdQty,
+                SUM(SalePrice + NvPrice) AS SalePrice,
+                SUM(SupplyPrice)       AS SupplyPrice,
+                SUM(BuyPrice)          AS BuyPrice,
+                SUM(DeliFeeAmt)        AS DeliFeeAmt,
+                SUM(PromotFeeAmt)      AS PromotFeeAmt,
+                SUM(ProdMargin)        AS ProdMargin,
+                SUM(NetMargin)         AS NetMargin,
+                SUM(ChnlMargin)        AS ChnlMargin,
+                ShopCode, ChnlCode, OrderState,
+                'SHP001' AS ShopSvcCode,
+                'SHP001' AS ChnlSvcCode
+        FROM (
+            SELECT  OP.ShipCmpletDate,
+                    S.ShopName, O.OrderNo, O.OrderState,
+                    OP.ProdCode, OP.ShopProdCode, OP.ProdName, S.MngrMd AS ShopMDName,
+                    OP.ProdQty, OP.SalePrice, OP.NvPrice, OP.SupplyPrice,
+                    OP.BuyPrice, OP.DeliFeeAmt, OP.PromotFeeAmt, OP.ProdMargin,
+                    OP.ChnlMargin, OP.NetMargin, S.ShopCode,
+                    Ch.ChnlCode, Ch.ChnlName, Ch.MngrMd AS ChnlMDName
+            FROM    shopion.tOrdOrderProd OP
+                    INNER JOIN shopion.tOrdOrder O         ON OP.OrderNo  = O.OrderNo
+                    INNER JOIN shopwizard.tCmpChnl Ch      ON O.ChnlCode  = Ch.ChnlCode
+                    INNER JOIN shopwizard.tCmpShop S       ON OP.ShopCode = S.ShopCode
+            WHERE   OP.OrderState IN ('지불완료','출고지시','발주확인','배송시작','배송완료')
+            AND     OP.ShipCmpletDate >= DATE_FORMAT(#{startDate}, '%Y%m%d')
+            AND     OP.ShipCmpletDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY)
+            AND     Ch.SvcCode = 'SHP001'
+            AND     S.SvcCode  = 'SHP001'
+        ) T
+        GROUP BY DATE(ShipCmpletDate), ShopCode, ShopName, ShopMDName,
+                 ProdCode, ShopProdCode, ProdName, ChnlCode, ChnlName, ChnlMDName
+        ]]>
+    </insert>
+
+    <select id="findBackupList" resultType="com.shopwizard.order.model.Order">
+        <![CDATA[
+        SELECT  O.OrderNo
+        FROM    shopion.tOrdOrder O
+                INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo  = O.OrderNo
+                INNER JOIN shopwizard.tCmpChnl Ch  ON O.ChnlCode  = Ch.ChnlCode
+                INNER JOIN shopwizard.tCmpShop S   ON OP.ShopCode = S.ShopCode
+        WHERE   (
+                    OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY)
+                    OR (OP.ShipCmpletDate IS NULL AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY))
+                )
+        AND     Ch.SvcCode = 'SHP001'
+        AND     S.SvcCode  = 'SHP001'
+        ]]>
+    </select>
+
+    <!-- 임시 주문번호 테이블 관리 -->
+    <delete id="deleteTempOrderNo">
+        DELETE FROM orderbackup.tOrdOrderNoTemp
+    </delete>
+
+    <insert id="insertTempOrderNo">
+        <![CDATA[
+        INSERT INTO orderbackup.tOrdOrderNoTemp (OrderNo)
+        SELECT  O.OrderNo
+        FROM    shopion.tOrdOrder O
+                INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo  = O.OrderNo
+                INNER JOIN shopwizard.tCmpChnl Ch  ON O.ChnlCode  = Ch.ChnlCode
+                INNER JOIN shopwizard.tCmpShop S   ON OP.ShopCode = S.ShopCode
+        WHERE   (
+                    OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY)
+                    OR (OP.ShipCmpletDate IS NULL AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY))
+                )
+        AND     Ch.SvcCode = 'SHP001'
+        AND     S.SvcCode  = 'SHP001'
+        GROUP BY O.OrderNo
+        ]]>
+    </insert>
+
+    <!-- tOrdOrderShoplinker 백업 -->
+    <delete id="deleteBackupOrderShoplinkerDuplicate">
+        DELETE orderbackup.tOrdOrderShoplinker
+        FROM   orderbackup.tOrdOrderShoplinker
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tOrdOrderShoplinker.ShopionOrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderShoplinker">
+        INSERT INTO orderbackup.tOrdOrderShoplinker
+            (Code, Orderdate, Mallcode, Mallid, Stcode, Orderno, Sellerid, Paymethod, Receipt,
+             Canceldesc, Changeyn, GoodNo, GoodSlgoodno, GoodAuctionno, GoodBprice, GoodOribprice,
+             GoodSprice, GoodName, GoodOpt, GoodQty, BuyerId, BuyerName, BuyerTel, BuyerHp,
+             BuyerEmail, RcpName, RcpTel, RcpHp, RcpEmail, RcpZip, RcpAddr, TransPolicy,
+             TransName, TransNo, TransSendmemo, UpdateDate, ShopionOrderNo, State, Remark,
+             RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        SELECT  Code, Orderdate, Mallcode, Mallid, Stcode, shopion.tOrdOrderShoplinker.Orderno,
+                Sellerid, Paymethod, Receipt, Canceldesc, Changeyn, GoodNo, GoodSlgoodno,
+                GoodAuctionno, GoodBprice, GoodOribprice, GoodSprice, GoodName, GoodOpt, GoodQty,
+                BuyerId, BuyerName, BuyerTel, BuyerHp, BuyerEmail, RcpName, RcpTel, RcpHp,
+                RcpEmail, RcpZip, RcpAddr, TransPolicy, TransName, TransNo, TransSendmemo,
+                UpdateDate, ShopionOrderNo, State, Remark, RegistId, RegistName, RegistDate,
+                ChangeId, ChangeName, ChangeDate
+        FROM    shopion.tOrdOrderShoplinker
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopion.tOrdOrderShoplinker.ShopionOrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderShoplinker">
+        DELETE shopion.tOrdOrderShoplinker
+        FROM   shopion.tOrdOrderShoplinker
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopion.tOrdOrderShoplinker.ShopionOrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tOrdOrderPay 백업 -->
+    <delete id="deleteBackupOrderPayDuplicate">
+        DELETE orderbackup.tOrdOrderPay
+        FROM   orderbackup.tOrdOrderPay
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tOrdOrderPay.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderPay">
+        INSERT INTO orderbackup.tOrdOrderPay
+            (OrderNo, PayNo, PgCode, PgTradeNo, PgOrderCode, PayDate, PayType, CustCpnId,
+             PayExpectAmt, PayExpectDate, PayExpectName, PayAmt, ChnlPayFee, PayFee, ReciptName,
+             ReciptBank, ReciptAccnt, ReciptAmt, ReciptDate, ApprovDate, ApprovNo, CardComp,
+             CardNo, FreeDesc, InstalDesc, PointCompCode, PointApprovId, AddPoint, UsablePoint,
+             TotalPoint, PointApprovTime, PointApprovNo, PointAmt, MobileCompCode, MobileNo,
+             BillCompCode, BillApprovNo, RefundBank, RefundAccnt, RefundAccntDepost, RefundDate,
+             CashReciptRegistDesc, CashReciptRegistNo, CashReciptApprovType, CashReciptApprovNo,
+             EscrowYn, EscrowModeDesc, ChnlCode, State, Remark, RegistId, RegistName, RegistDate,
+             ChangeId, ChangeName, ChangeDate)
+        SELECT  shopion.tOrdOrderPay.OrderNo, PayNo, PgCode, PgTradeNo, PgOrderCode, PayDate,
+                PayType, CustCpnId, PayExpectAmt, PayExpectDate, PayExpectName, PayAmt, ChnlPayFee,
+                PayFee, ReciptName, ReciptBank, ReciptAccnt, ReciptAmt, ReciptDate, ApprovDate,
+                ApprovNo, CardComp, CardNo, FreeDesc, InstalDesc, PointCompCode, PointApprovId,
+                AddPoint, UsablePoint, TotalPoint, PointApprovTime, PointApprovNo, PointAmt,
+                MobileCompCode, MobileNo, BillCompCode, BillApprovNo, RefundBank, RefundAccnt,
+                RefundAccntDepost, RefundDate, CashReciptRegistDesc, CashReciptRegistNo,
+                CashReciptApprovType, CashReciptApprovNo, EscrowYn, EscrowModeDesc, ChnlCode,
+                State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        FROM    shopion.tOrdOrderPay
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopion.tOrdOrderPay.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderPay">
+        DELETE shopion.tOrdOrderPay
+        FROM   shopion.tOrdOrderPay
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopion.tOrdOrderPay.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tOrdOrderDeliFee 백업 -->
+    <delete id="deleteBackupOrderDeliFeeDuplicate">
+        DELETE orderbackup.tOrdOrderDeliFee
+        FROM   orderbackup.tOrdOrderDeliFee
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tOrdOrderDeliFee.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderDeliFee">
+        INSERT INTO orderbackup.tOrdOrderDeliFee
+            (OrderNo, OrderDeliFeeNo, DeliFeeId, DeliFeeName, DeliFeeDesc, CustDeliFee, DeliFee,
+             SupplyDeliFee, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        SELECT  shopion.tOrdOrderDeliFee.OrderNo, OrderDeliFeeNo, DeliFeeId, DeliFeeName,
+                DeliFeeDesc, CustDeliFee, DeliFee, SupplyDeliFee, State, Remark,
+                RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        FROM    shopion.tOrdOrderDeliFee
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopion.tOrdOrderDeliFee.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderDeliFee">
+        DELETE shopion.tOrdOrderDeliFee
+        FROM   shopion.tOrdOrderDeliFee
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopion.tOrdOrderDeliFee.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tOrdOrderChangeNo 백업 -->
+    <delete id="deleteBackupOrderChangeNoDuplicate">
+        DELETE orderbackup.tOrdOrderChangeNo
+        FROM   orderbackup.tOrdOrderChangeNo
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tOrdOrderChangeNo.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderChangeNo">
+        INSERT INTO orderbackup.tOrdOrderChangeNo
+            (OrderNo, OrderProdNo, OrderChangeNo, PrevState, CurrState, ItemCode, DeliComp, InvNo,
+             State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        SELECT  shopion.tOrdOrderChangeNo.OrderNo, OrderProdNo, OrderChangeNo, PrevState,
+                CurrState, ItemCode, DeliComp, InvNo, State, Remark,
+                RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        FROM    shopion.tOrdOrderChangeNo
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopion.tOrdOrderChangeNo.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderChangeNo">
+        DELETE shopion.tOrdOrderChangeNo
+        FROM   shopion.tOrdOrderChangeNo
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopion.tOrdOrderChangeNo.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tShpShipDirect 백업 -->
+    <delete id="deleteBackupOrderShipDirectDuplicate">
+        DELETE orderbackup.tShpShipDirect
+        FROM   orderbackup.tShpShipDirect
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tShpShipDirect.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderShipDirect">
+        INSERT INTO orderbackup.tShpShipDirect
+            (OrderNo, OrderProdNo, OrderChangeNo, OrderType, MallCode, ChnlCode, ChnlOrderNo,
+             ChnlOrderProdNo, SlnkOrderCode, DealName, OrderName, OrderPhoneNo, OrderMobileNo,
+             RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr, DeliMemo,
+             OrderMemo, DeliHopeDate, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn,
+             BundleInvNo, CateCode, StoreCode, ProdCode, ShopProdCode, ProdName, InvProdName,
+             ProdImg, MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode, ItemName, ProdQty,
+             VatRate, VatAmt, OfferYn, OfferDate, OfferRegistDate, OfferRegistId, ListPrice,
+             PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt,
+             PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice,
+             PointSaveAmt, CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode,
+             PromotFeeAmt, DeliCompName, PrevInvNo, InvNo, InvChangeReason, InvChangeReasonDetail,
+             InvIdNo, OrderState, ShipCancelYn, PreShipYn, ForceShipYn, DelayReason,
+             DelayReasonDetail, ExchngReason, ExchngReasonDetail, PayCmpletDate, ShipDirectDate,
+             ShipCheckDate, ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate,
+             DeliCmpletDate, AdjustSelectDate, ShipPlace, GiftDesc, GiftQty, OrderProdName,
+             OrderItemName, OrderProdQty, State, Remark, RegistId, RegistName, RegistDate,
+             ChangeId, ChangeName, ChangeDate)
+        SELECT  shopwizard.tShpShipDirect.OrderNo, OrderProdNo, OrderChangeNo, OrderType,
+                MallCode, ChnlCode, ChnlOrderNo, ChnlOrderProdNo, SlnkOrderCode, DealName,
+                OrderName, OrderPhoneNo, OrderMobileNo, RecverName, RecverPhoneNo, RecverMobileNo,
+                RecverZipcode, RecverAddr, DeliMemo, OrderMemo, DeliHopeDate, SupplyCode,
+                SupplyName, ShopCode, ShopName, BundleYn, BundleInvNo, CateCode, StoreCode,
+                ProdCode, ShopProdCode, ProdName, InvProdName, ProdImg, MakerName, ModelName,
+                ProdUnit, ProdMemo01, ItemCode, ItemName, ProdQty, VatRate, VatAmt, OfferYn,
+                OfferDate, OfferRegistDate, OfferRegistId, ListPrice, PrevPrice, SalePrice,
+                SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt, SupplyPrice,
+                DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt, CustChrgDeliFee,
+                DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode, PromotFeeAmt, DeliCompName,
+                PrevInvNo, InvNo, InvChangeReason, InvChangeReasonDetail, InvIdNo, OrderState,
+                ShipCancelYn, PreShipYn, ForceShipYn, DelayReason, DelayReasonDetail,
+                ExchngReason, ExchngReasonDetail, PayCmpletDate, ShipDirectDate, ShipCheckDate,
+                ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate, DeliCmpletDate,
+                AdjustSelectDate, ShipPlace, GiftDesc, GiftQty, OrderProdName, OrderItemName,
+                OrderProdQty, State, Remark, RegistId, RegistName, RegistDate,
+                ChangeId, ChangeName, ChangeDate
+        FROM    shopwizard.tShpShipDirect
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopwizard.tShpShipDirect.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderShipDirect">
+        DELETE shopwizard.tShpShipDirect
+        FROM   shopwizard.tShpShipDirect
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopwizard.tShpShipDirect.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tShpShipDirectPrint 백업 -->
+    <delete id="deleteBackupOrderShipDirectPrintDuplicate">
+        DELETE orderbackup.tShpShipDirectPrint
+        FROM   orderbackup.tShpShipDirectPrint
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tShpShipDirectPrint.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderShipDirectPrint">
+        INSERT INTO orderbackup.tShpShipDirectPrint
+            (OrderNo, OrderProdNo, OrderChangeNo, OrderType, MallCode, ChnlCode, ChnlOrderNo,
+             ChnlOrderProdNo, SlnkOrderCode, DealName, OrderName, OrderPhoneNo, OrderMobileNo,
+             RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr, DeliMemo,
+             OrderMemo, DeliHopeDate, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn,
+             BundleInvNo, CateCode, StoreCode, ProdCode, ShopProdCode, ProdName, InvProdName,
+             ProdImg, MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode, ItemName, ProdQty,
+             VatRate, VatAmt, OfferYn, OfferDate, OfferRegistDate, OfferRegistId, ListPrice,
+             PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt,
+             PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice,
+             PointSaveAmt, CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode,
+             PromotFeeAmt, DeliCompName, PrevInvNo, InvNo, InvChangeReason, InvChangeReasonDetail,
+             InvIdNo, OrderState, ShipCancelYn, PreShipYn, ForceShipYn, DelayReason,
+             DelayReasonDetail, ExchngReason, ExchngReasonDetail, PayCmpletDate, ShipDirectDate,
+             ShipCheckDate, ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate,
+             DeliCmpletDate, AdjustSelectDate, ShipPlace, GiftDesc, GiftQty, OrderProdName,
+             OrderItemName, OrderProdQty, State, Remark, RegistId, RegistName, RegistDate,
+             ChangeId, ChangeName, ChangeDate)
+        SELECT  shopwizard.tShpShipDirectPrint.OrderNo, OrderProdNo, OrderChangeNo, OrderType,
+                MallCode, ChnlCode, ChnlOrderNo, ChnlOrderProdNo, SlnkOrderCode, DealName,
+                OrderName, OrderPhoneNo, OrderMobileNo, RecverName, RecverPhoneNo, RecverMobileNo,
+                RecverZipcode, RecverAddr, DeliMemo, OrderMemo, DeliHopeDate, SupplyCode,
+                SupplyName, ShopCode, ShopName, BundleYn, BundleInvNo, CateCode, StoreCode,
+                ProdCode, ShopProdCode, ProdName, InvProdName, ProdImg, MakerName, ModelName,
+                ProdUnit, ProdMemo01, ItemCode, ItemName, ProdQty, VatRate, VatAmt, OfferYn,
+                OfferDate, OfferRegistDate, OfferRegistId, ListPrice, PrevPrice, SalePrice,
+                SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt, SupplyPrice,
+                DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt, CustChrgDeliFee,
+                DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode, PromotFeeAmt, DeliCompName,
+                PrevInvNo, InvNo, InvChangeReason, InvChangeReasonDetail, InvIdNo, OrderState,
+                ShipCancelYn, PreShipYn, ForceShipYn, DelayReason, DelayReasonDetail,
+                ExchngReason, ExchngReasonDetail, PayCmpletDate, ShipDirectDate, ShipCheckDate,
+                ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate, DeliCmpletDate,
+                AdjustSelectDate, ShipPlace, GiftDesc, GiftQty, OrderProdName, OrderItemName,
+                OrderProdQty, State, Remark, RegistId, RegistName, RegistDate,
+                ChangeId, ChangeName, ChangeDate
+        FROM    shopwizard.tShpShipDirectPrint
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopwizard.tShpShipDirectPrint.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderShipDirectPrint">
+        DELETE shopwizard.tShpShipDirectPrint
+        FROM   shopwizard.tShpShipDirectPrint
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopwizard.tShpShipDirectPrint.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tShpReturnDirect 백업 -->
+    <delete id="deleteBackupOrderReturnDirectDuplicate">
+        DELETE orderbackup.tShpReturnDirect
+        FROM   orderbackup.tShpReturnDirect
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tShpReturnDirect.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderReturnDirect">
+        INSERT INTO orderbackup.tShpReturnDirect
+            (OrderNo, OrderProdNo, OrderChangeNo, OrderType, MallCode, ChnlCode, OrderName,
+             OrderPhoneNo, OrderMobileNo, RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode,
+             RecverAddr, DeliMemo, OrderMemo, DeliHopeDate, SupplyCode, SupplyName, ShopCode,
+             ShopName, BundleYn, BundleInvNo, CateCode, StoreCode, ProdCode, ShopProdCode,
+             ProdName, InvProdName, ProdImg, MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode,
+             ItemName, ProdQty, VatRate, VatAmt, OfferYn, OfferDate, OfferRegistDate,
+             OfferRegistId, ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt,
+             ProdCpnDiscntAmt, PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice,
+             PvPrice, PointSaveAmt, CustChrgDeliFee, DeliFeeId, DeliCompCode, DeliCompName,
+             PrevInvNo, InvNo, InvChangeReason, InvChangeReasonDetail, InvIdNo, OrderState,
+             PreShipYn, ReciptBeforeCancelYn, ReturnReason, ReturnReasonDetail, ExchngReason,
+             ExchngReasonDetail, ReturnReciptDate, ReturnRqstDate, ReturnCmpletDate,
+             ReturnConfrmDate, AdjustSelectDate, ChnlOrderNo, ChnlOrderProdNo, DeliFeeType,
+             DeliFeeAmt, PromotFeeAmt, State, Remark, RegistId, RegistName, RegistDate,
+             ChangeId, ChangeName, ChangeDate)
+        SELECT  shopwizard.tShpReturnDirect.OrderNo, OrderProdNo, OrderChangeNo, OrderType,
+                MallCode, ChnlCode, OrderName, OrderPhoneNo, OrderMobileNo, RecverName,
+                RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr, DeliMemo, OrderMemo,
+                DeliHopeDate, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn, BundleInvNo,
+                CateCode, StoreCode, ProdCode, ShopProdCode, ProdName, InvProdName, ProdImg,
+                MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode, ItemName, ProdQty, VatRate,
+                VatAmt, OfferYn, OfferDate, OfferRegistDate, OfferRegistId, ListPrice, PrevPrice,
+                SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt,
+                SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt,
+                CustChrgDeliFee, DeliFeeId, DeliCompCode, DeliCompName, PrevInvNo, InvNo,
+                InvChangeReason, InvChangeReasonDetail, InvIdNo, OrderState, PreShipYn,
+                ReciptBeforeCancelYn, ReturnReason, ReturnReasonDetail, ExchngReason,
+                ExchngReasonDetail, ReturnReciptDate, ReturnRqstDate, ReturnCmpletDate,
+                ReturnConfrmDate, AdjustSelectDate, ChnlOrderNo, ChnlOrderProdNo, DeliFeeType,
+                DeliFeeAmt, PromotFeeAmt, State, Remark, RegistId, RegistName, RegistDate,
+                ChangeId, ChangeName, ChangeDate
+        FROM    shopwizard.tShpReturnDirect
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopwizard.tShpReturnDirect.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderReturnDirect">
+        DELETE shopwizard.tShpReturnDirect
+        FROM   shopwizard.tShpReturnDirect
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopwizard.tShpReturnDirect.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tOrdOrder 백업 -->
+    <delete id="deleteBackupOrderDuplicate">
+        DELETE orderbackup.tOrdOrder
+        FROM   orderbackup.tOrdOrder
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tOrdOrder.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrder">
+        INSERT INTO orderbackup.tOrdOrder
+            (OrderNo, CustId, LoginId, RecomId, OrderName, OrderCode, OrderEmail, OrderPhoneNo,
+             OrderMobileNo, OrderZipcode, OrderAddr1, OrderAddr2, RecverName, RecverPhoneNo,
+             RecverMobileNo, RecverZipcode, RecverAddr1, RecverAddr2, MoneyUnit, DeliMemo,
+             OrderMemo, DeliHopeDate, OrderState, OrderReciptDate, OrderCancelDate, PayCmpletDate,
+             ShipDirectDate, ShipCheckDate, ShipCmpletDate, DeliCmpletDate, RefundReciptDate,
+             RefundRqstDate, RefundCmpletDate, AreaCode, AccntId, ChnlCode, State, Remark,
+             RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        SELECT  shopion.tOrdOrder.OrderNo, CustId, LoginId, RecomId, OrderName, OrderCode,
+                OrderEmail, OrderPhoneNo, OrderMobileNo, OrderZipcode, OrderAddr1, OrderAddr2,
+                RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr1, RecverAddr2,
+                MoneyUnit, DeliMemo, OrderMemo, DeliHopeDate, OrderState, OrderReciptDate,
+                OrderCancelDate, PayCmpletDate, ShipDirectDate, ShipCheckDate, ShipCmpletDate,
+                DeliCmpletDate, RefundReciptDate, RefundRqstDate, RefundCmpletDate, AreaCode,
+                AccntId, ChnlCode, State, Remark, RegistId, RegistName, RegistDate,
+                ChangeId, ChangeName, ChangeDate
+        FROM    shopion.tOrdOrder
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopion.tOrdOrder.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrder">
+        DELETE shopion.tOrdOrder
+        FROM   shopion.tOrdOrder
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopion.tOrdOrder.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <!-- tOrdOrderProd 백업 -->
+    <delete id="deleteBackupOrderProdDuplicate">
+        DELETE orderbackup.tOrdOrderProd
+        FROM   orderbackup.tOrdOrderProd
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON orderbackup.tOrdOrderProd.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+    <insert id="insertBackupOrderProd">
+        INSERT INTO orderbackup.tOrdOrderProd
+            (OrderNo, OrderProdNo, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn,
+             StoreCode, ProdCode, ShopProdCode, ProdName, ProdImg, ItemCode, ItemName, MakerName,
+             ModelName, ProdUnit, ProdMemo01, ProdQty, ListPrice, PrevPrice, SalePrice,
+             SaleDiscntAmt, CustCpnId, ProdCpnId, CustCpnDiscntAmt, ProdCpnDiscntAmt,
+             PointUseAmt, SupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt, VatRate, VatAmt,
+             ReciptAmt, GiftRefundAmt, ProdMargin, ChnlMargin, NetMargin, DeliFeeId, DeliFeeType,
+             DeliFeeAmt, DeliCompCode, DeliCompName, PromotFeeAmt, PrevInvNo, InvNo,
+             InvChangeReason, InvChangeReasonDetail, OrderState, ExchngReason, ExchngReasonDetail,
+             ReturnReason, ReturnReasonDetail, ShipDirectDate, ShipCheckDate,
+             ShipCancelReciptDate, ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate,
+             ReturnReciptDate, ReturnRqstDate, ReturnCmpletDate, ExchngReciptDate,
+             ExchngRecvRqstDate, ExchngRqstDate, ExchngRecvCmpletDate, ExchngCmpletDate,
+             DeliCmpletDate, RefundReciptDate, RefundRqstDate, RefundCmpletDate, ChnlOrderNo,
+             ChnlOrderProdNo, UploadOrderNo, SlnkOrderCode, DealNo, DealName, ReviewYn, AccntId,
+             State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate,
+             ShipAdjustDate, RefundAdjustDate)
+        SELECT  shopion.tOrdOrderProd.OrderNo, OrderProdNo, SupplyCode, SupplyName, ShopCode,
+                ShopName, BundleYn, StoreCode, ProdCode, ShopProdCode, ProdName, ProdImg,
+                ItemCode, ItemName, MakerName, ModelName, ProdUnit, ProdMemo01, ProdQty,
+                ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnId, ProdCpnId,
+                CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt, SupplyPrice, BuyPrice, NvPrice,
+                PvPrice, PointSaveAmt, VatRate, VatAmt, ReciptAmt, GiftRefundAmt, ProdMargin,
+                ChnlMargin, NetMargin, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode,
+                DeliCompName, PromotFeeAmt, PrevInvNo, InvNo, InvChangeReason,
+                InvChangeReasonDetail, OrderState, ExchngReason, ExchngReasonDetail, ReturnReason,
+                ReturnReasonDetail, ShipDirectDate, ShipCheckDate, ShipCancelReciptDate,
+                ShipCancelRqstDate, ShipCancelCmpletDate, ShipCmpletDate, ReturnReciptDate,
+                ReturnRqstDate, ReturnCmpletDate, ExchngReciptDate, ExchngRecvRqstDate,
+                ExchngRqstDate, ExchngRecvCmpletDate, ExchngCmpletDate, DeliCmpletDate,
+                RefundReciptDate, RefundRqstDate, RefundCmpletDate, ChnlOrderNo, ChnlOrderProdNo,
+                UploadOrderNo, SlnkOrderCode, DealNo, DealName, ReviewYn, AccntId, State, Remark,
+                RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate,
+                ShipAdjustDate, RefundAdjustDate
+        FROM    shopion.tOrdOrderProd
+                INNER JOIN orderbackup.tOrdOrderNoTemp
+                ON shopion.tOrdOrderProd.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </insert>
+
+    <delete id="deleteBackupOrderProd">
+        DELETE shopion.tOrdOrderProd
+        FROM   shopion.tOrdOrderProd
+               INNER JOIN orderbackup.tOrdOrderNoTemp
+               ON shopion.tOrdOrderProd.OrderNo = orderbackup.tOrdOrderNoTemp.OrderNo
+    </delete>
+
+</mapper>

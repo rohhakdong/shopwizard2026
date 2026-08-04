@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustDeliAddrMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustDeliAddr">
+        SELECT CD.*, CI.CustName AS CustName
+        FROM shopion.tPrfCustDeliAddr CD
+        INNER JOIN shopion.tPrfCust CI ON CD.CustId = CI.CustId
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustDeliAddr CD
+        INNER JOIN shopion.tPrfCust CI ON CD.CustId = CI.CustId
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+            <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CustDeliAddr">
+        SELECT *
+        FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{custId}
+        AND DeliAddrNo = #{deliAddrNo}
+    </select>
+
+    <select id="selectDefault" parameterType="int" resultType="com.shopwizard.profile.model.CustDeliAddr">
+        SELECT *
+        FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{value}
+        AND DefaltYn = 1
+        LIMIT 0,1
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustDeliAddr">
+        INSERT INTO shopion.tPrfCustDeliAddr (
+            CustId, DefaltYn, RecverName, Zipcode, Addr1, Addr2,
+            HomePhoneNo, MobilePhoneNo, MobileSvc, ChnlCode,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{custId}, #{defaltYn}, #{recverName}, #{zipcode}, #{addr1}, #{addr2},
+            #{homePhoneNo}, #{mobilePhoneNo}, #{mobileSvc}, #{chnlCode},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustDeliAddr">
+        UPDATE shopion.tPrfCustDeliAddr SET
+            DefaltYn = #{defaltYn}, RecverName = #{recverName}, Zipcode = #{zipcode},
+            Addr1 = #{addr1}, Addr2 = #{addr2}, HomePhoneNo = #{homePhoneNo},
+            MobilePhoneNo = #{mobilePhoneNo}, MobileSvc = #{mobileSvc},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+        AND DeliAddrNo = #{deliAddrNo}
+    </update>
+
+    <update id="updateDefaltYn" parameterType="int">
+        UPDATE shopion.tPrfCustDeliAddr SET
+            DefaltYn = 0, ChangeDate = NOW()
+        WHERE CustId = #{value}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{custId}
+        AND DeliAddrNo = #{deliAddrNo}
+    </delete>
+
+    <delete id="deleteByCustId" parameterType="int">
+        DELETE FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{value}
+    </delete>
+
+</mapper>

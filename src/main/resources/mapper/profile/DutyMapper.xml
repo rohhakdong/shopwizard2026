@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.DutyMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Duty">
+        SELECT * FROM shopion.tPrfDuty
+        <where>
+            <if test="pDutyId != null and pDutyId != ''">AND DutyId = #{pDutyId}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrfDuty
+        <where>
+            <if test="pDutyId != null and pDutyId != ''">AND DutyId = #{pDutyId}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.profile.model.Duty">
+        SELECT * FROM shopion.tPrfDuty WHERE DutyId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Duty" useGeneratedKeys="true" keyProperty="dutyId">
+        INSERT INTO shopion.tPrfDuty (CompCode, DutyName, DutyDesc, DutySeq, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES (#{compCode}, #{dutyName}, #{dutyDesc}, #{dutySeq}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Duty">
+        UPDATE shopion.tPrfDuty SET
+            DutyName = #{dutyName}, DutyDesc = #{dutyDesc}, DutySeq = #{dutySeq},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE DutyId = #{dutyId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrfDuty WHERE DutyId = #{value}
+    </delete>
+
+</mapper>

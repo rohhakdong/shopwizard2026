@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.StoreProdMapper">
+
+    <sql id="storeProdBaseWhere">
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND SP.ChnlCode = #{pChnlCode}
+        </if>
+        <if test="pStoreCode != null and pStoreCode != ''">
+            <choose>
+                <when test="pChildIncluded != null and pChildIncluded != ''">
+                    AND SUBSTRING(SP.StoreCode,1,(#{pStoreLevel}+1)*3+1) = SUBSTRING(#{pStoreCode},1,(#{pStoreLevel}+1)*3+1)
+                </when>
+                <otherwise>
+                    AND SP.StoreCode = #{pStoreCode}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pProdCode != null and pProdCode != ''">
+            AND SP.ProdCode = #{pProdCode}
+        </if>
+        <if test="pSaleYn != null and pSaleYn != ''">
+            <choose>
+                <when test="pSaleYn == '100'">
+                    AND PH.SaleYn > 0
+                </when>
+                <otherwise>
+                    AND PH.SaleYn = #{pSaleYn}
+                </otherwise>
+            </choose>
+        </if>
+        <if test="pBrandName != null and pBrandName != ''">
+            <choose>
+                <when test="pBrandName == 'CASHCASHOTHER'">
+                    <choose>
+                        <when test="pStoreCode != null and pStoreCode.startsWith('G001')">
+                            AND PH.BrandName NOT IN ('캐시캐시','캐시캐시키즈')
+                        </when>
+                        <when test="pStoreCode != null and pStoreCode.startsWith('G002')">
+                            AND PH.BrandName NOT IN ('캐시캐시','캐시캐시키즈')
+                        </when>
+                        <when test="pStoreCode != null and pStoreCode.startsWith('G003')">
+                            AND PH.BrandName NOT IN ('캐시캐시','캐시캐시키즈')
+                        </when>
+                        <otherwise>
+                            AND PH.BrandName NOT IN ('캐시캐시','캐시캐시키즈')
+                        </otherwise>
+                    </choose>
+                </when>
+                <otherwise>
+                    AND PH.BrandName = #{pBrandName}
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.StoreProd">
+        SELECT SP.ChnlCode, SP.StoreCode, SP.ProdCode, SP.LocType, SP.ProdSeq, SP.OrderQty,
+               SP.Remark, SP.State,
+               SP.RegistDate, SP.RegistId, SP.RegistName, SP.ChangeDate, SP.ChangeId, SP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.SupplyQty, PH.ImgUrl80, PH.BrandName,
+               PC.CpnAmt AS ProdCpnAmt, PT.PointAmt
+        FROM shopion.tStrStoreProd SP
+        INNER JOIN shopion.tPrdProd PH ON SP.ProdCode = PH.ProdCode
+        LEFT JOIN shopion.tStrProdCpnProd CPP ON SP.ChnlCode = CPP.ChnlCode AND SP.ProdCode = CPP.ProdCode
+        LEFT JOIN shopion.tStrProdCpn PC ON CPP.CpnId = PC.CpnId
+        LEFT JOIN shopion.tStrPointProd PP ON SP.ChnlCode = PP.ChnlCode AND SP.ProdCode = PP.ProdCode
+        LEFT JOIN shopion.tStrPoint PT ON PP.PointId = PT.PointId
+        <where>
+            <include refid="storeProdBaseWhere"/>
+        </where>
+        <choose>
+            <when test="pOrderByCashCash != null and pOrderByCashCash != ''">
+                ORDER BY CASE WHEN PH.BrandName IN ('캐시캐시','캐시캐시키즈') THEN 0 ELSE 1 END, SP.ProdSeq
+            </when>
+            <otherwise>
+                ORDER BY SP.ProdSeq
+            </otherwise>
+        </choose>
+        <if test="topCnt != null">
+            LIMIT #{topCnt}
+        </if>
+        <if test="startNum != null and countPerPage != null">
+            LIMIT #{startNum}, #{countPerPage}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tStrStoreProd SP
+        INNER JOIN shopion.tPrdProd PH ON SP.ProdCode = PH.ProdCode
+        <where>
+            <include refid="storeProdBaseWhere"/>
+        </where>
+    </select>
+
+    <select id="selectListLocType" parameterType="map" resultType="com.shopwizard.store.model.StoreProd">
+        SELECT SP.ChnlCode, SP.StoreCode, SP.ProdCode, SP.LocType, SP.ProdSeq, SP.OrderQty,
+               SP.Remark, SP.State,
+               SP.RegistDate, SP.RegistId, SP.RegistName, SP.ChangeDate, SP.ChangeId, SP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.SupplyQty, PH.ImgUrl80
+        FROM shopion.tStrStoreProd SP
+        INNER JOIN shopion.tPrdProd PH ON SP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND SP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pStoreCode != null and pStoreCode != ''">
+                AND SP.StoreCode = #{pStoreCode}
+            </if>
+            AND SP.LocType IS NOT NULL AND SP.LocType != 0
+        </where>
+        ORDER BY SP.LocType, SP.ProdSeq
+    </select>
+
+    <select id="selectListOrderQty" parameterType="map" resultType="com.shopwizard.store.model.StoreProd">
+        SELECT SP.ChnlCode, SP.StoreCode, SP.ProdCode, SP.LocType, SP.ProdSeq,
+               SP.Remark, SP.State,
+               SP.RegistDate, SP.RegistId, SP.RegistName, SP.ChangeDate, SP.ChangeId, SP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.ImgUrl80,
+               IFNULL(OQ.OrderQty, 0) AS OrderQty
+        FROM shopion.tStrStoreProd SP
+        INNER JOIN shopion.tPrdProd PH ON SP.ProdCode = PH.ProdCode
+        LEFT JOIN (
+            SELECT ProdCode, SUM(ProdQty) AS OrderQty
+            FROM shopion.tOrdOrderProd
+            <where>
+                <if test="pOrderStartDate != null and pOrderStartDate != ''">
+                    AND RegistDate >= #{pOrderStartDate}
+                </if>
+                <if test="pOrderEndDate != null and pOrderEndDate != ''">
+                    AND RegistDate &lt;= #{pOrderEndDate}
+                </if>
+            </where>
+            GROUP BY ProdCode
+        ) OQ ON SP.ProdCode = OQ.ProdCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND SP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pStoreCode != null and pStoreCode != ''">
+                AND SP.StoreCode = #{pStoreCode}
+            </if>
+        </where>
+        ORDER BY OrderQty DESC
+        <if test="topCnt != null">
+            LIMIT #{topCnt}
+        </if>
+    </select>
+
+    <select id="selectStoreCode" parameterType="map" resultType="string">
+        SELECT MIN(StoreCode)
+        FROM shopion.tStrStoreProd
+        WHERE ProdCode = #{pProdCode}
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND ChnlCode = #{pChnlCode}
+        </if>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.store.model.StoreProd">
+        SELECT ChnlCode, StoreCode, ProdCode, LocType, ProdSeq, OrderQty,
+               Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrStoreProd
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+          AND ProdCode = #{pProdCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.StoreProd">
+        INSERT INTO shopion.tStrStoreProd (
+            ChnlCode, StoreCode, ProdCode, LocType, ProdSeq, OrderQty,
+            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{chnlCode}, #{storeCode}, #{prodCode}, #{locType}, #{prodSeq}, #{orderQty},
+            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.StoreProd">
+        UPDATE shopion.tStrStoreProd
+        SET LocType = #{locType},
+            ProdSeq = #{prodSeq},
+            OrderQty = #{orderQty},
+            Remark = #{remark},
+            State = #{state},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE ChnlCode = #{chnlCode}
+          AND StoreCode = #{storeCode}
+          AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrStoreProd
+        WHERE ChnlCode = #{pChnlCode}
+          AND StoreCode = #{pStoreCode}
+        <if test="prodCodes != null">
+            AND ProdCode IN
+            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </delete>
+
+    <delete id="deleteProd" parameterType="map">
+        DELETE FROM shopion.tStrStoreProd
+        WHERE ChnlCode = #{pChnlCode}
+          AND ProdCode = #{pProdCode}
+    </delete>
+
+</mapper>

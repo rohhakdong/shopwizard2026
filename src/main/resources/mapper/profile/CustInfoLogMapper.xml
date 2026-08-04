@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustInfoLogMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustInfoLog">
+        SELECT *
+        FROM shopion.tPrfCustInfoLog
+        <where>
+            <if test="pLogId != null and pLogId != ''">AND LogId = #{pLogId}</if>
+            <if test="pMenuName != null and pMenuName != ''">AND MenuName = #{pMenuName}</if>
+            <if test="pSvcName != null and pSvcName != ''">AND SvcName = #{pSvcName}</if>
+            <if test="pDaoName != null and pDaoName != ''">AND DaoName = #{pDaoName}</if>
+            <if test="pTableName != null and pTableName != ''">AND TableName = #{pTableName}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+            <if test="pMngrUid != null and pMngrUid != ''">AND MngrUid = #{pMngrUid}</if>
+            <if test="pMngrLoginId != null and pMngrLoginId != ''">AND MngrLoginId = #{pMngrLoginId}</if>
+            <if test="pMngrName != null and pMngrName != ''">AND MngrName = #{pMngrName}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+        LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustInfoLog
+        <where>
+            <if test="pLogId != null and pLogId != ''">AND LogId = #{pLogId}</if>
+            <if test="pMenuName != null and pMenuName != ''">AND MenuName = #{pMenuName}</if>
+            <if test="pSvcName != null and pSvcName != ''">AND SvcName = #{pSvcName}</if>
+            <if test="pDaoName != null and pDaoName != ''">AND DaoName = #{pDaoName}</if>
+            <if test="pTableName != null and pTableName != ''">AND TableName = #{pTableName}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+            <if test="pMngrUid != null and pMngrUid != ''">AND MngrUid = #{pMngrUid}</if>
+            <if test="pMngrLoginId != null and pMngrLoginId != ''">AND MngrLoginId = #{pMngrLoginId}</if>
+            <if test="pMngrName != null and pMngrName != ''">AND MngrName = #{pMngrName}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.profile.model.CustInfoLog">
+        SELECT *
+        FROM shopion.tPrfCustInfoLog
+        WHERE LogId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustInfoLog">
+        INSERT INTO shopion.tPrfCustInfoLog (
+            LogId, CustId, MenuName, ExecCntnts, SvcName, DaoName, TableName, OrderNo,
+            MngrUid, MngrLoginId, MngrName, MngrIp, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{logId}, #{custId}, #{menuName}, #{execCntnts}, #{svcName}, #{daoName}, #{tableName}, #{orderNo},
+            #{mngrUid}, #{mngrLoginId}, #{mngrName}, #{mngrIp}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustInfoLog">
+        UPDATE shopion.tPrfCustInfoLog SET
+            CustId = #{custId}, MenuName = #{menuName}, ExecCntnts = #{execCntnts},
+            SvcName = #{svcName}, DaoName = #{daoName}, TableName = #{tableName}, OrderNo = #{orderNo},
+            MngrUid = #{mngrUid}, MngrLoginId = #{mngrLoginId}, MngrName = #{mngrName}, MngrIp = #{mngrIp},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE LogId = #{logId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrfCustInfoLog
+        WHERE LogId = #{value}
+    </delete>
+
+</mapper>

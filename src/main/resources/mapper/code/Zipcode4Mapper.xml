@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.code.mapper.Zipcode4Mapper">
+
+  <resultMap id="Zipcode4Result" type="com.shopwizard.code.model.Zipcode4">
+    <result property="seq"      column="seq" />
+    <result property="zipcode"  column="zipcode" />
+    <result property="sido"     column="sido" />
+    <result property="gugun"    column="gugun" />
+    <result property="dong"     column="dong" />
+    <result property="ri"       column="ri" />
+    <result property="bldg"     column="bldg" />
+    <result property="stBunji"  column="st_bunji" />
+    <result property="edBunji"  column="ed_bunji" />
+  </resultMap>
+
+  <select id="findList" resultMap="Zipcode4Result">
+    SELECT *
+    FROM tCodZipcode4
+    WHERE dong LIKE CONCAT('%', #{keyword}, '%')
+       OR bldg LIKE CONCAT('%', #{keyword}, '%')
+  </select>
+
+</mapper>

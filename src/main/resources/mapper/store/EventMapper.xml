@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.EventMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.Event">
+        SELECT E.ChnlCode, E.EventCode, E.EventName, E.EventDesc, E.EventStartDate, E.EventEndDate,
+               E.ImgName, E.ImgLink, E.ImgWidth, E.ImgHeight, E.StoreCode, E.ParentEventCode,
+               E.EventLevel, E.EventSeq, E.AdultYn, E.ColCnt, E.ReviewYn, E.TmplCode, E.BoardYn,
+               E.State, E.Remark, E.RegistDate, E.RegistId, E.RegistName, E.ChangeDate, E.ChangeId, E.ChangeName,
+               (SELECT COUNT(*) FROM shopion.tStrEvent C WHERE C.ChnlCode = E.ChnlCode AND C.ParentEventCode = E.EventCode) AS ChildCount
+        FROM shopion.tStrEvent E
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND E.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pParentEventCode != null and pParentEventCode != ''">
+                AND E.ParentEventCode = #{pParentEventCode}
+            </if>
+            <if test="pParentEventCode == null or pParentEventCode == ''">
+                AND E.EventLevel = 0
+            </if>
+        </where>
+        ORDER BY E.EventSeq
+    </select>
+
+    <select id="selectListLevel" parameterType="map" resultType="com.shopwizard.store.model.Event">
+        SELECT E.ChnlCode, E.EventCode, E.EventName, E.EventDesc, E.EventStartDate, E.EventEndDate,
+               E.ImgName, E.ImgLink, E.ImgWidth, E.ImgHeight, E.StoreCode, E.ParentEventCode,
+               E.EventLevel, E.EventSeq, E.AdultYn, E.ColCnt, E.ReviewYn, E.TmplCode, E.BoardYn,
+               E.State, E.Remark, E.RegistDate, E.RegistId, E.RegistName, E.ChangeDate, E.ChangeId, E.ChangeName
+        FROM shopion.tStrEvent E
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND E.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pEventLevel != null">
+                AND E.EventLevel = #{pEventLevel}
+            </if>
+        </where>
+        ORDER BY E.EventLevel, E.EventSeq
+    </select>
+
+    <select id="selectEventCodeMax" parameterType="map" resultType="string">
+        SELECT MAX(EventCode)
+        FROM shopion.tStrEvent
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pParentEventCode != null and pParentEventCode != ''">
+                AND ParentEventCode = #{pParentEventCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.store.model.Event">
+        SELECT ChnlCode, EventCode, EventName, EventDesc, EventStartDate, EventEndDate,
+               ImgName, ImgLink, ImgWidth, ImgHeight, EventHtml, StoreCode, ParentEventCode,
+               EventLevel, EventSeq, AdultYn, ColCnt, ReviewYn, TmplCode, BoardYn,
+               State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrEvent
+        WHERE ChnlCode = #{pChnlCode}
+          AND EventCode = #{pEventCode}
+    </select>
+
+    <select id="selectEventHtml" parameterType="map" resultType="string">
+        SELECT EventHtml
+        FROM shopion.tStrEvent
+        WHERE ChnlCode = #{pChnlCode}
+          AND EventCode = #{pEventCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.Event">
+        INSERT INTO shopion.tStrEvent (
+            ChnlCode, EventCode, EventName, EventDesc, EventStartDate, EventEndDate,
+            ImgName, ImgLink, ImgWidth, ImgHeight, EventHtml, StoreCode, ParentEventCode,
+            EventLevel, EventSeq, AdultYn, ColCnt, ReviewYn, TmplCode, BoardYn,
+            State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{chnlCode}, #{eventCode}, #{eventName}, #{eventDesc}, #{eventStartDate}, #{eventEndDate},
+            #{imgName}, #{imgLink}, #{imgWidth}, #{imgHeight}, #{eventHtml}, #{storeCode}, #{parentEventCode},
+            #{eventLevel}, #{eventSeq}, #{adultYn}, #{colCnt}, #{reviewYn}, #{tmplCode}, #{boardYn},
+            #{state}, #{remark}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.Event">
+        UPDATE shopion.tStrEvent
+        SET EventName = #{eventName},
+            EventDesc = #{eventDesc},
+            EventStartDate = #{eventStartDate},
+            EventEndDate = #{eventEndDate},
+            ImgName = #{imgName},
+            ImgLink = #{imgLink},
+            ImgWidth = #{imgWidth},
+            ImgHeight = #{imgHeight},
+            <if test="eventHtml != null and eventHtml != ''">
+            EventHtml = #{eventHtml},
+            </if>
+            StoreCode = #{storeCode},
+            ParentEventCode = #{parentEventCode},
+            EventLevel = #{eventLevel},
+            EventSeq = #{eventSeq},
+            AdultYn = #{adultYn},
+            ColCnt = #{colCnt},
+            ReviewYn = #{reviewYn},
+            TmplCode = #{tmplCode},
+            BoardYn = #{boardYn},
+            State = #{state},
+            Remark = #{remark},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE ChnlCode = #{chnlCode}
+          AND EventCode = #{eventCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrEvent
+        WHERE ChnlCode = #{pChnlCode}
+          AND EventCode = #{pEventCode}
+    </delete>
+
+</mapper>

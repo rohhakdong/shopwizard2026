@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.BranchMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Branch">
+        SELECT *
+        FROM shopion.tPrfBranch
+        <where>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pBranchName != null and pBranchName != ''">AND BranchName LIKE CONCAT('%',#{pBranchName},'%')</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+        LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfBranch
+        <where>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pBranchName != null and pBranchName != ''">AND BranchName LIKE CONCAT('%',#{pBranchName},'%')</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.profile.model.Branch">
+        SELECT *
+        FROM shopion.tPrfBranch
+        WHERE BranchId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Branch" useGeneratedKeys="true" keyProperty="branchId">
+        INSERT INTO shopion.tPrfBranch (
+            CompCode, BranchCode, BranchName, BranchDesc, PrsdntName, Zipcode, Addr1, Addr2,
+            Status, Cate, PhoneNo, FaxNo, Email, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{compCode}, #{branchCode}, #{branchName}, #{branchDesc}, #{prsdntName}, #{zipcode}, #{addr1}, #{addr2},
+            #{status}, #{cate}, #{phoneNo}, #{faxNo}, #{email}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Branch">
+        UPDATE shopion.tPrfBranch SET
+            CompCode = #{compCode}, BranchCode = #{branchCode}, BranchName = #{branchName},
+            BranchDesc = #{branchDesc}, PrsdntName = #{prsdntName}, Zipcode = #{zipcode},
+            Addr1 = #{addr1}, Addr2 = #{addr2}, Status = #{status}, Cate = #{cate},
+            PhoneNo = #{phoneNo}, FaxNo = #{faxNo}, Email = #{email},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE BranchId = #{branchId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrfBranch
+        WHERE BranchId = #{value}
+    </delete>
+
+</mapper>

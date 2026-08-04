@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.ShopWarehsMapper">
+
+    <resultMap id="ShopWarehsResult" type="com.shopwizard.company.model.ShopWarehs">
+        <result property="shopCode" column="ShopCode"/>
+        <result property="warehsCode" column="WarehsCode"/>
+        <result property="shopName" column="ShopName"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ShopWarehsResult">
+        SELECT SW.ShopCode, SW.WarehsCode, S.ShopName, SW.State, SW.Remark,
+               SW.RegistId, SW.RegistName, SW.RegistDate, SW.ChangeId, SW.ChangeName, SW.ChangeDate
+        FROM shopwizard.tCmpShopWarehs SW
+        INNER JOIN shopwizard.tCmpShop S ON SW.ShopCode = S.ShopCode
+        <where>
+            <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
+            AND SW.WarehsCode = #{pWarehsCode}
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpShopWarehs SW
+        INNER JOIN shopwizard.tCmpShop S ON SW.ShopCode = S.ShopCode
+        <where>
+            <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
+            AND SW.WarehsCode = #{pWarehsCode}
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ShopWarehsResult">
+        SELECT *
+        FROM shopwizard.tCmpShopWarehs
+        WHERE ShopCode = #{shopCode}
+        AND WarehsCode = #{warehsCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.ShopWarehs">
+        INSERT INTO shopwizard.tCmpShopWarehs (
+            ShopCode, WarehsCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{shopCode}, #{warehsCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.ShopWarehs">
+        UPDATE shopwizard.tCmpShopWarehs SET
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ShopCode = #{shopCode}
+        AND WarehsCode = #{warehsCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.ShopWarehs">
+        DELETE FROM shopwizard.tCmpShopWarehs
+        WHERE ShopCode = #{shopCode}
+        AND WarehsCode = #{warehsCode}
+    </delete>
+
+</mapper>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.CustCpnMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.CustCpn">
+        SELECT CpnId, CpnName, CpnDesc, CpnImg, DiscntType, DiscntAmt, LimitAmt,
+               DiscntStartDate, DiscntEndDate, Remark, State,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrCustCpn
+        ORDER BY CpnId DESC
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.store.model.CustCpn">
+        SELECT CpnId, CpnName, CpnDesc, CpnImg, DiscntType, DiscntAmt, LimitAmt,
+               DiscntStartDate, DiscntEndDate, Remark, State,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrCustCpn
+        WHERE CpnId = #{cpnId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.CustCpn">
+        INSERT INTO shopion.tStrCustCpn (
+            CpnName, CpnDesc, CpnImg, DiscntType, DiscntAmt, LimitAmt,
+            DiscntStartDate, DiscntEndDate, Remark, State,
+            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{cpnName}, #{cpnDesc}, #{cpnImg}, #{discntType}, #{discntAmt}, #{limitAmt},
+            #{discntStartDate}, #{discntEndDate}, #{remark}, #{state},
+            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.CustCpn">
+        UPDATE shopion.tStrCustCpn
+        SET CpnName = #{cpnName},
+            CpnDesc = #{cpnDesc},
+            CpnImg = #{cpnImg},
+            DiscntType = #{discntType},
+            DiscntAmt = #{discntAmt},
+            LimitAmt = #{limitAmt},
+            DiscntStartDate = #{discntStartDate},
+            DiscntEndDate = #{discntEndDate},
+            Remark = #{remark},
+            State = #{state},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE CpnId = #{cpnId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tStrCustCpn
+        WHERE CpnId = #{cpnId}
+    </delete>
+
+</mapper>

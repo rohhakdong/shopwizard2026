@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.SaleCompMapper">
+
+    <resultMap id="CompResult" type="com.shopwizard.company.model.Comp">
+        <result property="compCode" column="CompCode"/>
+        <result property="compName" column="CompName"/>
+        <result property="compType" column="CompType"/>
+        <result property="corpCode" column="CorpCode"/>
+        <result property="prsdntName" column="PrsdntName"/>
+        <result property="zipcode" column="Zipcode"/>
+        <result property="addr1" column="Addr1"/>
+        <result property="addr2" column="Addr2"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="faxNo" column="FaxNo"/>
+        <result property="email" column="Email"/>
+    </resultMap>
+
+    <resultMap id="SaleCompResult" type="com.shopwizard.company.model.SaleComp">
+        <result property="saleCompCode" column="SaleCompCode"/>
+        <result property="saleCompName" column="SaleCompName"/>
+        <result property="saleCompDesc" column="SaleCompDesc"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="compCode" column="CompCode"/>
+        <result property="approvDate" column="ApprovDate"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <association property="comp" resultMap="CompResult"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="SaleCompResult">
+        SELECT *
+        FROM shopwizard.tCmpSaleComp SC
+        INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND SC.CompCode = #{pCompCode}</if>
+            <if test="pSaleCompCode != null and pSaleCompCode != ''">AND SC.SaleCompCode = #{pSaleCompCode}</if>
+            <if test="pSaleCompName != null and pSaleCompName != ''">AND SC.SaleCompName LIKE CONCAT('%',#{pSaleCompName},'%')</if>
+            <if test="pState != null and pState != ''">AND SC.State = #{pState}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY SC.${sidx} ${sord}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="SaleCompResult">
+        SELECT *
+        FROM shopwizard.tCmpSaleComp SC
+        INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
+        WHERE SC.SaleCompCode = #{saleCompCode}
+    </select>
+
+    <select id="selectMax" parameterType="map" resultType="string">
+        SELECT MAX(SaleCompCode)
+        FROM shopwizard.tCmpSaleComp
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.SaleComp">
+        INSERT INTO shopwizard.tCmpSaleComp (
+            SaleCompCode, SaleCompName, SaleCompDesc,
+            SvcCode, CompCode, ApprovDate,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{saleCompCode}, #{saleCompName}, #{saleCompDesc},
+            #{svcCode}, #{compCode}, #{approvDate},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.SaleComp">
+        UPDATE shopwizard.tCmpSaleComp SET
+            SaleCompName = #{saleCompName}, SaleCompDesc = #{saleCompDesc},
+            CompCode = #{compCode}, ApprovDate = #{approvDate},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE SaleCompCode = #{saleCompCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopwizard.tCmpSaleComp
+        WHERE SaleCompCode = #{saleCompCode}
+    </delete>
+
+</mapper>

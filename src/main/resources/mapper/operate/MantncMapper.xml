@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.MantncMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.Mantnc">
+        SELECT M.*, CR.ConstrValDesc AS ExecStateName
+        FROM shopwizard.tOprMantnc M
+        LEFT OUTER JOIN (SELECT ConstrVal, ConstrValDesc FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cExecState') CR ON M.ExecState = CR.ConstrVal
+        <where>
+            <if test="pMantncNo != null and pMantncNo != ''">AND MantncNo = #{pMantncNo}</if>
+            <if test="pReciptTitle != null and pReciptTitle != ''">AND M.ReciptTitle LIKE CONCAT('%',#{pReciptTitle},'%')</if>
+            <if test="pReciptCntnts != null and pReciptCntnts != ''">AND M.ReciptCntnts LIKE CONCAT('%',#{pReciptCntnts},'%')</if>
+            <if test="pExecState != null and pExecState != ''">AND M.ExecState = #{pExecState}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND M.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND M.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY M.MantncNo DESC</otherwise>
+        </choose>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tOprMantnc M
+        LEFT OUTER JOIN (SELECT ConstrVal, ConstrValDesc FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cExecState') CR ON M.ExecState = CR.ConstrVal
+        <where>
+            <if test="pMantncNo != null and pMantncNo != ''">AND MantncNo = #{pMantncNo}</if>
+            <if test="pReciptTitle != null and pReciptTitle != ''">AND M.ReciptTitle LIKE CONCAT('%',#{pReciptTitle},'%')</if>
+            <if test="pReciptCntnts != null and pReciptCntnts != ''">AND M.ReciptCntnts LIKE CONCAT('%',#{pReciptCntnts},'%')</if>
+            <if test="pExecState != null and pExecState != ''">AND M.ExecState = #{pExecState}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND M.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND M.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.operate.model.Mantnc">
+        SELECT * FROM shopwizard.tOprMantnc WHERE MantncNo = #{mantncNo}
+    </select>
+
+    <select id="selectMax" parameterType="map" resultType="int">
+        SELECT IFNULL(MAX(MantncNo),0) FROM shopwizard.tOprMantnc
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.Mantnc">
+        INSERT INTO shopwizard.tOprMantnc (RoleUid, MenuCode, MenuName, ReciptId, ReciptName, ReciptTitle, ReciptCntnts, ReciptFileName, ReciptDate, ExecState, ReciptConfrmId, ReciptConfrmName, ReciptConfrmDate, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES (#{roleUid}, #{menuCode}, #{menuName}, #{reciptId}, #{reciptName}, #{reciptTitle}, #{reciptCntnts}, #{reciptFileName}, NOW(), #{execState}, #{registId}, #{registName}, NOW(), #{state}, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.Mantnc">
+        UPDATE shopwizard.tOprMantnc SET RoleUid = #{roleUid}, MenuCode = #{menuCode}, MenuName = #{menuName}, ReciptId = #{reciptId}, ReciptName = #{reciptName}, ReciptTitle = #{reciptTitle}, ReciptCntnts = #{reciptCntnts}, ReciptFileName = #{reciptFileName}, ReciptDate = NOW(), ExecState = #{execState}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE MantncNo = #{mantncNo}
+    </update>
+
+    <update id="updateByCmpletConfrm" parameterType="com.shopwizard.operate.model.Mantnc">
+        UPDATE shopwizard.tOprMantnc SET ExecState = #{execState}, CmpletConfrmId = #{cmpletConfrmId}, CmpletConfrmName = #{cmpletConfrmName}, CmpletConfrmDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE MantncNo = #{mantncNo}
+    </update>
+
+    <update id="updateByReciptConfrm" parameterType="com.shopwizard.operate.model.Mantnc">
+        UPDATE shopwizard.tOprMantnc SET ReciptConfrmId = #{reciptConfrmId}, ReciptConfrmName = #{reciptConfrmName}, ReciptConfrmCntnts = #{reciptConfrmCntnts}, ReciptConfrmDate = NOW(), ExecState = #{execState}
+        WHERE MantncNo = #{mantncNo}
+    </update>
+
+    <update id="updateByExec" parameterType="com.shopwizard.operate.model.Mantnc">
+        UPDATE shopwizard.tOprMantnc SET ExecState = #{execState}, ExecExpectDate = #{execExpectDate}, ExecCntnts = #{execCntnts}, ExecDate = NOW(), ExecId = #{execId}, ExecName = #{execName}
+        WHERE MantncNo = #{mantncNo}
+    </update>
+
+    <update id="updateByCmplet" parameterType="com.shopwizard.operate.model.Mantnc">
+        UPDATE shopwizard.tOprMantnc SET ExecState = #{execState}, CmpletCntnts = #{cmpletCntnts}, CmpletDate = NOW(), CmpletId = #{cmpletId}, CmpletName = #{cmpletName}
+        WHERE MantncNo = #{mantncNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.operate.model.Mantnc">
+        DELETE FROM shopwizard.tOprMantnc WHERE MantncNo = #{mantncNo}
+    </delete>
+
+</mapper>

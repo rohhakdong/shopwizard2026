@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.ProdChnlMapper">
+
+    <resultMap id="ProdChnlResult" type="com.shopwizard.catalog.model.ProdChnl">
+        <result property="prodCode" column="ProdCode"/>
+        <result property="chnlCode" column="ChnlCode"/>
+        <result property="chnlCateCode" column="ChnlCateCode"/>
+        <result property="chnlProdCode" column="ChnlProdCode"/>
+        <result property="chnlProdName" column="ChnlProdName"/>
+        <result property="chnlSalePrice" column="ChnlSalePrice"/>
+        <result property="chnlSupplyPrice" column="ChnlSupplyPrice"/>
+        <result property="chnlMngrMd" column="ChnlMngrMd"/>
+        <result property="chnlApprovState" column="ChnlApprovState"/>
+        <result property="chnlApprovDate" column="ChnlApprovDate"/>
+        <result property="remark" column="Remark"/> <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ProdChnlResult">
+        SELECT *
+        FROM shopwizard.tCatProdChnl
+        INNER JOIN shopwizard.tCatProd ON shopwizard.tCatProd.ProdCode = shopwizard.tCatProdChnl.ProdCode
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">
+                AND (shopwizard.tCatProd.ProdCode = #{pProdCode} OR shopwizard.tCatProd.ShopProdCode = #{pProdCode})
+            </if>
+            <if test="pCateCode != null and pCateCode != ''">AND shopwizard.tCatProd.CateCode = #{pCateCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND shopwizard.tCatProd.ShopCode = #{pShopCode}</if>
+            <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND shopwizard.tCatProd.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pSaleYn != null and pSaleYn != ''">AND shopwizard.tCatProd.SaleYn = #{pSaleYn}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCatProdChnl
+        INNER JOIN shopwizard.tCatProd ON shopwizard.tCatProd.ProdCode = shopwizard.tCatProdChnl.ProdCode
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">
+                AND (shopwizard.tCatProd.ProdCode = #{pProdCode} OR shopwizard.tCatProd.ShopProdCode = #{pProdCode})
+            </if>
+            <if test="pCateCode != null and pCateCode != ''">AND shopwizard.tCatProd.CateCode = #{pCateCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND shopwizard.tCatProd.ShopCode = #{pShopCode}</if>
+            <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND shopwizard.tCatProd.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pSaleYn != null and pSaleYn != ''">AND shopwizard.tCatProd.SaleYn = #{pSaleYn}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ProdChnlResult">
+        SELECT * FROM shopwizard.tCatProdChnl WHERE ProdCode = #{prodCode} AND ChnlCode = #{chnlCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.ProdChnl">
+        INSERT INTO shopwizard.tCatProdChnl (
+            ProdCode, ChnlCode, ChnlCateCode, ChnlProdCode, ChnlProdName, ChnlSalePrice, ChnlSupplyPrice,
+            ChnlMngrMd, ChnlApprovState, ChnlApprovDate, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{prodCode}, #{chnlCode}, #{chnlCateCode}, #{chnlProdCode}, #{chnlProdName}, #{chnlSalePrice}, #{chnlSupplyPrice},
+            #{chnlMngrMd}, #{chnlApprovState}, #{chnlApprovDate}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertProdCodes" parameterType="map">
+        INSERT INTO shopwizard.tCatProdChnl (
+            ProdCode, ChnlCode, ChnlCateCode, ChnlProdCode, ChnlProdName, ChnlSalePrice, ChnlSupplyPrice,
+            ChnlMngrMd, ChnlApprovState, ChnlApprovDate, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        )
+        SELECT ProdCode, #{chnlCode}, NULL, NULL, ProdName, SalePrice, SupplyPrice, NULL, NULL, NULL, 1, NULL, #{registId}, #{registName}, NOW(), NULL, NULL, NULL
+        FROM shopwizard.tCatProd
+        WHERE ProdCode IN
+        <foreach collection="prodCodes" item="prodCode" open="(" close=")" separator=",">
+            #{prodCode}
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.ProdChnl">
+        UPDATE shopwizard.tCatProdChnl SET
+            ChnlCateCode = #{chnlCateCode}, ChnlProdCode = #{chnlProdCode}, ChnlProdName = #{chnlProdName},
+            ChnlSalePrice = #{chnlSalePrice}, ChnlSupplyPrice = #{chnlSupplyPrice}, ChnlMngrMd = #{chnlMngrMd},
+            ChnlApprovState = #{chnlApprovState}, ChnlApprovDate = #{chnlApprovDate},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdCode = #{prodCode} AND ChnlCode = #{chnlCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.catalog.model.ProdChnl">
+        DELETE FROM shopwizard.tCatProdChnl WHERE ProdCode = #{prodCode} AND ChnlCode = #{chnlCode}
+    </delete>
+
+    <insert id="copy2Shopion" parameterType="map">
+        INSERT INTO shopion.tPrdProdChnl (
+            ProdCode, ChnlCode, ChnlCateCode, ChnlProdCode, ChnlProdName,
+            ChnlSalePrice, ChnlSupplyPrice, ChnlMngrMd, ChnlApprovState, ChnlApprovDate,
+            State, Remark, RegistId, RegistName, RegistDate
+        )
+        SELECT ProdCode, ChnlCode, ChnlCateCode, ChnlProdCode, ChnlProdName,
+               ChnlSalePrice, ChnlSupplyPrice, ChnlMngrMd, ChnlApprovState, ChnlApprovDate,
+               State, Remark, RegistId, RegistName, NOW()
+        FROM shopwizard.tCatProdChnl WHERE ProdCode = #{prodCode}
+    </insert>
+
+    <delete id="delete2Shopion" parameterType="string">
+        DELETE FROM shopion.tPrdProdChnl WHERE ProdCode = #{value}
+    </delete>
+
+    <delete id="delete2ShopionProdChnl" parameterType="com.shopwizard.catalog.model.ProdChnl">
+        DELETE FROM shopion.tPrdProdChnl WHERE ProdCode = #{prodCode} AND ChnlCode = #{chnlCode}
+    </delete>
+
+</mapper>

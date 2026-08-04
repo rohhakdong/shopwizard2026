@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.LayoutMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.Layout">
+        SELECT L.DesignId, L.LayoutCode, L.LayoutName, L.LayoutDesc, L.ParentLayoutCode,
+               L.LayoutLevel, L.LayoutSeq, L.ImgName, L.ImgLink, L.ImgWidth, L.ImgHeight,
+               L.State, L.Remark, L.RegistDate, L.RegistId, L.RegistName, L.ChangeDate, L.ChangeId, L.ChangeName,
+               (SELECT COUNT(*) FROM shopion.tStrLayout C WHERE C.DesignId = L.DesignId AND C.ParentLayoutCode = L.LayoutCode) AS ChildCount
+        FROM shopion.tStrLayout L
+        <where>
+            <if test="pDesignId != null">
+                AND L.DesignId = #{pDesignId}
+            </if>
+            <if test="pParentLayoutCode != null and pParentLayoutCode != ''">
+                AND L.ParentLayoutCode = #{pParentLayoutCode}
+            </if>
+            <if test="pParentLayoutCode == null or pParentLayoutCode == ''">
+                AND L.LayoutLevel = 0
+            </if>
+            <if test="pLayoutCodeArr != null and pLayoutCodeArr.size() > 0">
+                AND L.LayoutCode IN
+                <foreach collection="pLayoutCodeArr" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY L.LayoutSeq
+    </select>
+
+    <select id="selectLayoutCodeMax" parameterType="map" resultType="string">
+        SELECT MAX(LayoutCode)
+        FROM shopion.tStrLayout
+        <where>
+            <if test="pDesignId != null">
+                AND DesignId = #{pDesignId}
+            </if>
+            <if test="pParentLayoutCode != null and pParentLayoutCode != ''">
+                AND ParentLayoutCode = #{pParentLayoutCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.store.model.Layout">
+        SELECT DesignId, LayoutCode, LayoutName, LayoutDesc, ParentLayoutCode,
+               LayoutLevel, LayoutSeq, ImgName, ImgLink, ImgWidth, ImgHeight, ImgHtml,
+               State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrLayout
+        WHERE DesignId = #{pDesignId}
+          AND LayoutCode = #{pLayoutCode}
+    </select>
+
+    <select id="selectImgHtml" parameterType="map" resultType="string">
+        SELECT ImgHtml
+        FROM shopion.tStrLayout
+        WHERE DesignId = #{pDesignId}
+          AND LayoutCode = #{pLayoutCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.Layout">
+        INSERT INTO shopion.tStrLayout (
+            DesignId, LayoutCode, LayoutName, LayoutDesc, ParentLayoutCode,
+            LayoutLevel, LayoutSeq, ImgName, ImgLink, ImgWidth, ImgHeight, ImgHtml,
+            State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{designId}, #{layoutCode}, #{layoutName}, #{layoutDesc}, #{parentLayoutCode},
+            #{layoutLevel}, #{layoutSeq}, #{imgName}, #{imgLink}, #{imgWidth}, #{imgHeight}, #{imgHtml},
+            #{state}, #{remark}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.Layout">
+        UPDATE shopion.tStrLayout
+        SET LayoutName = #{layoutName},
+            LayoutDesc = #{layoutDesc},
+            ParentLayoutCode = #{parentLayoutCode},
+            LayoutLevel = #{layoutLevel},
+            LayoutSeq = #{layoutSeq},
+            ImgName = #{imgName},
+            ImgLink = #{imgLink},
+            ImgWidth = #{imgWidth},
+            ImgHeight = #{imgHeight},
+            <if test="imgHtml != null and imgHtml != ''">
+            ImgHtml = #{imgHtml},
+            </if>
+            State = #{state},
+            Remark = #{remark},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE DesignId = #{designId}
+          AND LayoutCode = #{layoutCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrLayout
+        WHERE DesignId = #{pDesignId}
+          AND LayoutCode = #{pLayoutCode}
+    </delete>
+
+</mapper>

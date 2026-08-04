@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderPayLogMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderPayLog">
+        SELECT L.*, O.OrderName, O.OrderState, Ch.ChnlCode, Ch.ChnlName
+        FROM shopion.tOrdOrderPayLog L
+        LEFT OUTER JOIN shopion.tOrdOrderPay OPay ON L.PgTradeNo = OPay.PgTradeNo
+        INNER JOIN shopion.tOrdOrder O ON L.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND L.OrderNo = #{pOrderNo}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND (L.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND L.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+        </where>
+        ORDER BY L.LogId DESC
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.order.model.OrderPayLog">
+        SELECT *
+        FROM shopion.tOrdOrderPayLog
+        WHERE LogId = #{logId}
+    </select>
+
+</mapper>

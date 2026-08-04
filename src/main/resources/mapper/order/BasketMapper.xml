@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.BasketMapper">
+
+    <select id="selectListFull" parameterType="map" resultType="com.shopwizard.order.model.Basket">
+        SELECT B.*, PI.ItemDesc, CC.CustCpnId, CC.CustCpnDiscntAmt, PC.ProdCpnId, PC.ProdCpnDiscntAmt, PT.PointSaveAmt
+        FROM shopion.tOrdBasket B
+        LEFT OUTER JOIN shopion.tPrdProd P ON B.ProdCode = P.ProdCode
+        LEFT OUTER JOIN shopion.tPrdProdItem PI ON B.ProdCode = PI.ProdCode AND B.ItemCode = PI.ItemCode
+        LEFT OUTER JOIN shopion.tStrCustCpn CC ON B.CustCpnId = CC.CustCpnId
+        LEFT OUTER JOIN shopion.tStrPoint PT ON B.ProdCode = PT.ProdCode
+        LEFT OUTER JOIN shopion.tPrdProdDeliFee ODF ON B.DeliFeeId = ODF.DeliFeeId
+        <where>
+            <choose>
+                <when test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
+                    AND CustId = #{pCustId}
+                </when>
+                <otherwise>
+                    AND SessonId = #{pSessonId}
+                </otherwise>
+            </choose>
+            <if test="pDirectOrderYn == null or pDirectOrderYn == ''">AND B.DirectOrderYn = '0'</if>
+            <if test="pAll != null and pAll == 'false'">
+                <if test="pBasketNoArr != null">
+                    AND B.BasketNo IN
+                    <foreach collection="pBasketNoArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+                </if>
+                <if test="pBasketNo != null and pBasketNo != ''">AND B.BasketNo = #{pBasketNo}</if>
+            </if>
+        </where>
+        ORDER BY B.BasketNo DESC
+    </select>
+
+    <select id="selectDirect" parameterType="map" resultType="com.shopwizard.order.model.Basket">
+        SELECT B.*
+        FROM shopion.tPrdProd P
+        WHERE P.ProdCode = #{prodCode}
+    </select>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.Basket">
+        SELECT *
+        FROM shopion.tOrdBasket
+        <where>
+            <choose>
+                <when test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
+                    AND CustId = #{pCustId}
+                </when>
+                <otherwise>
+                    AND SessonId = #{pSessonId}
+                </otherwise>
+            </choose>
+            <if test="pDirectOrderYn == null or pDirectOrderYn == ''">AND DirectOrderYn = '0'</if>
+        </where>
+        ORDER BY BasketNo DESC
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.Basket">
+        SELECT *
+        FROM shopion.tOrdBasket
+        WHERE BasketNo = #{basketNo}
+    </select>
+
+    <select id="selectByItem" parameterType="map" resultType="com.shopwizard.order.model.Basket">
+        SELECT *
+        FROM shopion.tOrdBasket
+        WHERE ProdCode = #{prodCode}
+        AND ItemCode = #{itemCode}
+        <choose>
+            <when test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
+                AND CustId = #{pCustId}
+            </when>
+            <otherwise>
+                AND SessonId = #{pSessonId}
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.Basket">
+        INSERT INTO shopion.tOrdBasket (
+            CustId, SessonId, ProdCode, ShopProdCode, ProdName, ProdImg, ItemCode, ItemName,
+            ProdQty, ListPrice, SalePrice, SupplyPrice, BuyPrice, VatRate, VatAmt,
+            DeliFeeId, DeliFeeType, DeliFeeAmt, DirectOrderYn, ChnlCode, ShopCode, MroYn,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{custId}, #{sessonId}, #{prodCode}, #{shopProdCode}, #{prodName}, #{prodImg}, #{itemCode}, #{itemName},
+            #{prodQty}, #{listPrice}, #{salePrice}, #{supplyPrice}, #{buyPrice}, #{vatRate}, #{vatAmt},
+            #{deliFeeId}, #{deliFeeType}, #{deliFeeAmt}, #{directOrderYn}, #{chnlCode}, #{shopCode}, #{mroYn},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="map">
+        UPDATE shopion.tOrdBasket SET
+            ProdQty = #{prodQty},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE BasketNo = #{basketNo}
+    </update>
+
+    <update id="updateCustId" parameterType="map">
+        UPDATE shopion.tOrdBasket SET
+            CustId = #{custId},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE SessonId = #{sessonId}
+    </update>
+
+    <update id="updateMro" parameterType="map">
+        UPDATE shopion.tOrdBasket SET
+            MroYn = #{mroYn},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE BasketNo = #{basketNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdBasket
+        WHERE BasketNo = #{basketNo}
+    </delete>
+
+    <delete id="deleteMulti" parameterType="map">
+        DELETE FROM shopion.tOrdBasket
+        WHERE BasketNo IN
+        <foreach collection="pBasketNoArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+    </delete>
+
+    <delete id="clean" parameterType="map">
+        DELETE FROM shopion.tOrdBasket
+        WHERE OrderNo = #{orderNo}
+    </delete>
+
+</mapper>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.ShopMapper">
+
+    <resultMap id="ShopResult" type="com.shopwizard.company.model.Shop">
+        <result property="shopCode" column="ShopCode"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="compCode" column="CompCode"/>
+        <result property="supplyName" column="SupplyName"/>
+        <result property="supplyCode" column="SupplyCode"/>
+        <result property="shopName" column="ShopName"/>
+        <result property="autoOrderYn" column="AutoOrderYn"/>
+        <result property="applyStartDate" column="ApplyStartDate"/>
+        <result property="applyEndDate" column="ApplyEndDate"/>
+        <result property="adjustPeriodCode" column="AdjustPeriodCode"/>
+        <result property="loginId" column="LoginId"/>
+        <result property="passwd" column="Passwd"/>
+        <result property="mngrName" column="MngrName"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="mobileNo" column="MobileNo"/>
+        <result property="faxNo" column="FaxNo"/>
+        <result property="email" column="Email"/>
+        <result property="brandIntro" column="BrandIntro"/>
+        <result property="patentCode" column="PatentCode"/>
+        <result property="lndryMethod" column="LndryMethod"/>
+        <result property="asDesc" column="AsDesc"/>
+        <result property="prodDesc" column="ProdDesc"/>
+        <result property="mngrMd" column="MngrMd"/>
+        <result property="brandCode" column="BrandCode"/>
+        <result property="makerCode" column="MakerCode"/>
+        <result property="makeNationCode" column="MakeNationCode"/>
+        <result property="originCode" column="OriginCode"/>
+        <result property="vatRate" column="VatRate"/>
+        <result property="sexualType" column="SexualType"/>
+        <result property="deliCompId" column="DeliCompId"/>
+        <result property="leadTime" column="LeadTime"/>
+        <result property="visualImg" column="VisualImg"/>
+        <result property="sizeChart" column="SizeChart"/>
+        <result property="approvDate" column="ApprovDate"/>
+        <result property="passwdChangeDate" column="PasswdChangeDate"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ShopResult">
+        SELECT S.*, SC.SupplyName AS SupplyName
+        FROM shopwizard.tCmpShop S
+        INNER JOIN shopwizard.tCmpSupplyComp SC ON S.SupplyCode = SC.SupplyCode
+        <if test="pWarehsCode != null and pWarehsCode != ''">
+        INNER JOIN shopwizard.tCmpShopWarehs SW ON S.ShopCode = SW.ShopCode
+        </if>
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND S.ShopCode = #{pShopCode}</if>
+            <if test="pSupplyCode != null and pSupplyCode != ''">AND S.SupplyCode = #{pSupplyCode}</if>
+            <if test="pShopName != null and pShopName != ''">AND S.ShopName LIKE CONCAT('%',#{pShopName},'%')</if>
+            <if test="pState != null and pState != ''">AND S.State = #{pState}</if>
+            <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND S.AdjustPeriodCode = #{pAdjustPeriodCode}</if>
+            <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
+            <if test="pAutoOrderYn != null and pAutoOrderYn != ''">AND S.AutoOrderYn = #{pAutoOrderYn}</if>
+            <if test="pWarehsCode != null and pWarehsCode != ''">AND SW.WarehsCode = #{pWarehsCode}</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY ShopName</otherwise>
+        </choose>
+        <if test="pPageSize != null">LIMIT ${pPageOffset}, ${pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpShop S
+        INNER JOIN shopwizard.tCmpSupplyComp SC ON S.SupplyCode = SC.SupplyCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND S.ShopCode = #{pShopCode}</if>
+            <if test="pSupplyCode != null and pSupplyCode != ''">AND S.SupplyCode = #{pSupplyCode}</if>
+            <if test="pShopName != null and pShopName != ''">AND S.ShopName LIKE CONCAT('%',#{pShopName},'%')</if>
+            <if test="pState != null and pState != ''">AND S.State = #{pState}</if>
+            <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND S.AdjustPeriodCode = #{pAdjustPeriodCode}</if>
+            <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
+            <if test="pAutoOrderYn != null and pAutoOrderYn != ''">AND S.AutoOrderYn = #{pAutoOrderYn}</if>
+        </where>
+    </select>
+
+    <select id="selectMax" parameterType="string" resultType="string">
+        SELECT MAX(ShopCode)
+        FROM shopwizard.tCmpShop
+        WHERE SupplyCode = #{value}
+    </select>
+
+    <select id="select" parameterType="string" resultMap="ShopResult">
+        SELECT S.*, SC.SupplyName AS SupplyName
+        FROM shopwizard.tCmpShop S
+        INNER JOIN shopwizard.tCmpSupplyComp SC ON S.SupplyCode = SC.SupplyCode
+        WHERE S.ShopCode = #{value}
+    </select>
+
+    <select id="selectByName" parameterType="string" resultMap="ShopResult">
+        SELECT S.*, SC.SupplyName AS SupplyName
+        FROM shopwizard.tCmpShop S
+        INNER JOIN shopwizard.tCmpSupplyComp SC ON S.SupplyCode = SC.SupplyCode
+        WHERE S.ShopName = #{value}
+    </select>
+
+    <select id="selectLoginIdCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpShop
+        <where>
+            <if test="pLoginId != null and pLoginId != ''">AND LoginId = #{pLoginId}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.Shop">
+        INSERT INTO shopwizard.tCmpShop (
+            ShopCode, SvcCode, CompCode, SupplyCode, ShopName, AutoOrderYn,
+            ApplyStartDate, ApplyEndDate, AdjustPeriodCode, LoginId, Passwd,
+            MngrName, PhoneNo, MobileNo, FaxNo, Email,
+            BrandIntro, PatentCode, LndryMethod, AsDesc, ProdDesc,
+            MngrMd, BrandCode, MakerCode, MakeNationCode, OriginCode, VatRate,
+            SexualType, LeadTime, VisualImg, SizeChart, ApprovDate, PasswdChangeDate,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{shopCode}, #{svcCode}, #{compCode}, #{supplyCode}, #{shopName}, #{autoOrderYn},
+            #{applyStartDate}, #{applyEndDate}, #{adjustPeriodCode}, #{loginId}, #{passwd},
+            #{mngrName}, #{phoneNo}, #{mobileNo}, #{faxNo}, #{email},
+            #{brandIntro}, #{patentCode}, #{lndryMethod}, #{asDesc}, #{prodDesc},
+            #{mngrMd}, #{brandCode}, #{makerCode}, #{makeNationCode}, #{originCode}, #{vatRate},
+            #{sexualType}, #{leadTime}, #{visualImg}, #{sizeChart}, #{approvDate}, #{passwdChangeDate},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.Shop">
+        UPDATE shopwizard.tCmpShop SET
+            ShopName = #{shopName}, AutoOrderYn = #{autoOrderYn},
+            ApplyStartDate = #{applyStartDate}, ApplyEndDate = #{applyEndDate},
+            AdjustPeriodCode = #{adjustPeriodCode}, LoginId = #{loginId}, Passwd = #{passwd},
+            MngrName = #{mngrName}, PhoneNo = #{phoneNo}, MobileNo = #{mobileNo},
+            FaxNo = #{faxNo}, Email = #{email}, BrandIntro = #{brandIntro},
+            PatentCode = #{patentCode}, LndryMethod = #{lndryMethod},
+            AsDesc = #{asDesc}, ProdDesc = #{prodDesc}, MngrMd = #{mngrMd},
+            BrandCode = #{brandCode}, MakerCode = #{makerCode}, MakeNationCode = #{makeNationCode},
+            OriginCode = #{originCode}, VatRate = #{vatRate}, SexualType = #{sexualType},
+            LeadTime = #{leadTime}, VisualImg = #{visualImg}, SizeChart = #{sizeChart},
+            ApprovDate = #{approvDate}, PasswdChangeDate = #{passwdChangeDate},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ShopCode = #{shopCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.Shop">
+        DELETE FROM shopwizard.tCmpShop
+        WHERE ShopCode = #{shopCode}
+    </delete>
+
+</mapper>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdDescMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.ProdDesc">
+        SELECT *
+        FROM shopion.tPrdProdDesc
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY DescCode ASC</if>
+    </select>
+
+</mapper>

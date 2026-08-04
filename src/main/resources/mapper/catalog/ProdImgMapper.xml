@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.ProdImgMapper">
+
+    <resultMap id="ProdImgResult" type="com.shopwizard.catalog.model.ProdImg">
+        <result property="prodCode" column="ProdCode"/> <result property="imgCode" column="ImgCode"/>
+        <result property="imgName" column="ImgName"/> <result property="imgDesc" column="ImgDesc"/>
+        <result property="imgLrg" column="ImgLrg"/> <result property="imgMdm" column="ImgMdm"/> <result property="imgSml" column="ImgSml"/>
+        <result property="remark" column="Remark"/> <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ProdImgResult">
+        SELECT * FROM shopwizard.tCatProdImg
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+            <if test="pImgCode != null and pImgCode != ''">AND ImgCode = #{pImgCode}</if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY ImgCode</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatProdImg
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+            <if test="pImgCode != null and pImgCode != ''">AND ImgCode = #{pImgCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ProdImgResult">
+        SELECT * FROM shopwizard.tCatProdImg WHERE ProdCode = #{prodCode} AND ImgCode = #{imgCode}
+    </select>
+
+    <select id="selectMaxCode" parameterType="string" resultType="string">
+        SELECT IFNULL(CONVERT(IFNULL(MAX(ImgCode),'0'),UNSIGNED),0)+100
+        FROM shopwizard.tCatProdImg WHERE ProdCode = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.ProdImg">
+        INSERT INTO shopwizard.tCatProdImg (
+            ProdCode, ImgCode, ImgName, ImgDesc, ImgLrg, ImgMdm, ImgSml, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{prodCode}, #{imgCode}, #{imgName}, #{imgDesc}, #{imgLrg}, #{imgMdm}, #{imgSml}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.ProdImg">
+        UPDATE shopwizard.tCatProdImg SET
+            ImgName = #{imgName}, ImgDesc = #{imgDesc}, ImgLrg = #{imgLrg}, ImgMdm = #{imgMdm}, ImgSml = #{imgSml},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdCode = #{prodCode} AND ImgCode = #{imgCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.catalog.model.ProdImg">
+        DELETE FROM shopwizard.tCatProdImg WHERE ProdCode = #{prodCode} AND ImgCode = #{imgCode}
+    </delete>
+
+    <insert id="copy2Shopion" parameterType="map">
+        INSERT INTO shopion.tPrdProdImg (ProdCode, ImgCode, ImgName, ImgDesc, ImgLrg, ImgMdm, ImgSml, State, Remark, RegistId, RegistName, RegistDate)
+        SELECT ProdCode, ImgCode, ImgName, ImgDesc, ImgLrg, ImgMdm, ImgSml, State, Remark, #{registId}, #{registName}, NOW()
+        FROM shopwizard.tCatProdImg WHERE ProdCode = #{prodCode}
+    </insert>
+
+    <delete id="delete2Shopion" parameterType="string">
+        DELETE FROM shopion.tPrdProdImg WHERE ProdCode = #{value}
+    </delete>
+
+</mapper>

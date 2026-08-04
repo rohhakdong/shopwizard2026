@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.authority.mapper.MngrMapper">
+
+    <resultMap id="MngrResult" type="com.shopwizard.authority.model.Mngr">
+        <result property="mngrUid" column="MngrUid"/>
+        <result property="mngrName" column="MngrName"/>
+        <result property="roleUid" column="RoleUid"/>
+        <result property="roleName" column="RoleName"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="compCode" column="CompCode"/>
+        <result property="deptCode" column="DeptCode"/>
+        <result property="empNo" column="EmpNo"/>
+        <result property="loginId" column="LoginId"/>
+        <result property="passwd" column="Passwd"/>
+        <result property="email" column="Email"/>
+        <result property="mobileNo" column="MobileNo"/>
+        <result property="phoneNo" column="PhoneNo"/>
+        <result property="chnlCode" column="ChnlCode"/>
+        <result property="shopCode" column="ShopCode"/>
+        <result property="warehsCode" column="WarehsCode"/>
+        <result property="prodApprovYn" column="ProdApprovYn"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="MngrResult">
+        SELECT M.*, R.RoleName, R.SvcCode
+        FROM wizardn.tAthMngr M
+        INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
+        <where>
+            <if test="pMngrUid != null and pMngrUid != ''">AND M.MngrUid = #{pMngrUid}</if>
+            <if test="pRoleUid != null and pRoleUid != ''">AND M.RoleUid = #{pRoleUid}</if>
+            <if test="pLoginId != null and pLoginId != ''">AND M.LoginId = #{pLoginId}</if>
+            <if test="pMngrName != null and pMngrName != ''">AND M.MngrName LIKE CONCAT('%',#{pMngrName},'%')</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM wizardn.tAthMngr M
+        INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
+        <where>
+            <if test="pMngrUid != null and pMngrUid != ''">AND M.MngrUid = #{pMngrUid}</if>
+            <if test="pRoleUid != null and pRoleUid != ''">AND M.RoleUid = #{pRoleUid}</if>
+            <if test="pLoginId != null and pLoginId != ''">AND M.LoginId = #{pLoginId}</if>
+            <if test="pMngrName != null and pMngrName != ''">AND M.MngrName LIKE CONCAT('%',#{pMngrName},'%')</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="MngrResult">
+        SELECT M.*, R.RoleName, R.SvcCode
+        FROM wizardn.tAthMngr M
+        INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
+        <where>
+            <choose>
+                <when test="pShopCode == null or pShopCode == ''">
+                    AND M.LoginId = #{pLoginId}
+                    <if test="pChnlCode != null and pChnlCode != ''">
+                        AND R.SvcCode = (SELECT SvcCode FROM shopwizard.tCmpChnl WHERE ChnlCode = #{pChnlCode})
+                    </if>
+                    <if test="pPasswd != null and pPasswd != ''">AND M.Passwd = #{pPasswd}</if>
+                </when>
+                <otherwise>
+                    AND M.ShopCode = #{pShopCode}
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <select id="selectInfo" parameterType="string" resultMap="MngrResult">
+        SELECT M.*, R.RoleName, R.SvcCode
+        FROM wizardn.tAthMngr M
+        INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
+        WHERE M.MngrUid = #{value}
+    </select>
+
+    <select id="selectProdApprovYn" parameterType="string" resultType="int">
+        SELECT IFNULL(ProdApprovYn, 0)
+        FROM wizardn.tAthMngr
+        WHERE LoginId = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.authority.model.Mngr">
+        INSERT INTO wizardn.tAthMngr (
+            MngrUid, MngrName, RoleUid, CompCode, DeptCode,
+            EmpNo, LoginId, Passwd, Email, MobileNo,
+            PhoneNo, ProdApprovYn, ShopCode,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{mngrUid}, #{mngrName}, #{roleUid}, #{compCode}, #{deptCode},
+            #{empNo}, #{loginId}, #{passwd}, #{email}, #{mobileNo},
+            #{phoneNo}, #{prodApprovYn}, #{shopCode},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.authority.model.Mngr">
+        UPDATE wizardn.tAthMngr SET
+            MngrName = #{mngrName}, RoleUid = #{roleUid}, CompCode = #{compCode},
+            DeptCode = #{deptCode}, EmpNo = #{empNo}, LoginId = #{loginId},
+            Passwd = #{passwd}, Email = #{email}, MobileNo = #{mobileNo},
+            PhoneNo = #{phoneNo}, ProdApprovYn = #{prodApprovYn},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE MngrUid = #{mngrUid}
+    </update>
+
+    <delete id="delete" parameterType="string">
+        DELETE FROM wizardn.tAthMngr
+        WHERE MngrUid = #{value}
+    </delete>
+
+</mapper>

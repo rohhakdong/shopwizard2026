@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.SlnkTransMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.SlnkTrans">
+        SELECT *
+        FROM shopion.tOrdSlnkTrans
+        <where>
+            <if test="pMallCode != null and pMallCode != ''">
+                <choose>
+                    <when test="pMallCode == 'M'">AND MallCode = ''</when>
+                    <otherwise>AND MallCode = #{pMallCode}</otherwise>
+                </choose>
+            </if>
+            <if test="pTransType != null and pTransType != ''">AND TransType = #{pTransType}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND (TransStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND TransStartDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY TransId DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.SlnkTrans">
+        SELECT *
+        FROM shopion.tOrdSlnkTrans
+        WHERE TransId = #{transId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.SlnkTrans">
+        INSERT INTO shopion.tOrdSlnkTrans (
+            MallCode, TransType, TransState, TransStartDate, TransEndDate,
+            TotalCount, SuccessCount, FailCount,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{mallCode}, #{transType}, #{transState}, #{transStartDate}, #{transEndDate},
+            #{totalCount}, #{successCount}, #{failCount},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.SlnkTrans">
+        UPDATE shopion.tOrdSlnkTrans SET
+            TransState = #{transState}, TotalCount = #{totalCount},
+            SuccessCount = #{successCount}, FailCount = #{failCount},
+            <if test="transStartDate != null and transStartDate != ''">TransStartDate = #{transStartDate},</if>
+            <if test="transEndDate != null and transEndDate != ''">TransEndDate = #{transEndDate},</if>
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE TransId = #{transId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdSlnkTrans WHERE TransId = #{transId}
+    </delete>
+
+</mapper>

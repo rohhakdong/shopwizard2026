@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.ship.mapper.GiftOptionUpdateMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.GiftOptionUpdate">
+        SELECT *
+        FROM shopwizard.tShpGiftOptionUpdate
+        <where>
+            <if test="pUpdateId != null and pUpdateId != ''">AND UpdateId = #{pUpdateId}</if>
+            <if test="pResultType != null and pResultType != ''">AND ResultType = #{pResultType}</if>
+            <if test="pUpdateStartDate != null and pUpdateStartDate != '' and pUpdateEndDate != null and pUpdateEndDate != ''">
+                <![CDATA[
+                AND (
+                    UpdateStartDate >= DATE_FORMAT(#{pUpdateStartDate}, '%Y%m%d') AND
+                    UpdateStartDate <  ADDDATE(DATE_FORMAT(#{pUpdateEndDate}, '%Y%m%d'), INTERVAL 1 DAY)
+                )
+                ]]>
+            </if>
+        </where>
+        ORDER BY RegistDate DESC
+        <if test="pPageSize != null and pPageSize != ''">
+            LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpGiftOptionUpdate
+        <where>
+            <if test="pUpdateId != null and pUpdateId != ''">AND UpdateId = #{pUpdateId}</if>
+            <if test="pResultType != null and pResultType != ''">AND ResultType = #{pResultType}</if>
+            <if test="pUpdateStartDate != null and pUpdateStartDate != '' and pUpdateEndDate != null and pUpdateEndDate != ''">
+                <![CDATA[
+                AND (
+                    UpdateStartDate >= DATE_FORMAT(#{pUpdateStartDate}, '%Y%m%d') AND
+                    UpdateStartDate <  ADDDATE(DATE_FORMAT(#{pUpdateEndDate}, '%Y%m%d'), INTERVAL 1 DAY)
+                )
+                ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.GiftOptionUpdate">
+        SELECT *
+        FROM shopwizard.tShpGiftOptionUpdate
+        WHERE UpdateId = #{updateId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.GiftOptionUpdate">
+        INSERT INTO shopwizard.tShpGiftOptionUpdate (
+            StartDate, EndDate, ResultType, ResultMessag, UpdateStartDate, UpdateEndDate, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{startDate}, #{endDate}, #{resultType}, #{resultMessag}, #{updateStartDate}, #{updateEndDate}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.ship.model.GiftOptionUpdate">
+        UPDATE shopwizard.tShpGiftOptionUpdate SET
+            ResultType = #{resultType}, ResultMessag = #{resultMessag}
+            <if test="updateStartDate != null and updateStartDate != ''">, UpdateStartDate = #{updateStartDate}</if>
+            <if test="updateEndDate != null and updateEndDate != ''">, UpdateEndDate = #{updateEndDate}</if>
+            , ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE UpdateId = #{updateId}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.ship.model.GiftOptionUpdate">
+        DELETE FROM shopwizard.tShpGiftOptionUpdate
+        WHERE UpdateId = #{updateId}
+    </delete>
+
+</mapper>

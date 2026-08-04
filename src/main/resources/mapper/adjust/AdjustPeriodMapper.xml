@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.adjust.mapper.AdjustPeriodMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.adjust.model.AdjustPeriod">
+        SELECT * FROM shopwizard.tAdjAdjustPeriod
+        <where>
+            <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND AdjustPeriodCode = #{pAdjustPeriodCode}</if>
+            <if test="pState != null and pState != ''">AND State = #{pState}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjustPeriod
+        <where>
+            <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND AdjustPeriodCode = #{pAdjustPeriodCode}</if>
+            <if test="pState != null and pState != ''">AND State = #{pState}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.adjust.model.AdjustPeriod">
+        SELECT * FROM shopwizard.tAdjAdjustPeriod WHERE AdjustPeriodCode = #{adjustPeriodCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.adjust.model.AdjustPeriod">
+        INSERT INTO shopwizard.tAdjAdjustPeriod (AdjustPeriodCode, AdjustPeriodName, AdjustPeriodDesc, DefaltYn, AdjustDateType, WeekDateType, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{adjustPeriodCode}, #{adjustPeriodName}, #{adjustPeriodDesc}, #{defaltYn}, #{adjustDateType}, #{weekDateType}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.adjust.model.AdjustPeriod">
+        UPDATE shopwizard.tAdjAdjustPeriod SET AdjustPeriodCode = #{adjustPeriodCode}, AdjustPeriodName = #{adjustPeriodName}, AdjustPeriodDesc = #{adjustPeriodDesc}, DefaltYn = #{defaltYn}, AdjustDateType = #{adjustDateType}, WeekDateType = #{weekDateType}, State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE AdjustPeriodCode = #{adjustPeriodCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.adjust.model.AdjustPeriod">
+        DELETE FROM shopwizard.tAdjAdjustPeriod WHERE AdjustPeriodCode = #{adjustPeriodCode}
+    </delete>
+
+</mapper>

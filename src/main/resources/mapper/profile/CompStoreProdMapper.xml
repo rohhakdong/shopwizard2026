@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CompStoreProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CompStoreProd">
+        SELECT * FROM (
+        SELECT SP.CompCode, SP.StoreCode, SP.ProdCode, SP.LocType, SP.ProdSeq, SP.State, SP.Remark,
+               SP.RegistId, SP.RegistName, SP.RegistDate, SP.ChangeId, SP.ChangeName, SP.ChangeDate
+        FROM shopion.tPrfCompStoreProd SP
+        INNER JOIN shopion.tPrdProd PH ON SP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pStoreCode != null and pStoreCode != ''">AND SP.StoreCode = #{pStoreCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND SP.CompCode = #{pCompCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND SP.ProdCode = #{pProdCode}</if>
+            <if test="pSaleYn != null and pSaleYn != ''">AND PH.SaleYn = #{pSaleYn}</if>
+        </where>
+        ) t_1
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY ProdSeq</otherwise>
+        </choose>
+        <if test="topCnt != null">LIMIT #{topCnt}, #{countPerPage}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCompStoreProd SP
+        INNER JOIN shopion.tPrdProd PH ON SP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pStoreCode != null and pStoreCode != ''">AND SP.StoreCode = #{pStoreCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND SP.CompCode = #{pCompCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND SP.ProdCode = #{pProdCode}</if>
+            <if test="pSaleYn != null and pSaleYn != ''">AND PH.SaleYn = #{pSaleYn}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CompStoreProd">
+        SELECT *
+        FROM shopion.tPrfCompStoreProd
+        <where>
+            <if test="pStoreCode != null and pStoreCode != ''">AND StoreCode = #{pStoreCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+        </where>
+        LIMIT 0,1
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CompStoreProd">
+        INSERT INTO shopion.tPrfCompStoreProd (
+            CompCode, StoreCode, ProdCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{compCode}, #{storeCode}, #{prodCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CompStoreProd">
+        UPDATE shopion.tPrfCompStoreProd SET
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE CompCode = #{compCode}
+        AND StoreCode = #{storeCode}
+        AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCompStoreProd
+        WHERE CompCode = #{compCode}
+        AND StoreCode = #{storeCode}
+        <if test="prodCodes != null and prodCodes.size() > 0">
+        AND ProdCode IN
+        <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+        </if>
+    </delete>
+
+</mapper>

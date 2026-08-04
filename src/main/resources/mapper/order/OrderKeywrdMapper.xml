@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderKeywrdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderKeywrd">
+        SELECT K.*, S.ShopName AS ShopName
+        FROM shopwizard.tOrdOrderKeywrd K
+        INNER JOIN shopwizard.tCmpShop S ON K.ShopCode = S.ShopCode
+        <where>
+            <if test="pKeywrdSeq != null and pKeywrdSeq != ''">AND K.KeywrdSeq = #{pKeywrdSeq}</if>
+            <if test="pKeywrdName != null and pKeywrdName != ''">AND K.KeywrdName LIKE CONCAT('%',#{pKeywrdName},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND K.ShopCode = #{pShopCode}</if>
+            <if test="pKeywrdSect != null and pKeywrdSect != ''">AND K.KeywrdSect = #{pKeywrdSect}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderKeywrd K
+        INNER JOIN shopwizard.tCmpShop S ON K.ShopCode = S.ShopCode
+        <where>
+            <if test="pKeywrdSeq != null and pKeywrdSeq != ''">AND K.KeywrdSeq = #{pKeywrdSeq}</if>
+            <if test="pKeywrdName != null and pKeywrdName != ''">AND K.KeywrdName LIKE CONCAT('%',#{pKeywrdName},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND K.ShopCode = #{pShopCode}</if>
+            <if test="pKeywrdSect != null and pKeywrdSect != ''">AND K.KeywrdSect = #{pKeywrdSect}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderKeywrd">
+        SELECT K.*, S.ShopName AS ShopName
+        FROM shopwizard.tOrdOrderKeywrd K
+        INNER JOIN shopwizard.tCmpShop S ON K.ShopCode = S.ShopCode
+        WHERE K.KeywrdSeq = #{keywrdSeq}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderKeywrd">
+        INSERT INTO shopwizard.tOrdOrderKeywrd (
+            KeywrdSeq, KeywrdName, KeywrdSect, ShopCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{keywrdSeq}, #{keywrdName}, #{keywrdSect}, #{shopCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderKeywrd">
+        UPDATE shopwizard.tOrdOrderKeywrd SET
+            KeywrdSeq = #{keywrdSeq}, KeywrdName = #{keywrdName}, KeywrdSect = #{keywrdSect},
+            ShopCode = #{shopCode}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE KeywrdSeq = #{keywrdSeq}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderKeywrd">
+        DELETE FROM shopwizard.tOrdOrderKeywrd WHERE KeywrdSeq = #{keywrdSeq}
+    </delete>
+
+</mapper>

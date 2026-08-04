@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.authority.mapper.SvcMapper">
+
+    <resultMap id="SvcResult" type="com.shopwizard.authority.model.Svc">
+        <result property="svcCode" column="SvcCode"/>
+        <result property="svcName" column="SvcName"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="SvcResult">
+        SELECT *
+        FROM wizardn.tAthSvc
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pSvcName != null and pSvcName != ''">AND SvcName = #{pSvcName}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM wizardn.tAthSvc
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pSvcName != null and pSvcName != ''">AND SvcName = #{pSvcName}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="SvcResult">
+        SELECT *
+        FROM wizardn.tAthSvc
+        WHERE SvcCode = #{svcCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.authority.model.Svc">
+        INSERT INTO wizardn.tAthSvc (
+            SvcCode, SvcName, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{svcCode}, #{svcName}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.authority.model.Svc">
+        UPDATE wizardn.tAthSvc SET
+            SvcName = #{svcName}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE SvcCode = #{svcCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.authority.model.Svc">
+        DELETE FROM wizardn.tAthSvc
+        WHERE SvcCode = #{svcCode}
+    </delete>
+
+</mapper>

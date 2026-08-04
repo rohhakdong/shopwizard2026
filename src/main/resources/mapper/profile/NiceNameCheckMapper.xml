@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.NiceNameCheckMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.NiceNameCheck">
+        SELECT * FROM shopion.tPrfNiceNameCheck
+        <where>
+            <if test="pRegistDate != null and pRegistDate != ''">AND RegistDate = #{pRegistDate}</if>
+            <if test="pUserNm != null and pUserNm != ''">AND UserNm = #{pUserNm}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="string" resultType="com.shopwizard.profile.model.NiceNameCheck">
+        SELECT * FROM shopion.tPrfNiceNameCheck WHERE NameCheckUid = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.NiceNameCheck">
+        INSERT INTO shopion.tPrfNiceNameCheck (
+            NameCheckUid, NiceId, UserNm, ResIdNo, InqRsn,
+            Foreigner, Message, RetCd, RetDtlCd, Minor,
+            RegistIp, RegistDate
+        ) VALUES (
+            #{nameCheckUid}, #{niceId}, #{userNm}, #{resIdNo}, #{inqRsn},
+            #{foreigner}, #{message}, #{retCd}, #{retDtlCd}, #{minor},
+            #{registIp}, NOW()
+        )
+    </insert>
+
+</mapper>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdBrandMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.ProdBrand">
+        SELECT *
+        FROM shopion.tPrdProdBrand
+        <where>
+            <if test="pBrandId != null and pBrandId != ''">AND BrandId = #{pBrandId}</if>
+            <if test="pBrandKorName != null and pBrandKorName != ''">AND BrandKorName LIKE CONCAT('%',#{pBrandKorName},'%')</if>
+            <if test="pBrandEngName != null and pBrandEngName != ''">AND BrandEngName LIKE CONCAT('%',#{pBrandEngName},'%')</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.product.model.ProdBrand">
+        SELECT *
+        FROM shopion.tPrdProdBrand
+        WHERE BrandId = #{brandId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.product.model.ProdBrand">
+        INSERT INTO shopion.tPrdProdBrand (
+            CompKorName, CompEngName, BrandKorName,
+            BrandEngName, BrandAbbrName,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{compKorName}, #{compEngName}, #{brandKorName},
+            #{brandEngName}, #{brandAbbrName},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.product.model.ProdBrand">
+        UPDATE shopion.tPrdProdBrand SET
+            CompKorName = #{compKorName}, CompEngName = #{compEngName}, BrandKorName = #{brandKorName},
+            BrandEngName = #{brandEngName}, BrandAbbrName = #{brandAbbrName},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE BrandId = #{brandId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrdProdBrand
+        WHERE BrandId = #{brandId}
+    </delete>
+
+</mapper>

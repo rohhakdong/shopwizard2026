@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.ChnlPolicyMapper">
+
+    <resultMap id="ChnlPolicyResult" type="com.shopwizard.company.model.ChnlPolicy">
+        <result property="chnlPolicyCode" column="ChnlPolicyCode"/>
+        <result property="chnlPolicyName" column="ChnlPolicyName"/>
+        <result property="chnlPolicyDesc" column="ChnlPolicyDesc"/>
+        <result property="designCode" column="DesignCode"/>
+        <result property="memberChnlCode" column="MemberChnlCode"/>
+        <result property="prsdntChnlCode" column="PrsdntChnlCode"/>
+        <result property="adjustChnlCode" column="AdjustChnlCode"/>
+        <result property="saleFeeRate" column="SaleFeeRate"/>
+        <result property="marginSharRate" column="MarginSharRate"/>
+        <result property="marginSharStndrdAmt" column="MarginSharStndrdAmt"/>
+        <result property="trnsfrFeeRate" column="TrnsfrFeeRate"/>
+        <result property="cardFeeRate" column="CardFeeRate"/>
+        <result property="hppmFeeRate" column="HppmFeeRate"/>
+        <result property="prodLinkYn" column="ProdLinkYn"/>
+        <result property="orderLinkYn" column="OrderLinkYn"/>
+        <result property="cpnApplyYn" column="CpnApplyYn"/>
+        <result property="pointUseYn" column="PointUseYn"/>
+        <result property="pointLimitAmt" column="PointLimitAmt"/>
+        <result property="pointSaveYn" column="PointSaveYn"/>
+        <result property="freeApplyYn" column="FreeApplyYn"/>
+        <result property="freeApplyMonth" column="FreeApplyMonth"/>
+        <result property="freeApplyAmt" column="FreeApplyAmt"/>
+        <result property="linkTermnlCode" column="LinkTermnlCode"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ChnlPolicyResult">
+        SELECT *
+        FROM shopwizard.tCmpChnlPolicy
+        <where>
+            <if test="pChnlPolicyCode != null and pChnlPolicyCode != ''">AND ChnlPolicyCode = #{pChnlPolicyCode}</if>
+            <if test="pChnlPolicyName != null and pChnlPolicyName != ''">AND ChnlPolicyName LIKE CONCAT('%',#{pChnlPolicyName},'%')</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpChnlPolicy
+        <where>
+            <if test="pChnlPolicyCode != null and pChnlPolicyCode != ''">AND ChnlPolicyCode = #{pChnlPolicyCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="ChnlPolicyResult">
+        SELECT *
+        FROM shopwizard.tCmpChnlPolicy
+        WHERE ChnlPolicyCode = #{chnlPolicyCode}
+    </select>
+
+    <select id="selectMax" resultType="string">
+        SELECT MAX(ChnlPolicyCode)
+        FROM shopwizard.tCmpChnlPolicy
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.ChnlPolicy">
+        INSERT INTO shopwizard.tCmpChnlPolicy (
+            ChnlPolicyCode, ChnlPolicyName, ChnlPolicyDesc, DesignCode,
+            MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+            SaleFeeRate, MarginSharRate, MarginSharStndrdAmt,
+            TrnsfrFeeRate, CardFeeRate, HppmFeeRate,
+            ProdLinkYn, OrderLinkYn, CpnApplyYn,
+            PointUseYn, PointLimitAmt, PointSaveYn,
+            FreeApplyYn, FreeApplyMonth, FreeApplyAmt,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{chnlPolicyCode}, #{chnlPolicyName}, #{chnlPolicyDesc}, #{designCode},
+            #{memberChnlCode}, #{prsdntChnlCode}, #{adjustChnlCode},
+            #{saleFeeRate}, #{marginSharRate}, #{marginSharStndrdAmt},
+            #{trnsfrFeeRate}, #{cardFeeRate}, #{hppmFeeRate},
+            #{prodLinkYn}, #{orderLinkYn}, #{cpnApplyYn},
+            #{pointUseYn}, #{pointLimitAmt}, #{pointSaveYn},
+            #{freeApplyYn}, #{freeApplyMonth}, #{freeApplyAmt},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.ChnlPolicy">
+        UPDATE shopwizard.tCmpChnlPolicy SET
+            ChnlPolicyName = #{chnlPolicyName}, ChnlPolicyDesc = #{chnlPolicyDesc},
+            DesignCode = #{designCode}, MemberChnlCode = #{memberChnlCode},
+            PrsdntChnlCode = #{prsdntChnlCode}, AdjustChnlCode = #{adjustChnlCode},
+            SaleFeeRate = #{saleFeeRate}, MarginSharRate = #{marginSharRate},
+            MarginSharStndrdAmt = #{marginSharStndrdAmt}, TrnsfrFeeRate = #{trnsfrFeeRate},
+            CardFeeRate = #{cardFeeRate}, HppmFeeRate = #{hppmFeeRate},
+            ProdLinkYn = #{prodLinkYn}, OrderLinkYn = #{orderLinkYn},
+            CpnApplyYn = #{cpnApplyYn}, PointUseYn = #{pointUseYn},
+            PointLimitAmt = #{pointLimitAmt}, PointSaveYn = #{pointSaveYn},
+            FreeApplyYn = #{freeApplyYn}, FreeApplyMonth = #{freeApplyMonth}, FreeApplyAmt = #{freeApplyAmt},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ChnlPolicyCode = #{chnlPolicyCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.ChnlPolicy">
+        DELETE FROM shopwizard.tCmpChnlPolicy
+        WHERE ChnlPolicyCode = #{chnlPolicyCode}
+    </delete>
+
+</mapper>

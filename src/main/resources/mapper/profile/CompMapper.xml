@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CompMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Comp">
+        SELECT *
+        FROM shopion.tPrfComp
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+        LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfComp
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.Comp">
+        SELECT *
+        FROM shopion.tPrfComp
+        WHERE CompCode = #{compCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Comp">
+        INSERT INTO shopion.tPrfComp (
+            CompCode, CompType, CompName, CompDesc, PrsdntName, Zipcode, Addr1, Addr2,
+            Status, Cate, PhoneNo, FaxNo, Email, Homepg, CompLogoImg,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{compCode}, #{compType}, #{compName}, #{compDesc}, #{prsdntName}, #{zipcode}, #{addr1}, #{addr2},
+            #{status}, #{cate}, #{phoneNo}, #{faxNo}, #{email}, #{homepg}, #{compLogoImg},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Comp">
+        UPDATE shopion.tPrfComp SET
+            CompType = #{compType}, CompName = #{compName}, CompDesc = #{compDesc},
+            PrsdntName = #{prsdntName}, Zipcode = #{zipcode}, Addr1 = #{addr1}, Addr2 = #{addr2},
+            Status = #{status}, Cate = #{cate}, PhoneNo = #{phoneNo}, FaxNo = #{faxNo},
+            Email = #{email}, Homepg = #{homepg}, CompLogoImg = #{compLogoImg},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE CompCode = #{compCode}
+    </update>
+
+    <delete id="delete" parameterType="string">
+        DELETE FROM shopion.tPrfComp
+        WHERE CompCode = #{value}
+    </delete>
+
+</mapper>

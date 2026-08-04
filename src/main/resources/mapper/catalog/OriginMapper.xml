@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.OriginMapper">
+
+    <resultMap id="OriginResult" type="com.shopwizard.catalog.model.Origin">
+        <result property="originId" column="OriginId"/>
+        <result property="originKorName" column="OriginKorName"/>
+        <result property="originEngName" column="OriginEngName"/>
+        <result property="originDesc" column="OriginDesc"/>
+        <result property="nationCode" column="NationCode"/>
+        <result property="nationName" column="NationName"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="OriginResult">
+        SELECT O.*, CV.ConstrValDesc AS NationName
+        FROM shopwizard.tCatOrigin O
+        LEFT OUTER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cNationCode') CV ON O.NationCode = CV.ConstrVal
+        <where>
+            <if test="pOriginId != null and pOriginId != ''">AND O.OriginId = #{pOriginId}</if>
+            <if test="pOriginName != null and pOriginName != ''">
+                AND (O.OriginKorName LIKE CONCAT('%',#{pOriginName},'%') OR O.OriginEngName LIKE CONCAT('%',#{pOriginName},'%'))
+            </if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY O.${sidx} ${sord}</if>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCatOrigin O
+        LEFT OUTER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cNationCode') CV ON O.NationCode = CV.ConstrVal
+        <where>
+            <if test="pOriginId != null and pOriginId != ''">AND O.OriginId = #{pOriginId}</if>
+            <if test="pOriginName != null and pOriginName != ''">
+                AND (O.OriginKorName LIKE CONCAT('%',#{pOriginName},'%') OR O.OriginEngName LIKE CONCAT('%',#{pOriginName},'%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="OriginResult">
+        SELECT O.*, CV.ConstrValDesc AS NationName
+        FROM shopwizard.tCatOrigin O
+        LEFT OUTER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cNationCode') CV ON O.NationCode = CV.ConstrVal
+        WHERE O.OriginId = #{originId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.Origin">
+        INSERT INTO shopwizard.tCatOrigin (
+            OriginKorName, OriginEngName, OriginDesc, NationCode, State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{originKorName}, #{originEngName}, #{originDesc}, #{nationCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.Origin">
+        UPDATE shopwizard.tCatOrigin SET
+            OriginKorName = #{originKorName}, OriginEngName = #{originEngName}, OriginDesc = #{originDesc},
+            NationCode = #{nationCode}, State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OriginId = #{originId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopwizard.tCatOrigin WHERE OriginId = #{originId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderUpriceMatchMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderUpriceMatch">
+        SELECT UM.*
+        FROM shopwizard.tOrdOrderUpriceMatch UM
+        <where>
+            <if test="pChnlName != null and pChnlName != ''">AND UM.ChnlName = #{pChnlName}</if>
+            <if test="pEventName != null and pEventName != ''">AND UM.EventName = #{pEventName}</if>
+            <if test="pProdName != null and pProdName != ''">AND UM.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">
+                AND EXISTS (
+                    SELECT UOM.OrderNo
+                    FROM shopwizard.tOrdOrderUpriceOptionMatch UOM, shopwizard.tOrdOrderUprice U
+                    WHERE UM.OrderNo = UOM.OrderNo
+                    AND UOM.MatchUpriceCode = U.MatchUpriceCode
+                    AND U.ShopCode = #{pShopCode}
+                )
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (UM.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND UM.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderUpriceMatch UM
+        <where>
+            <if test="pChnlName != null and pChnlName != ''">AND UM.ChnlName = #{pChnlName}</if>
+            <if test="pEventName != null and pEventName != ''">AND UM.EventName = #{pEventName}</if>
+            <if test="pProdName != null and pProdName != ''">AND UM.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">
+                AND EXISTS (
+                    SELECT UOM.OrderNo
+                    FROM shopwizard.tOrdOrderUpriceOptionMatch UOM, shopwizard.tOrdOrderUprice U
+                    WHERE UM.OrderNo = UOM.OrderNo
+                    AND UOM.MatchUpriceCode = U.MatchUpriceCode
+                    AND U.ShopCode = #{pShopCode}
+                )
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (UM.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND UM.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderUpriceMatch">
+        SELECT * FROM shopwizard.tOrdOrderUpriceMatch
+        WHERE ChnlName = #{chnlName} AND EventName = #{eventName} AND ProdName = #{prodName}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderUpriceMatch">
+        INSERT INTO shopwizard.tOrdOrderUpriceMatch (
+            ChnlName, EventName, ProdName, ItemName, OrderNo, PrevProdName, PrevProdOption,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{chnlName}, #{eventName}, #{prodName}, #{itemName}, #{orderNo}, #{prevProdName}, #{prevProdOption},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderUpriceMatch">
+        UPDATE shopwizard.tOrdOrderUpriceMatch SET
+            OrderNo = #{orderNo}, PrevProdName = #{prevProdName}, PrevProdOption = #{prevProdOption},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ChnlName = #{chnlName} AND EventName = #{eventName} AND ProdName = #{prodName}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderUpriceMatch">
+        DELETE FROM shopwizard.tOrdOrderUpriceMatch WHERE OrderNo = #{orderNo}
+    </delete>
+
+    <delete id="deleteByOrderNo" parameterType="map">
+        DELETE FROM shopwizard.tOrdOrderUpriceMatch WHERE OrderNo = #{orderNo}
+    </delete>
+
+</mapper>

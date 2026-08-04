@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.MakerMapper">
+
+    <resultMap id="MakerResult" type="com.shopwizard.catalog.model.Maker">
+        <result property="makerId" column="MakerId"/>
+        <result property="makerKorName" column="MakerKorName"/>
+        <result property="makerEngName" column="MakerEngName"/>
+        <result property="prsdntName" column="PrsdntName"/>
+        <result property="nationCode" column="NationCode"/>
+        <result property="nationName" column="NationName"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="MakerResult">
+        SELECT M.*, CV.ConstrValDesc AS NationName
+        FROM shopwizard.tCatMaker M
+        LEFT OUTER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cNationCode') CV ON M.NationCode = CV.ConstrVal
+        <where>
+            <if test="pMakerId != null and pMakerId != ''">AND M.MakerId = #{pMakerId}</if>
+            <if test="pMakerName != null and pMakerName != ''">
+                AND (M.MakerKorName LIKE CONCAT('%',#{pMakerName},'%') OR M.MakerEngName LIKE CONCAT('%',#{pMakerName},'%'))
+            </if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY M.${sidx} ${sord}</if>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCatMaker M
+        LEFT OUTER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cNationCode') CV ON M.NationCode = CV.ConstrVal
+        <where>
+            <if test="pMakerId != null and pMakerId != ''">AND M.MakerId = #{pMakerId}</if>
+            <if test="pMakerName != null and pMakerName != ''">
+                AND (M.MakerKorName LIKE CONCAT('%',#{pMakerName},'%') OR M.MakerEngName LIKE CONCAT('%',#{pMakerName},'%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="MakerResult">
+        SELECT * FROM shopwizard.tCatMaker WHERE MakerId = #{makerId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.Maker">
+        INSERT INTO shopwizard.tCatMaker (
+            MakerKorName, MakerEngName, PrsdntName, NationCode, State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{makerKorName}, #{makerEngName}, #{prsdntName}, #{nationCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.Maker">
+        UPDATE shopwizard.tCatMaker SET
+            MakerKorName = #{makerKorName}, MakerEngName = #{makerEngName}, PrsdntName = #{prsdntName},
+            NationCode = #{nationCode}, State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE MakerId = #{makerId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopwizard.tCatMaker WHERE MakerId = #{makerId}
+    </delete>
+
+</mapper>

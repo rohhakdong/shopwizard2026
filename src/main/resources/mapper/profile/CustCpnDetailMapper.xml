@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustCpnDetailMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CustCpnDetail">
+        SELECT CD.*, CI.CustName AS CustName
+        FROM shopion.tPrfCustCpnDetail CD
+        INNER JOIN shopion.tStrCustCpn C ON CD.CpnId = C.CpnId
+        INNER JOIN shopion.tPrfCust CI ON CD.CustId = CI.CustId
+        WHERE CD.State = 1 AND C.State = 1
+        AND CD.UseYn = 0
+        <![CDATA[ AND ( NOW() BETWEEN C.DiscntStartDate AND date_add(C.DiscntEndDate,interval+1 day) )]]>
+        <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+        <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+        <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+        <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+        <if test="sidx != null and sidx != ''">ORDER BY CD.${sidx} ${sord}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCustCpnDetail CD
+        INNER JOIN shopion.tStrCustCpn C ON CD.CpnId = C.CpnId
+        INNER JOIN shopion.tPrfCust CI ON CD.CustId = CI.CustId
+        WHERE CD.State = 1 AND C.State = 1
+        AND CD.UseYn = 0
+        <![CDATA[ AND ( NOW() BETWEEN C.DiscntStartDate AND date_add(C.DiscntEndDate,interval+1 day) )]]>
+        <if test="pChnlCode != null and pChnlCode != ''">AND CI.ChnlCode = #{pChnlCode}</if>
+        <if test="pCustName != null and pCustName != ''">AND CI.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+        <if test="pLoginId != null and pLoginId != ''">AND CI.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+        <if test="pCustId != null and pCustId != ''">AND CI.CustId = #{pCustId}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CustCpnDetail">
+        SELECT CD.*
+        FROM shopion.tPrfCustCpnDetail CD
+        INNER JOIN shopion.tStrCustCpn C ON CD.CpnId = C.CpnId
+        WHERE CD.CustId = #{custId}
+        AND CD.CpnNo = #{cpnNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustCpnDetail">
+        INSERT INTO shopion.tPrfCustCpnDetail (
+            CustId, CpnId, UseYn, UseDate, State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{custId}, #{cpnId}, #{useYn}, #{useDate}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CustCpnDetail">
+        UPDATE shopion.tPrfCustCpnDetail SET
+            CpnId = #{cpnId}, UseYn = #{useYn}, UseDate = #{useDate},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+        AND CpnNo = #{cpnNo}
+    </update>
+
+    <update id="updateByCustId" parameterType="com.shopwizard.profile.model.CustCpnDetail">
+        UPDATE shopion.tPrfCustCpnDetail SET
+            UseYn = #{useYn}, UseDate = #{useDate},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCustCpnDetail
+        WHERE CustId = #{custId}
+        AND CpnNo = #{cpnNo}
+    </delete>
+
+    <update id="disable" parameterType="map">
+        UPDATE shopion.tPrfCustCpnDetail SET UseYn = 1, UseDate = NOW()
+        WHERE CustId = #{custId}
+        AND CpnNo = #{cpnNo}
+    </update>
+
+    <update id="enable" parameterType="map">
+        UPDATE shopion.tPrfCustCpnDetail SET UseYn = 0, UseDate = NULL
+        WHERE CustId = #{custId}
+        AND CpnNo = #{cpnNo}
+    </update>
+
+</mapper>

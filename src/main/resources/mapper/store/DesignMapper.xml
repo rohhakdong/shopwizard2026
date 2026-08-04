@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.DesignMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.Design">
+        SELECT DesignId, DesignName, DesignDesc, SvcCode, State, Remark,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrDesign
+        <where>
+            <if test="pDesignName != null and pDesignName != ''">
+                AND DesignName LIKE CONCAT('%', #{pDesignName}, '%')
+            </if>
+            <if test="pDesignDesc != null and pDesignDesc != ''">
+                AND DesignDesc LIKE CONCAT('%', #{pDesignDesc}, '%')
+            </if>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND SvcCode = #{pSvcCode}
+            </if>
+        </where>
+        ORDER BY DesignId
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.Design" useGeneratedKeys="true" keyProperty="designId">
+        INSERT INTO shopion.tStrDesign (
+            DesignName, DesignDesc, SvcCode, State, Remark,
+            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{designName}, #{designDesc}, #{svcCode}, #{state}, #{remark},
+            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.Design">
+        UPDATE shopion.tStrDesign
+        SET DesignName = #{designName},
+            DesignDesc = #{designDesc},
+            SvcCode = #{svcCode},
+            State = #{state},
+            Remark = #{remark},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE DesignId = #{designId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tStrDesign
+        WHERE DesignId = #{designId}
+    </delete>
+
+</mapper>

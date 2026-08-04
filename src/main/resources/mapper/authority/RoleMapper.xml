@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.authority.mapper.RoleMapper">
+
+    <resultMap id="RoleResult" type="com.shopwizard.authority.model.Role">
+        <result property="roleUid" column="RoleUid"/>
+        <result property="roleName" column="RoleName"/>
+        <result property="roleDesc" column="RoleDesc"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="svcName" column="SvcName"/>
+        <result property="supplyYn" column="SupplyYn"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="RoleResult">
+        SELECT tAthRole.*, tAthSvc.SvcName
+        FROM wizardn.tAthRole
+        LEFT OUTER JOIN wizardn.tAthSvc ON tAthSvc.SvcCode = tAthRole.SvcCode
+        <where>
+            <if test="pRoleName != null and pRoleName != ''">AND tAthRole.RoleName LIKE CONCAT('%',#{pRoleName},'%')</if>
+            <if test="pRoleDesc != null and pRoleDesc != ''">AND tAthRole.RoleDesc LIKE CONCAT('%',#{pRoleDesc},'%')</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND tAthRole.SvcCode = #{pSvcCode}</if>
+            <if test="pSupplyYn != null and pSupplyYn != ''">AND tAthRole.SupplyYn = #{pSupplyYn}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.authority.model.Role">
+        INSERT INTO wizardn.tAthRole (
+            RoleUid, RoleName, RoleDesc, SvcCode,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{roleUid}, #{roleName}, #{roleDesc}, #{svcCode},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.authority.model.Role">
+        UPDATE wizardn.tAthRole SET
+            RoleName = #{roleName}, RoleDesc = #{roleDesc}, SvcCode = #{svcCode},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE RoleUid = #{roleUid}
+    </update>
+
+    <delete id="delete" parameterType="string">
+        DELETE FROM wizardn.tAthRole
+        WHERE RoleUid = #{value}
+    </delete>
+
+</mapper>

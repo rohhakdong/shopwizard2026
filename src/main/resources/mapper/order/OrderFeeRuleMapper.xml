@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderFeeRuleMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderFeeRule">
+        SELECT *
+        FROM shopwizard.tOrdOrderFeeRule
+        <where>
+            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderFeeRule
+        <where>
+            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderFeeRule">
+        SELECT * FROM shopwizard.tOrdOrderFeeRule
+        WHERE RuleNo = #{ruleNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderFeeRule">
+        INSERT INTO shopwizard.tOrdOrderFeeRule (
+            RuleNo, ShopCode, ChnlCode, ProdCode, ProdName, DealName,
+            OrderQtyStart, OrderQtyEnd, OrderAmtStart, OrderAmtEnd, DeliFee,
+            DeliFeeSect, PromotFee, ChnlFeeRate, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{ruleNo}, #{shopCode}, #{chnlCode}, #{prodCode}, #{prodName}, #{dealName},
+            #{orderQtyStart}, #{orderQtyEnd}, #{orderAmtStart}, #{orderAmtEnd}, #{deliFee},
+            #{deliFeeSect}, #{promotFee}, #{chnlFeeRate}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderFeeRule">
+        UPDATE shopwizard.tOrdOrderFeeRule SET
+            ShopCode = #{shopCode}, ChnlCode = #{chnlCode}, ProdCode = #{prodCode}, ProdName = #{prodName},
+            DealName = #{dealName}, OrderQtyStart = #{orderQtyStart}, OrderQtyEnd = #{orderQtyEnd},
+            OrderAmtStart = #{orderAmtStart}, OrderAmtEnd = #{orderAmtEnd}, DeliFee = #{deliFee},
+            DeliFeeSect = #{deliFeeSect}, PromotFee = #{promotFee}, ChnlFeeRate = #{chnlFeeRate},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE RuleNo = #{ruleNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderFeeRule">
+        DELETE FROM shopwizard.tOrdOrderFeeRule WHERE RuleNo = #{ruleNo}
+    </delete>
+
+</mapper>

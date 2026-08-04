@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.adjust.mapper.AdjustCheckRqstMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.adjust.model.AdjustCheckRqst">
+        SELECT * FROM shopwizard.tAdjAdjustCheckRqst
+        <where>
+            <if test="pRqstNo != null and pRqstNo != ''">AND RqstNo = #{pRqstNo}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjustCheckRqst
+        <where>
+            <if test="pRqstNo != null and pRqstNo != ''">AND RqstNo = #{pRqstNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.adjust.model.AdjustCheckRqst">
+        SELECT * FROM shopwizard.tAdjAdjustCheckRqst WHERE RqstNo = #{rqstNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.adjust.model.AdjustCheckRqst">
+        INSERT INTO shopwizard.tAdjAdjustCheckRqst (RqstNo, MainId, TreeId, ChildId, LinkId, Title, Cntnts, Email, PhoneNo, TreeCheck, RqstSect, FileName, SupplyCode, SupplyName, ShopCode, ShopName, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{rqstNo}, #{mainId}, #{treeId}, #{childId}, #{linkId}, #{title}, #{cntnts}, #{email}, #{phoneNo}, #{treeCheck}, #{rqstSect}, #{fileName}, #{supplyCode}, #{supplyName}, #{shopCode}, #{shopName}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.adjust.model.AdjustCheckRqst">
+        UPDATE shopwizard.tAdjAdjustCheckRqst SET
+        RqstNo = #{rqstNo}, MainId = #{mainId}, TreeId = #{treeId}, ChildId = #{childId}, LinkId = #{linkId},
+        Title = #{title}, Cntnts = #{cntnts}, Email = #{email}, PhoneNo = #{phoneNo}, TreeCheck = #{treeCheck},
+        RqstSect = #{rqstSect}, FileName = #{fileName}, SupplyCode = #{supplyCode}, SupplyName = #{supplyName},
+        ShopCode = #{shopCode}, ShopName = #{shopName}, State = #{state}, Remark = #{remark},
+        ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE RqstNo = #{rqstNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.adjust.model.AdjustCheckRqst">
+        DELETE FROM shopwizard.tAdjAdjustCheckRqst WHERE RqstNo = #{rqstNo}
+    </delete>
+
+</mapper>

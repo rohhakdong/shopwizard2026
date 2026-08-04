@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.code.mapper.ConstrValMapper">
+
+  <resultMap id="ConstrValResult" type="com.shopwizard.code.model.ConstrVal">
+    <result property="constrCode"    column="ConstrCode" />
+    <result property="constrVal"     column="ConstrVal" />
+    <result property="constrValDesc" column="ConstrValDesc" />
+    <result property="defaltYn"      column="DefaltYn" />
+    <result property="constrValSeq"  column="ConstrValSeq" />
+    <result property="remark"        column="Remark" />
+    <result property="state"         column="State" />
+    <result property="registDate"    column="RegistDate" />
+    <result property="registId"      column="RegistId" />
+    <result property="registName"    column="RegistName" />
+    <result property="changeDate"    column="ChangeDate" />
+    <result property="changeId"      column="ChangeId" />
+    <result property="changeName"    column="ChangeName" />
+  </resultMap>
+
+  <select id="findList" parameterType="map" resultMap="ConstrValResult">
+    SELECT *
+    FROM tCodConstrVal
+    <where>
+      <if test="pConstrCode != null and pConstrCode != ''">
+        AND ConstrCode = #{pConstrCode}
+      </if>
+      <if test="pConstrVal != null and pConstrVal != ''">
+        AND ConstrVal LIKE CONCAT('%', #{pConstrVal}, '%')
+      </if>
+      <if test="pConstrValDesc != null">
+        AND ConstrValDesc LIKE CONCAT('%', #{pConstrValDesc}, '%')
+      </if>
+    </where>
+    <choose>
+      <when test="sidx != null and sidx != ''">
+        ORDER BY ${sidx} ${sord}
+      </when>
+      <otherwise>
+        ORDER BY ConstrValSeq, ConstrValDesc
+      </otherwise>
+    </choose>
+  </select>
+
+  <insert id="insert" parameterType="com.shopwizard.code.model.ConstrVal">
+    INSERT INTO tCodConstrVal (
+      ConstrCode, ConstrVal, ConstrValDesc,
+      DefaltYn, ConstrValSeq,
+      State, Remark,
+      RegistDate, RegistId, RegistName
+    ) VALUES (
+      #{constrCode}, #{constrVal}, #{constrValDesc},
+      #{defaltYn}, #{constrValSeq},
+      #{state}, #{remark},
+      NOW(), #{registId}, #{registName}
+    )
+  </insert>
+
+  <update id="update" parameterType="com.shopwizard.code.model.ConstrVal">
+    UPDATE tCodConstrVal SET
+      ConstrValDesc = #{constrValDesc},
+      DefaltYn      = #{defaltYn},
+      ConstrValSeq  = #{constrValSeq},
+      State         = #{state},
+      Remark        = #{remark},
+      ChangeDate    = NOW(),
+      ChangeId      = #{changeId},
+      ChangeName    = #{changeName}
+    WHERE ConstrCode = #{constrCode}
+    AND   ConstrVal  = #{constrVal}
+  </update>
+
+  <delete id="delete" parameterType="com.shopwizard.code.model.ConstrVal">
+    DELETE FROM tCodConstrVal
+    WHERE ConstrCode = #{constrCode}
+    AND   ConstrVal  = #{constrVal}
+  </delete>
+
+</mapper>

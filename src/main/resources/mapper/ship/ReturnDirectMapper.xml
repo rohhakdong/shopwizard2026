@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.ship.mapper.ReturnDirectMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.ReturnDirect">
+        SELECT RD.*
+        FROM shopwizard.tShpReturnDirect RD
+        INNER JOIN shopwizard.tCmpChnl Ch ON RD.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = RD.OrderNo AND OP.OrderProdNo = RD.OrderProdNo
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        <where>
+            <if test="pNotDependOnDate == null or pNotDependOnDate == ''">
+                AND ( RD.ReturnRqstDate IS NOT NULL AND RD.ReturnRqstDate != '' )
+                AND ( RD.ReturnCmpletDate IS NULL OR RD.ReturnCmpletDate = '')
+            </if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pOrderType != null and pOrderType != ''">AND RD.OrderType = #{pOrderType}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND RD.ShopCode = #{pShopCode}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND RD.OrderNo = #{pOrderNo}</if>
+            <if test="pOrderProdNo != null and pOrderProdNo != ''">AND RD.OrderProdNo = #{pOrderProdNo}</if>
+            <if test="pOrderChangeNo != null and pOrderChangeNo != ''">AND RD.OrderChangeNo = #{pOrderChangeNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND RD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND RD.ChnlCode = #{pChnlCode}</if>
+            <if test="pOrderSearchValue != null and pOrderSearchValue != ''">
+                AND
+                <choose>
+                    <when test="pOrderSearchCondType == '상품코드'">RD.ProdCode = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '상품명'">RD.ProdName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '주문번호'">RD.OrderNo = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '주문자명'">RD.OrderName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '수취인명'">RD.RecverName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '전화번호'">( RD.OrderPhoneNo = #{pOrderSearchValue} OR RD.OrderMobileNo = #{pOrderSearchValue} OR RD.RecverPhoneNo = #{pOrderSearchValue} OR RD.RecverMobileNo = #{pOrderSearchValue} )</when>
+                    <when test="pOrderSearchCondType == '채널주문번호'">OP.ChnlOrderNo LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                </choose>
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                AND
+                <choose>
+                    <when test="pOrderDateType == 'P'">
+                        <![CDATA[ ( O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </when>
+                    <when test="pOrderDateType == 'S'">
+                        <![CDATA[ ( OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </when>
+                    <when test="pOrderDateType == 'R'">
+                        <![CDATA[ ( O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[ ( O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpReturnDirect RD
+        INNER JOIN shopwizard.tCmpChnl Ch ON RD.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = RD.OrderNo AND OP.OrderProdNo = RD.OrderProdNo
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        <where>
+            <if test="pNotDependOnDate == null or pNotDependOnDate == ''">
+                AND ( RD.ReturnRqstDate IS NOT NULL AND RD.ReturnRqstDate != '' )
+                AND ( RD.ReturnCmpletDate IS NULL OR RD.ReturnCmpletDate = '')
+            </if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pOrderType != null and pOrderType != ''">AND RD.OrderType = #{pOrderType}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND RD.ShopCode = #{pShopCode}</if>
+            <if test="pOrderNo != null and pOrderNo != ''">AND RD.OrderNo = #{pOrderNo}</if>
+            <if test="pOrderProdNo != null and pOrderProdNo != ''">AND RD.OrderProdNo = #{pOrderProdNo}</if>
+            <if test="pOrderChangeNo != null and pOrderChangeNo != ''">AND RD.OrderChangeNo = #{pOrderChangeNo}</if>
+            <if test="pOrderName != null and pOrderName != ''">AND RD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND RD.ChnlCode = #{pChnlCode}</if>
+            <if test="pOrderSearchValue != null and pOrderSearchValue != ''">
+                AND
+                <choose>
+                    <when test="pOrderSearchCondType == '상품코드'">RD.ProdCode = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '상품명'">RD.ProdName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '주문번호'">RD.OrderNo = #{pOrderSearchValue}</when>
+                    <when test="pOrderSearchCondType == '주문자명'">RD.OrderName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '수취인명'">RD.RecverName LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                    <when test="pOrderSearchCondType == '전화번호'">( RD.OrderPhoneNo = #{pOrderSearchValue} OR RD.OrderMobileNo = #{pOrderSearchValue} OR RD.RecverPhoneNo = #{pOrderSearchValue} OR RD.RecverMobileNo = #{pOrderSearchValue} )</when>
+                    <when test="pOrderSearchCondType == '채널주문번호'">OP.ChnlOrderNo LIKE CONCAT('%',#{pOrderSearchValue},'%')</when>
+                </choose>
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                AND
+                <choose>
+                    <when test="pOrderDateType == 'P'">
+                        <![CDATA[ ( O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </when>
+                    <when test="pOrderDateType == 'S'">
+                        <![CDATA[ ( OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </when>
+                    <when test="pOrderDateType == 'R'">
+                        <![CDATA[ ( O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[ ( O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.ReturnDirect">
+        SELECT *
+        FROM shopwizard.tShpReturnDirect
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderChangeNo = #{orderChangeNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.ReturnDirect">
+        INSERT INTO shopwizard.tShpReturnDirect (
+            OrderNo, OrderProdNo, OrderChangeNo, OrderType, MallCode, ChnlCode, OrderName, OrderPhoneNo, OrderMobileNo,
+            RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr, DeliMemo, OrderMemo, DeliHopeDate,
+            SupplyCode, SupplyName, ShopCode, ShopName, BundleYn, BundleInvNo, CateCode, ProdCode, ShopProdCode,
+            ProdName, InvProdName, ProdImg, ItemCode, ItemName, ProdQty, VatRate, VatAmt, OfferYn, OfferDate,
+            OfferRegistDate, OfferRegistId, ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt,
+            ProdCpnDiscntAmt, PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt,
+            CustChrgDeliFee, DeliFeeId, DeliCompCode, DeliCompName, PrevInvNo, InvNo, InvChangeReason,
+            InvChangeReasonDetail, InvIdNo, OrderState, PreShipYn, ReciptBeforeCancelYn, ReturnReason, ReturnReasonDetail,
+            ExchngReason, ExchngReasonDetail, ReturnReciptDate, ReturnRqstDate, ReturnCmpletDate, ReturnConfrmDate,
+            ChnlOrderNo, ChnlOrderProdNo, DeliFeeType, DeliFeeAmt, PromotFeeAmt, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{orderType}, #{mallCode}, #{chnlCode}, #{orderName}, #{orderPhoneNo}, #{orderMobileNo},
+            #{recverName}, #{recverPhoneNo}, #{recverMobileNo}, #{recverZipcode}, #{recverAddr}, #{deliMemo}, #{orderMemo}, #{deliHopeDate},
+            #{supplyCode}, #{supplyName}, #{shopCode}, #{shopName}, #{bundleYn}, #{bundleInvNo}, #{cateCode}, #{prodCode}, #{shopProdCode},
+            #{prodName}, #{invProdName}, #{prodImg}, #{itemCode}, #{itemName}, #{prodQty}, #{vatRate}, #{vatAmt}, #{offerYn}, #{offerDate},
+            #{offerRegistDate}, #{offerRegistId}, #{listPrice}, #{prevPrice}, #{salePrice}, #{saleDiscntAmt}, #{custCpnDiscntAmt},
+            #{prodCpnDiscntAmt}, #{pointUseAmt}, #{supplyPrice}, #{discntSupplyPrice}, #{buyPrice}, #{nvPrice}, #{pvPrice}, #{pointSaveAmt},
+            #{custChrgDeliFee}, #{deliFeeId}, #{deliCompCode}, #{deliCompName}, #{prevInvNo}, #{invNo}, #{invChangeReason},
+            #{invChangeReasonDetail}, #{invIdNo}, #{orderState}, #{preShipYn}, #{reciptBeforeCancelYn}, #{returnReason}, #{returnReasonDetail},
+            #{exchngReason}, #{exchngReasonDetail}, #{returnReciptDate}, #{returnRqstDate}, #{returnCmpletDate}, #{returnConfrmDate},
+            #{chnlOrderNo}, #{chnlOrderProdNo}, #{deliFeeType}, #{deliFeeAmt}, #{promotFeeAmt}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertReturnDirect" parameterType="map">
+        INSERT INTO shopwizard.tShpReturnDirect (
+            OrderNo, OrderProdNo, OrderChangeNo, OrderType, ChnlCode,
+            ChnlOrderNo, ChnlOrderProdNo, OrderName, OrderPhoneNo, OrderMobileNo,
+            RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr,
+            DeliMemo, OrderMemo, DeliHopeDate, SupplyCode, SupplyName,
+            ShopCode, ShopName, BundleYn, StoreCode, ProdCode,
+            ShopProdCode, ProdName, ProdImg, MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode, ItemName,
+            ProdQty, VatRate, VatAmt, OfferYn, ListPrice, PrevPrice,
+            SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt,
+            SupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt,
+            DeliFeeId, DeliFeeType, DeliFeeAmt, PromotFeeAmt, OrderState,
+            ReturnReason, ReturnReasonDetail, ExchngReason,
+            ExchngReasonDetail, ReturnReciptDate, ReturnRqstDate, State, RegistId, RegistName, RegistDate
+        ) SELECT
+            #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{orderType}, O.ChnlCode,
+            OP.ChnlOrderNo, OP.ChnlOrderProdNo, O.OrderName, O.OrderPhoneNo, O.OrderMobileNo,
+            O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode, CONCAT(O.RecverAddr1,' ',O.RecverAddr2),
+            O.DeliMemo, O.OrderMemo, O.DeliHopeDate, OP.SupplyCode, OP.SupplyName,
+            OP.ShopCode, OP.ShopName, OP.BundleYn, OP.StoreCode, OP.ProdCode,
+            OP.ShopProdCode, OP.ProdName, OP.ProdImg, OP.MakerName, OP.ModelName, OP.ProdUnit, OP.ProdMemo01, OP.ItemCode, OP.ItemName,
+            OP.ProdQty, OP.VatRate, OP.VatAmt, 0, OP.ListPrice, OP.PrevPrice,
+            OP.SalePrice, OP.SaleDiscntAmt, OP.CustCpnDiscntAmt, OP.ProdCpnDiscntAmt, OP.PointUseAmt,
+            OP.SupplyPrice, OP.BuyPrice, OP.NvPrice, OP.PvPrice, OP.PointSaveAmt,
+            OP.DeliFeeId, OP.DeliFeeType, OP.DeliFeeAmt, OP.PromotFeeAmt, '반품요청',
+            OP.ReturnReason, OP.ReturnReasonDetail, OP.ExchngReason,
+            OP.ExchngReasonDetail, OP.ReturnReciptDate, NOW(), 1, #{registId}, #{registName}, NOW()
+        FROM shopion.tOrdOrder O
+        INNER JOIN shopion.tOrdOrderProd OP ON O.OrderNo = OP.OrderNo
+        WHERE OP.OrderNo = #{orderNo}
+        AND OP.OrderProdNo = #{orderProdNo}
+    </insert>
+
+    <update id="update" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect SET
+            OrderState = #{orderState}, ReturnCmpletDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderChangeNo = #{orderChangeNo}
+    </update>
+
+    <update id="updateAdjustSelectDate" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect SET
+            AdjustSelectDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderChangeNo = #{orderChangeNo}
+    </update>
+
+    <update id="updateAdjustSelectDateSchedule" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect SET
+            AdjustSelectDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE EXISTS ( SELECT * FROM shopwizard.tAdjAdjustDetail WHERE
+            shopwizard.tAdjAdjustDetail.OrderNo = shopwizard.tShpReturnDirect.OrderNo
+            AND shopwizard.tAdjAdjustDetail.OrderProdNo = shopwizard.tShpReturnDirect.OrderProdNo
+            AND shopwizard.tAdjAdjustDetail.OrderChangeNo = shopwizard.tShpReturnDirect.OrderChangeNo
+            )
+            AND AdjustSelectDate IS NULL
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.ship.model.ReturnDirect">
+        DELETE FROM shopwizard.tShpReturnDirect
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderChangeNo = #{orderChangeNo}
+    </delete>
+
+    <delete id="deleteRefundCancel" parameterType="map">
+        DELETE FROM shopwizard.tShpReturnDirect
+        WHERE OrderNo = #{orderNo}
+        AND OrderProdNo = #{orderProdNo}
+        AND OrderChangeNo = #{orderChangeNo}
+    </delete>
+
+</mapper>

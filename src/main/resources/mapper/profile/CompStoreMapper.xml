@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CompStoreMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.CompStore">
+        SELECT *
+        , (SELECT COUNT(*) FROM shopion.tPrfCompStore C WHERE C.ParentStoreCode = tPrfCompStore.StoreCode AND C.CompCode = tPrfCompStore.CompCode) AS ChildCount
+        FROM shopion.tPrfCompStore
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pAllCate == null or pAllCate == ''">
+                <if test="pParentStoreCode != null and pParentStoreCode != ''">AND ParentStoreCode = #{pParentStoreCode}</if>
+                <if test="pParentStoreCode == null or pParentStoreCode == ''">AND StoreLevel = 0</if>
+                <if test="pStoreCode != null and pStoreCode != ''">AND StoreCode = #{pStoreCode}</if>
+            </if>
+        </where>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCompStore
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+            <if test="pAllCate == null or pAllCate == ''">
+                <if test="pParentStoreCode != null and pParentStoreCode != ''">AND ParentStoreCode = #{pParentStoreCode}</if>
+                <if test="pParentStoreCode == null or pParentStoreCode == ''">AND StoreLevel = 0</if>
+                <if test="pStoreCode != null and pStoreCode != ''">AND StoreCode = #{pStoreCode}</if>
+            </if>
+        </where>
+    </select>
+
+    <select id="selectListFinalTable" parameterType="map" resultType="com.shopwizard.profile.model.CompStore">
+        SELECT tPrfCompStore1.StoreCode AS StoreCode1, tPrfCompStore1.StoreName AS StoreName1
+        , tPrfCompStore2.StoreCode AS StoreCode2, tPrfCompStore2.StoreName AS StoreName2
+        , tPrfCompStore3.StoreCode AS StoreCode3, tPrfCompStore3.StoreName AS StoreName3
+        , shopion.tPrfCompStore.StoreCode AS StoreCode4, shopion.tPrfCompStore.StoreName AS StoreName4
+        , shopion.tPrfCompStore.StoreCode, shopion.tPrfCompStore.StoreName
+        FROM shopion.tPrfCompStore
+        INNER JOIN shopion.tPrfCompStore tPrfCompStore1
+            ON SUBSTRING(tPrfCompStore1.StoreCode,1,4) = SUBSTRING(shopion.tPrfCompStore.StoreCode,1,4) AND tPrfCompStore1.StoreLevel = 0 AND tPrfCompStore1.CompCode = #{pCompCode}
+        INNER JOIN shopion.tPrfCompStore tPrfCompStore2
+            ON SUBSTRING(tPrfCompStore2.StoreCode,1,7) = SUBSTRING(shopion.tPrfCompStore.StoreCode,1,7) AND tPrfCompStore2.StoreLevel = 1 AND tPrfCompStore2.CompCode = #{pCompCode}
+        INNER JOIN shopion.tPrfCompStore tPrfCompStore3
+            ON SUBSTRING(tPrfCompStore3.StoreCode,1,10) = SUBSTRING(shopion.tPrfCompStore.StoreCode,1,10) AND tPrfCompStore3.StoreLevel = 2 AND tPrfCompStore3.CompCode = #{pCompCode}
+        WHERE shopion.tPrfCompStore.StoreLevel = 3
+        <if test="storeName != null and storeName != ''">AND shopion.tPrfCompStore.StoreName LIKE CONCAT('%',#{storeName},'%')</if>
+        <if test="pStoreCode != null and pStoreCode != ''">AND shopion.tPrfCompStore.StoreCode = #{pStoreCode}</if>
+        <if test="pCompCode != null and pCompCode != ''">AND shopion.tPrfCompStore.CompCode = #{pCompCode}</if>
+        UNION ALL
+        SELECT tPrfCompStore1.StoreCode AS StoreCode1, tPrfCompStore1.StoreName AS StoreName1
+        , tPrfCompStore2.StoreCode AS StoreCode2, tPrfCompStore2.StoreName AS StoreName2
+        , shopion.tPrfCompStore.StoreCode AS StoreCode3, shopion.tPrfCompStore.StoreName AS StoreName3
+        , '' AS StoreCode4, '' AS StoreName4
+        , shopion.tPrfCompStore.StoreCode, shopion.tPrfCompStore.StoreName
+        FROM shopion.tPrfCompStore
+        INNER JOIN shopion.tPrfCompStore tPrfCompStore1
+            ON SUBSTRING(tPrfCompStore1.StoreCode,1,4) = SUBSTRING(shopion.tPrfCompStore.StoreCode,1,4) AND tPrfCompStore1.StoreLevel = 0 AND tPrfCompStore1.CompCode = #{pCompCode}
+        INNER JOIN shopion.tPrfCompStore tPrfCompStore2
+            ON SUBSTRING(tPrfCompStore2.StoreCode,1,7) = SUBSTRING(shopion.tPrfCompStore.StoreCode,1,7) AND tPrfCompStore2.StoreLevel = 1 AND tPrfCompStore2.CompCode = #{pCompCode}
+        WHERE shopion.tPrfCompStore.StoreLevel = 2
+        <if test="storeName != null and storeName != ''">AND shopion.tPrfCompStore.StoreName LIKE CONCAT('%',#{storeName},'%')</if>
+        <if test="pStoreCode != null and pStoreCode != ''">AND shopion.tPrfCompStore.StoreCode = #{pStoreCode}</if>
+        <if test="pCompCode != null and pCompCode != ''">AND shopion.tPrfCompStore.CompCode = #{pCompCode}</if>
+        AND NOT EXISTS (SELECT StoreCode FROM shopion.tPrfCompStore C WHERE C.ParentStoreCode = shopion.tPrfCompStore.StoreCode AND C.CompCode = #{pCompCode})
+        UNION ALL
+        SELECT tPrfCompStore1.StoreCode AS StoreCode1, tPrfCompStore1.StoreName AS StoreName1
+        , shopion.tPrfCompStore.StoreCode AS StoreCode2, shopion.tPrfCompStore.StoreName AS StoreName2
+        , '' AS StoreCode3, '' AS StoreName3
+        , '' AS StoreCode4, '' AS StoreName4
+        , shopion.tPrfCompStore.StoreCode, shopion.tPrfCompStore.StoreName
+        FROM shopion.tPrfCompStore
+        INNER JOIN shopion.tPrfCompStore tPrfCompStore1
+            ON SUBSTRING(tPrfCompStore1.StoreCode,1,4) = SUBSTRING(shopion.tPrfCompStore.StoreCode,1,4) AND tPrfCompStore1.StoreLevel = 0 AND tPrfCompStore1.CompCode = #{pCompCode}
+        WHERE shopion.tPrfCompStore.StoreLevel = 1
+        <if test="storeName != null and storeName != ''">AND shopion.tPrfCompStore.StoreName LIKE CONCAT('%',#{storeName},'%')</if>
+        <if test="pStoreCode != null and pStoreCode != ''">AND shopion.tPrfCompStore.StoreCode = #{pStoreCode}</if>
+        <if test="pCompCode != null and pCompCode != ''">AND shopion.tPrfCompStore.CompCode = #{pCompCode}</if>
+        AND NOT EXISTS (SELECT StoreCode FROM shopion.tPrfCompStore C WHERE C.ParentStoreCode = shopion.tPrfCompStore.StoreCode AND C.CompCode = #{pCompCode})
+        UNION ALL
+        SELECT shopion.tPrfCompStore.StoreCode AS StoreCode1, shopion.tPrfCompStore.StoreName AS StoreName1
+        , '' AS StoreCode2, '' AS StoreName2
+        , '' AS StoreCode3, '' AS StoreName3
+        , '' AS StoreCode4, '' AS StoreName4
+        , shopion.tPrfCompStore.StoreCode, shopion.tPrfCompStore.StoreName
+        FROM shopion.tPrfCompStore
+        WHERE shopion.tPrfCompStore.StoreLevel = 0
+        <if test="storeName != null and storeName != ''">AND shopion.tPrfCompStore.StoreName LIKE CONCAT('%',#{storeName},'%')</if>
+        <if test="pStoreCode != null and pStoreCode != ''">AND shopion.tPrfCompStore.StoreCode = #{pStoreCode}</if>
+        <if test="pCompCode != null and pCompCode != ''">AND shopion.tPrfCompStore.CompCode = #{pCompCode}</if>
+        AND NOT EXISTS (SELECT StoreCode FROM shopion.tPrfCompStore C WHERE C.ParentStoreCode = shopion.tPrfCompStore.StoreCode AND C.CompCode = #{pCompCode})
+    </select>
+
+    <select id="selectListLevel" parameterType="map" resultType="com.shopwizard.profile.model.CompStore">
+        SELECT *
+        , (SELECT COUNT(*) FROM shopion.tPrfCompStore C WHERE C.ParentStoreCode = tPrfCompStore.StoreCode AND C.CompCode = tPrfCompStore.CompCode) AS ChildCount
+        FROM shopion.tPrfCompStore
+        <where>
+            <if test="pParentStoreCode != null and pParentStoreCode != ''">AND ParentStoreCode = #{pParentStoreCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <select id="selectStoreCodeMax" parameterType="map" resultType="string">
+        SELECT IFNULL(MAX(StoreCode),'')
+        FROM shopion.tPrfCompStore
+        <where>
+            <if test="parentStoreCode != null and parentStoreCode != ''">AND ParentStoreCode = #{parentStoreCode}</if>
+            <if test="compCode != null and compCode != ''">AND CompCode = #{compCode}</if>
+            <if test="parentStoreCode == null or parentStoreCode == ''">AND StoreLevel = 0</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.CompStore">
+        SELECT *
+        FROM shopion.tPrfCompStore
+        <where>
+            <if test="pStoreCode != null and pStoreCode != ''">AND StoreCode = #{pStoreCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND CompCode = #{pCompCode}</if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CompStore">
+        INSERT INTO shopion.tPrfCompStore (
+            CompCode, StoreCode, StoreName, StoreDesc, ParentStoreCode, StoreLevel,
+            StoreSeq, AdultYn, TmplCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{compCode}, #{storeCode}, #{storeName}, #{storeDesc}, #{parentStoreCode}, #{storeLevel},
+            #{storeSeq}, #{adultYn}, #{tmplCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.CompStore">
+        UPDATE shopion.tPrfCompStore SET
+            StoreName = #{storeName}, StoreDesc = #{storeDesc}, StoreSeq = #{storeSeq},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CompCode = #{compCode}
+        AND StoreCode = #{storeCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfCompStore
+        WHERE CompCode = #{compCode}
+        AND StoreCode = #{storeCode}
+    </delete>
+
+</mapper>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.BranchStoreProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.BranchStoreProd">
+        SELECT *
+        FROM shopion.tPrfBranchStoreProd
+        <where>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pStoreCode != null and pStoreCode != ''">AND StoreCode = #{pStoreCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">
+        LIMIT #{pPageOffset}, #{pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfBranchStoreProd
+        <where>
+            <if test="pBranchId != null and pBranchId != ''">AND BranchId = #{pBranchId}</if>
+            <if test="pStoreCode != null and pStoreCode != ''">AND StoreCode = #{pStoreCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.BranchStoreProd">
+        SELECT *
+        FROM shopion.tPrfBranchStoreProd
+        WHERE BranchId = #{branchId}
+        AND StoreCode = #{storeCode}
+        AND ProdCode = #{prodCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.BranchStoreProd">
+        INSERT INTO shopion.tPrfBranchStoreProd (
+            BranchId, StoreCode, ProdCode, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{branchId}, #{storeCode}, #{prodCode}, #{state}, #{remark},
+            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.BranchStoreProd">
+        UPDATE shopion.tPrfBranchStoreProd SET
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE BranchId = #{branchId}
+        AND StoreCode = #{storeCode}
+        AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfBranchStoreProd
+        WHERE BranchId = #{branchId}
+        AND StoreCode = #{storeCode}
+        AND ProdCode = #{prodCode}
+    </delete>
+
+</mapper>

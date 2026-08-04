@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.CateMapper">
+
+    <resultMap id="CateResult" type="com.shopwizard.catalog.model.Cate">
+        <result property="cateCode" column="CateCode"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="cateName" column="CateName"/>
+        <result property="cateDesc" column="CateDesc"/>
+        <result property="parentCateCode" column="ParentCateCode"/>
+        <result property="cateLevel" column="CateLevel"/>
+        <result property="cateSeq" column="CateSeq"/>
+        <result property="childCount" column="ChildCount"/>
+        <result property="cateCode1" column="CateCode1"/> <result property="cateName1" column="CateName1"/>
+        <result property="cateCode2" column="CateCode2"/> <result property="cateName2" column="CateName2"/>
+        <result property="cateCode3" column="CateCode3"/> <result property="cateName3" column="CateName3"/>
+        <result property="cateCode4" column="CateCode4"/> <result property="cateName4" column="CateName4"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="CateResult">
+        SELECT *, (SELECT COUNT(*) FROM shopwizard.tCatCate C WHERE C.ParentCateCode = shopwizard.tCatCate.CateCode) AS ChildCount
+        FROM shopwizard.tCatCate
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pAllCate == null">
+                <choose>
+                    <when test="pParentCateCode != null and pParentCateCode != ''">AND ParentCateCode = #{pParentCateCode}</when>
+                    <otherwise>AND CateLevel = 0</otherwise>
+                </choose>
+                <if test="pCateCode != null and pCateCode != ''">AND CateCode = #{pCateCode}</if>
+            </if>
+        </where>
+        ORDER BY CateSeq, CateCode
+    </select>
+
+    <select id="selectCateCodeMax" parameterType="map" resultType="string">
+        SELECT IFNULL(MAX(CateCode),'')
+        FROM shopwizard.tCatCate
+        <where>
+            <if test="svcCode != null and svcCode != ''">AND SvcCode = #{svcCode}</if>
+            <choose>
+                <when test="parentCateCode != null and parentCateCode != ''">AND ParentCateCode = #{parentCateCode}</when>
+                <otherwise>AND CateLevel = 0</otherwise>
+            </choose>
+            <if test="designId != null and designId != ''">AND DesignId = #{designId}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="CateResult">
+        SELECT * FROM shopwizard.tCatCate WHERE SvcCode = #{svcCode} AND CateCode = #{cateCode}
+    </select>
+
+    <select id="selectListLevel" parameterType="map" resultMap="CateResult">
+        SELECT *, (SELECT COUNT(*) FROM shopwizard.tCatCate C WHERE C.ParentCateCode = tCatCate.CateCode) AS ChildCount
+        FROM shopwizard.tCatCate
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pParentCateCode != null and pParentCateCode != ''">AND ParentCateCode = #{pParentCateCode}</if>
+        </where>
+    </select>
+
+    <select id="selectListFinalTable" parameterType="map" resultMap="CateResult">
+        SELECT tCatCate1.CateCode AS CateCode1, tCatCate1.CateName AS CateName1,
+               tCatCate2.CateCode AS CateCode2, tCatCate2.CateName AS CateName2,
+               tCatCate3.CateCode AS CateCode3, tCatCate3.CateName AS CateName3,
+               shopwizard.tCatCate.CateCode AS CateCode4, shopwizard.tCatCate.CateName AS CateName4,
+               shopwizard.tCatCate.CateCode, shopwizard.tCatCate.CateName
+        FROM shopwizard.tCatCate
+        INNER JOIN shopwizard.tCatCate tCatCate1 ON SUBSTRING(tCatCate1.CateCode,1,4) = SUBSTRING(shopwizard.tCatCate.CateCode,1,4) AND tCatCate1.CateLevel = 0 AND tCatCate1.SvcCode = #{pSvcCode}
+        INNER JOIN shopwizard.tCatCate tCatCate2 ON SUBSTRING(tCatCate2.CateCode,1,7) = SUBSTRING(shopwizard.tCatCate.CateCode,1,7) AND tCatCate2.CateLevel = 1 AND tCatCate2.SvcCode = #{pSvcCode}
+        INNER JOIN shopwizard.tCatCate tCatCate3 ON SUBSTRING(tCatCate3.CateCode,1,10) = SUBSTRING(shopwizard.tCatCate.CateCode,1,10) AND tCatCate3.CateLevel = 2 AND tCatCate3.SvcCode = #{pSvcCode}
+        WHERE shopwizard.tCatCate.CateLevel = 3 AND shopwizard.tCatCate.SvcCode = #{pSvcCode}
+        AND (shopwizard.tCatCate.CateName LIKE CONCAT('%',#{pCateName},'%') OR tCatCate1.CateName LIKE CONCAT('%',#{pCateName},'%') OR tCatCate2.CateName LIKE CONCAT('%',#{pCateName},'%') OR tCatCate3.CateName LIKE CONCAT('%',#{pCateName},'%'))
+        UNION ALL
+        SELECT tCatCate1.CateCode AS CateCode1, tCatCate1.CateName AS CateName1,
+               tCatCate2.CateCode AS CateCode2, tCatCate2.CateName AS CateName2,
+               shopwizard.tCatCate.CateCode AS CateCode3, shopwizard.tCatCate.CateName AS CateName3,
+               '' AS CateCode4, '' AS CateName4,
+               shopwizard.tCatCate.CateCode, shopwizard.tCatCate.CateName
+        FROM shopwizard.tCatCate
+        INNER JOIN shopwizard.tCatCate tCatCate1 ON SUBSTRING(tCatCate1.CateCode,1,4) = SUBSTRING(shopwizard.tCatCate.CateCode,1,4) AND tCatCate1.CateLevel = 0 AND tCatCate1.SvcCode = #{pSvcCode}
+        INNER JOIN shopwizard.tCatCate tCatCate2 ON SUBSTRING(tCatCate2.CateCode,1,7) = SUBSTRING(shopwizard.tCatCate.CateCode,1,7) AND tCatCate2.CateLevel = 1 AND tCatCate2.SvcCode = #{pSvcCode}
+        WHERE shopwizard.tCatCate.CateLevel = 2 AND shopwizard.tCatCate.SvcCode = #{pSvcCode}
+        AND (shopwizard.tCatCate.CateName LIKE CONCAT('%',#{pCateName},'%') OR tCatCate1.CateName LIKE CONCAT('%',#{pCateName},'%') OR tCatCate2.CateName LIKE CONCAT('%',#{pCateName},'%'))
+        AND NOT EXISTS (SELECT CateCode FROM shopwizard.tCatCate C WHERE C.ParentCateCode = shopwizard.tCatCate.CateCode AND C.SvcCode = #{pSvcCode})
+        UNION ALL
+        SELECT tCatCate1.CateCode AS CateCode1, tCatCate1.CateName AS CateName1,
+               shopwizard.tCatCate.CateCode AS CateCode2, shopwizard.tCatCate.CateName AS CateName2,
+               '' AS CateCode3, '' AS CateName3, '' AS CateCode4, '' AS CateName4,
+               shopwizard.tCatCate.CateCode, shopwizard.tCatCate.CateName
+        FROM shopwizard.tCatCate
+        INNER JOIN shopwizard.tCatCate tCatCate1 ON SUBSTRING(tCatCate1.CateCode,1,4) = SUBSTRING(shopwizard.tCatCate.CateCode,1,4) AND tCatCate1.CateLevel = 0 AND tCatCate1.SvcCode = #{pSvcCode}
+        WHERE shopwizard.tCatCate.CateLevel = 1 AND shopwizard.tCatCate.SvcCode = #{pSvcCode}
+        AND (shopwizard.tCatCate.CateName LIKE CONCAT('%',#{pCateName},'%') OR tCatCate1.CateName LIKE CONCAT('%',#{pCateName},'%'))
+        AND NOT EXISTS (SELECT CateCode FROM shopwizard.tCatCate C WHERE C.ParentCateCode = shopwizard.tCatCate.CateCode AND C.SvcCode = #{pSvcCode})
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatCate WHERE SvcCode = #{svcCode} AND CateCode = #{cateCode}
+    </select>
+
+    <select id="selectCountChild" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatCate WHERE SvcCode = #{svcCode} AND ParentCateCode = #{parentCateCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.Cate">
+        INSERT INTO shopwizard.tCatCate (
+            SvcCode, CateCode, CateName, CateDesc, ParentCateCode, CateLevel, CateSeq,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{svcCode}, #{cateCode}, #{cateName}, #{cateDesc}, #{parentCateCode}, #{cateLevel}, #{cateSeq},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.Cate">
+        UPDATE shopwizard.tCatCate SET
+            CateName = #{cateName}, CateDesc = #{cateDesc}, CateSeq = #{cateSeq},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE SvcCode = #{svcCode} AND CateCode = #{cateCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.catalog.model.Cate">
+        DELETE FROM shopwizard.tCatCate WHERE SvcCode = #{svcCode} AND CateCode = #{cateCode}
+    </delete>
+
+</mapper>

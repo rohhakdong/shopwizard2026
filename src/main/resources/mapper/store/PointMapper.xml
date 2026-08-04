@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.PointMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.Point">
+        SELECT PointId, PointName, PointDesc, PointType, PointAmt, LimitAmt,
+               ValidStartDate, ValidEndDate, Remark, State,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrPoint
+        ORDER BY PointId DESC
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.store.model.Point">
+        SELECT PointId, PointName, PointDesc, PointType, PointAmt, LimitAmt,
+               ValidStartDate, ValidEndDate, Remark, State,
+               RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrPoint
+        WHERE PointId = #{pointId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.Point" useGeneratedKeys="true" keyProperty="pointId">
+        INSERT INTO shopion.tStrPoint (
+            PointName, PointDesc, PointType, PointAmt, LimitAmt,
+            ValidStartDate, ValidEndDate, Remark, State,
+            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{pointName}, #{pointDesc}, #{pointType}, #{pointAmt}, #{limitAmt},
+            #{validStartDate}, #{validEndDate}, #{remark}, #{state},
+            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.Point">
+        UPDATE shopion.tStrPoint
+        SET PointName = #{pointName},
+            PointDesc = #{pointDesc},
+            PointType = #{pointType},
+            PointAmt = #{pointAmt},
+            LimitAmt = #{limitAmt},
+            ValidStartDate = #{validStartDate},
+            ValidEndDate = #{validEndDate},
+            Remark = #{remark},
+            State = #{state},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE PointId = #{pointId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tStrPoint
+        WHERE PointId = #{pointId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,61 @@
+package com.shopwizard.external.kcp;
+
+import lombok.Data;
+
+@Data
+public class PayInfo {
+    private String site_cd;
+    private String res_cd;
+    private String res_msg;
+    private String enc_data;
+    private String enc_info;
+    private String ordr_idxx;
+    private String good_name;
+    private String good_mny;
+    private String buyr_name;
+    private String buyr_tel1;
+    private String buyr_tel2;
+    private String buyr_mail;
+    private String pay_method;
+    private String currency;
+    private String card_cd;
+    private String card_name;
+    private String noinf;
+    private String quota;
+    private String card_mny;
+    private String card_dc_mny;
+    private String coupon_mny;
+    private String p_card_cd;
+    private String p_card_name;
+    private String p_card_mny;
+    private String tno;
+    private String app_time;
+    private String app_no;
+    private String bk_cd;
+    private String bankname;
+    private String va_no;
+    private String va_date;
+    private String va_name;
+    private String cash_yn;
+    private String cash_authno;
+    private String cash_tr_no;
+    private String cash_amount;
+    private String cash_no;
+    private String escw_yn;
+    private String amount;
+    private String tax_mny;
+    private String free_mny;
+    private String point_mny;
+    private String ipgm_amt;
+    private String acqu_cd;
+    private String acqu_name;
+    private String issgubun;
+    private String pp_cd;
+    private String complex_yn;
+    private String complex_card_mny;
+    private String complex_point_mny;
+    private String halbu;
+    private String cpn_cd;
+    private String cp_cd;
+    private String cp_mny;
+}

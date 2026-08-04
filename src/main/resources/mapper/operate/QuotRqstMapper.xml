@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.QuotRqstMapper">
+
+    <sql id="whereClause">
+        <if test="pQuotRqstNo != null and pQuotRqstNo != ''">AND QuotRqstNo = #{pQuotRqstNo}</if>
+        <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND C.ChnlCode = #{pChnlCode}</if>
+        <if test="pCompCode != null and pCompCode != ''">AND C.CompCode = #{pCompCode}</if>
+        <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+            <choose>
+                <when test="pDateKind == 'Regist'">
+                    <![CDATA[AND ( shopion.tOprQuotRqst.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND shopion.tOprQuotRqst.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) )]]>
+                </when>
+                <when test="pDateKind == 'Quot'">
+                    <![CDATA[AND ( QuotDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND QuotDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) )]]>
+                </when>
+            </choose>
+        </if>
+        <if test="pQuotState != null and pQuotState != ''">AND QuotState = #{pQuotState}</if>
+        <if test="pCustId != null and pCustId != ''">AND C.CustId = #{pCustId}</if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.QuotRqst">
+        SELECT * FROM shopion.tOprQuotRqst
+        INNER JOIN shopion.tPrfCust C ON shopion.tOprQuotRqst.RegistId = C.LoginId
+        <where><include refid="whereClause"/></where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOprQuotRqst
+        INNER JOIN shopion.tPrfCust C ON shopion.tOprQuotRqst.RegistId = C.LoginId
+        <where><include refid="whereClause"/></where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.operate.model.QuotRqst">
+        SELECT * FROM shopion.tOprQuotRqst WHERE QuotRqstNo = #{quotRqstNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.QuotRqst">
+        INSERT INTO shopion.tOprQuotRqst (QuotRqstNo, RqstProdName, RqstProdAttr, CateName, MakerName, ModelName, RqstQty, ProdUnit, CustOrderNo, RqstMemo, AtchFile, QuotState, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{quotRqstNo}, #{rqstProdName}, #{rqstProdAttr}, #{cateName}, #{makerName}, #{modelName}, #{rqstQty}, #{prodUnit}, #{custOrderNo}, #{rqstMemo}, #{atchFile}, #{quotState}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.QuotRqst">
+        UPDATE shopion.tOprQuotRqst SET
+        QuotState = #{quotState}, QuotDate = NOW(), ProdCode = #{prodCode}, ProdName = #{prodName},
+        ProdAttr = #{prodAttr}, SalePrice = #{salePrice}, OrderQty = #{orderQty},
+        ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE QuotRqstNo = #{quotRqstNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.operate.model.QuotRqst">
+        DELETE FROM shopion.tOprQuotRqst WHERE QuotRqstNo = #{quotRqstNo}
+    </delete>
+
+</mapper>

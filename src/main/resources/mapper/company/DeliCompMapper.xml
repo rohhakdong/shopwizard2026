@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.DeliCompMapper">
+
+    <resultMap id="DeliCompResult" type="com.shopwizard.company.model.DeliComp">
+        <result property="deliCompCode" column="DeliCompCode"/>
+        <result property="deliCompName" column="DeliCompName"/>
+        <result property="deliCompDesc" column="DeliCompDesc"/>
+        <result property="linkUrl" column="LinkUrl"/>
+        <result property="invNoVar" column="InvNoVar"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="DeliCompResult">
+        SELECT *
+        FROM shopwizard.tCmpDeliComp
+        <where>
+            <if test="pDeliCompCode != null and pDeliCompCode != ''">AND DeliCompCode = #{pDeliCompCode}</if>
+            <if test="pState != null and pState != ''">AND State = #{pState}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpDeliComp
+        <where>
+            <if test="pDeliCompCode != null and pDeliCompCode != ''">AND DeliCompCode = #{pDeliCompCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="DeliCompResult">
+        SELECT *
+        FROM shopwizard.tCmpDeliComp
+        WHERE DeliCompCode = #{deliCompCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.DeliComp">
+        INSERT INTO shopwizard.tCmpDeliComp (
+            DeliCompCode, DeliCompName, DeliCompDesc, LinkUrl, InvNoVar,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{deliCompCode}, #{deliCompName}, #{deliCompDesc}, #{linkUrl}, #{invNoVar},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.DeliComp">
+        UPDATE shopwizard.tCmpDeliComp SET
+            DeliCompName = #{deliCompName}, DeliCompDesc = #{deliCompDesc},
+            LinkUrl = #{linkUrl}, InvNoVar = #{invNoVar},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE DeliCompCode = #{deliCompCode}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.DeliComp">
+        DELETE FROM shopwizard.tCmpDeliComp
+        WHERE DeliCompCode = #{deliCompCode}
+    </delete>
+
+</mapper>

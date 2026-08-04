@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.AgreeMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.Agree">
+        SELECT * FROM shopion.tOprAgree
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pAgreeNo != null and pAgreeNo != ''">AND AgreeNo = #{pAgreeNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.operate.model.Agree">
+        SELECT * FROM shopion.tOprAgree WHERE AgreeNo = #{agreeNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.Agree">
+        INSERT INTO shopion.tOprAgree (Title, Cntnts, AttrSeq, ChnlCode, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{title}, #{cntnts}, #{attrSeq}, #{chnlCode}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.Agree">
+        UPDATE shopion.tOprAgree SET
+        AgreeNo = #{agreeNo}, Title = #{title}, Cntnts = #{cntnts}, AttrSeq = #{attrSeq}, ChnlCode = #{chnlCode},
+        State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE AgreeNo = #{agreeNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.operate.model.Agree">
+        DELETE FROM shopion.tOprAgree WHERE AgreeNo = #{agreeNo}
+    </delete>
+
+    <select id="selectCntnts" parameterType="int" resultType="string">
+        SELECT Cntnts FROM shopion.tOprAgree WHERE AgreeNo = #{value}
+    </select>
+
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.DeptEmpMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.DeptEmp">
+        SELECT * FROM shopion.tPrfDeptEmp
+        <where>
+            <if test="pDeptId != null and pDeptId != ''">AND DeptId = #{pDeptId}</if>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+        </where>
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrfDeptEmp
+        <where>
+            <if test="pDeptId != null and pDeptId != ''">AND DeptId = #{pDeptId}</if>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.DeptEmp">
+        SELECT * FROM shopion.tPrfDeptEmp WHERE DeptId = #{deptId} AND CustId = #{custId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.DeptEmp">
+        INSERT INTO shopion.tPrfDeptEmp (DeptId, CustId, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
+        VALUES (#{deptId}, #{custId}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.DeptEmp">
+        UPDATE shopion.tPrfDeptEmp SET State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE DeptId = #{deptId} AND CustId = #{custId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfDeptEmp WHERE DeptId = #{deptId} AND CustId = #{custId}
+    </delete>
+
+</mapper>

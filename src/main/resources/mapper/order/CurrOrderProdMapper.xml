@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.CurrOrderProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.CurrOrderProd">
+        SELECT *
+        FROM shopwizard.tOrdCurrOrderProd
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+        </where>
+        ORDER BY OrderNo, OrderProdNo
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdCurrOrderProd
+        <where>
+            <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.CurrOrderProd">
+        SELECT * FROM shopwizard.tOrdCurrOrderProd
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.CurrOrderProd">
+        INSERT INTO shopwizard.tOrdCurrOrderProd (
+            OrderNo, OrderProdNo, ProdQty, SalePrice, SupplyPrice, ChnlName, PrevProdName, PrevItemName,
+            EventName, ProdName, PriceGiftQty, ItemGiftQty, BundleYn, Keywrd, Capa, TotalQty,
+            MatchProdCode, BuyPrice, TotalBuyPrice, MatchProdSect, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{orderNo}, #{orderProdNo}, #{prodQty}, #{salePrice}, #{supplyPrice}, #{chnlName},
+            #{prevProdName}, #{prevItemName}, #{eventName}, #{prodName}, #{priceGiftQty}, #{itemGiftQty},
+            #{bundleYn}, #{keywrd}, #{capa}, #{totalQty}, #{matchProdCode}, #{buyPrice}, #{totalBuyPrice},
+            #{matchProdSect}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertMatching" parameterType="map">
+        INSERT INTO shopwizard.tOrdCurrOrderProd (
+            OrderNo, OrderProdNo, ProdQty, SalePrice, SupplyPrice, ChnlName, PrevProdName, PrevItemName,
+            EventName, ProdName, ItemName, BundleYn, Keywrd, Capa, TotalQty,
+            MatchProdCode, BuyPrice, TotalBuyPrice, MatchProdSect, State, RegistId, RegistName, RegistDate)
+        SELECT O.OrderNo, UD.OrderSeq, O.ProdQty, O.SalePrice, O.SupplyPrice, O.ChnlName, O.PrevProdName, O.ItemName,
+            UH.EventName, O.ProdName, CASE WHEN UD.OrderSeq = 1 THEN UH.ItemName ELSE '' END, O.BundleYn,
+            UD.Keywrd, UD.Capa, UD.Qty AS TotalQty, UD.MatchUpriceCode, U.Uprice,
+            (UD.Qty * U.Uprice) AS TotalBuyPrice, CONCAT(UD.Keywrd, '-', UD.Capa, '-', UD.Qty) AS MatchProdSect,
+            1, 'RegistId', 'RegistName', NOW()
+        FROM shopwizard.tOrdOrderWork O
+        INNER JOIN shopwizard.tOrdOrderUpriceMatch UH ON UH.ProdName = O.ProdName AND UH.ChnlName = O.ChnlName AND UH.EventName = O.EventName
+        INNER JOIN shopwizard.tOrdOrderUpriceOptionMatch UD ON UH.OrderNo = UD.OrderNo
+        INNER JOIN shopwizard.tOrdOrderUprice U ON U.MatchUpriceCode = UD.MatchUpriceCode
+        WHERE U.UseYn = 1
+        AND O.ShopCode = #{shopCode}
+        AND O.ProdName = #{prodName}
+        AND O.ChnlName = #{chnlName}
+        AND O.EventName = #{eventName}
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.CurrOrderProd">
+        UPDATE shopwizard.tOrdCurrOrderProd SET
+            OrderNo = #{orderNo}, OrderProdNo = #{orderProdNo}, ProdQty = #{prodQty}, SalePrice = #{salePrice},
+            SupplyPrice = #{supplyPrice}, ChnlName = #{chnlName}, PrevProdName = #{prevProdName},
+            PrevItemName = #{prevItemName}, EventName = #{eventName}, ProdName = #{prodName},
+            PriceGiftQty = #{priceGiftQty}, ItemGiftQty = #{itemGiftQty}, BundleYn = #{bundleYn},
+            Keywrd = #{keywrd}, Capa = #{capa}, TotalQty = #{totalQty}, MatchProdCode = #{matchProdCode},
+            BuyPrice = #{buyPrice}, TotalBuyPrice = #{totalBuyPrice}, MatchProdSect = #{matchProdSect},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.CurrOrderProd">
+        DELETE FROM shopwizard.tOrdCurrOrderProd
+    </delete>
+
+</mapper>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.EventBoardMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.EventBoard">
+        SELECT B.ChnlCode, B.BoardNo, B.BoardTitle, B.BoardCntnts, B.EventCode, E.EventName,
+               B.CustId, B.CustName, B.State, B.Remark,
+               B.RegistId, B.RegistName, B.RegistDate, B.ChangeId, B.ChangeName, B.ChangeDate
+        FROM shopion.tStrEventBoard B
+        INNER JOIN shopion.tStrEvent E ON B.ChnlCode = E.ChnlCode AND B.EventCode = E.EventCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND B.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                AND B.EventCode = #{pEventCode}
+            </if>
+        </where>
+        ORDER BY B.BoardNo DESC
+    </select>
+
+    <select id="selectListPage" parameterType="map" resultType="com.shopwizard.store.model.EventBoard">
+        SELECT B.ChnlCode, B.BoardNo, B.BoardTitle, B.BoardCntnts, B.EventCode, E.EventName,
+               B.CustId, B.CustName, B.State, B.Remark,
+               B.RegistId, B.RegistName, B.RegistDate, B.ChangeId, B.ChangeName, B.ChangeDate
+        FROM shopion.tStrEventBoard B
+        INNER JOIN shopion.tStrEvent E ON B.ChnlCode = E.ChnlCode AND B.EventCode = E.EventCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND B.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                AND B.EventCode = #{pEventCode}
+            </if>
+        </where>
+        ORDER BY B.BoardNo DESC
+        LIMIT #{startNum}, #{countPerPage}
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tStrEventBoard B
+        INNER JOIN shopion.tStrEvent E ON B.ChnlCode = E.ChnlCode AND B.EventCode = E.EventCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND B.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                AND B.EventCode = #{pEventCode}
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.store.model.EventBoard">
+        SELECT B.ChnlCode, B.BoardNo, B.BoardTitle, B.BoardCntnts, B.EventCode, E.EventName,
+               B.CustId, B.CustName, B.State, B.Remark,
+               B.RegistId, B.RegistName, B.RegistDate, B.ChangeId, B.ChangeName, B.ChangeDate
+        FROM shopion.tStrEventBoard B
+        INNER JOIN shopion.tStrEvent E ON B.ChnlCode = E.ChnlCode AND B.EventCode = E.EventCode
+        WHERE B.ChnlCode = #{pChnlCode}
+          AND B.BoardNo = #{pBoardNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.EventBoard">
+        INSERT INTO shopion.tStrEventBoard (
+            ChnlCode, BoardTitle, BoardCntnts, EventCode, CustId, CustName,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{chnlCode}, #{boardTitle}, #{boardCntnts}, #{eventCode}, #{custId}, #{custName},
+            #{state}, #{remark}, #{registId}, #{registName}, #{registDate}, #{changeId}, #{changeName}, #{changeDate}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.EventBoard">
+        UPDATE shopion.tStrEventBoard
+        SET BoardTitle = #{boardTitle},
+            BoardCntnts = #{boardCntnts},
+            EventCode = #{eventCode},
+            CustId = #{custId},
+            CustName = #{custName},
+            State = #{state},
+            Remark = #{remark},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName},
+            ChangeDate = #{changeDate}
+        WHERE ChnlCode = #{chnlCode}
+          AND BoardNo = #{boardNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrEventBoard
+        WHERE ChnlCode = #{pChnlCode}
+          AND BoardNo = #{pBoardNo}
+    </delete>
+
+    <delete id="deleteEvent" parameterType="map">
+        DELETE FROM shopion.tStrEventBoard
+        WHERE ChnlCode = #{pChnlCode}
+          AND EventCode = #{pEventCode}
+    </delete>
+
+</mapper>

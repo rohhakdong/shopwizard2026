@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.EventProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.EventProd">
+        SELECT EP.ChnlCode, EP.EventCode, EP.ProdCode, EP.LocType, EP.ProdSeq,
+               EP.Remark, EP.State,
+               EP.RegistDate, EP.RegistId, EP.RegistName, EP.ChangeDate, EP.ChangeId, EP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.ImgUrl80
+        FROM shopion.tStrEventProd EP
+        INNER JOIN shopion.tPrdProd PH ON EP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND EP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="eventCodeArr != null and eventCodeArr.size() > 0">
+                AND EP.EventCode IN
+                <foreach collection="eventCodeArr" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                AND EP.EventCode = #{pEventCode}
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">
+                AND PH.SaleYn = #{pSaleYn}
+            </if>
+        </where>
+        ORDER BY EP.ProdSeq
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tStrEventProd EP
+        INNER JOIN shopion.tPrdProd PH ON EP.ProdCode = PH.ProdCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND EP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                AND EP.EventCode = #{pEventCode}
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">
+                AND PH.SaleYn = #{pSaleYn}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectListAll" parameterType="map" resultType="com.shopwizard.store.model.EventProd">
+        SELECT EP.ChnlCode, EP.EventCode, EP.ProdCode, EP.LocType, EP.ProdSeq,
+               EP.Remark, EP.State,
+               EP.RegistDate, EP.RegistId, EP.RegistName, EP.ChangeDate, EP.ChangeId, EP.ChangeName,
+               PH.ProdName, PH.SalePrice, PH.SaleYn, PH.ImgUrl80,
+               PC.CpnAmt AS ProdCpnAmt, PT.PointAmt
+        FROM shopion.tStrEventProd EP
+        INNER JOIN shopion.tPrdProd PH ON EP.ProdCode = PH.ProdCode
+        LEFT JOIN shopion.tStrProdCpnProd CPP ON EP.ChnlCode = CPP.ChnlCode AND EP.ProdCode = CPP.ProdCode
+        LEFT JOIN shopion.tStrProdCpn PC ON CPP.CpnId = PC.CpnId
+        LEFT JOIN shopion.tStrPointProd PP ON EP.ChnlCode = PP.ChnlCode AND EP.ProdCode = PP.ProdCode
+        LEFT JOIN shopion.tStrPoint PT ON PP.PointId = PT.PointId
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND EP.ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pEventCode != null and pEventCode != ''">
+                AND EP.EventCode = #{pEventCode}
+            </if>
+            AND PH.SaleYn = 1
+        </where>
+        ORDER BY EP.ProdSeq
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.EventProd">
+        INSERT INTO shopion.tStrEventProd (
+            ChnlCode, EventCode, ProdCode, LocType, ProdSeq,
+            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{chnlCode}, #{eventCode}, #{prodCode}, #{locType}, #{prodSeq},
+            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.EventProd">
+        UPDATE shopion.tStrEventProd
+        SET LocType = #{locType},
+            ProdSeq = #{prodSeq},
+            Remark = #{remark},
+            State = #{state},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE ChnlCode = #{chnlCode}
+          AND EventCode = #{eventCode}
+          AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tStrEventProd
+        WHERE ChnlCode = #{pChnlCode}
+          AND EventCode = #{pEventCode}
+        <if test="prodCodes != null">
+            AND ProdCode IN
+            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </delete>
+
+</mapper>

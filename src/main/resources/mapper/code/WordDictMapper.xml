@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.code.mapper.WordDictMapper">
+
+  <resultMap id="WordDictResult" type="com.shopwizard.code.model.WordDict">
+    <result property="korWord"     column="KorWord" />
+    <result property="engWord"     column="EngWord" />
+    <result property="engAbbr"     column="EngAbbr" />
+    <result property="remark"      column="Remark" />
+    <result property="state"       column="State" />
+    <result property="registDate"  column="RegistDate" />
+    <result property="registId"    column="RegistId" />
+    <result property="registName"  column="RegistName" />
+    <result property="changeDate"  column="ChangeDate" />
+    <result property="changeId"    column="ChangeId" />
+    <result property="changeName"  column="ChangeName" />
+  </resultMap>
+
+  <select id="findList" parameterType="map" resultMap="WordDictResult">
+    SELECT *
+    FROM tCodWordDict
+    <where>
+      <if test="pKorWord != null and pKorWord != ''">
+        AND KorWord LIKE CONCAT('%', #{pKorWord}, '%')
+      </if>
+      <if test="pEngWord != null">
+        AND EngWord LIKE CONCAT('%', #{pEngWord}, '%')
+      </if>
+    </where>
+    <if test="sidx != null and sidx != ''">
+      ORDER BY ${sidx} ${sord}
+    </if>
+  </select>
+
+  <select id="findAbbr" resultType="string">
+    SELECT EngAbbr FROM tCodWordDict WHERE KorWord = #{korWord}
+  </select>
+
+  <select id="countByKorWord" resultType="int">
+    SELECT COUNT(*) FROM tCodWordDict WHERE KorWord = #{korWord}
+  </select>
+
+  <insert id="insert" parameterType="com.shopwizard.code.model.WordDict">
+    INSERT INTO tCodWordDict (
+      KorWord, EngWord, EngAbbr,
+      State, Remark,
+      RegistDate, RegistId, RegistName
+    ) VALUES (
+      #{korWord}, #{engWord}, #{engAbbr},
+      #{state}, #{remark},
+      NOW(), #{registId}, #{registName}
+    )
+  </insert>
+
+  <update id="update" parameterType="com.shopwizard.code.model.WordDict">
+    UPDATE tCodWordDict SET
+      EngWord    = #{engWord},
+      EngAbbr    = #{engAbbr},
+      State      = #{state},
+      Remark     = #{remark},
+      ChangeDate = NOW(),
+      ChangeId   = #{changeId},
+      ChangeName = #{changeName}
+    WHERE KorWord = #{korWord}
+  </update>
+
+  <delete id="delete">
+    DELETE FROM tCodWordDict WHERE KorWord = #{korWord}
+  </delete>
+
+</mapper>

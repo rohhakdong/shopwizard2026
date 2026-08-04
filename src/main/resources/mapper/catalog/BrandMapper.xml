@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.BrandMapper">
+
+    <resultMap id="BrandResult" type="com.shopwizard.catalog.model.Brand">
+        <result property="brandId" column="BrandId"/>
+        <result property="svcCode" column="SvcCode"/>
+        <result property="compKorName" column="CompKorName"/>
+        <result property="compEngName" column="CompEngName"/>
+        <result property="brandKorName" column="BrandKorName"/>
+        <result property="brandEngName" column="BrandEngName"/>
+        <result property="brandAbbrName" column="BrandAbbrName"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="BrandResult">
+        SELECT *
+        FROM shopwizard.tCatBrand
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pBrandId != null and pBrandId != ''">AND BrandId = #{pBrandId}</if>
+            <if test="pBrandName != null and pBrandName != ''">
+                AND (BrandKorName LIKE CONCAT('%',#{pBrandName},'%') OR BrandEngName LIKE CONCAT('%',#{pBrandName},'%'))
+            </if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCatBrand
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SvcCode = #{pSvcCode}</if>
+            <if test="pBrandId != null and pBrandId != ''">AND BrandId = #{pBrandId}</if>
+            <if test="pBrandName != null and pBrandName != ''">
+                AND (BrandKorName LIKE CONCAT('%',#{pBrandName},'%') OR BrandEngName LIKE CONCAT('%',#{pBrandName},'%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="BrandResult">
+        SELECT * FROM shopwizard.tCatBrand WHERE BrandId = #{brandId}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.Brand">
+        INSERT INTO shopwizard.tCatBrand (
+            SvcCode, CompKorName, CompEngName, BrandKorName, BrandEngName, BrandAbbrName,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{svcCode}, #{compKorName}, #{compEngName}, #{brandKorName}, #{brandEngName}, #{brandAbbrName},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.Brand">
+        UPDATE shopwizard.tCatBrand SET
+            SvcCode = #{svcCode}, CompKorName = #{compKorName}, CompEngName = #{compEngName},
+            BrandKorName = #{brandKorName}, BrandEngName = #{brandEngName}, BrandAbbrName = #{brandAbbrName},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE BrandId = #{brandId}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopwizard.tCatBrand WHERE BrandId = #{brandId}
+    </delete>
+
+</mapper>

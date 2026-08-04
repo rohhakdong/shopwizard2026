@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.store.mapper.ChnlMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.store.model.Chnl">
+        SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
+               CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
+               MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrChnl
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND SvcCode = #{pSvcCode}
+            </if>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pDesignYn != null">
+                AND DesignId IS NOT NULL
+            </if>
+        </where>
+        ORDER BY ChnlCode
+        <if test="topCnt != null">
+            LIMIT #{topCnt}
+        </if>
+        <if test="startNum != null and countPerPage != null">
+            LIMIT #{startNum}, #{countPerPage}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tStrChnl
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND SvcCode = #{pSvcCode}
+            </if>
+            <if test="pChnlCode != null and pChnlCode != ''">
+                AND ChnlCode = #{pChnlCode}
+            </if>
+            <if test="pDesignYn != null">
+                AND DesignId IS NOT NULL
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="string" resultType="com.shopwizard.store.model.Chnl">
+        SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
+               CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
+               MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrChnl
+        WHERE ChnlCode = #{chnlCode}
+    </select>
+
+    <select id="selectByName" parameterType="string" resultType="com.shopwizard.store.model.Chnl">
+        SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
+               CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
+               MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrChnl
+        WHERE ChnlName = #{chnlName}
+    </select>
+
+    <select id="selectByShoplinkerMall" parameterType="map" resultType="com.shopwizard.store.model.Chnl">
+        SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
+               CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
+               MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        FROM shopion.tStrChnl
+        <where>
+            <if test="pMemberChnlCode != null and pMemberChnlCode != ''">
+                AND MemberChnlCode = #{pMemberChnlCode}
+            </if>
+            <if test="pPrsdntChnlCode != null and pPrsdntChnlCode != ''">
+                AND PrsdntChnlCode = #{pPrsdntChnlCode}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.store.model.Chnl">
+        INSERT INTO shopion.tStrChnl (
+            ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
+            CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
+            MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+            State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
+        ) VALUES (
+            #{chnlCode}, #{chnlName}, #{chnlDesc}, #{chnlUrl}, #{chnlPolicyCode}, #{svcCode}, #{designId},
+            #{compCode}, #{logoImg}, #{mngrName}, #{mngrPhoneNo}, #{mngrMobileNo}, #{mngrFaxNo}, #{mngrEmail},
+            #{mallStartDate}, #{mallEndDate}, #{memberChnlCode}, #{prsdntChnlCode}, #{adjustChnlCode},
+            #{state}, #{remark}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.store.model.Chnl">
+        UPDATE shopion.tStrChnl
+        SET ChnlName = #{chnlName},
+            ChnlDesc = #{chnlDesc},
+            ChnlUrl = #{chnlUrl},
+            ChnlPolicyCode = #{chnlPolicyCode},
+            SvcCode = #{svcCode},
+            DesignId = #{designId},
+            CompCode = #{compCode},
+            LogoImg = #{logoImg},
+            MngrName = #{mngrName},
+            MngrPhoneNo = #{mngrPhoneNo},
+            MngrMobileNo = #{mngrMobileNo},
+            MngrFaxNo = #{mngrFaxNo},
+            MngrEmail = #{mngrEmail},
+            MallStartDate = #{mallStartDate},
+            MallEndDate = #{mallEndDate},
+            MemberChnlCode = #{memberChnlCode},
+            PrsdntChnlCode = #{prsdntChnlCode},
+            AdjustChnlCode = #{adjustChnlCode},
+            State = #{state},
+            Remark = #{remark},
+            ChangeDate = #{changeDate},
+            ChangeId = #{changeId},
+            ChangeName = #{changeName}
+        WHERE ChnlCode = #{chnlCode}
+    </update>
+
+    <!-- Intentional: no WHERE clause (batch clear) -->
+    <delete id="delete">
+        DELETE FROM shopion.tStrChnl
+    </delete>
+
+</mapper>

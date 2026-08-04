@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderDeliFeeMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderDeliFee">
+        SELECT *
+        FROM shopion.tOrdOrderDeliFee
+        <if test="orderNo != null">WHERE OrderNo = #{orderNo}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderDeliFee
+        <if test="orderNo != null">WHERE OrderNo = #{orderNo}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderDeliFee">
+        SELECT *
+        FROM shopion.tOrdOrderDeliFee
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderDeliFee">
+        INSERT INTO shopion.tOrdOrderDeliFee (
+            OrderNo, DeliFeeName, DeliFeeType, DeliFeeAmt,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{orderNo}, #{deliFeeName}, #{deliFeeType}, #{deliFeeAmt},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderDeliFee">
+        UPDATE shopion.tOrdOrderDeliFee SET
+            DeliFeeName = #{deliFeeName}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdOrderDeliFee
+    </delete>
+
+</mapper>

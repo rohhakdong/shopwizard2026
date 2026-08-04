@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.SlnkTransDetailMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.SlnkTransDetail">
+        SELECT *
+        FROM shopion.tOrdSlnkTransDetail
+        WHERE TransId = #{transId}
+        ORDER BY TransDetailNo ASC
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.SlnkTransDetail">
+        SELECT *
+        FROM shopion.tOrdSlnkTransDetail
+        WHERE TransId = #{transId}
+        AND TransDetailNo = #{transDetailNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.SlnkTransDetail">
+        INSERT INTO shopion.tOrdSlnkTransDetail (
+            TransId, TransDetailNo, TransData, ResultState, ResultMsg, OrderNo,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{transId}, #{transDetailNo}, #{transData}, #{resultState}, #{resultMsg}, #{orderNo},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.SlnkTransDetail">
+        UPDATE shopion.tOrdSlnkTransDetail SET
+            ResultState = #{resultState}, ResultMsg = #{resultMsg}, OrderNo = #{orderNo},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE TransId = #{transId}
+        AND TransDetailNo = #{transDetailNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdSlnkTransDetail
+        WHERE TransId = #{transId}
+        <if test="transDetailNo != null">AND TransDetailNo = #{transDetailNo}</if>
+    </delete>
+
+</mapper>

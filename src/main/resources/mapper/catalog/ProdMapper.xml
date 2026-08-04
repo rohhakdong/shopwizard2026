@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.ProdMapper">
+
+    <resultMap id="ProdResult" type="com.shopwizard.catalog.model.Prod">
+        <result property="prodCode" column="ProdCode"/>
+        <result property="cateCode" column="CateCode"/> <result property="cateName" column="CateName"/>
+        <result property="shopCode" column="ShopCode"/> <result property="shopName" column="ShopName"/>
+        <result property="shopProdCode" column="ShopProdCode"/>
+        <result property="impaProdCode" column="ImpaProdCode"/>
+        <result property="brandName" column="BrandName"/>
+        <result property="prodName" column="ProdName"/>
+        <result property="modelName" column="ModelName"/>
+        <result property="prodUnit" column="ProdUnit"/>
+        <result property="prodDsplName" column="ProdDsplName"/>
+        <result property="invProdName" column="InvProdName"/>
+        <result property="smsProdName" column="SmsProdName"/>
+        <result property="originName" column="OriginName"/>
+        <result property="makerName" column="MakerName"/>
+        <result property="keywrd" column="Keywrd"/>
+        <result property="saleYn" column="SaleYn"/>
+        <result property="supplyQty" column="SupplyQty"/>
+        <result property="attrName1" column="AttrName1"/> <result property="attrName2" column="AttrName2"/> <result property="attrName3" column="AttrName3"/> <result property="attrName4" column="AttrName4"/>
+        <result property="attrValStr1" column="AttrValStr1"/> <result property="attrValStr2" column="AttrValStr2"/> <result property="attrValStr3" column="AttrValStr3"/> <result property="attrValStr4" column="AttrValStr4"/>
+        <result property="listPrice" column="ListPrice"/>
+        <result property="prevPrice" column="PrevPrice"/>
+        <result property="salePrice" column="SalePrice"/>
+        <result property="discntPrice" column="DiscntPrice"/>
+        <result property="discntStartDate" column="DiscntStartDate"/> <result property="discntEndDate" column="DiscntEndDate"/>
+        <result property="supplyPrice" column="SupplyPrice"/>
+        <result property="discntSupplyPrice" column="DiscntSupplyPrice"/>
+        <result property="buyPrice" column="BuyPrice"/>
+        <result property="nvPrice" column="NvPrice"/> <result property="pvPrice" column="PvPrice"/> <result property="saveAmt" column="SaveAmt"/>
+        <result property="vatRate" column="VatRate"/> <result property="vatAmt" column="VatAmt"/>
+        <result property="prodDesc" column="ProdDesc"/>
+        <result property="imgUrl" column="ImgUrl"/>
+        <result property="imgUrl50" column="ImgUrl50"/> <result property="imgUrl80" column="ImgUrl80"/> <result property="imgUrl100" column="ImgUrl100"/>
+        <result property="imgUrl160" column="ImgUrl160"/> <result property="imgUrl220" column="ImgUrl220"/> <result property="imgUrl280" column="ImgUrl280"/>
+        <result property="deliFeeId" column="DeliFeeId"/> <result property="deliFeeName" column="DeliFeeName"/>
+        <result property="deliMethod" column="DeliMethod"/> <result property="deliFeeType" column="DeliFeeType"/> <result property="deliFeeAmt" column="DeliFeeAmt"/>
+        <result property="deliMemoYn" column="DeliMemoYn"/>
+        <result property="leadTime" column="LeadTime"/> <result property="leadTimeReason" column="LeadTimeReason"/>
+        <result property="saleArea" column="SaleArea"/>
+        <result property="deliCompId" column="DeliCompId"/>
+        <result property="bundleUnit" column="BundleUnit"/>
+        <result property="adultYn" column="AdultYn"/>
+        <result property="sexualType" column="SexualType"/>
+        <result property="makeYear" column="MakeYear"/>
+        <result property="kindType" column="KindType"/> <result property="seasonType" column="SeasonType"/> <result property="gradeType" column="GradeType"/>
+        <result property="asYn" column="AsYn"/>
+        <result property="cardDisableYn" column="CardDisableYn"/> <result property="cashDisableYn" column="CashDisableYn"/>
+        <result property="sizeType" column="SizeType"/> <result property="colorType" column="ColorType"/> <result property="partDesc" column="PartDesc"/>
+        <result property="approvId" column="ApprovId"/> <result property="approvName" column="ApprovName"/> <result property="approvDate" column="ApprovDate"/>
+        <result property="memo01" column="Memo01"/>
+        <result property="remark" column="Remark"/> <result property="state" column="State"/>
+        <result property="registDate" column="RegistDate"/> <result property="registId" column="RegistId"/> <result property="registName" column="RegistName"/>
+        <result property="changeDate" column="ChangeDate"/> <result property="changeId" column="ChangeId"/> <result property="changeName" column="ChangeName"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="ProdResult">
+        SELECT * FROM (
+        SELECT shopwizard.tCatProd.*, shopwizard.tCatCate.CateName, shopwizard.tCmpShop.ShopName,
+               shopion.tPrdProdDeliFee.DeliFeeName
+        FROM shopwizard.tCatProd
+        INNER JOIN shopwizard.tCmpShop ON shopwizard.tCmpShop.ShopCode = shopwizard.tCatProd.ShopCode
+        LEFT OUTER JOIN shopwizard.tCatCate ON shopwizard.tCatCate.CateCode = shopwizard.tCatProd.CateCode AND shopwizard.tCmpShop.SvcCode = shopwizard.tCatCate.SvcCode
+        LEFT OUTER JOIN shopion.tPrdProdDeliFee ON shopion.tPrdProdDeliFee.DeliFeeId = shopwizard.tCatProd.DeliFeeId
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">
+                AND (shopwizard.tCatProd.ProdCode = #{pProdCode} OR shopwizard.tCatProd.ShopProdCode = #{pProdCode} OR shopwizard.tCatProd.ImpaProdCode = #{pProdCode})
+            </if>
+            <if test="pCateCode != null and pCateCode != ''">AND shopwizard.tCatProd.CateCode = #{pCateCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND shopwizard.tCatProd.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND shopwizard.tCmpShop.SvcCode = #{pSvcCode}</if>
+            <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
+            <if test="pImpaProdCode != null and pImpaProdCode != ''">AND ImpaProdCode = #{pImpaProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">
+                AND (shopwizard.tCatProd.ProdName LIKE CONCAT('%',REPLACE(#{pProdName},' ','%'),'%')
+                  OR shopwizard.tCatProd.ProdDsplName LIKE CONCAT('%',REPLACE(#{pProdName},' ','%'),'%')
+                  OR ShopProdCode = #{pProdName})
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">AND shopwizard.tCatProd.SaleYn = #{pSaleYn}</if>
+            <if test="pApprovDate == 'NULL'">AND shopwizard.tCatProd.ApprovDate IS NULL</if>
+            <if test="pApprovDate == 'NOTNULL'">AND shopwizard.tCatProd.ApprovDate IS NOT NULL</if>
+            <if test="pUnRegistChnlCode != null and pUnRegistChnlCode != ''">
+                AND NOT EXISTS (SELECT ProdCode FROM shopwizard.tCatProdChnl WHERE ProdCode = shopwizard.tCatProd.ProdCode AND ChnlCode = #{pUnRegistChnlCode})
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND (shopwizard.tCatProd.ChangeDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND shopwizard.tCatProd.ChangeDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+        </where>
+        ) T1
+        <choose>
+            <when test="sidx == 'shopProdCodeLink'">ORDER BY ShopProdCode ${sord}</when>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY ProdCode DESC</otherwise>
+        </choose>
+        <if test="pPageSize != null">LIMIT ${pPageOffset}, ${pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCatProd
+        INNER JOIN shopwizard.tCmpShop ON shopwizard.tCmpShop.ShopCode = shopwizard.tCatProd.ShopCode
+        LEFT OUTER JOIN shopwizard.tCatCate ON shopwizard.tCatCate.CateCode = shopwizard.tCatProd.CateCode AND shopwizard.tCmpShop.SvcCode = shopwizard.tCatCate.SvcCode
+        <where>
+            <if test="pProdCode != null and pProdCode != ''">
+                AND (shopwizard.tCatProd.ProdCode = #{pProdCode} OR shopwizard.tCatProd.ShopProdCode = #{pProdCode} OR shopwizard.tCatProd.ImpaProdCode = #{pProdCode})
+            </if>
+            <if test="pCateCode != null and pCateCode != ''">AND shopwizard.tCatProd.CateCode = #{pCateCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND shopwizard.tCatProd.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND shopwizard.tCmpShop.SvcCode = #{pSvcCode}</if>
+            <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
+            <if test="pImpaProdCode != null and pImpaProdCode != ''">AND ImpaProdCode = #{pImpaProdCode}</if>
+            <if test="pProdName != null and pProdName != ''">
+                AND (shopwizard.tCatProd.ProdName LIKE CONCAT('%',REPLACE(#{pProdName},' ','%'),'%')
+                  OR shopwizard.tCatProd.ProdDsplName LIKE CONCAT('%',REPLACE(#{pProdName},' ','%'),'%')
+                  OR ShopProdCode = #{pProdName})
+            </if>
+            <if test="pSaleYn != null and pSaleYn != ''">AND shopwizard.tCatProd.SaleYn = #{pSaleYn}</if>
+            <if test="pApprovDate == 'NULL'">AND shopwizard.tCatProd.ApprovDate IS NULL</if>
+            <if test="pApprovDate == 'NOTNULL'">AND shopwizard.tCatProd.ApprovDate IS NOT NULL</if>
+            <if test="pUnRegistChnlCode != null and pUnRegistChnlCode != ''">
+                AND NOT EXISTS (SELECT ProdCode FROM shopwizard.tCatProdChnl WHERE ProdCode = shopwizard.tCatProd.ProdCode AND ChnlCode = #{pUnRegistChnlCode})
+            </if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND (shopwizard.tCatProd.ChangeDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND shopwizard.tCatProd.ChangeDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="string" resultMap="ProdResult">
+        SELECT shopwizard.tCatProd.*, shopwizard.tCatCate.CateName, shopwizard.tCmpShop.ShopName,
+               shopion.tPrdProdDeliFee.DeliFeeName
+        FROM shopwizard.tCatProd
+        INNER JOIN shopwizard.tCmpShop ON shopwizard.tCmpShop.ShopCode = shopwizard.tCatProd.ShopCode
+        LEFT OUTER JOIN shopwizard.tCatCate ON shopwizard.tCatCate.CateCode = shopwizard.tCatProd.CateCode AND shopwizard.tCmpShop.SvcCode = shopwizard.tCatCate.SvcCode
+        LEFT OUTER JOIN shopion.tPrdProdDeliFee ON shopion.tPrdProdDeliFee.DeliFeeId = shopwizard.tCatProd.DeliFeeId
+        WHERE ProdCode = #{value}
+    </select>
+
+    <select id="selectProdDesc" parameterType="string" resultType="string">
+        SELECT ProdDesc FROM shopwizard.tCatProd WHERE ProdCode = #{value}
+    </select>
+
+    <select id="selectProdCode" parameterType="string" resultType="string">
+        SELECT ProdCode FROM shopwizard.tCatProd WHERE ShopProdCode = #{value}
+    </select>
+
+    <select id="selectListDashboard" parameterType="map" resultType="com.shopwizard.catalog.model.ProdDashBoard">
+        SELECT P.ShopCode, S.ShopName,
+               SUM(CASE WHEN P.SaleYn = 1  THEN 1 ELSE 0 END) AS SaleYesCount,
+               SUM(CASE WHEN P.SaleYn = 0  THEN 1 ELSE 0 END) AS SaleNoCount,
+               SUM(CASE WHEN P.SaleYn = -1 THEN 1 ELSE 0 END) AS SaleReadyCount,
+               SUM(CASE WHEN P.SaleYn = -9 THEN 1 ELSE 0 END) AS SaleDeleteCount
+        FROM shopwizard.tCatProd P
+        INNER JOIN shopwizard.tCmpShop S ON S.ShopCode = P.ShopCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND P.ShopCode = #{pShopCode}</if>
+        </where>
+        GROUP BY P.ShopCode, S.ShopName
+        ORDER BY 3 DESC, 4, 2
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.catalog.model.Prod">
+        INSERT INTO shopwizard.tCatProd (
+            ProdCode, CateCode, ShopCode, ShopProdCode, ImpaProdCode, BrandName, ProdName, ModelName, ProdUnit, ProdDsplName, InvProdName, SmsProdName, OriginName, MakerName,
+            Keywrd, SaleYn, SupplyQty, AttrName1, AttrName2, AttrName3, AttrName4, AttrValStr1, AttrValStr2, AttrValStr3, AttrValStr4,
+            ListPrice, PrevPrice, SalePrice, DiscntPrice, DiscntStartDate, DiscntEndDate, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, SaveAmt,
+            VatRate, VatAmt, ProdDesc, ImgUrl, ImgUrl50, ImgUrl80, ImgUrl100, ImgUrl160, ImgUrl220, ImgUrl280,
+            DeliFeeId, DeliMethod, DeliFeeType, DeliFeeAmt, DeliMemoYn, LeadTime, LeadTimeReason, SaleArea, DeliCompId, BundleUnit, AdultYn, SexualType, MakeYear, KindType, SeasonType, GradeType,
+            AsYn, CardDisableYn, CashDisableYn, SizeType, ColorType, PartDesc, Memo01,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{prodCode}, #{cateCode}, #{shopCode}, #{shopProdCode}, #{impaProdCode}, #{brandName}, #{prodName}, #{modelName}, #{prodUnit}, #{prodDsplName}, #{invProdName}, #{smsProdName}, #{originName}, #{makerName},
+            #{keywrd}, #{saleYn}, #{supplyQty}, #{attrName1}, #{attrName2}, #{attrName3}, #{attrName4}, #{attrValStr1}, #{attrValStr2}, #{attrValStr3}, #{attrValStr4},
+            #{listPrice}, #{prevPrice}, #{salePrice}, #{discntPrice}, #{discntStartDate}, #{discntEndDate}, #{supplyPrice}, #{discntSupplyPrice}, #{buyPrice}, #{nvPrice}, #{pvPrice}, #{saveAmt},
+            #{vatRate}, #{vatAmt}, #{prodDesc}, #{imgUrl}, #{imgUrl50}, #{imgUrl80}, #{imgUrl100}, #{imgUrl160}, #{imgUrl220}, #{imgUrl280},
+            #{deliFeeId}, #{deliMethod}, #{deliFeeType}, #{deliFeeAmt}, #{deliMemoYn}, #{leadTime}, #{leadTimeReason}, #{saleArea}, #{deliCompId}, #{bundleUnit}, #{adultYn}, #{sexualType}, #{makeYear}, #{kindType}, #{seasonType}, #{gradeType},
+            #{asYn}, #{cardDisableYn}, #{cashDisableYn}, #{sizeType}, #{colorType}, #{partDesc}, #{memo01},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.catalog.model.Prod">
+        UPDATE shopwizard.tCatProd SET
+            CateCode = #{cateCode}, ShopCode = #{shopCode}, ShopProdCode = #{shopProdCode}, ImpaProdCode = #{impaProdCode},
+            BrandName = #{brandName}, ProdName = #{prodName}, ModelName = #{modelName}, ProdUnit = #{prodUnit},
+            ProdDsplName = #{prodDsplName}, InvProdName = #{invProdName}, SmsProdName = #{smsProdName},
+            OriginName = #{originName}, MakerName = #{makerName}, Keywrd = #{keywrd}, SupplyQty = #{supplyQty},
+            AttrName1 = #{attrName1}, AttrName2 = #{attrName2}, AttrName3 = #{attrName3}, AttrName4 = #{attrName4},
+            AttrValStr1 = #{attrValStr1}, AttrValStr2 = #{attrValStr2}, AttrValStr3 = #{attrValStr3}, AttrValStr4 = #{attrValStr4},
+            ListPrice = #{listPrice}, PrevPrice = #{prevPrice}, SalePrice = #{salePrice},
+            DiscntPrice = #{discntPrice}, DiscntStartDate = #{discntStartDate}, DiscntEndDate = #{discntEndDate},
+            SupplyPrice = #{supplyPrice}, DiscntSupplyPrice = #{discntSupplyPrice}, BuyPrice = #{buyPrice},
+            NvPrice = #{nvPrice}, PvPrice = #{pvPrice}, SaveAmt = #{saveAmt}, VatRate = #{vatRate}, VatAmt = #{vatAmt},
+            <if test="prodDesc != null and prodDesc != ''">ProdDesc = #{prodDesc},</if>
+            <if test="imgUrl != null and imgUrl != ''">ImgUrl = #{imgUrl}, ImgUrl50 = #{imgUrl50}, ImgUrl80 = #{imgUrl80}, ImgUrl100 = #{imgUrl100}, ImgUrl160 = #{imgUrl160}, ImgUrl220 = #{imgUrl220}, ImgUrl280 = #{imgUrl280},</if>
+            <if test="saleYn != null">SaleYn = #{saleYn},</if>
+            DeliFeeId = #{deliFeeId}, DeliMethod = #{deliMethod}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt},
+            DeliMemoYn = #{deliMemoYn}, LeadTime = #{leadTime}, LeadTimeReason = #{leadTimeReason},
+            SaleArea = #{saleArea}, DeliCompId = #{deliCompId}, BundleUnit = #{bundleUnit}, AdultYn = #{adultYn},
+            SexualType = #{sexualType}, MakeYear = #{makeYear}, KindType = #{kindType}, SeasonType = #{seasonType},
+            GradeType = #{gradeType}, AsYn = #{asYn}, CardDisableYn = #{cardDisableYn}, CashDisableYn = #{cashDisableYn},
+            SizeType = #{sizeType}, ColorType = #{colorType}, PartDesc = #{partDesc}, Memo01 = #{memo01},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW(), ChangeCount = ChangeCount + 1
+        <where>
+            <choose>
+                <when test="prodCode != null and prodCode != ''">AND ProdCode = #{prodCode}</when>
+                <otherwise>AND ShopCode = #{shopCode} AND ShopProdCode = #{shopProdCode}</otherwise>
+            </choose>
+        </where>
+    </update>
+
+    <update id="updatePrice" parameterType="map">
+        UPDATE shopwizard.tCatProd SET
+            ListPrice = #{listPrice}, SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice},
+            BuyPrice = #{buyPrice}, SaleYn = #{saleYn},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW(), ChangeCount = ChangeCount + 1
+        WHERE ProdCode = #{prodCode}
+    </update>
+
+    <update id="approv" parameterType="map">
+        UPDATE shopwizard.tCatProd SET SaleYn = 1, ApprovId = #{approvId}, ApprovName = #{approvName}, ApprovDate = NOW()
+        WHERE ProdCode IN
+        <foreach collection="prodCodes" item="prodCode" open="(" close=")" separator=",">
+            #{prodCode}
+        </foreach>
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.catalog.model.Prod">
+        DELETE FROM shopwizard.tCatProd WHERE ProdCode = #{prodCode}
+    </delete>
+
+    <insert id="copy2Shopion" parameterType="map">
+        INSERT INTO shopion.tPrdProd (
+            ProdCode, CateCode, SupplyCode, SupplyName, ShopCode, ShopName, ShopProdCode, ImpaProdCode,
+            ProdName, ProdDsplName, Keywrd, SaleYn, SupplyQty,
+            AttrName1, AttrName2, AttrName3, AttrName4, AttrValStr1, AttrValStr2, AttrValStr3, AttrValStr4,
+            ListPrice, PrevPrice, SalePrice, DiscntPrice, DiscntStartDate, DiscntEndDate,
+            SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, SaveAmt, VatRate, VatAmt,
+            OriginName, MakerName, BrandName, ProdDesc,
+            ImgUrl, ImgUrl50, ImgUrl80, ImgUrl100, ImgUrl160, ImgUrl220, ImgUrl280,
+            DeliFeeId, DeliMethod, DeliFeeType, DeliFeeAmt, DeliMemoYn, LeadTime, LeadTimeReason, SaleArea, DeliCompId, BundleUnit, AdultYn,
+            ModelName, ProdUnit, SexualType, MakeYear, KindType, SeasonType, GradeType, AsYn,
+            CardDisableYn, CashDisableYn, SizeType, ColorType, PartDesc, Memo01,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate, ChangeCount
+        )
+        SELECT
+            shopwizard.tCatProd.ProdCode, shopwizard.tCatProd.CateCode,
+            shopwizard.tCmpSupplyComp.SupplyCode, shopwizard.tCmpSupplyComp.SupplyName,
+            shopwizard.tCmpShop.ShopCode, shopwizard.tCmpShop.ShopName,
+            shopwizard.tCatProd.ShopProdCode, shopwizard.tCatProd.ImpaProdCode,
+            shopwizard.tCatProd.ProdName, shopwizard.tCatProd.ProdDsplName, shopwizard.tCatProd.Keywrd,
+            shopwizard.tCatProd.SaleYn, shopwizard.tCatProd.SupplyQty,
+            shopwizard.tCatProd.AttrName1, shopwizard.tCatProd.AttrName2, shopwizard.tCatProd.AttrName3, shopwizard.tCatProd.AttrName4,
+            shopwizard.tCatProd.AttrValStr1, shopwizard.tCatProd.AttrValStr2, shopwizard.tCatProd.AttrValStr3, shopwizard.tCatProd.AttrValStr4,
+            shopwizard.tCatProd.ListPrice, shopwizard.tCatProd.PrevPrice, shopwizard.tCatProd.SalePrice,
+            shopwizard.tCatProd.DiscntPrice, shopwizard.tCatProd.DiscntStartDate, shopwizard.tCatProd.DiscntEndDate,
+            shopwizard.tCatProd.SupplyPrice, shopwizard.tCatProd.DiscntSupplyPrice, shopwizard.tCatProd.BuyPrice,
+            shopwizard.tCatProd.NvPrice, shopwizard.tCatProd.PvPrice, shopwizard.tCatProd.SaveAmt,
+            shopwizard.tCatProd.VatRate, shopwizard.tCatProd.VatAmt,
+            shopwizard.tCatProd.OriginName, shopwizard.tCatProd.MakerName, shopwizard.tCatProd.BrandName, shopwizard.tCatProd.ProdDesc,
+            shopwizard.tCatProd.ImgUrl, shopwizard.tCatProd.ImgUrl50, shopwizard.tCatProd.ImgUrl80, shopwizard.tCatProd.ImgUrl100,
+            shopwizard.tCatProd.ImgUrl160, shopwizard.tCatProd.ImgUrl220, shopwizard.tCatProd.ImgUrl280,
+            shopwizard.tCatProd.DeliFeeId, shopwizard.tCatProd.DeliMethod, shopwizard.tCatProd.DeliFeeType,
+            shopwizard.tCatProd.DeliFeeAmt, shopwizard.tCatProd.DeliMemoYn, shopwizard.tCatProd.LeadTime,
+            shopwizard.tCatProd.LeadTimeReason, shopwizard.tCatProd.SaleArea, shopwizard.tCatProd.DeliCompId,
+            shopwizard.tCatProd.BundleUnit, shopwizard.tCatProd.AdultYn,
+            shopwizard.tCatProd.ModelName, shopwizard.tCatProd.ProdUnit, shopwizard.tCatProd.SexualType,
+            shopwizard.tCatProd.MakeYear, shopwizard.tCatProd.KindType, shopwizard.tCatProd.SeasonType,
+            shopwizard.tCatProd.GradeType, shopwizard.tCatProd.AsYn,
+            shopwizard.tCatProd.CardDisableYn, shopwizard.tCatProd.CashDisableYn,
+            shopwizard.tCatProd.SizeType, shopwizard.tCatProd.ColorType, shopwizard.tCatProd.PartDesc, shopwizard.tCatProd.Memo01,
+            shopwizard.tCatProd.RegistId, shopwizard.tCatProd.RegistName, shopwizard.tCatProd.RegistDate,
+            shopwizard.tCatProd.ChangeId, shopwizard.tCatProd.ChangeName, shopwizard.tCatProd.ChangeDate, shopwizard.tCatProd.ChangeCount
+        FROM shopwizard.tCatProd
+        INNER JOIN shopwizard.tCmpShop ON shopwizard.tCmpShop.ShopCode = shopwizard.tCatProd.ShopCode
+        INNER JOIN shopwizard.tCmpSupplyComp ON shopwizard.tCmpShop.SupplyCode = shopwizard.tCmpSupplyComp.SupplyCode
+        WHERE shopwizard.tCatProd.ProdCode = #{prodCode}
+    </insert>
+
+    <delete id="delete2Shopion" parameterType="string">
+        DELETE FROM shopion.tPrdProd WHERE ProdCode = #{value}
+    </delete>
+
+    <delete id="delete2ShopionStoreProd" parameterType="string">
+        DELETE FROM shopion.tStrStoreProd WHERE ProdCode = #{value}
+    </delete>
+
+    <delete id="delete2ShopionLayoutProd" parameterType="string">
+        DELETE FROM shopion.tStrLayoutProd WHERE ProdCode = #{value}
+    </delete>
+
+    <delete id="delete2ShopionEventProd" parameterType="string">
+        DELETE FROM shopion.tStrEventProd WHERE ProdCode = #{value}
+    </delete>
+
+</mapper>

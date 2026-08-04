@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderGiftRuleMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderGiftRule">
+        SELECT *
+        FROM shopwizard.tOrdOrderGiftRule
+        <where>
+            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pChnlProdCode != null and pChnlProdCode != ''">AND ChnlProdCode = #{pChnlProdCode}</if>
+            <if test="pChnlProdName != null and pChnlProdName != ''">AND ChnlProdName = #{pChnlProdName}</if>
+            <if test="pDealName != null and pDealName != ''">AND DealName = #{pDealName}</if>
+            <if test="pGiftProdCode1 != null and pGiftProdCode1 != ''">AND GiftProdCode1 = #{pGiftProdCode1}</if>
+            <if test="pGiftProdName1 != null and pGiftProdName1 != ''">AND GiftProdName1 = #{pGiftProdName1}</if>
+        </where>
+        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tOrdOrderGiftRule
+        <where>
+            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pChnlProdCode != null and pChnlProdCode != ''">AND ChnlProdCode = #{pChnlProdCode}</if>
+            <if test="pChnlProdName != null and pChnlProdName != ''">AND ChnlProdName = #{pChnlProdName}</if>
+            <if test="pDealName != null and pDealName != ''">AND DealName = #{pDealName}</if>
+            <if test="pGiftProdCode1 != null and pGiftProdCode1 != ''">AND GiftProdCode1 = #{pGiftProdCode1}</if>
+            <if test="pGiftProdName1 != null and pGiftProdName1 != ''">AND GiftProdName1 = #{pGiftProdName1}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderGiftRule">
+        SELECT * FROM shopwizard.tOrdOrderGiftRule WHERE RuleNo = #{ruleNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderGiftRule">
+        INSERT INTO shopwizard.tOrdOrderGiftRule (
+            ShopCode, ChnlCode, ChnlProdCode, ChnlProdName, DealName,
+            TotalOrderQtyStart, TotalOrderQtyEnd, TotalOrderAmtStart, TotalOrderAmtEnd,
+            GiftProdCode1, GiftProdName1, GiftProdCode2, GiftProdName2, GiftProdCode3, GiftProdName3,
+            GiftProdCode4, GiftProdName4, GiftProdCode5, GiftProdName5,
+            GiftQty, PromotFee, DupYn, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{shopCode}, #{chnlCode}, #{chnlProdCode}, #{chnlProdName}, #{dealName},
+            #{totalOrderQtyStart}, #{totalOrderQtyEnd}, #{totalOrderAmtStart}, #{totalOrderAmtEnd},
+            #{giftProdCode1}, #{giftProdName1}, #{giftProdCode2}, #{giftProdName2}, #{giftProdCode3}, #{giftProdName3},
+            #{giftProdCode4}, #{giftProdName4}, #{giftProdCode5}, #{giftProdName5},
+            #{giftQty}, #{promotFee}, #{dupYn}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.OrderGiftRule">
+        UPDATE shopwizard.tOrdOrderGiftRule SET
+            ShopCode = #{shopCode}, ChnlCode = #{chnlCode}, ChnlProdCode = #{chnlProdCode}, ChnlProdName = #{chnlProdName},
+            DealName = #{dealName}, TotalOrderQtyStart = #{totalOrderQtyStart}, TotalOrderQtyEnd = #{totalOrderQtyEnd},
+            TotalOrderAmtStart = #{totalOrderAmtStart}, TotalOrderAmtEnd = #{totalOrderAmtEnd},
+            GiftProdCode1 = #{giftProdCode1}, GiftProdName1 = #{giftProdName1},
+            GiftProdCode2 = #{giftProdCode2}, GiftProdName2 = #{giftProdName2},
+            GiftProdCode3 = #{giftProdCode3}, GiftProdName3 = #{giftProdName3},
+            GiftProdCode4 = #{giftProdCode4}, GiftProdName4 = #{giftProdName4},
+            GiftProdCode5 = #{giftProdCode5}, GiftProdName5 = #{giftProdName5},
+            GiftQty = #{giftQty}, PromotFee = #{promotFee}, DupYn = #{dupYn},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE RuleNo = #{ruleNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.order.model.OrderGiftRule">
+        DELETE FROM shopwizard.tOrdOrderGiftRule WHERE RuleNo = #{ruleNo}
+    </delete>
+
+</mapper>

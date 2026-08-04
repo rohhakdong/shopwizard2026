@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.RecentProdMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.RecentProd">
+        SELECT RP.*, P.ImgUrl AS ProdImgName
+        FROM shopion.tPrfRecentProd RP
+        INNER JOIN shopion.tPrdProd P ON RP.ProdCode = P.ProdCode
+        <where>
+            <if test="pSessonId != null and pSessonId != ''">AND RP.SessonId = #{pSessonId}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND RP.ProdCode = #{pProdCode}</if>
+        </where>
+        ORDER BY RP.RegistDate DESC
+        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrfRecentProd
+        <where>
+            <if test="pSessonId != null and pSessonId != ''">AND SessonId = #{pSessonId}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+        </where>
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.profile.model.RecentProd">
+        SELECT * FROM shopion.tPrfRecentProd WHERE SessonId = #{sessonId} AND ProdCode = #{prodCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.RecentProd">
+        INSERT INTO shopion.tPrfRecentProd (SessonId, ProdCode, CustId, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES (#{sessonId}, #{prodCode}, #{custId}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.RecentProd">
+        UPDATE shopion.tPrfRecentProd SET
+            CustId = #{custId}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE SessonId = #{sessonId} AND ProdCode = #{prodCode}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tPrfRecentProd WHERE SessonId = #{sessonId} AND ProdCode = #{prodCode}
+    </delete>
+
+</mapper>

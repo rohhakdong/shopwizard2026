@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.profile.mapper.CustMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.profile.model.Cust">
+        SELECT C.*, CG.CustGroupName AS CustGroupName, Comp.CompName, Comp.CompLogoImg,
+               B.BranchName, D.DeptName, Dt.DutyName, Ch.ChnlName
+        FROM shopion.tPrfCust C
+        LEFT OUTER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        LEFT OUTER JOIN shopion.tPrfBranch B ON C.CompCode = B.CompCode AND C.BranchId = B.BranchId
+        LEFT OUTER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        LEFT OUTER JOIN shopion.tPrfDuty Dt ON C.CompCode = Dt.CompCode AND C.DutyId = Dt.DutyId
+        LEFT OUTER JOIN shopion.tPrfCustGroup CG ON C.CustGroupCode = CG.CustGroupCode
+        LEFT OUTER JOIN shopion.tStrChnl Ch ON C.ChnlCode = Ch.ChnlCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND C.ChnlCode = #{pChnlCode}</if>
+            <if test="pCustGroupCode != null and pCustGroupCode != ''">AND C.CustGroupCode = #{pCustGroupCode}</if>
+            <if test="pCustName != null and pCustName != ''">AND C.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND C.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND C.CustId = #{pCustId}</if>
+        </where>
+        <if test="sidx != null and sidx != ''">ORDER BY C.${sidx} ${sord}</if>
+        <if test="topCnt != null and topCnt != ''">LIMIT #{topCnt}, #{countPerPage}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrfCust C
+        LEFT OUTER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        LEFT OUTER JOIN shopion.tPrfBranch B ON C.CompCode = B.CompCode AND C.BranchId = B.BranchId
+        LEFT OUTER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        LEFT OUTER JOIN shopion.tPrfDuty Dt ON C.CompCode = Dt.CompCode AND C.DutyId = Dt.DutyId
+        LEFT OUTER JOIN shopion.tPrfCustGroup CG ON C.CustGroupCode = CG.CustGroupCode
+        LEFT OUTER JOIN shopion.tStrChnl Ch ON C.ChnlCode = Ch.ChnlCode
+        <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND C.ChnlCode = #{pChnlCode}</if>
+            <if test="pCustGroupCode != null and pCustGroupCode != ''">AND C.CustGroupCode = #{pCustGroupCode}</if>
+            <if test="pCustName != null and pCustName != ''">AND C.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+            <if test="pLoginId != null and pLoginId != ''">AND C.LoginId LIKE CONCAT('%',#{pLoginId},'%')</if>
+            <if test="pCustId != null and pCustId != ''">AND C.CustId = #{pCustId}</if>
+        </where>
+    </select>
+
+    <select id="selectListEmp" parameterType="map" resultType="com.shopwizard.profile.model.Cust">
+        SELECT * FROM (
+        SELECT C.CustId, C.CustName, C.Email, C.HomePhoneNo, C.MobilePhoneNo, C.MobileSvc, C.FaxNo,
+               C.Zipcode, C.Addr1, C.Addr2, C.LoginId, C.Passwd, Comp.CompName, Comp.CompLogoImg,
+               B.BranchName, D.DeptName, Dt.DutyName,
+               C.CompCode, C.BranchId, C.DeptCode, C.DutyId, C.MailReciptYn, C.SmsReciptYn,
+               C.Remark, C.State, C.RegistDate, C.RegistName, C.RegistId, C.ChangeDate, C.ChangeName, C.ChangeId
+        FROM shopion.tPrfCust C
+        INNER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        INNER JOIN shopion.tPrfBranch B ON C.CompCode = B.CompCode AND C.BranchId = B.BranchId
+        INNER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        INNER JOIN shopion.tPrfDuty Dt ON C.CompCode = Dt.CompCode AND C.DutyId = Dt.DutyId
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND C.ChnlCode = #{pChnlCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND C.CompCode = #{pCompCode}</if>
+            <if test="pCompAll == null or pCompAll == ''">
+                <if test="pBranchId != null and pBranchId != ''">AND C.BranchId = #{pBranchId}</if>
+                <if test="pDeptCode != null and pDeptCode != ''">AND C.DeptCode = #{pDeptCode}</if>
+            </if>
+            <if test="pCustName != null and pCustName != ''">AND C.CustName LIKE CONCAT('%',#{pCustName},'%')</if>
+        </where>
+        ) T1
+        <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.profile.model.Cust">
+        SELECT C.*, CG.CustGroupName AS CustGroupName, Comp.CompName, Comp.CompLogoImg,
+               B.BranchName, D.DeptName, Dt.DutyName, Ch.ChnlName
+        FROM shopion.tPrfCust C
+        LEFT OUTER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        LEFT OUTER JOIN shopion.tPrfBranch B ON C.CompCode = B.CompCode AND C.BranchId = B.BranchId
+        LEFT OUTER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        LEFT OUTER JOIN shopion.tPrfDuty Dt ON C.CompCode = Dt.CompCode AND C.DutyId = Dt.DutyId
+        LEFT OUTER JOIN shopion.tPrfCustGroup CG ON C.CustGroupCode = CG.CustGroupCode
+        LEFT OUTER JOIN shopion.tStrChnl Ch ON C.ChnlCode = Ch.ChnlCode
+        WHERE C.CustId = #{value}
+    </select>
+
+    <select id="selectByLoginId" parameterType="map" resultType="com.shopwizard.profile.model.Cust">
+        SELECT C.*, CG.CustGroupName AS CustGroupName, Comp.CompName, Comp.CompLogoImg,
+               B.BranchName, D.DeptName, Dt.DutyName, Ch.ChnlName
+        FROM shopion.tPrfCust C
+        LEFT OUTER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        LEFT OUTER JOIN shopion.tPrfBranch B ON C.CompCode = B.CompCode AND C.BranchId = B.BranchId
+        LEFT OUTER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        LEFT OUTER JOIN shopion.tPrfDuty Dt ON C.CompCode = Dt.CompCode AND C.DutyId = Dt.DutyId
+        LEFT OUTER JOIN shopion.tPrfCustGroup CG ON C.CustGroupCode = CG.CustGroupCode
+        LEFT OUTER JOIN shopion.tStrChnl Ch ON C.ChnlCode = Ch.ChnlCode
+        WHERE C.LoginId = #{loginId}
+        AND EXISTS (SELECT M.ChnlCode FROM shopion.tStrChnl M WHERE M.ChnlCode = C.ChnlCode AND M.MemberChnlCode = #{memberChnlCode})
+    </select>
+
+    <select id="selectForIdpw" parameterType="map" resultType="com.shopwizard.profile.model.Cust">
+        SELECT C.*, CG.CustGroupName AS CustGroupName, Comp.CompName, Comp.CompLogoImg,
+               B.BranchName, D.DeptName, Dt.DutyName, Ch.ChnlName
+        FROM shopion.tPrfCust C
+        LEFT OUTER JOIN shopion.tPrfComp Comp ON C.CompCode = Comp.CompCode
+        LEFT OUTER JOIN shopion.tPrfBranch B ON C.CompCode = B.CompCode AND C.BranchId = B.BranchId
+        LEFT OUTER JOIN shopion.tPrfDept D ON C.BranchId = D.BranchId AND C.DeptCode = D.DeptCode
+        LEFT OUTER JOIN shopion.tPrfDuty Dt ON C.CompCode = Dt.CompCode AND C.DutyId = Dt.DutyId
+        LEFT OUTER JOIN shopion.tPrfCustGroup CG ON C.CustGroupCode = CG.CustGroupCode
+        LEFT OUTER JOIN shopion.tStrChnl Ch ON C.ChnlCode = Ch.ChnlCode
+        WHERE C.CustName = #{custName}
+        AND EXISTS (SELECT M.ChnlCode FROM shopion.tStrChnl M WHERE M.ChnlCode = C.ChnlCode AND M.MemberChnlCode = #{memberChnlCode})
+        AND C.Email = #{email}
+        <if test="custCode != null and custCode != ''">AND C.CustCode = #{custCode}</if>
+        <if test="loginId != null and loginId != 'id'">AND C.LoginId = #{loginId}</if>
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.profile.model.Cust">
+        INSERT INTO shopion.tPrfCust (
+            CustName, Email, HomePhoneNo, MobilePhoneNo, MobileSvc, Zipcode,
+            Addr1, Addr2, LoginId, Passwd, CustCode, CustGroupCode,
+            ChnlCode, MailReciptYn, SmsReciptYn, Birth, BirthType, MarryYn,
+            MarryAnnivs, MarryAnnivsType, RecomId, AreaCode, JobType, StoreCode,
+            CompCode, BranchId, DeptCode, DutyId,
+            State, Remark, RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{custName}, #{email}, #{homePhoneNo}, #{mobilePhoneNo}, #{mobileSvc}, #{zipcode},
+            #{addr1}, #{addr2}, #{loginId}, #{passwd}, #{custCode}, #{custGroupCode},
+            #{chnlCode}, #{mailReciptYn}, #{smsReciptYn}, #{birth}, #{birthType}, #{marryYn},
+            #{marryAnnivs}, #{marryAnnivsType}, #{recomId}, #{areaCode}, #{jobType}, #{storeCode},
+            #{compCode}, #{branchId}, #{deptCode}, #{dutyId},
+            #{state}, #{remark}, NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.profile.model.Cust">
+        UPDATE shopion.tPrfCust SET
+            CustName = #{custName}, Email = #{email}, HomePhoneNo = #{homePhoneNo},
+            MobilePhoneNo = #{mobilePhoneNo}, MobileSvc = #{mobileSvc}, Zipcode = #{zipcode},
+            Addr1 = #{addr1}, Addr2 = #{addr2}, CustGroupCode = #{custGroupCode},
+            <if test="passwd != null and passwd != ''">Passwd = #{passwd},</if>
+            MailReciptYn = #{mailReciptYn}, SmsReciptYn = #{smsReciptYn}, Birth = #{birth},
+            BirthType = #{birthType}, MarryYn = #{marryYn}, MarryAnnivs = #{marryAnnivs},
+            MarryAnnivsType = #{marryAnnivsType}, AreaCode = #{areaCode},
+            JobType = #{jobType}, StoreCode = #{storeCode}, DutyId = #{dutyId},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+    </update>
+
+    <update id="updatePasswd" parameterType="com.shopwizard.profile.model.Cust">
+        UPDATE shopion.tPrfCust SET
+            Passwd = #{passwd}, ChangeDate = NOW(), ChangeName = #{changeName}
+        WHERE CustId = #{custId}
+    </update>
+
+    <update id="updateLastLoginTime" parameterType="com.shopwizard.profile.model.Cust">
+        UPDATE shopion.tPrfCust SET
+            LastLoginTime = NOW(), ChangeDate = NOW(), ChangeId = #{loginId}, ChangeName = #{custName}
+        WHERE CustId = #{custId}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrfCust
+        WHERE CustId = #{value}
+    </delete>
+
+    <!-- 개인정보파기 쿼리 -->
+    <update id="updateInfoOrder" parameterType="map">
+        UPDATE shopion.tOrdOrder O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName    = CONCAT(LEFT(O.OrderName,2),'*')
+        , O.OrderPhoneNo   = CONCAT(LEFT(O.OrderPhoneNo,6),'******')
+        , O.OrderMobileNo  = CONCAT(LEFT(O.OrderMobileNo,6),'******')
+        , O.RecverName     = CONCAT(LEFT(O.RecverName,2),'*')
+        , O.RecverPhoneNo  = CONCAT(LEFT(O.RecverPhoneNo,6),'******')
+        , O.RecverMobileNo = CONCAT(LEFT(O.RecverMobileNo,6),'******')
+        , O.RecverAddr1    = CONCAT(LEFT(O.RecverAddr1,10),'********')
+        , O.RecverAddr2    = CONCAT(LEFT(O.RecverAddr2,10),'********')
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode NOT IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),7) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 3 MONTH),CHAR),7)
+    </update>
+
+    <update id="updateInfoOrderExcel" parameterType="map">
+        UPDATE shopion.tOrdOrderExcel O
+        SET O.OrderName    = CONCAT(LEFT(O.OrderName,2),'*')
+        , O.OrderPhoneNo   = CONCAT(LEFT(O.OrderPhoneNo,6),'******')
+        , O.OrderMobileNo  = CONCAT(LEFT(O.OrderMobileNo,6),'******')
+        , O.RecverName     = CONCAT(LEFT(O.RecverName,2),'*')
+        , O.RecverPhoneNo  = CONCAT(LEFT(O.RecverPhoneNo,6),'******')
+        , O.RecverMobileNo = CONCAT(LEFT(O.RecverMobileNo,6),'******')
+        , O.RecverAddr     = CONCAT(LEFT(O.RecverAddr,10),'********')
+        WHERE ChnlName NOT IN ('홈앤쇼핑','CJ몰(협력사)','GS리테일','쇼핑엔티','GS이숍','우리홈쇼핑','NS홈쇼핑','K쇼핑','현대홈쇼핑','SK스토아','신세계TV쇼핑','카카오 메이커스','W쇼핑','이지웰','신세계몰2','공영쇼핑','주식회사 컬리(3P)')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),7) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 3 MONTH),CHAR),7)
+    </update>
+
+    <update id="updateInfoOrderShoplinker" parameterType="map">
+        UPDATE shopion.tOrdOrderShoplinker O
+        SET O.BuyerName = CONCAT(LEFT(O.BuyerName,2),'*')
+        , O.BuyerTel = CONCAT(LEFT(O.BuyerTel,6),'******')
+        , O.BuyerHp = CONCAT(LEFT(O.BuyerHp,6),'******')
+        , O.RcpName = CONCAT(LEFT(O.RcpName,2),'*')
+        , O.RcpTel = CONCAT(LEFT(O.RcpTel,6),'******')
+        , O.RcpHp = CONCAT(LEFT(O.RcpHp,6),'******')
+        , O.RcpAddr = CONCAT(LEFT(O.RcpAddr,10),'********')
+        WHERE Mallcode NOT IN ('홈앤쇼핑','CJ온스타일','쇼핑엔티','GS홈쇼핑','롯데아이몰','NS홈쇼핑','K쇼핑','(주)현대홈쇼핑','SK스토아','신세계TV쇼핑','카카오 메이커스','W쇼핑','이지웰','신세계닷컴2.0','공영홈쇼핑','컬리')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),7) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 3 MONTH),CHAR),7)
+    </update>
+
+    <update id="updateInfoShipDirect" parameterType="map">
+        UPDATE shopwizard.tShpShipDirect O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName    = CONCAT(LEFT(O.OrderName,2),'*')
+        , O.OrderPhoneNo   = CONCAT(LEFT(O.OrderPhoneNo,6),'******')
+        , O.OrderMobileNo  = CONCAT(LEFT(O.OrderMobileNo,6),'******')
+        , O.RecverName     = CONCAT(LEFT(O.RecverName,2),'*')
+        , O.RecverPhoneNo  = CONCAT(LEFT(O.RecverPhoneNo,6),'******')
+        , O.RecverMobileNo = CONCAT(LEFT(O.RecverMobileNo,6),'******')
+        , O.RecverAddr     = CONCAT(LEFT(O.RecverAddr,10),'********')
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode NOT IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),7) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 3 MONTH),CHAR),7)
+    </update>
+
+    <update id="updateInfoShipDirectPrint" parameterType="map">
+        UPDATE shopwizard.tShpShipDirectPrint O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName    = CONCAT(LEFT(O.OrderName,2),'*')
+        , O.OrderPhoneNo   = CONCAT(LEFT(O.OrderPhoneNo,6),'******')
+        , O.OrderMobileNo  = CONCAT(LEFT(O.OrderMobileNo,6),'******')
+        , O.RecverName     = CONCAT(LEFT(O.RecverName,2),'*')
+        , O.RecverPhoneNo  = CONCAT(LEFT(O.RecverPhoneNo,6),'******')
+        , O.RecverMobileNo = CONCAT(LEFT(O.RecverMobileNo,6),'******')
+        , O.RecverAddr     = CONCAT(LEFT(O.RecverAddr,10),'********')
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode NOT IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),7) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 3 MONTH),CHAR),7)
+    </update>
+
+    <update id="updateInfoReturnDirect" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName    = CONCAT(LEFT(O.OrderName,2),'*')
+        , O.OrderPhoneNo   = CONCAT(LEFT(O.OrderPhoneNo,6),'******')
+        , O.OrderMobileNo  = CONCAT(LEFT(O.OrderMobileNo,6),'******')
+        , O.RecverName     = CONCAT(LEFT(O.RecverName,2),'*')
+        , O.RecverPhoneNo  = CONCAT(LEFT(O.RecverPhoneNo,6),'******')
+        , O.RecverMobileNo = CONCAT(LEFT(O.RecverMobileNo,6),'******')
+        , O.RecverAddr     = CONCAT(LEFT(O.RecverAddr,10),'********')
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode NOT IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),7) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 3 MONTH),CHAR),7)
+    </update>
+
+    <update id="updateInfoOrderAll" parameterType="map">
+        UPDATE shopion.tOrdOrder O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName = '*****', O.OrderPhoneNo = '****-****-****', O.OrderMobileNo = '****-****-****',
+            O.RecverName = '*****', O.RecverPhoneNo = '****-****-****', O.RecverMobileNo = '****-****-****',
+            O.RecverAddr1 = '**********', O.RecverAddr2 = '**********'
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),10) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 30 DAY),CHAR),10)
+    </update>
+
+    <update id="updateInfoOrderExcelAll" parameterType="map">
+        UPDATE shopion.tOrdOrderExcel O
+        SET O.OrderName = '*****', O.OrderPhoneNo = '****-****-****', O.OrderMobileNo = '****-****-****',
+            O.RecverName = '*****', O.RecverPhoneNo = '****-****-****', O.RecverMobileNo = '****-****-****',
+            O.RecverAddr = '**********'
+        WHERE ChnlName IN ('홈앤쇼핑','CJ몰(협력사)','GS리테일','쇼핑엔티','GS이숍','우리홈쇼핑','NS홈쇼핑','K쇼핑','현대홈쇼핑','SK스토아','신세계TV쇼핑','카카오 메이커스','W쇼핑','이지웰','신세계몰2','공영쇼핑','주식회사 컬리(3P)')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),10) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 30 DAY),CHAR),10)
+    </update>
+
+    <update id="updateInfoOrderShoplinkerAll" parameterType="map">
+        UPDATE shopion.tOrdOrderShoplinker O
+        SET O.BuyerName = '*****', O.BuyerTel = '****-****-****', O.BuyerHp = '****-****-****',
+            O.RcpName = '*****', O.RcpTel = '****-****-****', O.RcpHp = '****-****-****',
+            O.RcpAddr = '**********'
+        WHERE Mallcode IN ('홈앤쇼핑','CJ온스타일','쇼핑엔티','GS홈쇼핑','롯데아이몰','NS홈쇼핑','K쇼핑','(주)현대홈쇼핑','SK스토아','신세계TV쇼핑','카카오 메이커스','W쇼핑','이지웰','신세계닷컴2.0','공영홈쇼핑','컬리')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),10) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 30 DAY),CHAR),10)
+    </update>
+
+    <update id="updateInfoShipDirectAll" parameterType="map">
+        UPDATE shopwizard.tShpShipDirect O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName = '*****', O.OrderPhoneNo = '****-****-****', O.OrderMobileNo = '****-****-****',
+            O.RecverName = '*****', O.RecverPhoneNo = '****-****-****', O.RecverMobileNo = '****-****-****',
+            O.RecverAddr = '**********'
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),10) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 30 DAY),CHAR),10)
+    </update>
+
+    <update id="updateInfoShipDirectPrintAll" parameterType="map">
+        UPDATE shopwizard.tShpShipDirectPrint O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName = '*****', O.OrderPhoneNo = '****-****-****', O.OrderMobileNo = '****-****-****',
+            O.RecverName = '*****', O.RecverPhoneNo = '****-****-****', O.RecverMobileNo = '****-****-****',
+            O.RecverAddr = '**********'
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),10) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 30 DAY),CHAR),10)
+    </update>
+
+    <update id="updateInfoReturnDirectAll" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect O
+        INNER JOIN shopion.tStrChnl C ON O.ChnlCode = C.ChnlCode
+        SET O.OrderName = '*****', O.OrderPhoneNo = '****-****-****', O.OrderMobileNo = '****-****-****',
+            O.RecverName = '*****', O.RecverPhoneNo = '****-****-****', O.RecverMobileNo = '****-****-****',
+            O.RecverAddr = '**********'
+        WHERE C.SvcCode = 'SHP001'
+        AND C.ChnlCode IN ('1058758545Z1','1148523731Z1','1168118745Z1','1168150973Z1','1178113253Z1','1178133400Z1','1178133642Z1','2118179649Z1','2118676540Z1','4928700855Z1','5028628395Z1','8918800980Z1','2208708311Z1','1018190575Z1','1048525902Z2','1058815349Z1','2618123567Z2')
+        AND LEFT(CONVERT(O.RegistDate,CHAR),10) = LEFT(CONVERT(DATE_SUB(DATE(NOW()), INTERVAL 30 DAY),CHAR),10)
+    </update>
+
+</mapper>

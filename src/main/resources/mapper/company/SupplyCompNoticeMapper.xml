@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.company.mapper.SupplyCompNoticeMapper">
+
+    <resultMap id="SupplyCompNoticeResult" type="com.shopwizard.company.model.SupplyCompNotice">
+        <result property="noticeNo" column="NoticeNo"/>
+        <result property="title" column="Title"/>
+        <result property="cntnts" column="Cntnts"/>
+        <result property="startDate" column="StartDate"/>
+        <result property="endDate" column="EndDate"/>
+        <result property="popupYn" column="PopupYn"/>
+        <result property="horiznLoc" column="HoriznLoc"/>
+        <result property="verticLoc" column="VerticLoc"/>
+        <result property="popupWidth" column="PopupWidth"/>
+        <result property="popupLenght" column="PopupLenght"/>
+        <result property="linkAddr" column="LinkAddr"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="SupplyCompNoticeResult">
+        SELECT *
+        FROM shopwizard.tCmpSupplyCompNotice
+        <where>
+            <if test="pNoticeNo != null and pNoticeNo != ''">AND NoticeNo = #{pNoticeNo}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[
+                AND (RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d')
+                AND RegistDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))
+                ]]>
+            </if>
+            <if test="pActiveNotice != null and pActiveNotice != ''">
+                <![CDATA[ AND StartDate <= CURDATE() AND EndDate >= CURDATE() ]]>
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY NoticeNo DESC</otherwise>
+        </choose>
+        <if test="countPerPage != null">LIMIT #{topCnt}, #{countPerPage}</if>
+    </select>
+
+    <select id="select" parameterType="map" resultMap="SupplyCompNoticeResult">
+        SELECT *
+        FROM shopwizard.tCmpSupplyCompNotice
+        WHERE NoticeNo = #{noticeNo}
+    </select>
+
+    <select id="selectCntnts" parameterType="int" resultType="string">
+        SELECT Cntnts
+        FROM shopwizard.tCmpSupplyCompNotice
+        WHERE NoticeNo = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.company.model.SupplyCompNotice">
+        INSERT INTO shopwizard.tCmpSupplyCompNotice (
+            Title, Cntnts, StartDate, EndDate, PopupYn,
+            HoriznLoc, VerticLoc, PopupWidth, PopupLenght, LinkAddr,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{title}, #{cntnts}, #{startDate}, #{endDate}, #{popupYn},
+            #{horiznLoc}, #{verticLoc}, #{popupWidth}, #{popupLenght}, #{linkAddr},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.company.model.SupplyCompNotice">
+        UPDATE shopwizard.tCmpSupplyCompNotice SET
+            Title = #{title}, StartDate = #{startDate}, EndDate = #{endDate},
+            PopupYn = #{popupYn}, HoriznLoc = #{horiznLoc}, VerticLoc = #{verticLoc},
+            PopupWidth = #{popupWidth}, PopupLenght = #{popupLenght}, LinkAddr = #{linkAddr},
+            State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE NoticeNo = #{noticeNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.company.model.SupplyCompNotice">
+        DELETE FROM shopwizard.tCmpSupplyCompNotice
+        WHERE NoticeNo = #{noticeNo}
+    </delete>
+
+</mapper>

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.product.mapper.ProdReviewMapper">
+
+    <sql id="reviewWhere">
+        <if test="pChnlCode != null and pChnlCode != ''">AND R.ChnlCode = #{pChnlCode}</if>
+        <if test="pReviewNo != null and pReviewNo != ''">AND R.ReviewNo = #{pReviewNo}</if>
+        <if test="pReviewTitle != null and pReviewTitle != ''">AND R.ReviewTitle LIKE CONCAT('%',#{pReviewTitle},'%')</if>
+        <if test="pReviewCntnts != null and pReviewCntnts != ''">AND R.ReviewCntnts LIKE CONCAT('%',#{pReviewCntnts},'%')</if>
+        <choose>
+            <when test="pTag != null and pTag != ''">AND R.ProdCode = 'cashluxury'</when>
+            <otherwise>
+                AND (R.ProdCode != 'cashluxury'
+                <if test="pProdCode != null and pProdCode != ''">AND R.ProdCode = #{pProdCode}</if>
+                )
+            </otherwise>
+        </choose>
+        <if test="pCustId != null and pCustId != ''">AND R.CustId = #{pCustId}</if>
+        <if test="pRegistName != null and pRegistName != ''">AND R.RegistName LIKE CONCAT('%',#{pRegistName},'%')</if>
+        <if test="pBrandName != null and pBrandName != ''">AND R.BrandName = #{pBrandName}</if>
+        <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+            <![CDATA[ AND R.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND R.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
+        </if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.product.model.ProdReview">
+        SELECT * FROM (
+            SELECT R.*, C.ChnlName
+            FROM shopion.tPrdProdReview R
+            INNER JOIN shopion.tStrChnl C ON C.ChnlCode = R.ChnlCode
+            <where>
+                <include refid="reviewWhere"/>
+            </where>
+        ) T_REVIEW
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY RegistDate DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.product.model.ProdReview">
+        SELECT R.*, C.ChnlName
+        FROM shopion.tPrdProdReview R
+        INNER JOIN shopion.tStrChnl C ON C.ChnlCode = R.ChnlCode
+        WHERE R.ReviewNo = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.product.model.ProdReview">
+        INSERT INTO shopion.tPrdProdReview (
+            ReviewTitle, ReviewCntnts,
+            ViewCnt, CustId, CustName, BrandName,
+            OrderNo, OrderProdNo,
+            ProdCode, ProdName, ProdImg, ReviewImg,
+            ProdGrade, DeliGrade, QualtyGrade,
+            PriceGrade, SvcGrade,
+            ChnlCode, BestYn,
+            State, Remark,
+            RegistDate, RegistId, RegistName
+        ) VALUES (
+            #{reviewTitle}, #{reviewCntnts},
+            #{viewCnt}, #{custId}, #{custName}, #{brandName},
+            #{orderNo}, #{orderProdNo},
+            #{prodCode}, #{prodName}, #{prodImg}, #{reviewImg},
+            #{prodGrade}, #{deliGrade}, #{qualtyGrade},
+            #{priceGrade}, #{svcGrade},
+            #{chnlCode}, #{bestYn},
+            #{state}, #{remark},
+            NOW(), #{registId}, #{registName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.product.model.ProdReview">
+        UPDATE shopion.tPrdProdReview SET
+            ReviewTitle = #{reviewTitle}, ReviewCntnts = #{reviewCntnts},
+            ViewCnt = #{viewCnt}, CustId = #{custId}, CustName = #{custName}, BrandName = #{brandName},
+            OrderNo = #{orderNo}, OrderProdNo = #{orderProdNo},
+            ProdCode = #{prodCode}, ProdName = #{prodName}, ProdImg = #{prodImg}, ReviewImg = #{reviewImg},
+            ProdGrade = #{prodGrade}, DeliGrade = #{deliGrade}, QualtyGrade = #{qualtyGrade},
+            PriceGrade = #{priceGrade}, SvcGrade = #{svcGrade},
+            ChnlCode = #{chnlCode}, BestYn = #{bestYn},
+            State = #{state}, Remark = #{remark},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE ReviewNo = #{reviewNo}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tPrdProdReview
+        WHERE ReviewNo = #{value}
+    </delete>
+
+    <select id="selectListBest" parameterType="map" resultType="com.shopwizard.product.model.ProdReview">
+        SELECT R.*, C.ChnlName
+        FROM shopion.tPrdProdReview R
+        INNER JOIN shopion.tStrChnl C ON C.ChnlCode = R.ChnlCode
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND R.ChnlCode = #{pChnlCode}</if>
+            <choose>
+                <when test="pTag != null and pTag != ''">AND R.ProdCode = 'cashluxury'</when>
+                <otherwise>
+                    AND (R.ProdCode != 'cashluxury'
+                    <if test="pProdCode != null and pProdCode != ''">AND R.ProdCode = #{pProdCode}</if>
+                    )
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY ((R.ProdGrade + R.DeliGrade + R.QualtyGrade + R.PriceGrade + R.SvcGrade) / 5) DESC, R.RegistDate DESC
+        LIMIT 0, #{pCnt}
+    </select>
+
+    <select id="selectListCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tPrdProdReview
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pReviewNo != null and pReviewNo != ''">AND ReviewNo = #{pReviewNo}</if>
+            <if test="pReviewTitle != null and pReviewTitle != ''">AND ReviewTitle = #{pReviewTitle}</if>
+            <if test="pReviewCntnts != null and pReviewCntnts != ''">AND ReviewCntnts = #{pReviewCntnts}</if>
+            <choose>
+                <when test="pTag != null and pTag != ''">AND ProdCode = 'cashluxury'</when>
+                <otherwise>
+                    AND (ProdCode != 'cashluxury'
+                    <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
+                    )
+                </otherwise>
+            </choose>
+            <if test="pCustId != null and pCustId != ''">AND CustId = #{pCustId}</if>
+            <if test="pRegistName != null and pRegistName != ''">AND RegistName LIKE CONCAT('%',#{pRegistName},'%')</if>
+            <if test="pBrandName != null and pBrandName != ''">AND BrandName = #{pBrandName}</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="selectListPage" parameterType="map" resultType="com.shopwizard.product.model.ProdReview">
+        SELECT * FROM (
+            SELECT R.*, C.ChnlName
+            FROM shopion.tPrdProdReview R
+            INNER JOIN shopion.tStrChnl C ON C.ChnlCode = R.ChnlCode
+            <where>
+                <include refid="reviewWhere"/>
+            </where>
+        ) T_REVIEW
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY RegistDate DESC</otherwise>
+        </choose>
+        LIMIT #{topCnt}, #{countPerPage}
+    </select>
+
+    <select id="selectListByProdCode" parameterType="map" resultType="com.shopwizard.product.model.ProdReview">
+        SELECT DISTINCT ProdCode, ProdName
+        FROM shopion.tPrdProdReview
+        WHERE ProdCode IS NOT NULL
+        AND ProdCode != 'cashluxury'
+        ORDER BY ProdName
+    </select>
+
+    <select id="selectListByBrandName" parameterType="map" resultType="com.shopwizard.product.model.ProdReview">
+        SELECT DISTINCT BrandName
+        FROM shopion.tPrdProdReview
+        WHERE BrandName IS NOT NULL
+        AND ProdCode != 'cashluxury'
+        ORDER BY BrandName
+    </select>
+
+</mapper>

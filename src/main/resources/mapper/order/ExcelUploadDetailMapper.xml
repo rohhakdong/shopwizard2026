@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.ExcelUploadDetailMapper">
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.ExcelUploadDetail">
+        SELECT *
+        FROM shopion.tOrdExcelUploadDetail
+        WHERE UploadId = #{uploadId}
+        ORDER BY UploadDetailNo ASC
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.ExcelUploadDetail">
+        SELECT *
+        FROM shopion.tOrdExcelUploadDetail
+        WHERE UploadId = #{uploadId}
+        AND UploadDetailNo = #{uploadDetailNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.ExcelUploadDetail">
+        INSERT INTO shopion.tOrdExcelUploadDetail (
+            UploadId, UploadDetailNo, UploadData, ResultState, ResultMsg, OrderNo,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{uploadId}, #{uploadDetailNo}, #{uploadData}, #{resultState}, #{resultMsg}, #{orderNo},
+            1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.order.model.ExcelUploadDetail">
+        UPDATE shopion.tOrdExcelUploadDetail SET
+            ResultState = #{resultState}, ResultMsg = #{resultMsg}, OrderNo = #{orderNo},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE UploadId = #{uploadId}
+        AND UploadDetailNo = #{uploadDetailNo}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE FROM shopion.tOrdExcelUploadDetail
+        WHERE UploadId = #{uploadId}
+        <if test="uploadDetailNo != null">AND UploadDetailNo = #{uploadDetailNo}</if>
+    </delete>
+
+</mapper>

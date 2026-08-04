@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.authority.mapper.FunctnMapper">
+
+    <resultMap id="FunctnResult" type="com.shopwizard.authority.model.Functn">
+        <result property="roleUid" column="RoleUid"/>
+        <result property="menuCode" column="MenuCode"/>
+        <result property="functnUri" column="FunctnUri"/>
+        <result property="functnDesc" column="FunctnDesc"/>
+        <result property="remark" column="Remark"/>
+        <result property="state" column="State"/>
+        <result property="registId" column="RegistId"/>
+        <result property="registName" column="RegistName"/>
+        <result property="registDate" column="RegistDate"/>
+        <result property="changeId" column="ChangeId"/>
+        <result property="changeName" column="ChangeName"/>
+        <result property="changeDate" column="ChangeDate"/>
+    </resultMap>
+
+    <select id="selectList" parameterType="map" resultMap="FunctnResult">
+        SELECT *
+        FROM wizardn.tAthFunctn
+        <where>
+            <if test="pRoleUid != null and pRoleUid != ''">AND RoleUid = #{pRoleUid}</if>
+            <if test="pMenuCode != null and pMenuCode != ''">AND MenuCode = #{pMenuCode}</if>
+            <if test="pFunctnUri != null and pFunctnUri != ''">AND FunctnUri = #{pFunctnUri}</if>
+        </where>
+    </select>
+
+    <select id="selectAuth" parameterType="map" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM wizardn.tAthFunctn f
+        INNER JOIN wizardn.tAthMngr m ON f.RoleUid = m.RoleUid
+        WHERE f.FunctnUri = #{pFunctnUri}
+        AND m.LoginId = #{pLoginId}
+    </select>
+
+    <select id="select" parameterType="map" resultMap="FunctnResult">
+        SELECT *
+        FROM wizardn.tAthFunctn
+        WHERE RoleUid = #{roleUid}
+        AND MenuCode = #{menuCode}
+        AND FunctnUri = #{functnUri}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.authority.model.Functn">
+        INSERT INTO wizardn.tAthFunctn (
+            RoleUid, MenuCode, FunctnUri, FunctnDesc,
+            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        ) VALUES (
+            #{roleUid}, #{menuCode}, #{functnUri}, #{functnDesc},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.authority.model.Functn">
+        UPDATE wizardn.tAthFunctn SET
+            FunctnDesc = #{functnDesc}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE RoleUid = #{roleUid}
+        AND MenuCode = #{menuCode}
+        AND FunctnUri = #{functnUri}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.authority.model.Functn">
+        DELETE FROM wizardn.tAthFunctn
+        WHERE RoleUid = #{roleUid}
+        AND MenuCode = #{menuCode}
+        AND FunctnUri = #{functnUri}
+    </delete>
+
+</mapper>

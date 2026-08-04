@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.NoticeMapper">
+
+    <sql id="whereClause">
+        <if test="pSvcCode != null and pSvcCode != ''">AND shopwizard.tCmpChnl.SvcCode = #{pSvcCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND shopion.tOprNotice.ChnlCode = #{pChnlCode}</if>
+        <if test="pCompCode != null and pCompCode != ''">AND ( shopion.tOprNotice.CompCode = '' OR shopion.tOprNotice.CompCode IS NULL OR shopion.tOprNotice.CompCode = #{pCompCode} )</if>
+        <if test="pNoticeNo != null and pNoticeNo != ''">AND shopion.tOprNotice.NoticeNo = #{pNoticeNo}</if>
+        <if test="pRegistName != null and pRegistName != ''">AND shopion.tOprNotice.RegistName LIKE CONCAT('%',#{pRegistName},'%')</if>
+        <if test="pNoticeTitle != null and pNoticeTitle != ''">AND shopion.tOprNotice.NoticeTitle LIKE CONCAT('%',#{pNoticeTitle},'%')</if>
+        <if test="pNoticeCntnts != null and pNoticeCntnts != ''">AND shopion.tOprNotice.NoticeCntnts LIKE CONCAT('%',#{pNoticeCntnts},'%')</if>
+        <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+            <![CDATA[AND ( ( shopion.tOprNotice.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND shopion.tOprNotice.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) OR ( NOW() >= shopion.tOprNotice.StartDate AND NOW() < ADDDATE(shopion.tOprNotice.EndDate, INTERVAL 1 DAY) ) )]]>
+        </if>
+        <if test="(pStartDate == null or pStartDate == '') and (pEndDate == null or pEndDate == '')">
+            <![CDATA[AND ( NOW() BETWEEN shopion.tOprNotice.StartDate AND date_add(shopion.tOprNotice.EndDate,interval+1 day) )]]>
+        </if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.Notice">
+        SELECT shopion.tOprNotice.*
+        FROM shopion.tOprNotice
+        <if test="pSvcCode != null and pSvcCode != ''">
+        INNER JOIN shopwizard.tCmpChnl ON shopwizard.tCmpChnl.ChnlCode = shopion.tOprNotice.ChnlCode
+        </if>
+        <where><include refid="whereClause"/></where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY shopion.tOprNotice.${sidx} ${sord}</when>
+            <otherwise>ORDER BY NoticeNo DESC</otherwise>
+        </choose>
+        <if test="countPerPage != null and countPerPage != ''">LIMIT #{topCnt}, #{countPerPage}</if>
+    </select>
+
+    <select id="select" parameterType="int" resultType="com.shopwizard.operate.model.Notice">
+        SELECT * FROM shopion.tOprNotice WHERE NoticeNo = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.operate.model.Notice">
+        INSERT INTO shopion.tOprNotice (NoticeTitle, NoticeCntnts, StartDate, EndDate, PopupYn, StoreCode, EventCode, ChnlCode, CompCode, HoriznLoc, VerticLoc, PopupWidth, PopupLenght, LinkAddr, State, Remark, RegistDate, RegistId, RegistName)
+        VALUES (#{noticeTitle}, #{noticeCntnts}, #{startDate}, #{endDate}, #{popupYn}, #{storeCode}, #{eventCode}, #{chnlCode}, #{compCode}, #{horiznLoc}, #{verticLoc}, #{popupWidth}, #{popupLenght}, #{linkAddr}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.operate.model.Notice">
+        UPDATE shopion.tOprNotice SET
+        NoticeTitle = #{noticeTitle}, NoticeCntnts = #{noticeCntnts}, StartDate = #{startDate},
+        EndDate = #{endDate}, PopupYn = #{popupYn}, StoreCode = #{storeCode}, EventCode = #{eventCode},
+        ChnlCode = #{chnlCode}, CompCode = #{compCode}, HoriznLoc = #{horiznLoc},
+        VerticLoc = #{verticLoc}, PopupWidth = #{popupWidth}, PopupLenght = #{popupLenght}, LinkAddr = #{linkAddr},
+        State = #{state}, Remark = #{remark}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE NoticeNo = #{noticeNo}
+    </update>
+
+    <delete id="delete" parameterType="int">
+        DELETE FROM shopion.tOprNotice WHERE NoticeNo = #{value}
+    </delete>
+
+    <select id="selectListPage" parameterType="map" resultType="com.shopwizard.operate.model.Notice">
+        SELECT * FROM shopion.tOprNotice
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND ( CompCode = #{pCompCode} OR CompCode IS NULL OR CompCode = '' )</if>
+            <if test="pNoticeNo != null and pNoticeNo != ''">AND NoticeNo = #{pNoticeNo}</if>
+            <if test="pRegistName != null and pRegistName != ''">AND RegistName LIKE CONCAT('%',#{pRegistName},'%')</if>
+            <if test="pNoticeTitle != null and pNoticeTitle != ''">AND NoticeTitle LIKE CONCAT('%',#{pNoticeTitle},'%')</if>
+            <if test="pNoticeCntnts != null and pNoticeCntnts != ''">AND NoticeCntnts LIKE CONCAT('%',#{pNoticeCntnts},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND ( ( RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) OR ( NOW() >= StartDate AND NOW() < ADDDATE(EndDate, INTERVAL 1 DAY) ) )]]>
+            </if>
+            <if test="(pStartDate == null or pStartDate == '') and (pEndDate == null or pEndDate == '')">
+                <![CDATA[AND ( NOW() BETWEEN StartDate AND date_add(EndDate,interval+1 day) )]]>
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY NoticeNo DESC</otherwise>
+        </choose>
+        LIMIT #{topCnt}, #{countPerPage}
+    </select>
+
+    <select id="selectCountPage" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOprNotice
+        <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pCompCode != null and pCompCode != ''">AND ( CompCode = #{pCompCode} OR CompCode IS NULL OR CompCode = '' )</if>
+            <if test="pNoticeNo != null and pNoticeNo != ''">AND NoticeNo = #{pNoticeNo}</if>
+            <if test="pRegistName != null and pRegistName != ''">AND RegistName LIKE CONCAT('%',#{pRegistName},'%')</if>
+            <if test="pNoticeTitle != null and pNoticeTitle != ''">AND NoticeTitle LIKE CONCAT('%',#{pNoticeTitle},'%')</if>
+            <if test="pNoticeCntnts != null and pNoticeCntnts != ''">AND NoticeCntnts LIKE CONCAT('%',#{pNoticeCntnts},'%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[AND ( ( RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) OR ( NOW() >= StartDate AND NOW() < ADDDATE(EndDate, INTERVAL 1 DAY) ) )]]>
+            </if>
+            <if test="(pStartDate == null or pStartDate == '') and (pEndDate == null or pEndDate == '')">
+                <![CDATA[AND ( NOW() BETWEEN StartDate AND date_add(EndDate,interval+1 day) )]]>
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
+            <otherwise>ORDER BY NoticeNo DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCntnts" parameterType="int" resultType="string">
+        SELECT NoticeCntnts FROM shopion.tOprNotice WHERE NoticeNo = #{value}
+    </select>
+
+</mapper>
