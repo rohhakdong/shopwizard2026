@@ -32,6 +32,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 )
                 .excludePathPatterns(
                         "/auth/**",
+                        "/payment/**",             // 토스페이먼츠 결제 승인
                         "/profile/cust",           // 회원가입 POST
                         "/profile/cust/login",
                         "/profile/cust/logout",

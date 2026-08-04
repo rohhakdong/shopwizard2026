@@ -475,12 +475,15 @@
 
 </div>
 
+<script src="https://js.tosspayments.com/v2/standard"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
 const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
   setup() {
+    const TOSS_CLIENT_KEY = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eo2';
+
     /* ── 상태 ── */
     const view         = ref('home');
     const prevView     = ref('home');
@@ -579,6 +582,30 @@ createApp({
     /* ── 초기화 ── */
     onMounted(async () => {
       await checkLogin();
+
+      /* 토스페이먼츠 결제 redirect 후 처리 */
+      const urlParams  = new URLSearchParams(window.location.search);
+      const paymentKey = urlParams.get('paymentKey');
+      const orderId    = urlParams.get('orderId');
+      const amount     = urlParams.get('amount');
+      const errorCode  = urlParams.get('code');
+
+      if (paymentKey && orderId && amount) {
+        history.replaceState({}, '', '/shop.html');
+        await handlePaymentSuccess(paymentKey, orderId, parseInt(amount));
+        await loadShops();
+        return;
+      }
+      if (errorCode) {
+        history.replaceState({}, '', '/shop.html');
+        const msg = urlParams.get('message') || '';
+        toast('결제가 취소되었습니다' + (msg ? ': ' + msg : ''), 'error');
+        restorePendingOrder();
+        await loadShops();
+        await loadProds(1);
+        return;
+      }
+
       await loadShops();
       await loadProds(1);
     });
@@ -748,48 +775,117 @@ createApp({
       }
     };
 
-    /* ── 주문 제출 ── */
+    /* ── 주문 제출 → 토스페이먼츠 결제창 호출 ── */
     const submitOrder = async () => {
       const f = orderForm.value;
       if (!f.orderName || !f.recverName || !f.recverAddr) {
         toast('필수 항목을 입력해주세요', 'error'); return;
       }
+
+      const totalAmt  = orderItemAmt.value + orderDeliAmt.value;
+      const orderId   = 'SW-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      const firstProd = orderItems.value[0];
+      const orderName = orderItems.value.length > 1
+        ? `${firstProd?.prodName || ''} 외 ${orderItems.value.length - 1}건`
+        : firstProd?.prodName || 'ShopWizard 주문';
+
+      const orderProds = orderItems.value.map(i => ({
+        prodCode: i.prodCode, prodName: i.prodName,
+        itemCode: i.itemCode, itemName: i.itemName,
+        prodQty:  i.prodQty,  salePrice: i.salePrice,
+        shopCode: i.shopCode || '',
+      }));
+
+      /* 결제 redirect 후 복원할 데이터를 localStorage에 보관 */
+      localStorage.setItem('pendingOrder', JSON.stringify({
+        orderForm:  f,
+        orderItems: orderItems.value,
+        orderBody: {
+          custId:         custInfo.value ? parseInt(custInfo.value.custId) : null,
+          orderName:      f.orderName,
+          orderMobileNo:  f.orderMobileNo,
+          orderEmail:     f.orderEmail,
+          recverName:     f.recverName,
+          recverMobileNo: f.recverMobileNo,
+          recverAddr:     f.recverAddr,
+          deliMemo:       f.deliMemo,
+          payMethod:      f.payMethod,
+          totalAmt,
+          registId:       custInfo.value?.loginId || '',
+          registName:     custInfo.value?.name || '',
+          orderProds,
+        },
+        fromCart: cartList.value.length > 0 && orderItems.value.length === cartList.value.length,
+      }));
+
       try {
-        const items = orderItems.value.map(i => ({
-          prodCode:    i.prodCode,
-          prodName:    i.prodName,
-          itemCode:    i.itemCode,
-          itemName:    i.itemName,
-          prodQty:     i.prodQty,
-          salePrice:   i.salePrice,
-          shopCode:    i.shopCode || '',
-        }));
-        const body = {
-          custId:          custInfo.value ? parseInt(custInfo.value.custId) : null,
-          orderName:       f.orderName,
-          orderMobileNo:   f.orderMobileNo,
-          orderEmail:      f.orderEmail,
-          recverName:      f.recverName,
-          recverMobileNo:  f.recverMobileNo,
-          recverAddr:      f.recverAddr,
-          deliMemo:        f.deliMemo,
-          payMethod:       f.payMethod,
-          totalAmt:        orderItemAmt.value + orderDeliAmt.value,
-          registId:        custInfo.value?.loginId || '',
-          registName:      custInfo.value?.name || '',
-          orderProds:      items,
-        };
-        const result = await api('POST', '/order/order', body);
-        doneOrderNo.value = result?.orderNo || '';
-        /* 장바구니에서 주문한 경우 장바구니 비우기 */
-        if (cartList.value.length > 0 && orderItems.value.length === cartList.value.length) {
+        const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+        const customerKey  = custInfo.value ? String(custInfo.value.custId) : TossPayments.ANONYMOUS;
+        const payment      = tossPayments.payment({ customerKey });
+
+        const methodMap = { card: 'CARD', trans: 'TRANSFER', vbank: 'VIRTUAL_ACCOUNT' };
+        const method    = methodMap[f.payMethod] || 'CARD';
+        const baseUrl   = window.location.origin + '/shop.html';
+
+        await payment.requestPayment({
+          method,
+          amount:       { currency: 'KRW', value: totalAmt },
+          orderId,
+          orderName,
+          customerName: f.orderName,
+          successUrl:   baseUrl,
+          failUrl:      baseUrl,
+        });
+      } catch(e) {
+        localStorage.removeItem('pendingOrder');
+        if (e.code !== 'PAY_PROCESS_CANCELED') {
+          toast('결제 오류: ' + (e.message || '알 수 없는 오류'), 'error');
+        }
+      }
+    };
+
+    /* ── 결제 성공 콜백 (redirect 후 onMounted에서 호출) ── */
+    const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
+      try {
+        toast('결제 승인 중...', 'info');
+
+        /* 1. 토스 서버 승인 */
+        await api('POST', '/payment/confirm', { paymentKey, orderId, amount });
+
+        /* 2. pending 주문 복원 후 DB 저장 */
+        const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
+        if (!pending) throw new Error('주문 데이터가 없습니다');
+
+        const result = await api('POST', '/order/order', {
+          ...pending.orderBody,
+          paymentKey,
+        });
+
+        doneOrderNo.value = result?.orderNo || orderId;
+
+        /* 3. 장바구니 정리 */
+        if (pending.fromCart && custInfo.value) {
           try { await api('DELETE', '/order/basket/clean', { custId: custInfo.value.custId }); } catch(_) {}
           await loadCart();
         }
+
+        localStorage.removeItem('pendingOrder');
         go('order-done');
       } catch(e) {
-        toast('주문 실패: ' + e.message, 'error');
+        localStorage.removeItem('pendingOrder');
+        toast('결제 처리 실패: ' + e.message, 'error');
+        go('home');
       }
+    };
+
+    /* ── 결제 취소/실패 후 주문서 복원 ── */
+    const restorePendingOrder = () => {
+      const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
+      if (!pending) return;
+      orderItems.value = pending.orderItems || [];
+      orderForm.value  = { ...(pending.orderForm || {}) };
+      localStorage.removeItem('pendingOrder');
+      go('order');
     };
 
     /* ── 마이페이지 ── */
@@ -888,6 +984,7 @@ createApp({
       profileForm, loginForm, regForm,
       go, goBack, doSearch, loadProds, openProd, itemLabel, onItemChange,
       addToCart, buyNow, changeCartQty, removeFromCart, goOrder, submitOrder,
+      handlePaymentSuccess, restorePendingOrder,
       loadMyOrders, orderStateClass, saveProfile,
       doLogin, logout, doRegister,
     };
