@@ -24,9 +24,19 @@ public class CustService {
     public Cust select(Integer custId) { return custMapper.select(custId); }
     public Cust selectByLoginId(Map<String, Object> params) { return custMapper.selectByLoginId(params); }
     public Cust selectForIdpw(Map<String, Object> params) { return custMapper.selectForIdpw(params); }
-    public int insert(Cust cust) { return custMapper.insert(cust); }
+    public int insert(Cust cust) {
+        if (cust.getPasswd() != null && !cust.getPasswd().isEmpty()) {
+            cust.setPasswd(EncryptUtil.encryptBySHA(cust.getPasswd()));
+        }
+        return custMapper.insert(cust);
+    }
     public int update(Cust cust) { return custMapper.update(cust); }
-    public int updatePasswd(Cust cust) { return custMapper.updatePasswd(cust); }
+    public int updatePasswd(Cust cust) {
+        if (cust.getPasswd() != null && !cust.getPasswd().isEmpty()) {
+            cust.setPasswd(EncryptUtil.encryptBySHA(cust.getPasswd()));
+        }
+        return custMapper.updatePasswd(cust);
+    }
     public int updateLastLoginTime(Cust cust) { return custMapper.updateLastLoginTime(cust); }
     public int updateInfoOrder(Map<String, Object> params) { return custMapper.updateInfoOrder(params); }
     public int updateInfoOrderExcel(Map<String, Object> params) { return custMapper.updateInfoOrderExcel(params); }
