@@ -475,7 +475,7 @@
 
 </div>
 
-<script src="https://js.tosspayments.com/v2/standard"></script>
+<script src="https://js.tosspayments.com/v1/payment"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
 const { createApp, ref, computed, onMounted } = Vue;
@@ -820,16 +820,12 @@ createApp({
 
       try {
         const tossPayments = TossPayments(TOSS_CLIENT_KEY);
-        const customerKey  = custInfo.value ? String(custInfo.value.custId) : TossPayments.ANONYMOUS;
-        const payment      = tossPayments.payment({ customerKey });
-
-        const methodMap = { card: 'CARD', trans: 'TRANSFER', vbank: 'VIRTUAL_ACCOUNT' };
-        const method    = methodMap[f.payMethod] || 'CARD';
+        const methodMap = { card: '카드', trans: '계좌이체', vbank: '가상계좌' };
+        const method    = methodMap[f.payMethod] || '카드';
         const baseUrl   = window.location.origin + '/shop.html';
 
-        await payment.requestPayment({
-          method,
-          amount:       { currency: 'KRW', value: totalAmt },
+        await tossPayments.requestPayment(method, {
+          amount:       totalAmt,
           orderId,
           orderName,
           customerName: f.orderName,
@@ -839,7 +835,7 @@ createApp({
       } catch(e) {
         localStorage.removeItem('pendingOrder');
         if (e.code !== 'PAY_PROCESS_CANCELED') {
-          toast('결제 오류: ' + (e.message || '알 수 없는 오류'), 'error');
+          toast('결제 오류: ' + (e.message || e.code || '알 수 없는 오류'), 'error');
         }
       }
     };
