@@ -21,3 +21,6 @@ server:
       charset: UTF-8
       enabled: true
       force: true
+
+toss:
+  secret-key: ${TOSS_SECRET_KEY:test_sk_DnyRpQWGrNzDwJAdkJ1OrKwv1M9E}

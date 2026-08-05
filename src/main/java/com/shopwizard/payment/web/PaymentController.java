@@ -1,6 +1,7 @@
 package com.shopwizard.payment.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,8 +20,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/payment")
 public class PaymentController {
 
-    private static final String TOSS_SECRET_KEY  = "test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R";
     private static final String TOSS_CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm";
+
+    @Value("${toss.secret-key}")
+    private String tossSecretKey;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -31,7 +34,7 @@ public class PaymentController {
         long   amount     = ((Number) req.get("amount")).longValue();
 
         String auth = "Basic " + Base64.getEncoder()
-                .encodeToString((TOSS_SECRET_KEY + ":").getBytes(StandardCharsets.UTF_8));
+                .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
 
         URL url = new URL(TOSS_CONFIRM_URL);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
