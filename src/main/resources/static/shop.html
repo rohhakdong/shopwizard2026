@@ -849,16 +849,16 @@ createApp({
       try {
         toast('결제 승인 중...', 'info');
 
-        /* 1. 토스 서버 승인 */
-        await api('POST', '/payment/confirm', { paymentKey, orderId, amount });
-
-        /* 2. pending 주문 복원 후 DB 저장 */
+        /* pending 주문 복원 */
         const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
         if (!pending) throw new Error('주문 데이터가 없습니다');
 
-        const result = await api('POST', '/order/order', {
+        /* 토스 결제 승인 + 주문/상품/결제 저장을 한 번에 처리 */
+        const result = await api('POST', '/order/checkout', {
           ...pending.orderBody,
           paymentKey,
+          orderId,
+          amount,
         });
 
         doneOrderNo.value = result?.orderNo || orderId;
@@ -895,13 +895,13 @@ createApp({
       myOrderLoading.value = true;
       try {
         const params = {
-          pOrderName: custInfo.value.name,
+          pCustId: custInfo.value.custId,
           pSvcCode: '',
           topCnt: (page - 1) * MY_PAGE_SIZE,
           countPerPage: MY_PAGE_SIZE,
           pNotDependOnDate: 'Y',
         };
-        myOrderTotal.value = await api('GET', '/order/orderprod/count', params);
+        myOrderTotal.value = await api('GET', '/order/orderprod/list/count', params);
         myOrders.value = myOrderTotal.value > 0
           ? await api('GET', '/order/orderprod/list', { ...params, pSvcCode: '' })
           : [];

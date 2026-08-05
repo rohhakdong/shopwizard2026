@@ -31,8 +31,8 @@
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderPay">
         INSERT INTO shopion.tOrdOrderPay (
             OrderNo, PayNo, PayType, PayDate, PayAmt, PayFee,
-            CardComp, ApprovNo, ApprovDate, ReciptBank, ReciptName, ReciptNo, ReciptDate,
-            PgCode, PgOrderNo, PgTradeNo,
+            CardComp, ApprovNo, ApprovDate, ReciptBank, ReciptName, ReciptAccnt, ReciptDate,
+            PgCode, PgOrderCode, PgTradeNo,
             State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
             #{orderNo}, #{payNo}, #{payType}, #{payDate}, #{payAmt}, #{payFee},
@@ -46,8 +46,8 @@
         UPDATE shopion.tOrdOrderPay SET
             PayType = #{payType}, PayDate = #{payDate}, PayAmt = #{payAmt}, PayFee = #{payFee},
             CardComp = #{cardComp}, ApprovNo = #{approvNo}, ApprovDate = #{approvDate},
-            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptNo = #{reciptNo}, ReciptDate = #{reciptDate},
-            PgCode = #{pgCode}, PgOrderNo = #{pgOrderNo}, PgTradeNo = #{pgTradeNo},
+            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptAccnt = #{reciptNo}, ReciptDate = #{reciptDate},
+            PgCode = #{pgCode}, PgOrderCode = #{pgOrderNo}, PgTradeNo = #{pgTradeNo},
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
         WHERE OrderNo = #{orderNo}
         AND PayNo = #{payNo}

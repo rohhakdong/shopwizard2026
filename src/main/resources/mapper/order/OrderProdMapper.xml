@@ -208,7 +208,7 @@
             <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
             <otherwise>ORDER BY orderNo DESC, orderProdNo ASC</otherwise>
         </choose>
-        <if test="topCnt != null">LIMIT #{topCnt}, #{countPerPage}</if>
+        <if test="topCnt != null">LIMIT ${topCnt}, ${countPerPage}</if>
     </select>
 
     <select id="selectListCount" parameterType="map" resultType="int">

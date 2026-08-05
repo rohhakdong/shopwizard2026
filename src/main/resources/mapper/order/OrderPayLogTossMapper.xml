@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderPayLogTossMapper">
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderPayLogToss">
+        INSERT INTO shopion.tOrdOrderPayLogToss (
+            OrderNo, PaymentKey, OrderId, Method, Status,
+            TotalAmount, BalanceAmount, SuppliedAmount, Vat, Currency,
+            RequestedAt, ApprovedAt, CardCompany, CardNumber, CardApproveNo, CardInstallmentPlanMonths,
+            ReceiptUrl, Success, ResultCode, ResultMsg, RawResponse,
+            Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{orderNo}, #{paymentKey}, #{orderId}, #{method}, #{status},
+            #{totalAmount}, #{balanceAmount}, #{suppliedAmount}, #{vat}, #{currency},
+            #{requestedAt}, #{approvedAt}, #{cardCompany}, #{cardNumber}, #{cardApproveNo}, #{cardInstallmentPlanMonths},
+            #{receiptUrl}, #{success}, #{resultCode}, #{resultMsg}, #{rawResponse},
+            #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+</mapper>

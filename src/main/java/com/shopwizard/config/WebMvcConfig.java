@@ -47,8 +47,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         // 고객 인증 필요 API (별도 인터셉터)
                         "/order/basket/**",
                         "/order/order",
+                        "/order/checkout",         // 토스페이먼츠 결제완료 콜백(주문 저장)
                         "/order/orderprod/list",
-                        "/order/orderprod/count",
+                        "/order/orderprod/list/count",
                         "/profile/cust/*/update"
                 );
 
@@ -56,8 +57,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(new AuthInterceptor("cust_id"))
                 .addPathPatterns(
                         "/order/basket/**",
+                        "/order/checkout",
                         "/order/orderprod/list",
-                        "/order/orderprod/count"
+                        "/order/orderprod/list/count"
                 );
     }
 }
