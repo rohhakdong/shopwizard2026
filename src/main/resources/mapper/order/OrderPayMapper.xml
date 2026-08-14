@@ -55,14 +55,14 @@
 
     <update id="updateOrderPayRecipt" parameterType="map">
         UPDATE shopion.tOrdOrderPay SET
-            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptNo = #{reciptNo},
+            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptAccnt = #{reciptNo},
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
         WHERE OrderNo = #{orderNo}
     </update>
 
     <update id="updateOrderPayReciptAuto" parameterType="map">
         UPDATE shopion.tOrdOrderPay SET
-            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptNo = #{reciptNo},
+            ReciptBank = #{reciptBank}, ReciptName = #{reciptName}, ReciptAccnt = #{reciptNo},
             ReciptDate = NOW(),
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
         WHERE OrderNo = #{orderNo}

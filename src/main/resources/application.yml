@@ -24,3 +24,7 @@ server:
 
 toss:
   secret-key: ${TOSS_SECRET_KEY:test_sk_DnyRpQWGrNzDwJAdkJ1OrKwv1M9E}
+
+shop:
+  # shop.html(자사 쇼핑몰) 체크아웃 주문에 부여할 채널코드. 환경별로 다를 수 있어 설정으로 분리.
+  chnl-code: ${SHOP_CHNL_CODE:1208674775Z2}

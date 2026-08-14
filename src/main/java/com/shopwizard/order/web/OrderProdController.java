@@ -4,6 +4,8 @@ import com.shopwizard.order.model.OrderDashBoard;
 import com.shopwizard.order.model.OrderDetlStats;
 import com.shopwizard.order.model.OrderProd;
 import com.shopwizard.order.service.OrderProdService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +19,33 @@ public class OrderProdController {
     private final OrderProdService orderProdService;
 
     @GetMapping("/list")
-    public List<OrderProd> selectList(@RequestParam Map<String, Object> params) { return orderProdService.selectList(params); }
+    public List<OrderProd> selectList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        forceCustIdFromCookie(params, request);
+        return orderProdService.selectList(params);
+    }
 
     @GetMapping("/list/count")
-    public int selectListCount(@RequestParam Map<String, Object> params) { return orderProdService.selectListCount(params); }
+    public int selectListCount(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        forceCustIdFromCookie(params, request);
+        return orderProdService.selectListCount(params);
+    }
+
+    /**
+     * AuthInterceptor("cust_id")는 쿠키 존재 여부만 검증하고 값이 pCustId 파라미터와 일치하는지는
+     * 검증하지 않는다. 고객 세션(cust_id 쿠키)에서 호출한 경우, 클라이언트가 보낸 pCustId를 신뢰하지
+     * 않고 쿠키 값으로 강제 덮어써서 다른 고객의 주문내역을 조회하는 것(IDOR)을 막는다.
+     * 관리자(mngr_loginId) 세션에는 cust_id 쿠키가 없으므로 이 경로를 타지 않는다.
+     */
+    private void forceCustIdFromCookie(Map<String, Object> params, HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return;
+        for (Cookie c : cookies) {
+            if ("cust_id".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
+                params.put("pCustId", c.getValue());
+                return;
+            }
+        }
+    }
 
     @GetMapping
     public OrderProd select(@RequestParam Map<String, Object> params) { return orderProdService.select(params); }

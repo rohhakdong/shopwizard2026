@@ -1,11 +1,8 @@
 package com.shopwizard.order.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.shopwizard.order.mapper.OrderMapper;
 import com.shopwizard.order.mapper.OrderNoSeqMapper;
 import com.shopwizard.order.mapper.OrderPayLogTossMapper;
-import com.shopwizard.order.mapper.OrderPayMapper;
-import com.shopwizard.order.mapper.OrderProdMapper;
 import com.shopwizard.order.model.CheckoutProdItem;
 import com.shopwizard.order.model.CheckoutRequest;
 import com.shopwizard.order.model.Order;
@@ -14,8 +11,11 @@ import com.shopwizard.order.model.OrderPay;
 import com.shopwizard.order.model.OrderPayLogToss;
 import com.shopwizard.order.model.OrderProd;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,11 +28,8 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(rollbackFor = Exception.class)
 public class CheckoutService {
-
-    /** ShopWizard 자사 쇼핑몰(shop.html) 채널코드 */
-    private static final String SHOP_CHNL_CODE = "1208674775Z2";
 
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -43,15 +40,32 @@ public class CheckoutService {
             "vbank", "001000000000"   // 가상계좌
     );
 
+    /** shop.html(자사 쇼핑몰) 체크아웃 주문에 부여할 채널코드 */
+    @Value("${shop.chnl-code}")
+    private String shopChnlCode;
+
     private final OrderNoSeqMapper orderNoSeqMapper;
-    private final OrderMapper orderMapper;
-    private final OrderProdMapper orderProdMapper;
-    private final OrderPayMapper orderPayMapper;
+    private final OrderService orderService;
+    private final OrderProdService orderProdService;
+    private final OrderPayService orderPayService;
     private final OrderPayLogTossMapper orderPayLogTossMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public int checkout(CheckoutRequest req, Map<String, Object> tossResp) throws Exception {
         String now = LocalDateTime.now().format(DATETIME_FMT);
+
+        // 토스가 실제로 승인한 금액만 신뢰한다 — 클라이언트가 보낸 totalAmt는 참고값일 뿐,
+        // 서버가 검증한 값과 다르면 결제/주문 저장을 거부한다.
+        Long confirmedAmount = numToLong(tossResp.get("totalAmount"));
+        if (confirmedAmount == null || req.getTotalAmt() == null
+                || confirmedAmount != req.getTotalAmt().longValue()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액이 일치하지 않습니다.");
+        }
+
+        // 토스 결제 상태가 완료(DONE)일 때만 "지불완료"로 기록한다.
+        // 가상계좌는 입금 전까지 WAITING_FOR_DEPOSIT 상태이므로 아직 결제완료로 간주하면 안 된다.
+        boolean paid = "DONE".equals(str(tossResp.get("status")));
+        String orderState = paid ? "지불완료" : "주문접수";
 
         // 1. 주문번호 채번 (tOrdOrderNoSeq)
         OrderNoSeq seq = new OrderNoSeq();
@@ -71,12 +85,12 @@ public class CheckoutService {
         order.setRecverAddr1(req.getRecverAddr());
         order.setMoneyUnit("KRW");
         order.setDeliMemo(req.getDeliMemo());
-        order.setOrderState("지불완료");
-        order.setChnlCode(SHOP_CHNL_CODE);
+        order.setOrderState(orderState);
+        order.setChnlCode(shopChnlCode);
         order.setRegistId(req.getRegistId());
         order.setRegistName(req.getRegistName());
-        order.setPayCmpletDate(now);
-        orderMapper.insert(order);
+        if (paid) order.setPayCmpletDate(now);
+        orderService.insert(order);
 
         // 3. 주문 상품 라인 저장 (tOrdOrderProd)
         int orderProdNo = 1;
@@ -97,11 +111,11 @@ public class CheckoutService {
             op.setSalePrice(price);
             op.setReciptAmt(price * qty);
             op.setDeliFeeAmt(0);
-            op.setOrderState("지불완료");
+            op.setOrderState(orderState);
             op.setState(1);
             op.setRegistId(req.getRegistId());
             op.setRegistName(req.getRegistName());
-            orderProdMapper.insert(op);
+            orderProdService.insert(op);
         }
 
         // 4. 결제 정보 저장 (tOrdOrderPay)
@@ -116,7 +130,7 @@ public class CheckoutService {
         pay.setPayNo(1);
         pay.setPayType(PAY_TYPE_CODE.getOrDefault(req.getPayMethod(), req.getPayMethod()));
         pay.setPayDate(now);
-        pay.setPayAmt(req.getTotalAmt());
+        pay.setPayAmt(confirmedAmount.intValue());
         pay.setCardComp(card != null ? str(card.get("company")) : null);
         pay.setApprovNo(card != null ? str(card.get("approveNo")) : null);
         pay.setApprovDate(toMysqlDateTime(str(tossResp.get("approvedAt"))));
@@ -128,7 +142,7 @@ public class CheckoutService {
         pay.setPgTradeNo(req.getPaymentKey());
         pay.setRegistId(req.getRegistId());
         pay.setRegistName(req.getRegistName());
-        orderPayMapper.insert(pay);
+        orderPayService.insert(pay);
 
         // 5. 토스 결제 승인 원본 로그 저장 (tOrdOrderPayLogToss)
         Map<String, Object> receipt = asMap(tossResp.get("receipt"));
@@ -139,7 +153,7 @@ public class CheckoutService {
         log.setOrderId(req.getOrderId());
         log.setMethod(str(tossResp.get("method")));
         log.setStatus(str(tossResp.get("status")));
-        log.setTotalAmount(numToLong(tossResp.get("totalAmount")));
+        log.setTotalAmount(confirmedAmount);
         log.setBalanceAmount(numToLong(tossResp.get("balanceAmount")));
         log.setSuppliedAmount(numToLong(tossResp.get("suppliedAmount")));
         log.setVat(numToLong(tossResp.get("vat")));
