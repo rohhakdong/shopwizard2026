@@ -901,9 +901,9 @@ createApp({
           countPerPage: MY_PAGE_SIZE,
           pNotDependOnDate: 'Y',
         };
-        myOrderTotal.value = await api('GET', '/order/orderprod/list/count', params);
+        myOrderTotal.value = await api('GET', '/order/orderprod/my/list/count', params);
         myOrders.value = myOrderTotal.value > 0
-          ? await api('GET', '/order/orderprod/list', { ...params, pSvcCode: '' })
+          ? await api('GET', '/order/orderprod/my/list', { ...params, pSvcCode: '' })
           : [];
       } catch(e) {
         toast('주문내역 조회 실패', 'error');

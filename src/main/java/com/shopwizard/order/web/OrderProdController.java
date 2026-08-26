@@ -18,24 +18,37 @@ import java.util.Map;
 public class OrderProdController {
     private final OrderProdService orderProdService;
 
+    /** 관리자 전용 (mngr_loginId 인증). 예: 주문상세 모달에서 pOrderNo로 라인 조회 (order-list.js). */
     @GetMapping("/list")
-    public List<OrderProd> selectList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        forceCustIdFromCookie(params, request);
+    public List<OrderProd> selectList(@RequestParam Map<String, Object> params) {
         return orderProdService.selectList(params);
     }
 
     @GetMapping("/list/count")
-    public int selectListCount(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        forceCustIdFromCookie(params, request);
+    public int selectListCount(@RequestParam Map<String, Object> params) {
         return orderProdService.selectListCount(params);
     }
 
     /**
-     * AuthInterceptor("cust_id")는 쿠키 존재 여부만 검증하고 값이 pCustId 파라미터와 일치하는지는
-     * 검증하지 않는다. 고객 세션(cust_id 쿠키)에서 호출한 경우, 클라이언트가 보낸 pCustId를 신뢰하지
-     * 않고 쿠키 값으로 강제 덮어써서 다른 고객의 주문내역을 조회하는 것(IDOR)을 막는다.
-     * 관리자(mngr_loginId) 세션에는 cust_id 쿠키가 없으므로 이 경로를 타지 않는다.
+     * 고객 전용 (cust_id 인증, shop.html 마이페이지 "내 주문내역"). 관리자용 /list 와 경로를
+     * 분리한 이유: AuthInterceptor("cust_id")가 이 경로에 걸리는데, 관리자 세션은 cust_id
+     * 쿠키가 없어 /list 에 같이 걸어두면 관리자의 주문상세 조회가 401로 막히기 때문.
+     *
+     * 클라이언트가 보낸 pCustId는 신뢰하지 않고 cust_id 쿠키 값으로 강제 덮어써서, 다른 고객의
+     * 주문내역을 조회하는 것(IDOR)을 막는다.
      */
+    @GetMapping("/my/list")
+    public List<OrderProd> selectMyList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        forceCustIdFromCookie(params, request);
+        return orderProdService.selectList(params);
+    }
+
+    @GetMapping("/my/list/count")
+    public int selectMyListCount(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        forceCustIdFromCookie(params, request);
+        return orderProdService.selectListCount(params);
+    }
+
     private void forceCustIdFromCookie(Map<String, Object> params, HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) return;

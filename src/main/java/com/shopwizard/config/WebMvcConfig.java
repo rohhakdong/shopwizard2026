@@ -48,18 +48,21 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/order/basket/**",
                         "/order/order",
                         "/order/checkout",         // 토스페이먼츠 결제완료 콜백(주문 저장)
-                        "/order/orderprod/list",
-                        "/order/orderprod/list/count",
+                        "/order/orderprod/my/list",
+                        "/order/orderprod/my/list/count",
                         "/profile/cust/*/update"
                 );
 
         // 고객 API 인증 체크: cust_id 쿠키 필요
+        // 주의: /order/orderprod/list, /list/count 는 관리자(order-list.js)도 쓰는 공용
+        // 엔드포인트라 여기 넣으면 안 됨 — 관리자 세션엔 cust_id 쿠키가 없어 401이 난다.
+        // 고객용은 /order/orderprod/my/list, /my/list/count 로 경로를 분리해뒀다.
         registry.addInterceptor(new AuthInterceptor("cust_id"))
                 .addPathPatterns(
                         "/order/basket/**",
                         "/order/checkout",
-                        "/order/orderprod/list",
-                        "/order/orderprod/list/count"
+                        "/order/orderprod/my/list",
+                        "/order/orderprod/my/list/count"
                 );
     }
 }
