@@ -188,6 +188,51 @@ class CheckoutServiceTest {
     }
 
     @Test
+    void custId가_없으면_비회원_CustId_0으로_저장한다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900);
+        req.setCustId(null);
+        req.setRegistId("");
+        req.setRegistName("");
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(orderCaptor.capture());
+        assertThat(orderCaptor.getValue().getCustId()).isEqualTo(0);
+    }
+
+    @Test
+    void 비회원인데_registId가_비어있으면_GUEST로_기본값을_채운다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900);
+        req.setCustId(0);
+        req.setRegistId("");
+        req.setRegistName("");
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(orderCaptor.capture());
+        Order saved = orderCaptor.getValue();
+        assertThat(saved.getRegistId()).isEqualTo("GUEST");
+        assertThat(saved.getLoginId()).isEqualTo("GUEST");
+        assertThat(saved.getRegistName()).isEqualTo(req.getOrderName()); // 주문자명으로 대체
+    }
+
+    @Test
+    void 회원_주문은_로그인_계정정보를_그대로_사용한다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900); // custId=2, registId="rohhakdong"
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(orderCaptor.capture());
+        Order saved = orderCaptor.getValue();
+        assertThat(saved.getCustId()).isEqualTo(2);
+        assertThat(saved.getRegistId()).isEqualTo("rohhakdong");
+        assertThat(saved.getRegistName()).isEqualTo("노학동");
+    }
+
+    @Test
     void 주문상품_각_라인마다_순번을_1부터_채번한다() throws Exception {
         CheckoutRequest req = baseRequest("card", 30000);
         CheckoutProdItem second = new CheckoutProdItem();

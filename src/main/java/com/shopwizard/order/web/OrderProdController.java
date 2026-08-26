@@ -49,6 +49,21 @@ public class OrderProdController {
         return orderProdService.selectListCount(params);
     }
 
+    /**
+     * 비회원 주문조회 (인증 불필요). 주문번호+연락처가 둘 다 정확히 일치해야만 조회되며
+     * (selectGuestOrderList 참고), CustId=0(비회원)으로 저장된 주문만 대상이다.
+     */
+    @GetMapping("/guest/list")
+    public List<OrderProd> selectGuestList(@RequestParam Map<String, Object> params) {
+        Object orderNo = params.get("pOrderNo");
+        Object phoneNo = params.get("pOrderPhoneNo");
+        if (orderNo == null || String.valueOf(orderNo).isBlank()
+                || phoneNo == null || String.valueOf(phoneNo).isBlank()) {
+            return List.of();
+        }
+        return orderProdService.selectGuestOrderList(params);
+    }
+
     private void forceCustIdFromCookie(Map<String, Object> params, HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) return;

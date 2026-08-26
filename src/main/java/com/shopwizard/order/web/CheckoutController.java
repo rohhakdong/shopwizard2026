@@ -36,13 +36,12 @@ public class CheckoutController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액 정보가 없습니다.");
         }
 
-        // 로그인 고객의 custId를 요청 바디의 값이 아닌 cust_id 쿠키에서 강제로 가져와,
-        // 다른 고객 명의로 주문이 저장되는 것(IDOR)을 막는다.
+        // 로그인 고객의 custId는 요청 바디의 값이 아닌 cust_id 쿠키에서 강제로 가져와,
+        // 다른 고객 명의로 주문이 저장되는 것(IDOR)을 막는다. 로그인하지 않은 경우(쿠키 없음)는
+        // 비회원 주문으로 간주 — 레거시 스키마의 CustId=0 관례를 그대로 따른다
+        // (OrderProdMapper.xml의 pCustId='0' 분기, 비회원 주문조회에서 이 값으로 조회함).
         Integer custId = readCustIdFromCookie(request);
-        if (custId == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        req.setCustId(custId);
+        req.setCustId(custId != null ? custId : 0);
 
         // 1. 토스 결제 승인 (DB 트랜잭션 밖에서 먼저 수행)
         Map<String, Object> tossResp = tossPaymentService.confirm(req.getPaymentKey(), req.getOrderId(), req.getAmount());

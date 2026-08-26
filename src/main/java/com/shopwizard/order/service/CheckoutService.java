@@ -65,6 +65,15 @@ public class CheckoutService {
         boolean paid = "DONE".equals(str(tossResp.get("status")));
         String orderState = paid ? "지불완료" : "주문접수";
 
+        // 비회원 주문(CustId=0)은 로그인 계정이 없어 registId/registName이 빈 값으로 올 수 있다.
+        // RegistId/RegistName은 NOT NULL 컬럼이라 빈 문자열이어도 저장 자체는 되지만, 관리자 화면에서
+        // 식별 가능하도록 의미 있는 기본값을 채워 넣는다.
+        boolean isGuest = req.getCustId() == null || req.getCustId() == 0;
+        String registId = (req.getRegistId() == null || req.getRegistId().isBlank())
+                ? (isGuest ? "GUEST" : req.getRegistId()) : req.getRegistId();
+        String registName = (req.getRegistName() == null || req.getRegistName().isBlank())
+                ? (isGuest ? req.getOrderName() : req.getRegistName()) : req.getRegistName();
+
         // 1. 주문번호 채번 (tOrdOrderNoSeq)
         OrderNoSeq seq = new OrderNoSeq();
         orderNoSeqMapper.insert(seq);
@@ -73,8 +82,8 @@ public class CheckoutService {
         // 2. 주문 헤더 저장 (tOrdOrder)
         Order order = new Order();
         order.setOrderNo(orderNo);
-        order.setCustId(req.getCustId());
-        order.setLoginId(req.getRegistId());
+        order.setCustId(isGuest ? 0 : req.getCustId());
+        order.setLoginId(registId);
         order.setOrderName(req.getOrderName());
         order.setOrderEmail(req.getOrderEmail());
         order.setOrderMobileNo(req.getOrderMobileNo());
@@ -85,8 +94,8 @@ public class CheckoutService {
         order.setDeliMemo(req.getDeliMemo());
         order.setOrderState(orderState);
         order.setChnlCode(shopChnlCode);
-        order.setRegistId(req.getRegistId());
-        order.setRegistName(req.getRegistName());
+        order.setRegistId(registId);
+        order.setRegistName(registName);
         if (paid) order.setPayCmpletDate(now);
         orderService.insert(order);
 
@@ -111,8 +120,8 @@ public class CheckoutService {
             op.setDeliFeeAmt(0);
             op.setOrderState(orderState);
             op.setState(1);
-            op.setRegistId(req.getRegistId());
-            op.setRegistName(req.getRegistName());
+            op.setRegistId(registId);
+            op.setRegistName(registName);
             orderProdService.insert(op);
         }
 
@@ -138,12 +147,12 @@ public class CheckoutService {
         pay.setPgCode("TOSS");
         pay.setPgOrderNo(req.getOrderId());
         pay.setPgTradeNo(req.getPaymentKey());
-        pay.setRegistId(req.getRegistId());
-        pay.setRegistName(req.getRegistName());
+        pay.setRegistId(registId);
+        pay.setRegistName(registName);
         orderPayService.insert(pay);
 
         // 5. 토스 결제 승인 원본 로그 저장 (tOrdOrderPayLogToss)
-        OrderPayLogToss log = OrderPayLogToss.from(orderNo, tossResp, req.getRegistId(), req.getRegistName());
+        OrderPayLogToss log = OrderPayLogToss.from(orderNo, tossResp, registId, registName);
         orderPayLogTossMapper.insert(log);
 
         return orderNo;

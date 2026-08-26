@@ -14,6 +14,7 @@ public interface OrderProdMapper {
     int selectListCount(Map<String, Object> params);
     OrderProd select(Map<String, Object> params);
     List<Integer> selectOrderProdNoList(Integer orderNo);
+    List<OrderProd> selectGuestOrderList(Map<String, Object> params);
     void insert(OrderProd orderProd);
     void update(OrderProd orderProd);
     void updatePrice(OrderProd orderProd);

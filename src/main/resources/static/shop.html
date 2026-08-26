@@ -36,6 +36,10 @@
         </button>
       </template>
       <template v-else>
+        <button @click="go('guest-order')">
+          <span class="icon">📦</span>
+          <span>비회원 주문조회</span>
+        </button>
         <button class="btn-login-header" @click="go('login')">로그인</button>
       </template>
     </div>
@@ -231,11 +235,11 @@
         <h3>주문자 정보</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>이름</label>
+            <label>이름 *</label>
             <input type="text" v-model="orderForm.orderName" placeholder="주문자명">
           </div>
           <div class="form-group">
-            <label>연락처</label>
+            <label>연락처 *</label>
             <input type="tel" v-model="orderForm.orderMobileNo" placeholder="010-0000-0000">
           </div>
         </div>
@@ -245,13 +249,16 @@
             <input type="email" v-model="orderForm.orderEmail" placeholder="이메일 주소">
           </div>
         </div>
+        <div v-if="!custInfo" style="font-size:12px;color:var(--text-muted);margin-top:4px">
+          비회원 주문입니다. 위 연락처와 주문번호로 주문조회를 하실 수 있으니 정확히 입력해주세요.
+        </div>
       </div>
 
       <div class="order-section">
         <h3>배송지 정보</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>수취인</label>
+            <label>수취인 *</label>
             <input type="text" v-model="orderForm.recverName" placeholder="수취인명">
           </div>
           <div class="form-group">
@@ -261,7 +268,7 @@
         </div>
         <div class="form-row full">
           <div class="form-group">
-            <label>주소</label>
+            <label>주소 *</label>
             <input type="text" v-model="orderForm.recverAddr" placeholder="배송지 주소">
           </div>
         </div>
@@ -386,6 +393,46 @@
             </div>
             <div style="text-align:right;margin-top:12px">
               <button class="btn btn-primary" @click="saveProfile">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 비회원 주문조회 -->
+    <div v-if="view === 'guest-order'">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px">비회원 주문조회</h2>
+      <div class="order-section" style="max-width:420px">
+        <div class="form-row">
+          <div class="form-group">
+            <label>주문번호 *</label>
+            <input type="text" v-model="guestLookup.orderNo" placeholder="주문번호" @keydown.enter="loadGuestOrder">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>주문자 연락처 *</label>
+            <input type="tel" v-model="guestLookup.phoneNo" placeholder="010-0000-0000" @keydown.enter="loadGuestOrder">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:8px" @click="loadGuestOrder">조회하기</button>
+      </div>
+
+      <div style="max-width:420px;margin-top:20px">
+        <div v-if="guestOrderLoading" style="text-align:center;padding:40px;color:var(--text-muted)">조회 중...</div>
+        <div v-else-if="guestOrderSearched && guestOrders.length === 0" class="empty-box">
+          <div class="icon">🔍</div>
+          <div>일치하는 주문을 찾을 수 없습니다</div>
+          <div style="font-size:12px;margin-top:4px">주문번호와 연락처를 다시 확인해주세요</div>
+        </div>
+        <div v-else>
+          <div class="order-history-card" v-for="o in guestOrders" :key="o.orderProdNo">
+            <div class="no">주문번호 {{ o.orderNo }} · {{ o.orderReciptDate ? o.orderReciptDate.substring(0,10) : '' }}</div>
+            <div class="prod-name">{{ o.prodName }}<span v-if="o.itemName" style="color:var(--text-muted);font-size:12px"> / {{ o.itemName }}</span></div>
+            <div class="meta">
+              <span>{{ o.prodQty }}개</span>
+              <span>{{ o.salePrice ? o.salePrice.toLocaleString() + '원' : '' }}</span>
+              <span class="state-badge" :class="orderStateClass(o.orderState)">{{ o.orderState }}</span>
             </div>
           </div>
         </div>
@@ -548,6 +595,12 @@ createApp({
       return Array.from({ length: e - s + 1 }, (_, i) => s + i);
     });
     const profileForm = ref({ custName:'', mobilePhoneNo:'', email:'', addr1:'' });
+
+    /* 비회원 주문조회 */
+    const guestLookup        = ref({ orderNo:'', phoneNo:'' });
+    const guestOrders        = ref([]);
+    const guestOrderLoading  = ref(false);
+    const guestOrderSearched = ref(false);
 
     /* 로그인/회원가입 */
     const loginForm = ref({ loginId:'', passwd:'' });
@@ -726,7 +779,8 @@ createApp({
     };
 
     const buyNow = async () => {
-      if (!custInfo.value) { toast('로그인 후 이용하세요', 'info'); go('login'); return; }
+      // 비회원도 바로구매(주문)는 가능하다 — 장바구니는 계정에 귀속되는 기능이라 로그인이 필요하지만,
+      // 즉시결제 흐름은 로그인 없이 허용한다.
       if (prodItems.value.length > 1 && !selectedItemCode.value) { toast('옵션을 선택해주세요', 'info'); return; }
       const item = prodItems.value.find(i => String(i.itemCode) === String(selectedItemCode.value)) || prodItems.value[0];
       orderItems.value = [{
@@ -778,7 +832,7 @@ createApp({
     /* ── 주문 제출 → 토스페이먼츠 결제창 호출 ── */
     const submitOrder = async () => {
       const f = orderForm.value;
-      if (!f.orderName || !f.recverName || !f.recverAddr) {
+      if (!f.orderName || !f.orderMobileNo || !f.recverName || !f.recverAddr) {
         toast('필수 항목을 입력해주세요', 'error'); return;
       }
 
@@ -917,6 +971,27 @@ createApp({
       return m[state] || 'state-gray';
     };
 
+    /* ── 비회원 주문조회 ── */
+    const loadGuestOrder = async () => {
+      const orderNo  = guestLookup.value.orderNo.trim();
+      const phoneNo  = guestLookup.value.phoneNo.trim();
+      if (!orderNo || !phoneNo) { toast('주문번호와 연락처를 모두 입력해주세요', 'error'); return; }
+
+      guestOrderLoading.value = true;
+      guestOrderSearched.value = false;
+      try {
+        guestOrders.value = await api('GET', '/order/orderprod/guest/list', {
+          pOrderNo: orderNo, pOrderPhoneNo: phoneNo,
+        }) || [];
+      } catch(e) {
+        guestOrders.value = [];
+        toast('주문조회 실패', 'error');
+      } finally {
+        guestOrderLoading.value = false;
+        guestOrderSearched.value = true;
+      }
+    };
+
     const saveProfile = async () => {
       try {
         await api('PUT', '/profile/cust', {
@@ -982,10 +1057,11 @@ createApp({
       orderItems, orderForm, doneOrderNo, payMethods, orderItemAmt, orderDeliAmt,
       myTab, myOrders, myOrderPage, myOrderTotal, myOrderLoading, myOrderPages, myOrderPageNums,
       profileForm, loginForm, regForm,
+      guestLookup, guestOrders, guestOrderLoading, guestOrderSearched,
       go, goBack, doSearch, loadProds, openProd, itemLabel, onItemChange,
       addToCart, buyNow, changeCartQty, removeFromCart, goOrder, submitOrder,
       handlePaymentSuccess, restorePendingOrder,
-      loadMyOrders, orderStateClass, saveProfile,
+      loadMyOrders, orderStateClass, saveProfile, loadGuestOrder,
       doLogin, logout, doRegister,
     };
   }

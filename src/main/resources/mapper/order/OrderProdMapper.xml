@@ -265,6 +265,19 @@
         SELECT OrderProdNo FROM shopion.tOrdOrderProd WHERE OrderNo = #{orderNo}
     </select>
 
+    <!-- 비회원 주문조회: 로그인 없이 주문번호+연락처가 정확히 둘 다 일치해야만 조회되도록
+         엄격하게 제한한다 (주문번호만으로는 절대 조회되지 않게 — 순번이 노출되면 다른 사람의
+         배송지/연락처를 알아낼 수 있으므로). CustId=0(비회원) 주문만 대상으로 한다. -->
+    <select id="selectGuestOrderList" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT OP.*, O.OrderName, O.OrderReciptDate, O.PayCmpletDate, O.RecverName, O.RecverAddr1, O.RecverAddr2
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        WHERE O.CustId = 0
+        AND O.OrderNo = #{pOrderNo}
+        AND (O.OrderMobileNo = #{pOrderPhoneNo} OR O.OrderPhoneNo = #{pOrderPhoneNo})
+        ORDER BY OP.OrderProdNo ASC
+    </select>
+
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderProd">
         INSERT INTO shopion.tOrdOrderProd (
             OrderNo, OrderProdNo, SupplyCode, SupplyName, ShopCode,
