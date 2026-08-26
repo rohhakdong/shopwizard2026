@@ -27,6 +27,7 @@ public class TossPaymentService {
 
     private static final String TOSS_CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm";
     private static final String TOSS_CANCEL_URL  = "https://api.tosspayments.com/v1/payments/%s/cancel";
+    private static final String TOSS_PAYMENT_URL = "https://api.tosspayments.com/v1/payments/%s";
 
     private static final int CONNECT_TIMEOUT_MS = 5000;
     private static final int READ_TIMEOUT_MS = 10000;
@@ -37,7 +38,7 @@ public class TossPaymentService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Map<String, Object> confirm(String paymentKey, String orderId, long amount) throws Exception {
-        return call(TOSS_CONFIRM_URL, Map.of(
+        return call(TOSS_CONFIRM_URL, "POST", Map.of(
                 "paymentKey", paymentKey,
                 "orderId",    orderId,
                 "amount",     amount
@@ -46,24 +47,35 @@ public class TossPaymentService {
 
     /** 주문 저장 실패 등으로 승인된 결제를 되돌려야 할 때 사용하는 결제취소 API 호출 (best-effort). */
     public Map<String, Object> cancel(String paymentKey, String cancelReason) throws Exception {
-        return call(String.format(TOSS_CANCEL_URL, paymentKey), Map.of("cancelReason", cancelReason));
+        return call(String.format(TOSS_CANCEL_URL, paymentKey), "POST", Map.of("cancelReason", cancelReason));
     }
 
-    private Map<String, Object> call(String urlStr, Map<String, Object> body) throws Exception {
+    /**
+     * paymentKey로 토스 서버에 결제 상태를 직접 조회한다 (결제 조회 API).
+     * 웹훅은 트리거로만 사용하고, 실제 상태 반영은 이 API의 응답을 신뢰해서 처리한다
+     * (웹훅 바디 자체는 위변조될 수 있으므로 그대로 믿지 않는다).
+     */
+    public Map<String, Object> getPayment(String paymentKey) throws Exception {
+        return call(String.format(TOSS_PAYMENT_URL, paymentKey), "GET", null);
+    }
+
+    private Map<String, Object> call(String urlStr, String method, Map<String, Object> body) throws Exception {
         String auth = "Basic " + Base64.getEncoder()
                 .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
 
         HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
         try {
-            conn.setRequestMethod("POST");
+            conn.setRequestMethod(method);
             conn.setRequestProperty("Authorization", auth);
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
             conn.setReadTimeout(READ_TIMEOUT_MS);
-            conn.setDoOutput(true);
 
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(objectMapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8));
+            if (body != null) {
+                conn.setDoOutput(true);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(objectMapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8));
+                }
             }
 
             int code = conn.getResponseCode();

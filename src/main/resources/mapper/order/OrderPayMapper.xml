@@ -28,6 +28,15 @@
         <if test="payNo != null">AND OP.PayNo = #{payNo}</if>
     </select>
 
+    <!-- 토스 웹훅에서 paymentKey(PgTradeNo)만으로 결제건을 찾기 위한 조회.
+         결제 재시도 등으로 같은 OrderNo에 여러 건이 있을 수 있어 최신(PayNo 최대) 한 건만 반환. -->
+    <select id="selectByPgTradeNo" parameterType="string" resultType="com.shopwizard.order.model.OrderPay">
+        SELECT * FROM shopion.tOrdOrderPay
+        WHERE PgCode = 'TOSS' AND PgTradeNo = #{pgTradeNo}
+        ORDER BY PayNo DESC
+        LIMIT 1
+    </select>
+
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderPay">
         INSERT INTO shopion.tOrdOrderPay (
             OrderNo, PayNo, PayType, PayDate, PayAmt, PayFee,

@@ -10,6 +10,7 @@ import java.util.Map;
 public interface OrderPayMapper {
     List<OrderPay> selectList(Map<String, Object> params);
     OrderPay select(Map<String, Object> params);
+    OrderPay selectByPgTradeNo(String pgTradeNo);
     void insert(OrderPay orderPay);
     void update(OrderPay orderPay);
     void updateOrderPayRecipt(Map<String, Object> params);
