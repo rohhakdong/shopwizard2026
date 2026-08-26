@@ -13,6 +13,7 @@ public interface OrderProdMapper {
     List<OrderProd> selectList(Map<String, Object> params);
     int selectListCount(Map<String, Object> params);
     OrderProd select(Map<String, Object> params);
+    List<Integer> selectOrderProdNoList(Integer orderNo);
     void insert(OrderProd orderProd);
     void update(OrderProd orderProd);
     void updatePrice(OrderProd orderProd);

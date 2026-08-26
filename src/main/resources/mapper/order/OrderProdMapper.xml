@@ -260,6 +260,11 @@
         AND OP.OrderProdNo = #{orderProdNo}
     </select>
 
+    <!-- 토스 웹훅 등에서 주문 전체 취소 시, 라인별로 상태를 갱신하기 위해 OrderProdNo 목록만 조회 -->
+    <select id="selectOrderProdNoList" parameterType="int" resultType="int">
+        SELECT OrderProdNo FROM shopion.tOrdOrderProd WHERE OrderNo = #{orderNo}
+    </select>
+
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderProd">
         INSERT INTO shopion.tOrdOrderProd (
             OrderNo, OrderProdNo, SupplyCode, SupplyName, ShopCode,

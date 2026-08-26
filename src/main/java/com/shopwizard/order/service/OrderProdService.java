@@ -20,6 +20,7 @@ public class OrderProdService {
     public List<OrderProd> selectList(Map<String, Object> params) { return orderProdMapper.selectList(params); }
     public int selectListCount(Map<String, Object> params) { return orderProdMapper.selectListCount(params); }
     public OrderProd select(Map<String, Object> params) { return orderProdMapper.select(params); }
+    public List<Integer> selectOrderProdNoList(Integer orderNo) { return orderProdMapper.selectOrderProdNoList(orderNo); }
     public void insert(OrderProd orderProd) { orderProdMapper.insert(orderProd); }
     public void update(OrderProd orderProd) { orderProdMapper.update(orderProd); }
     public void updatePrice(OrderProd orderProd) { orderProdMapper.updatePrice(orderProd); }

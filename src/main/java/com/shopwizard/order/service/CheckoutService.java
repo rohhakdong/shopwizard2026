@@ -1,6 +1,5 @@
 package com.shopwizard.order.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopwizard.order.mapper.OrderNoSeqMapper;
 import com.shopwizard.order.mapper.OrderPayLogTossMapper;
 import com.shopwizard.order.model.CheckoutProdItem;
@@ -49,7 +48,6 @@ public class CheckoutService {
     private final OrderProdService orderProdService;
     private final OrderPayService orderPayService;
     private final OrderPayLogTossMapper orderPayLogTossMapper;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public int checkout(CheckoutRequest req, Map<String, Object> tossResp) throws Exception {
         String now = LocalDateTime.now().format(DATETIME_FMT);
@@ -133,7 +131,7 @@ public class CheckoutService {
         pay.setPayAmt(confirmedAmount.intValue());
         pay.setCardComp(card != null ? str(card.get("company")) : null);
         pay.setApprovNo(card != null ? str(card.get("approveNo")) : null);
-        pay.setApprovDate(toMysqlDateTime(str(tossResp.get("approvedAt"))));
+        pay.setApprovDate(OrderPayLogToss.toMysqlDateTime(str(tossResp.get("approvedAt"))));
         pay.setReciptBank(transfer != null ? str(transfer.get("bank"))
                 : virtualAccnt != null ? str(virtualAccnt.get("bankCode")) : null);
         pay.setReciptName(req.getOrderName());
@@ -145,30 +143,7 @@ public class CheckoutService {
         orderPayService.insert(pay);
 
         // 5. 토스 결제 승인 원본 로그 저장 (tOrdOrderPayLogToss)
-        Map<String, Object> receipt = asMap(tossResp.get("receipt"));
-
-        OrderPayLogToss log = new OrderPayLogToss();
-        log.setOrderNo(orderNo);
-        log.setPaymentKey(req.getPaymentKey());
-        log.setOrderId(req.getOrderId());
-        log.setMethod(str(tossResp.get("method")));
-        log.setStatus(str(tossResp.get("status")));
-        log.setTotalAmount(confirmedAmount);
-        log.setBalanceAmount(numToLong(tossResp.get("balanceAmount")));
-        log.setSuppliedAmount(numToLong(tossResp.get("suppliedAmount")));
-        log.setVat(numToLong(tossResp.get("vat")));
-        log.setCurrency(str(tossResp.get("currency")));
-        log.setRequestedAt(str(tossResp.get("requestedAt")));
-        log.setApprovedAt(str(tossResp.get("approvedAt")));
-        log.setCardCompany(card != null ? str(card.get("company")) : null);
-        log.setCardNumber(card != null ? str(card.get("number")) : null);
-        log.setCardApproveNo(card != null ? str(card.get("approveNo")) : null);
-        log.setCardInstallmentPlanMonths(card != null ? intVal(card.get("installmentPlanMonths")) : null);
-        log.setReceiptUrl(receipt != null ? str(receipt.get("url")) : null);
-        log.setSuccess(true);
-        log.setRawResponse(objectMapper.writeValueAsString(tossResp));
-        log.setRegistId(req.getRegistId());
-        log.setRegistName(req.getRegistName());
+        OrderPayLogToss log = OrderPayLogToss.from(orderNo, tossResp, req.getRegistId(), req.getRegistName());
         orderPayLogTossMapper.insert(log);
 
         return orderNo;
@@ -187,17 +162,4 @@ public class CheckoutService {
         return (o instanceof Number) ? ((Number) o).longValue() : null;
     }
 
-    private static Integer intVal(Object o) {
-        return (o instanceof Number) ? ((Number) o).intValue() : null;
-    }
-
-    /** 토스 응답의 ISO-8601 시각(예: 2026-08-05T16:50:55+09:00)을 MySQL DATETIME 형식으로 변환 */
-    private static String toMysqlDateTime(String iso) {
-        if (iso == null || iso.isBlank()) return null;
-        try {
-            return java.time.OffsetDateTime.parse(iso).format(DATETIME_FMT);
-        } catch (Exception e) {
-            return null;
-        }
-    }
 }
