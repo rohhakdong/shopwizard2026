@@ -22,7 +22,10 @@
             <if test="pCustId != null and pCustId != ''">AND C.CustId = #{pCustId}</if>
         </where>
         <if test="sidx != null and sidx != ''">ORDER BY C.${sidx} ${sord}</if>
-        <if test="topCnt != null and topCnt != ''">LIMIT #{topCnt}, #{countPerPage}</if>
+        <!-- topCnt/countPerPage가 @RequestParam Map으로 들어와 String이라 #{} 바인딩 시
+             MySQL이 LIMIT '0','20' 형태를 거부한다 (OrderProdMapper.xml에서 겪은 것과 동일한
+             문제) — 숫자인지 검증한 뒤 ${} 로 치환한다. -->
+        <if test="topCnt != null and topCnt.toString().matches('^[0-9]+$') and countPerPage != null and countPerPage.toString().matches('^[0-9]+$')">LIMIT ${topCnt}, ${countPerPage}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
