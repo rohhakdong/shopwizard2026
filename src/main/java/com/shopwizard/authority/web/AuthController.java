@@ -171,24 +171,6 @@ public class AuthController {
         return ResponseEntity.ok(result);
     }
 
-    // ─── 임시: 관리자 계정 목록 조회 (개발용, 운영 전 제거) ─────────
-    @GetMapping("/mngr/accounts")
-    public ResponseEntity<?> mngrAccounts() {
-        java.util.Map<String, Object> params = new java.util.HashMap<>();
-        java.util.List<Mngr> list = mngrService.selectList(params);
-        java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
-        for (Mngr m : list) {
-            java.util.Map<String, Object> row = new java.util.HashMap<>();
-            row.put("loginId",   m.getLoginId());
-            row.put("mngrName",  m.getMngrName());
-            row.put("passwd",    m.getPasswd());
-            row.put("svcCode",   m.getSvcCode());
-            row.put("chnlCode",  m.getChnlCode());
-            result.add(row);
-        }
-        return ResponseEntity.ok(result);
-    }
-
     // ─── 쿠키 유틸 ───────────────────────────────────────────────────
     private void setCookie(HttpServletResponse response, String name, String value) {
         Cookie cookie = new Cookie(name, value == null ? "" : value);
