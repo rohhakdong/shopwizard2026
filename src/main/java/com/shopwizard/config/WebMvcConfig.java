@@ -33,7 +33,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/auth/**",
                         "/payment/**",             // 토스페이먼츠 결제 승인
-                        "/profile/cust",           // 회원가입 POST
+                        "/profile/cust/register",  // 비회원의 자기 회원가입 POST (관리자용 POST /profile/cust 와는 분리됨)
                         "/profile/cust/login",
                         "/profile/cust/logout",
                         "/profile/cust/byLoginId",
@@ -52,7 +52,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/order/orderprod/my/list/count",
                         // 비회원 주문조회 (주문번호+연락처로 본인 확인, 로그인 불필요)
                         "/order/orderprod/guest/list",
-                        "/profile/cust/*/update"
+                        "/profile/cust/*/update",
+                        // 로그인한 회원 본인의 내 정보 수정 (별도 cust_id 인터셉터로 보호)
+                        "/profile/cust/me"
                 );
 
         // 고객 API 인증 체크: cust_id 쿠키 필요
@@ -65,7 +67,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/order/basket/**",
                         "/order/orderprod/my/list",
-                        "/order/orderprod/my/list/count"
+                        "/order/orderprod/my/list/count",
+                        "/profile/cust/me"
                 );
     }
 }

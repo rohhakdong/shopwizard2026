@@ -994,7 +994,7 @@ createApp({
 
     const saveProfile = async () => {
       try {
-        await api('PUT', '/profile/cust', {
+        await api('PUT', '/profile/cust/me', {
           custId:        parseInt(custInfo.value.custId),
           custName:      profileForm.value.custName,
           mobilePhoneNo: profileForm.value.mobilePhoneNo,
@@ -1036,7 +1036,7 @@ createApp({
       if (!f.custName || !f.loginId || !f.passwd) { toast('필수 항목을 입력해주세요', 'error'); return; }
       if (f.passwd !== f.passwdConfirm) { toast('비밀번호가 일치하지 않습니다', 'error'); return; }
       try {
-        await api('POST', '/profile/cust', {
+        await api('POST', '/profile/cust/register', {
           custName: f.custName, loginId: f.loginId, passwd: f.passwd,
           email: f.email, mobilePhoneNo: f.mobilePhoneNo, addr1: f.addr1,
           state: 1, registId: f.loginId, registName: f.custName,
