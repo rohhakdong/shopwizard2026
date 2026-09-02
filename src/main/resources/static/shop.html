@@ -388,13 +388,16 @@
             <div class="form-row">
               <div class="form-group">
                 <label>우편번호</label>
-                <input type="text" v-model="profileForm.zipcode" placeholder="우편번호" style="max-width:140px">
+                <div style="display:flex;gap:8px">
+                  <input type="text" v-model="profileForm.zipcode" placeholder="우편번호" readonly style="max-width:140px;background:#f8fafc">
+                  <button type="button" class="btn btn-gray" @click="searchAddress(profileForm)">주소 검색</button>
+                </div>
               </div>
             </div>
             <div class="form-row full">
               <div class="form-group">
                 <label>주소</label>
-                <input type="text" v-model="profileForm.addr1" placeholder="기본 주소">
+                <input type="text" v-model="profileForm.addr1" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
               </div>
             </div>
             <div class="form-row full">
@@ -514,13 +517,16 @@
         <div class="form-row">
           <div class="form-group">
             <label>우편번호</label>
-            <input type="text" v-model="regForm.zipcode" placeholder="우편번호" style="max-width:140px">
+            <div style="display:flex;gap:8px">
+              <input type="text" v-model="regForm.zipcode" placeholder="우편번호" readonly style="max-width:140px;background:#f8fafc">
+              <button type="button" class="btn btn-gray" @click="searchAddress(regForm)">주소 검색</button>
+            </div>
           </div>
         </div>
         <div class="form-row full">
           <div class="form-group">
             <label>주소</label>
-            <input type="text" v-model="regForm.addr1" placeholder="기본 주소">
+            <input type="text" v-model="regForm.addr1" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
           </div>
         </div>
         <div class="form-row full" style="margin-bottom:20px">
@@ -539,6 +545,17 @@
 
   </main>
 
+  <!-- 주소 검색 (다음 우편번호 서비스, 레이어 팝업) -->
+  <div v-if="postcodeVisible" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:center;justify-content:center" @click.self="postcodeVisible=false">
+    <div style="background:#fff;border-radius:8px;overflow:hidden;width:100%;max-width:420px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #eee">
+        <strong style="font-size:14px">주소 검색</strong>
+        <button type="button" @click="postcodeVisible=false" style="border:none;background:none;font-size:18px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div id="postcodeLayer" style="width:100%;height:450px"></div>
+    </div>
+  </div>
+
   <!-- 토스트 -->
   <div class="toast-wrap">
     <div class="toast" :class="t.type" v-for="t in toasts" :key="t.id">{{ t.msg }}</div>
@@ -548,8 +565,9 @@
 
 <script src="https://js.tosspayments.com/v2/standard"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
-const { createApp, ref, computed, onMounted } = Vue;
+const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
 createApp({
   setup() {
@@ -631,6 +649,36 @@ createApp({
     const regForm   = ref({ custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', zipcode:'', addr1:'', addr2:'' });
 
     /* ── 유틸 ── */
+    // 다음 우편번호 서비스를 레이어(임베드) 팝업으로 열어 우편번호/기본주소를
+    // formRef(profileForm 또는 regForm)에 채운다. window.open 방식은 팝업 차단에
+    // 걸리기 쉬워, 페이지 안에 직접 그려 넣는 embed() 방식을 쓴다.
+    const postcodeVisible = ref(false);
+    let postcodeTargetForm = null;
+    const searchAddress = (formRef) => {
+      if (!window.daum || !window.daum.Postcode) {
+        toast('주소 검색 서비스를 불러오지 못했습니다', 'error');
+        return;
+      }
+      postcodeTargetForm = formRef;
+      postcodeVisible.value = true;
+      nextTick(() => {
+        document.getElementById('postcodeLayer').innerHTML = '';
+        new window.daum.Postcode({
+          oncomplete: (data) => {
+            const addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+            // 템플릿의 @click="searchAddress(profileForm)" 처럼 ref를 표현식 안에서 넘기면
+            // Vue가 자동으로 .value를 언랩해서 전달하므로, 여기서 받는 formRef는 이미
+            // 언랩된 순수 객체다 (formRef.value가 아니라 formRef에 직접 대입해야 함).
+            postcodeTargetForm.zipcode = data.zonecode;
+            postcodeTargetForm.addr1 = addr;
+            postcodeVisible.value = false;
+          },
+          width: '100%',
+          height: '100%',
+        }).embed(document.getElementById('postcodeLayer'));
+      });
+    };
+
     const toast = (msg, type = 'info') => {
       const id = Date.now();
       toasts.value.push({ id, msg, type });
@@ -1103,7 +1151,7 @@ createApp({
       go, goBack, doSearch, loadProds, openProd, itemLabel, onItemChange,
       addToCart, buyNow, changeCartQty, removeFromCart, goOrder, submitOrder,
       handlePaymentSuccess, restorePendingOrder,
-      loadMyOrders, orderStateClass, saveProfile, loadProfileForm, loadGuestOrder,
+      loadMyOrders, orderStateClass, saveProfile, loadProfileForm, loadGuestOrder, searchAddress, postcodeVisible,
       doLogin, logout, doRegister,
     };
   }

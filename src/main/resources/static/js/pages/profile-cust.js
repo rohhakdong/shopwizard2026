@@ -262,11 +262,21 @@ const PageProfileCust = (() => {
         </div>
         <div class="form-group">
           <label>우편번호</label>
-          <input class="input" id="mZipcode" value="${c?.zipcode || ''}" placeholder="우편번호">
+          <div style="display:flex;gap:8px">
+            <input class="input" id="mZipcode" value="${c?.zipcode || ''}" placeholder="우편번호" readonly style="background:#f8fafc">
+            <button type="button" class="btn" id="mAddrSearchBtn">주소 검색</button>
+          </div>
         </div>
         <div class="form-group full">
           <label>주소</label>
-          <input class="input" id="mAddr1" value="${c?.addr1 || ''}" placeholder="기본 주소">
+          <input class="input" id="mAddr1" value="${c?.addr1 || ''}" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
+        </div>
+        <div class="form-group full" id="mPostcodeWrap" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <label style="margin:0">주소 검색</label>
+            <button type="button" id="mPostcodeCloseBtn" style="border:none;background:none;font-size:16px;cursor:pointer;line-height:1">×</button>
+          </div>
+          <div id="mPostcodeLayer" style="width:100%;height:400px;border:1px solid #e2e8f0"></div>
         </div>
         <div class="form-group full">
           <label>상세주소</label>
@@ -277,6 +287,27 @@ const PageProfileCust = (() => {
           <input class="input" id="mRemark" value="${c?.remark || ''}">
         </div>
       </div>`;
+
+    // 다음 우편번호 서비스를 모달 안 레이어로 열어 우편번호/기본주소를 채운다.
+    // window.open 팝업 방식은 팝업 차단에 걸리기 쉬워, 폼 안에 직접 그려 넣는 embed() 방식을 쓴다.
+    const postcodeWrap = body.querySelector('#mPostcodeWrap');
+    body.querySelector('#mAddrSearchBtn').addEventListener('click', () => {
+      if (!window.daum || !window.daum.Postcode) { UI.toast('주소 검색 서비스를 불러오지 못했습니다', 'error'); return; }
+      postcodeWrap.style.display = 'block';
+      const layer = body.querySelector('#mPostcodeLayer');
+      layer.innerHTML = '';
+      new window.daum.Postcode({
+        oncomplete: data => {
+          const addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+          document.getElementById('mZipcode').value = data.zonecode;
+          document.getElementById('mAddr1').value = addr;
+          postcodeWrap.style.display = 'none';
+        },
+        width: '100%',
+        height: '100%',
+      }).embed(layer);
+    });
+    body.querySelector('#mPostcodeCloseBtn').addEventListener('click', () => { postcodeWrap.style.display = 'none'; });
 
     UI.modal({
       title: isEdit ? '회원 수정' : '회원 등록',
