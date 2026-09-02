@@ -31,6 +31,20 @@ public class CustController {
     @GetMapping("/{custId}")
     public Cust select(@PathVariable Integer custId) { return custService.select(custId); }
 
+    /**
+     * 로그인한 회원 본인의 정보 조회 (cust_id 인증 필요 — WebMvcConfig 참고).
+     * shop.html 마이페이지 "내 정보" 탭이 폼을 최신 값으로 채우기 위해 호출한다.
+     * custId는 cust_id 쿠키에서만 가져오므로 다른 회원 정보를 조회할 수 없다.
+     */
+    @GetMapping("/me")
+    public Cust selectMe(HttpServletRequest request) {
+        Integer custId = readCustIdFromCookie(request);
+        if (custId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        return custService.select(custId);
+    }
+
     @GetMapping("/byLoginId")
     public Cust selectByLoginId(@RequestParam Map<String, Object> params) { return custService.selectByLoginId(params); }
 

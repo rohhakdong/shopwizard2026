@@ -332,7 +332,7 @@
         <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px">{{ custInfo.name }}님, 안녕하세요 👋</div>
         <div class="mypage-nav">
           <button :class="{active: myTab==='orders'}" @click="myTab='orders'; loadMyOrders()">주문내역</button>
-          <button :class="{active: myTab==='profile'}" @click="myTab='profile'">내 정보</button>
+          <button :class="{active: myTab==='profile'}" @click="myTab='profile'; loadProfileForm()">내 정보</button>
         </div>
 
         <!-- 주문 내역 탭 -->
@@ -992,6 +992,19 @@ createApp({
       }
     };
 
+    const loadProfileForm = async () => {
+      if (!custInfo.value) return;
+      try {
+        const c = await api('GET', '/profile/cust/me');
+        profileForm.value = {
+          custName:      c?.custName || '',
+          mobilePhoneNo: c?.mobilePhoneNo || '',
+          email:         c?.email || '',
+          addr1:         c?.addr1 || '',
+        };
+      } catch(e) { toast('내 정보 조회 실패: ' + e.message, 'error'); }
+    };
+
     const saveProfile = async () => {
       try {
         await api('PUT', '/profile/cust/me', {
@@ -1061,7 +1074,7 @@ createApp({
       go, goBack, doSearch, loadProds, openProd, itemLabel, onItemChange,
       addToCart, buyNow, changeCartQty, removeFromCart, goOrder, submitOrder,
       handlePaymentSuccess, restorePendingOrder,
-      loadMyOrders, orderStateClass, saveProfile, loadGuestOrder,
+      loadMyOrders, orderStateClass, saveProfile, loadProfileForm, loadGuestOrder,
       doLogin, logout, doRegister,
     };
   }
