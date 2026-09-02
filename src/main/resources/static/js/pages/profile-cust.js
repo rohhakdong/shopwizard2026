@@ -260,9 +260,17 @@ const PageProfileCust = (() => {
             <option value="0" ${c?.state === 0 ? 'selected' : ''}>미사용</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>우편번호</label>
+          <input class="input" id="mZipcode" value="${c?.zipcode || ''}" placeholder="우편번호">
+        </div>
         <div class="form-group full">
           <label>주소</label>
-          <input class="input" id="mAddr1" value="${c?.addr1 || ''}" placeholder="주소">
+          <input class="input" id="mAddr1" value="${c?.addr1 || ''}" placeholder="기본 주소">
+        </div>
+        <div class="form-group full">
+          <label>상세주소</label>
+          <input class="input" id="mAddr2" value="${c?.addr2 || ''}" placeholder="상세 주소">
         </div>
         <div class="form-group full">
           <label>비고</label>
@@ -290,7 +298,9 @@ const PageProfileCust = (() => {
           email:          document.getElementById('mEmail').value.trim(),
           mobilePhoneNo:  document.getElementById('mMobilePhoneNo').value.trim(),
           homePhoneNo:    document.getElementById('mHomePhoneNo').value.trim(),
+          zipcode:        document.getElementById('mZipcode').value.trim(),
           addr1:          document.getElementById('mAddr1').value.trim(),
+          addr2:          document.getElementById('mAddr2').value.trim(),
           state:          parseInt(document.getElementById('mState').value),
           remark:         document.getElementById('mRemark').value.trim(),
           ...(isEdit

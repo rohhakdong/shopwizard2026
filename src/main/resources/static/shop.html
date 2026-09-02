@@ -385,10 +385,22 @@
                 <input type="email" v-model="profileForm.email">
               </div>
             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>우편번호</label>
+                <input type="text" v-model="profileForm.zipcode" placeholder="우편번호" style="max-width:140px">
+              </div>
+            </div>
             <div class="form-row full">
               <div class="form-group">
                 <label>주소</label>
-                <input type="text" v-model="profileForm.addr1">
+                <input type="text" v-model="profileForm.addr1" placeholder="기본 주소">
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>상세주소</label>
+                <input type="text" v-model="profileForm.addr2" placeholder="상세 주소">
               </div>
             </div>
             <div style="text-align:right;margin-top:12px">
@@ -499,10 +511,22 @@
             <input type="tel" v-model="regForm.mobilePhoneNo" placeholder="010-0000-0000">
           </div>
         </div>
-        <div class="form-row full" style="margin-bottom:20px">
+        <div class="form-row">
+          <div class="form-group">
+            <label>우편번호</label>
+            <input type="text" v-model="regForm.zipcode" placeholder="우편번호" style="max-width:140px">
+          </div>
+        </div>
+        <div class="form-row full">
           <div class="form-group">
             <label>주소</label>
-            <input type="text" v-model="regForm.addr1" placeholder="주소">
+            <input type="text" v-model="regForm.addr1" placeholder="기본 주소">
+          </div>
+        </div>
+        <div class="form-row full" style="margin-bottom:20px">
+          <div class="form-group">
+            <label>상세주소</label>
+            <input type="text" v-model="regForm.addr2" placeholder="상세 주소">
           </div>
         </div>
         <button class="btn btn-primary btn-full" @click="doRegister">회원가입</button>
@@ -594,7 +618,7 @@ createApp({
       const e = Math.min(s + 9, myOrderPages.value);
       return Array.from({ length: e - s + 1 }, (_, i) => s + i);
     });
-    const profileForm = ref({ custName:'', mobilePhoneNo:'', email:'', addr1:'' });
+    const profileForm = ref({ custName:'', mobilePhoneNo:'', email:'', zipcode:'', addr1:'', addr2:'' });
 
     /* 비회원 주문조회 */
     const guestLookup        = ref({ orderNo:'', phoneNo:'' });
@@ -604,7 +628,7 @@ createApp({
 
     /* 로그인/회원가입 */
     const loginForm = ref({ loginId:'', passwd:'' });
-    const regForm   = ref({ custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', addr1:'' });
+    const regForm   = ref({ custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', zipcode:'', addr1:'', addr2:'' });
 
     /* ── 유틸 ── */
     const toast = (msg, type = 'info') => {
@@ -1000,7 +1024,9 @@ createApp({
           custName:      c?.custName || '',
           mobilePhoneNo: c?.mobilePhoneNo || '',
           email:         c?.email || '',
+          zipcode:       c?.zipcode || '',
           addr1:         c?.addr1 || '',
+          addr2:         c?.addr2 || '',
         };
       } catch(e) { toast('내 정보 조회 실패: ' + e.message, 'error'); }
     };
@@ -1012,7 +1038,9 @@ createApp({
           custName:      profileForm.value.custName,
           mobilePhoneNo: profileForm.value.mobilePhoneNo,
           email:         profileForm.value.email,
+          zipcode:       profileForm.value.zipcode,
           addr1:         profileForm.value.addr1,
+          addr2:         profileForm.value.addr2,
           changeId:      custInfo.value.loginId,
           changeName:    custInfo.value.name,
         });
@@ -1051,12 +1079,13 @@ createApp({
       try {
         await api('POST', '/profile/cust/register', {
           custName: f.custName, loginId: f.loginId, passwd: f.passwd,
-          email: f.email, mobilePhoneNo: f.mobilePhoneNo, addr1: f.addr1,
+          email: f.email, mobilePhoneNo: f.mobilePhoneNo,
+          zipcode: f.zipcode, addr1: f.addr1, addr2: f.addr2,
           state: 1, registId: f.loginId, registName: f.custName,
         });
         toast('회원가입이 완료되었습니다! 로그인해주세요', 'success');
         loginForm.value.loginId = f.loginId;
-        regForm.value = { custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', addr1:'' };
+        regForm.value = { custName:'', loginId:'', passwd:'', passwdConfirm:'', email:'', mobilePhoneNo:'', zipcode:'', addr1:'', addr2:'' };
         go('login');
       } catch(e) { toast('회원가입 실패: ' + e.message, 'error'); }
     };
