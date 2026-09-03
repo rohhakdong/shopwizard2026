@@ -248,6 +248,11 @@ const PageCompanyShop = (() => {
             ${supplyOpts}
           </select>
         </div>
+        <div class="form-group">
+          <label>서비스코드 <span style="color:var(--danger)">*</span></label>
+          <input class="input" id="shFSvcCode" value="${v.svcCode || (isNew ? ((typeof info !== 'undefined' && info?.svcCode) || 'SHP001') : '')}"
+            ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="예: SHP001">
+        </div>
         <div class="form-group full">
           <label>상점명 <span style="color:var(--danger)">*</span></label>
           <input class="input" id="shFShopName" value="${v.shopName || ''}">
@@ -316,6 +321,10 @@ const PageCompanyShop = (() => {
         const shopCode   = document.getElementById('shFShopCode').value.trim();
         // 수정 모드에선 select가 disabled라 .value가 빈 문자열로 읽히므로, 기존 값(v.supplyCode)을 그대로 쓴다.
         const supplyCode = isNew ? document.getElementById('shFSupplyCode').value : (v.supplyCode || '');
+        // 서비스코드도 마찬가지 이유(readonly 시 값 유실 방지)로 수정 모드에선 기존 값을 그대로 쓴다.
+        // 이 값이 비어있으면(신규 등록 화면에 필드가 없던 예전 버전으로 등록된 상점) 주문조회 API가
+        // OrderProdMapper의 pSvcCode 의존 JOIN 때문에 오류나므로, 신규 등록은 항상 값을 채우도록 강제한다.
+        const svcCode    = isNew ? document.getElementById('shFSvcCode').value.trim() : (v.svcCode || '');
         const shopName   = document.getElementById('shFShopName').value.trim();
         const loginId    = document.getElementById('shFLoginId').value.trim();
         // 비밀번호는 서버가 해싱해서 저장하고 조회 응답에도 절대 실어주지 않으므로(항상 null),
@@ -325,6 +334,7 @@ const PageCompanyShop = (() => {
 
         if (!shopCode)   { UI.toast('상점코드를 입력하세요', 'error'); return; }
         if (!supplyCode) { UI.toast('공급사를 선택하세요', 'error'); return; }
+        if (isNew && !svcCode) { UI.toast('서비스코드를 입력하세요', 'error'); return; }
         if (!shopName)   { UI.toast('상점명을 입력하세요', 'error'); return; }
         if (!loginId)    { UI.toast('로그인ID를 입력하세요', 'error'); return; }
         if (isNew && !passwdInput) { UI.toast('비밀번호를 입력하세요', 'error'); return; }
@@ -335,6 +345,7 @@ const PageCompanyShop = (() => {
         const payload = {
           shopCode,
           supplyCode,
+          svcCode,
           shopName,
           loginId,
           ...(isNew ? { passwd: passwdInput } : {}),
