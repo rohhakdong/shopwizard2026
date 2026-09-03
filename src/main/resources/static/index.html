@@ -115,6 +115,7 @@
   <script src="/js/pages/company-comp.js"></script>
   <script src="/js/pages/company-supply.js"></script>
   <script src="/js/pages/company-shop.js"></script>
+  <script src="/js/pages/company-salecomp.js"></script>
   <script src="/js/pages/company-chnl.js"></script>
   <script src="/js/pages/company-deli.js"></script>
   <script src="/js/pages/ship-direct.js"></script>
@@ -162,6 +163,7 @@
           { key: 'company-comp',   label: '회사 관리',      icon: '🏢', page: 'company/comp' },
           { key: 'company-supply', label: '공급사 관리',    icon: '🏭', page: 'company/supply-comp' },
           { key: 'company-shop',   label: '상점 관리',      icon: '🛍️', page: 'company/shop' },
+          { key: 'company-salecomp', label: '판매사 관리',  icon: '💼', page: 'company/sale-comp' },
           { key: 'company-chnl',   label: '채널 관리',      icon: '🔗', page: 'company/chnl' },
           { key: 'company-deli',   label: '택배회사 관리',  icon: '🚛', page: 'company/deli-comp' },
         ]
@@ -276,6 +278,8 @@
         PageCompanySupply.render(content);
       } else if (key === 'company-shop') {
         PageCompanyShop.render(content);
+      } else if (key === 'company-salecomp') {
+        PageCompanySaleComp.render(content);
       } else if (key === 'company-chnl') {
         PageCompanyChnl.render(content);
       } else if (key === 'company-deli') {

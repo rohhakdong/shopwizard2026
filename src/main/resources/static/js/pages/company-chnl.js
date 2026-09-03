@@ -30,6 +30,12 @@ const PageCompanyChnl = (() => {
               <input class="input" id="chChnlName" placeholder="채널명" style="width:160px">
             </div>
             <div class="form-group">
+              <label>판매사</label>
+              <select class="input" id="chSaleCompCode" style="width:180px">
+                <option value="">전체</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>상태</label>
               <select class="input" id="chState" style="width:90px">
                 <option value="">전체</option>
@@ -63,7 +69,12 @@ const PageCompanyChnl = (() => {
     });
     document.getElementById('chBtnNew').addEventListener('click', () => openEditModal(null));
 
-    loadOptions();
+    loadOptions().then(() => {
+      const sel = document.getElementById('chSaleCompCode');
+      sel.innerHTML = '<option value="">전체</option>' + saleCompOptions.map(s =>
+        `<option value="${s.saleCompCode}">${s.saleCompName || '(판매사명 미입력)'} (${s.saleCompCode})</option>`
+      ).join('');
+    });
     loadList();
   }
 
@@ -80,9 +91,10 @@ const PageCompanyChnl = (() => {
   // ── 검색 파라미터 ──────────────────────────────────────────────────
   function getParams() {
     return {
-      pChnlCode: document.getElementById('chChnlCode').value.trim(),
-      pChnlName: document.getElementById('chChnlName').value.trim(),
-      pState:    document.getElementById('chState').value,
+      pChnlCode:     document.getElementById('chChnlCode').value.trim(),
+      pChnlName:     document.getElementById('chChnlName').value.trim(),
+      pSaleCompCode: document.getElementById('chSaleCompCode').value,
+      pState:        document.getElementById('chState').value,
     };
   }
 

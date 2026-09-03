@@ -19,6 +19,11 @@ public class SaleCompController {
         return saleCompService.getList(params);
     }
 
+    @GetMapping("/count")
+    public int getCount(@RequestParam Map<String, Object> params) {
+        return saleCompService.getCount(params);
+    }
+
     @GetMapping("/{saleCompCode}")
     public SaleComp get(@PathVariable String saleCompCode) {
         Map<String, Object> params = new HashMap<>();

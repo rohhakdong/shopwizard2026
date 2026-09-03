@@ -45,7 +45,23 @@
             <if test="pSaleCompName != null and pSaleCompName != ''">AND SC.SaleCompName LIKE CONCAT('%',#{pSaleCompName},'%')</if>
             <if test="pState != null and pState != ''">AND SC.State = #{pState}</if>
         </where>
-        <if test="sidx != null and sidx != ''">ORDER BY SC.${sidx} ${sord}</if>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY SC.${sidx} ${sord}</when>
+            <otherwise>ORDER BY SC.SaleCompCode</otherwise>
+        </choose>
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">LIMIT ${pPageOffset}, ${pPageSize}</if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tCmpSaleComp SC
+        INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
+        <where>
+            <if test="pCompCode != null and pCompCode != ''">AND SC.CompCode = #{pCompCode}</if>
+            <if test="pSaleCompCode != null and pSaleCompCode != ''">AND SC.SaleCompCode = #{pSaleCompCode}</if>
+            <if test="pSaleCompName != null and pSaleCompName != ''">AND SC.SaleCompName LIKE CONCAT('%',#{pSaleCompName},'%')</if>
+            <if test="pState != null and pState != ''">AND SC.State = #{pState}</if>
+        </where>
     </select>
 
     <select id="select" parameterType="map" resultMap="SaleCompResult">

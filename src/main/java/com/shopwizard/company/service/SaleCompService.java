@@ -14,6 +14,7 @@ public class SaleCompService {
     private final SaleCompMapper saleCompMapper;
 
     public List<SaleComp> getList(Map<String, Object> params) { return saleCompMapper.selectList(params); }
+    public int getCount(Map<String, Object> params) { return saleCompMapper.selectCount(params); }
     public SaleComp get(Map<String, Object> params) { return saleCompMapper.select(params); }
     public String getMax(Map<String, Object> params) { return saleCompMapper.selectMax(params); }
 
