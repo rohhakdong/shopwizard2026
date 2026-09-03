@@ -20,8 +20,8 @@ const PageCompanyComp = (() => {
           <!-- 검색바 -->
           <div class="search-bar" style="gap:8px;flex-wrap:wrap">
             <div class="form-group">
-              <label>회사코드</label>
-              <input class="input" id="cpCompCode" placeholder="회사코드" style="width:130px">
+              <label>회사코드(사업자번호)</label>
+              <input class="input" id="cpCompCode" placeholder="숫자만 또는 000-00-00000" style="width:150px">
             </div>
             <div class="form-group">
               <label>회사명</label>
@@ -67,7 +67,8 @@ const PageCompanyComp = (() => {
   // ── 검색 파라미터 ──────────────────────────────────────────────────
   function getParams() {
     return {
-      pCompCode: document.getElementById('cpCompCode').value.trim(),
+      // 회사코드=사업자등록번호이므로, 검색창에 하이픈을 넣어 검색해도 되게 숫자만 남긴다.
+      pCompCode: document.getElementById('cpCompCode').value.replace(/[^0-9]/g, ''),
       pCompName: document.getElementById('cpCompName').value.trim(),
       pState:    document.getElementById('cpState').value,
     };
@@ -106,16 +107,18 @@ const PageCompanyComp = (() => {
   function renderTable(list) {
     const wrap = document.getElementById('cpTableWrap');
 
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다 (order-list.js 등 다른 화면의 기존 패턴과 통일).
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     const rows = list.map(c => `
       <tr>
-        <td style="font-size:11px;font-family:monospace">${c.compCode || ''}</td>
-        <td>
-          <div style="font-weight:500;font-size:13px">${c.compName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${c.prsdntName || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${ell}" title="${c.compCode || ''}">${c.compCode || ''}</td>
+        <td style="${ell}">
+          <div style="font-weight:500;font-size:13px;${ell}" title="${c.compName || ''}">${c.compName || ''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${c.prsdntName || ''}">${c.prsdntName || ''}</div>
         </td>
-        <td style="font-size:12px">${c.corpCode || ''}</td>
-        <td style="font-size:12px">${c.phoneNo || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${c.email || ''}</td>
+        <td style="font-size:12px;${ell}" title="${c.phoneNo || ''}">${c.phoneNo || ''}</td>
+        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${c.email || ''}">${c.email || ''}</td>
         <td style="text-align:center">
           <span class="badge ${c.state === 1 ? 'badge-green' : 'badge-gray'}">${c.state === 1 ? '정상' : '중지'}</span>
         </td>
@@ -127,17 +130,19 @@ const PageCompanyComp = (() => {
         </td>
       </tr>`).join('');
 
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
       <table style="table-layout:fixed;width:100%">
         <colgroup>
           <col style="width:110px"><col><col style="width:120px">
-          <col style="width:110px"><col style="width:160px">
-          <col style="width:60px"><col style="width:90px">
+          <col style="width:170px"><col style="width:60px"><col style="width:90px">
         </colgroup>
         <thead>
           <tr>
-            <th>회사코드</th><th>회사명 / 대표자</th><th>사업자번호</th>
-            <th>전화번호</th><th>이메일</th>
+            <th style="${thEll}" title="회사코드(사업자등록번호)">회사코드</th>
+            <th style="${thEll}">회사명 / 대표자</th>
+            <th style="${thEll}">전화번호</th>
+            <th style="${thEll}">이메일</th>
             <th style="text-align:center">상태</th><th></th>
           </tr>
         </thead>
@@ -190,6 +195,29 @@ const PageCompanyComp = (() => {
     });
   }
 
+  // ── 사업자등록번호 (회사코드) 유틸 ─────────────────────────────────
+  // 회사코드는 사업자등록번호(하이픈 제외 10자리 숫자)를 그대로 쓴다. 입력창엔
+  // 000-00-00000 형태로 자동 하이픈을 넣어 보여주고, 실제 저장 값은 숫자만 남긴다.
+  function formatBizNo(raw) {
+    const digits = (raw || '').replace(/[^0-9]/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 5) return `${digits.slice(0,3)}-${digits.slice(3)}`;
+    return `${digits.slice(0,3)}-${digits.slice(3,5)}-${digits.slice(5)}`;
+  }
+
+  // 사업자등록번호 체크섬 검증 (국세청 공개 알고리즘: 가중치 1,3,7,1,3,7,1,3,5 +
+  // 9번째 자리 보정항). 10자리가 아니거나 체크섬이 안 맞으면 false.
+  function isValidBizNo(raw) {
+    const digits = (raw || '').replace(/[^0-9]/g, '');
+    if (digits.length !== 10) return false;
+    const weight = [1, 3, 7, 1, 3, 7, 1, 3, 5];
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(digits[i], 10) * weight[i];
+    sum += Math.floor((parseInt(digits[8], 10) * 5) / 10);
+    const check = (10 - (sum % 10)) % 10;
+    return check === parseInt(digits[9], 10);
+  }
+
   // ── 신규/수정 모달 ─────────────────────────────────────────────────
   function openEditModal(comp) {
     const isNew = !comp;
@@ -199,8 +227,9 @@ const PageCompanyComp = (() => {
     body.innerHTML = `
       <div class="form-grid">
         <div class="form-group">
-          <label>회사코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="cpFCompCode" value="${v.compCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="회사코드">
+          <label>회사코드 (사업자등록번호) <span style="color:var(--danger)">*</span></label>
+          <input class="input" id="cpFCompCode" value="${isNew ? '' : formatBizNo(v.compCode || '')}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="000-00-00000" inputmode="numeric">
+          ${isNew ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">사업자등록번호를 입력하면 회사코드로 그대로 사용됩니다.</div>' : ''}
         </div>
         <div class="form-group full">
           <label>회사명 <span style="color:var(--danger)">*</span></label>
@@ -215,8 +244,8 @@ const PageCompanyComp = (() => {
           <input class="input" id="cpFPrsdntName" value="${v.prsdntName || ''}">
         </div>
         <div class="form-group">
-          <label>사업자등록번호</label>
-          <input class="input" id="cpFCorpCode" value="${v.corpCode || ''}" placeholder="000-00-00000">
+          <label>법인등록번호</label>
+          <input class="input" id="cpFCorpCode" value="${v.corpCode || ''}" placeholder="법인인 경우에만 입력 (개인사업자는 공란)">
         </div>
         <div class="form-group">
           <label>전화번호</label>
@@ -267,16 +296,29 @@ const PageCompanyComp = (() => {
         </div>
       </div>`;
 
+    // 신규 등록일 때만: 타이핑하는 동안 000-00-00000 형태로 자동 하이픈 삽입.
+    if (isNew) {
+      const compCodeInput = body.querySelector('#cpFCompCode');
+      compCodeInput.addEventListener('input', () => {
+        compCodeInput.value = formatBizNo(compCodeInput.value);
+      });
+    }
+
     UI.modal({
       title: isNew ? '회사 신규 등록' : `회사 수정 – ${v.compCode}`,
       body,
       confirmText: '저장',
       onConfirm: async close => {
-        const compCode = document.getElementById('cpFCompCode').value.trim();
+        // 저장 값은 하이픈 뺀 순수 숫자만 사용 (기존 데이터도 하이픈 없는 10자리 그대로 저장돼 있음).
+        const compCode = document.getElementById('cpFCompCode').value.replace(/[^0-9]/g, '');
         const compName = document.getElementById('cpFCompName').value.trim();
         const svcCode  = document.getElementById('cpFSvcCode').value.trim();
 
-        if (!compCode) { UI.toast('회사코드를 입력하세요', 'error'); return; }
+        if (!compCode) { UI.toast('회사코드(사업자등록번호)를 입력하세요', 'error'); return; }
+        if (isNew && !isValidBizNo(compCode)) {
+          UI.toast('사업자등록번호가 올바르지 않습니다. 숫자와 자릿수를 확인해주세요', 'error');
+          return;
+        }
         if (!compName) { UI.toast('회사명을 입력하세요', 'error'); return; }
         if (!svcCode)  { UI.toast('서비스코드를 입력하세요', 'error'); return; }
 
