@@ -130,11 +130,16 @@ const PageCompanyComp = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("회사명/대표자")은 지정된 열들의
+    // 폭 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블
+    // 자체는 width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함
+    // (다른 목록 화면들과 동일한 규칙).
     const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:770px">
         <colgroup>
-          <col style="width:110px"><col><col style="width:120px">
+          <col style="width:110px"><col style="width:220px"><col style="width:120px">
           <col style="width:170px"><col style="width:60px"><col style="width:90px">
         </colgroup>
         <thead>
