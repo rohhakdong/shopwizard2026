@@ -126,6 +126,14 @@
         </where>
     </select>
 
+    <!-- 상점 로그인용 — LoginId로 단건 조회 (비밀번호 대조는 서비스 레이어에서) -->
+    <select id="selectByLoginId" parameterType="string" resultMap="ShopResult">
+        SELECT S.*, SC.SupplyName AS SupplyName
+        FROM shopwizard.tCmpShop S
+        INNER JOIN shopwizard.tCmpSupplyComp SC ON S.SupplyCode = SC.SupplyCode
+        WHERE S.LoginId = #{value}
+    </select>
+
     <insert id="insert" parameterType="com.shopwizard.company.model.Shop">
         INSERT INTO shopwizard.tCmpShop (
             ShopCode, SvcCode, CompCode, SupplyCode, ShopName, AutoOrderYn,
@@ -146,11 +154,14 @@
         )
     </insert>
 
+    <!-- 비밀번호는 일부러 여기서 다루지 않는다 (updatePasswd 참고) — 이 update는 프론트가
+         "변경 안 했으면 기존 값 재전송"하는 일반 정보 수정용이라, 여기서 그대로 저장하면
+         평문이 또 해싱되거나(이중 해싱) 해시값이 그대로 덮여써질 위험이 있다. -->
     <update id="update" parameterType="com.shopwizard.company.model.Shop">
         UPDATE shopwizard.tCmpShop SET
             ShopName = #{shopName}, AutoOrderYn = #{autoOrderYn},
             ApplyStartDate = #{applyStartDate}, ApplyEndDate = #{applyEndDate},
-            AdjustPeriodCode = #{adjustPeriodCode}, LoginId = #{loginId}, Passwd = #{passwd},
+            AdjustPeriodCode = #{adjustPeriodCode}, LoginId = #{loginId},
             MngrName = #{mngrName}, PhoneNo = #{phoneNo}, MobileNo = #{mobileNo},
             FaxNo = #{faxNo}, Email = #{email}, BrandIntro = #{brandIntro},
             PatentCode = #{patentCode}, LndryMethod = #{lndryMethod},
@@ -160,6 +171,14 @@
             LeadTime = #{leadTime}, VisualImg = #{visualImg}, SizeChart = #{sizeChart},
             ApprovDate = #{approvDate}, PasswdChangeDate = #{passwdChangeDate},
             State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ShopCode = #{shopCode}
+    </update>
+
+    <!-- 비밀번호 변경 전용 (해싱은 ShopService에서 수행) -->
+    <update id="updatePasswd" parameterType="map">
+        UPDATE shopwizard.tCmpShop SET
+            Passwd = #{passwd}, PasswdChangeDate = NOW(),
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE ShopCode = #{shopCode}
     </update>
 

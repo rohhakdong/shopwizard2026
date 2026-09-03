@@ -3,8 +3,12 @@ package com.shopwizard.company.web;
 import com.shopwizard.company.model.Shop;
 import com.shopwizard.company.model.ShopPublicView;
 import com.shopwizard.company.service.ShopService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Map;
 
@@ -24,10 +28,13 @@ public class ShopController {
         return shopService.getPublicList();
     }
 
-    /** 관리자 전용 전체 필드 조회 (mngr_loginId 인증 필요 — WebMvcConfig 참고). */
+    /** 관리자 전용 전체 필드 조회 (mngr_loginId 인증 필요 — WebMvcConfig 참고). 비밀번호(해시값이라도)는
+     *  응답에 실을 이유가 없으므로 항상 비운다. */
     @GetMapping
     public List<Shop> getList(@RequestParam Map<String, Object> params) {
-        return shopService.getList(params);
+        List<Shop> list = shopService.getList(params);
+        list.forEach(s -> s.setPasswd(null));
+        return list;
     }
 
     @GetMapping("/count")
@@ -37,7 +44,50 @@ public class ShopController {
 
     @GetMapping("/{shopCode}")
     public Shop get(@PathVariable String shopCode) {
-        return shopService.get(shopCode);
+        Shop shop = shopService.get(shopCode);
+        if (shop != null) shop.setPasswd(null);
+        return shop;
+    }
+
+    /**
+     * 로그인한 상점 계정 본인의 정보 조회 (shop_code 인증 필요 — WebMvcConfig 참고).
+     * shopCode는 shop_code 쿠키에서만 가져오므로 다른 상점 정보를 조회할 수 없다.
+     */
+    @GetMapping("/me")
+    public Shop selectMe(HttpServletRequest request) {
+        String shopCode = readShopCodeFromCookie(request);
+        if (shopCode == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        Shop shop = shopService.get(shopCode);
+        if (shop != null) shop.setPasswd(null);
+        return shop;
+    }
+
+    private String readShopCodeFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+        for (Cookie c : cookies) {
+            if ("shop_code".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
+                return c.getValue();
+            }
+        }
+        return null;
+    }
+
+    /** 관리자 전용 비밀번호 재설정 (mngr_loginId 인증 필요 — WebMvcConfig 참고). 일반 수정(PUT
+     *  /company/shop)과 분리해, 프론트가 "변경 안 함"으로 보내는 기존 해시값을 다시 저장하다가
+     *  통째로 재해싱해버리는 사고를 막는다. */
+    @PutMapping("/passwd")
+    public int updatePasswd(@RequestBody Map<String, Object> body) {
+        String shopCode = (String) body.get("shopCode");
+        String passwd   = (String) body.get("passwd");
+        if (shopCode == null || shopCode.isEmpty() || passwd == null || passwd.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "상점코드와 비밀번호를 모두 입력하세요.");
+        }
+        String changeId   = (String) body.getOrDefault("changeId", "");
+        String changeName = (String) body.getOrDefault("changeName", "");
+        return shopService.updatePasswd(shopCode, passwd, changeId, changeName);
     }
 
     @GetMapping("/max")

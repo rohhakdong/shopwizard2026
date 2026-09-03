@@ -58,7 +58,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/order/orderprod/guest/list",
                         "/profile/cust/*/update",
                         // 로그인한 회원 본인의 내 정보 수정 (별도 cust_id 인터셉터로 보호)
-                        "/profile/cust/me"
+                        "/profile/cust/me",
+                        // 상점(거래처) 계정 전용 API (별도 shop_code 인터셉터로 보호)
+                        "/company/shop/me",
+                        "/order/orderprod/shop/list",
+                        "/order/orderprod/shop/list/count"
                 );
 
         // 고객 API 인증 체크: cust_id 쿠키 필요
@@ -73,6 +77,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/order/orderprod/my/list",
                         "/order/orderprod/my/list/count",
                         "/profile/cust/me"
+                );
+
+        // 상점(거래처) 계정 API 인증 체크: shop_code 쿠키 필요
+        // 관리자/회원과 완전히 분리된 별도 로그인이라, 여기 걸린 경로는 mngr_loginId/cust_id
+        // 쿠키만으로는 접근할 수 없다 (관리자는 shop_code 쿠키가 없어 401).
+        registry.addInterceptor(new AuthInterceptor("shop_code"))
+                .addPathPatterns(
+                        "/company/shop/me",
+                        "/order/orderprod/shop/list",
+                        "/order/orderprod/shop/list/count"
                 );
     }
 }

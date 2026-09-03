@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWizard 상점 마이페이지</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .shop-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: #fff; border-bottom: 1px solid var(--border);
+    }
+    .shop-topbar .brand { font-weight: 700; font-size: 16px; }
+    .shop-topbar .who { color: var(--text-muted); font-size: 13px; margin-left: 10px; }
+    .shop-main { max-width: 960px; margin: 24px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 20px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .info-row .label { color: var(--text-muted); }
+    .info-row .value { font-weight: 500; }
+    td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+  </style>
+</head>
+<body>
+  <div class="shop-topbar">
+    <div>
+      <span class="brand">🏪 ShopWizard 상점</span>
+      <span class="who" id="whoLabel"></span>
+    </div>
+    <button class="btn btn-ghost" id="logoutBtn">로그아웃</button>
+  </div>
+
+  <div class="shop-main">
+    <div class="card">
+      <div class="card-header">내 정보</div>
+      <div class="card-body">
+        <div class="info-grid" id="infoGrid">불러오는 중...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">주문 조회</div>
+      <div class="card-body">
+        <div class="search-bar">
+          <div class="form-group">
+            <label>주문번호</label>
+            <input class="input" type="text" id="sOrderNo" placeholder="주문번호">
+          </div>
+          <div class="form-group">
+            <label>주문상태</label>
+            <select class="input" id="sOrderState">
+              <option value="">전체</option>
+              <option value="주문접수">주문접수</option>
+              <option value="지불완료">지불완료</option>
+              <option value="발주시작">발주시작</option>
+              <option value="배송완료">배송완료</option>
+              <option value="주문취소">주문취소</option>
+              <option value="환불완료">환불완료</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="searchBtn">검색</button>
+        </div>
+
+        <div id="listMeta" style="margin-bottom:10px;color:var(--text-muted);font-size:13px;"></div>
+
+        <div class="table-wrap">
+          <table style="table-layout:fixed;width:900px">
+            <colgroup>
+              <col style="width:90px"><col style="width:260px"><col style="width:70px">
+              <col style="width:100px"><col style="width:100px"><col style="width:110px"><col style="width:170px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>주문번호</th><th>상품명</th><th>수량</th>
+                <th>판매금액</th><th>주문상태</th><th>수취인</th><th>주문일</th>
+              </tr>
+            </thead>
+            <tbody id="listBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-muted)">불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="pagination" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/shop-auth.js"></script>
+  <script>
+    const PAGE_SIZE = 20;
+    let currentPage = 1;
+    let totalCount = 0;
+
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+
+    const stateBadgeMap = {
+      '주문접수': 'badge-gray', '지불완료': 'badge-blue', '발주시작': 'badge-orange',
+      '배송완료': 'badge-green', '주문취소': 'badge-red', '환불완료': 'badge-red',
+    };
+    function stateBadge(state) {
+      return `<span class="badge ${stateBadgeMap[state] || 'badge-gray'}">${state || '-'}</span>`;
+    }
+
+    async function init() {
+      const ok = await ShopAuth.requireLogin();
+      if (!ok) return;
+
+      const info = await ShopAuth.getInfo();
+      document.getElementById('whoLabel').textContent = `${info.name} (${info.loginId})`;
+      renderInfo(info);
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await ShopAuth.logout();
+        location.href = '/shop-login.html';
+      });
+      document.getElementById('searchBtn').addEventListener('click', () => { currentPage = 1; loadList(); });
+
+      loadList();
+    }
+
+    function renderInfo(info) {
+      document.getElementById('infoGrid').innerHTML = `
+        <div class="info-row"><span class="label">상점코드</span><span class="value">${info.shopCode}</span></div>
+        <div class="info-row"><span class="label">상점명</span><span class="value">${info.name}</span></div>
+        <div class="info-row"><span class="label">로그인ID</span><span class="value">${info.loginId}</span></div>
+        <div class="info-row"><span class="label">공급사코드</span><span class="value">${info.supplyCode || '-'}</span></div>
+      `;
+    }
+
+    function getParams() {
+      return {
+        pOrderNo:     document.getElementById('sOrderNo').value.trim(),
+        pOrderState:  document.getElementById('sOrderState').value,
+        topCnt:       (currentPage - 1) * PAGE_SIZE,
+        countPerPage: PAGE_SIZE,
+      };
+    }
+
+    async function loadList() {
+      const body = document.getElementById('listBody');
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">불러오는 중...</td></tr>`;
+      try {
+        const params = getParams();
+        const [list, count] = await Promise.all([
+          Api.get('/order/orderprod/shop/list', params),
+          Api.get('/order/orderprod/shop/list/count', params),
+        ]);
+        totalCount = count;
+        document.getElementById('listMeta').textContent = `총 ${totalCount}건`;
+
+        if (!list.length) {
+          body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">조회된 주문이 없습니다.</td></tr>`;
+        } else {
+          body.innerHTML = list.map(o => `
+            <tr>
+              <td>${o.orderNo}-${o.orderProdNo}</td>
+              <td style="${ell}" title="${o.prodName || ''}">${o.prodName || '-'}</td>
+              <td style="text-align:center">${o.prodQty ?? '-'}</td>
+              <td style="text-align:right">${o.salePrice != null ? Number(o.salePrice).toLocaleString() + '원' : '-'}</td>
+              <td style="text-align:center">${stateBadge(o.orderState)}</td>
+              <td style="${ell}" title="${o.recverName || ''}">${o.recverName || '-'}</td>
+              <td>${(o.orderReciptDate || o.registDate || '').substring(0, 16)}</td>
+            </tr>
+          `).join('');
+        }
+        renderPagination();
+      } catch (err) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger)">조회 중 오류가 발생했습니다.</td></tr>`;
+        console.error(err);
+      }
+    }
+
+    function renderPagination() {
+      const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+      const box = document.getElementById('pagination');
+      if (totalPages <= 1) { box.innerHTML = ''; return; }
+
+      let html = `<div class="pagination">`;
+      html += `<button class="btn btn-ghost" ${currentPage <= 1 ? 'disabled' : ''} data-page="${currentPage - 1}">이전</button>`;
+      html += `<span style="padding:0 10px">${currentPage} / ${totalPages}</span>`;
+      html += `<button class="btn btn-ghost" ${currentPage >= totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">다음</button>`;
+      html += `</div>`;
+      box.innerHTML = html;
+      box.querySelectorAll('button[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentPage = Number(btn.dataset.page);
+          loadList();
+        });
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

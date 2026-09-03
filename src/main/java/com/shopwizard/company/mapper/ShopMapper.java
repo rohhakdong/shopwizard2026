@@ -14,8 +14,10 @@ public interface ShopMapper {
     String selectMax(String supplyCode);
     Shop select(String shopCode);
     Shop selectByName(String shopName);
+    Shop selectByLoginId(String loginId);
     int selectLoginIdCount(Map<String, Object> params);
     int insert(Shop shop);
     int update(Shop shop);
+    int updatePasswd(Map<String, Object> params);
     int delete(Shop shop);
 }

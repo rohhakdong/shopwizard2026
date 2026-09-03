@@ -318,23 +318,26 @@ const PageCompanyShop = (() => {
         const supplyCode = isNew ? document.getElementById('shFSupplyCode').value : (v.supplyCode || '');
         const shopName   = document.getElementById('shFShopName').value.trim();
         const loginId    = document.getElementById('shFLoginId').value.trim();
+        // 비밀번호는 서버가 해싱해서 저장하고 조회 응답에도 절대 실어주지 않으므로(항상 null),
+        // "입력 안 하면 기존 값 재전송" 방식은 쓸 수 없다. 신규 등록 시엔 필수 입력이고,
+        // 수정 시엔 입력했을 때만 별도 API(PUT /company/shop/passwd)로 바꾼다.
         const passwdInput = document.getElementById('shFPasswd').value;
-        // LoginId/Passwd는 tCmpShop의 NOT NULL 컬럼이라, 신규 등록 시엔 반드시 입력받고
-        // 수정 시엔 비워두면 기존 값을 그대로 유지한다 (수정할 때마다 재입력을 강제하지 않기 위함).
-        const passwd = passwdInput ? passwdInput : (v.passwd || '');
 
         if (!shopCode)   { UI.toast('상점코드를 입력하세요', 'error'); return; }
         if (!supplyCode) { UI.toast('공급사를 선택하세요', 'error'); return; }
         if (!shopName)   { UI.toast('상점명을 입력하세요', 'error'); return; }
         if (!loginId)    { UI.toast('로그인ID를 입력하세요', 'error'); return; }
-        if (!passwd)     { UI.toast('비밀번호를 입력하세요', 'error'); return; }
+        if (isNew && !passwdInput) { UI.toast('비밀번호를 입력하세요', 'error'); return; }
+
+        const registId   = (typeof info !== 'undefined' && info?.loginId) || '';
+        const registName = (typeof info !== 'undefined' && info?.name) || '';
 
         const payload = {
           shopCode,
           supplyCode,
           shopName,
           loginId,
-          passwd,
+          ...(isNew ? { passwd: passwdInput } : {}),
           mngrName:       document.getElementById('shFMngrName').value.trim(),
           mngrMd:         document.getElementById('shFMngrMd').value.trim(),
           mobileNo:       document.getElementById('shFMobileNo').value.trim(),
@@ -345,20 +348,24 @@ const PageCompanyShop = (() => {
           autoOrderYn:    parseInt(document.getElementById('shFAutoOrderYn').value),
           state:          parseInt(document.getElementById('shFState').value),
           remark:         document.getElementById('shFRemark').value.trim(),
-          registId:       (typeof info !== 'undefined' && info?.loginId) || '',
-          registName:     (typeof info !== 'undefined' && info?.name) || '',
-          changeId:       (typeof info !== 'undefined' && info?.loginId) || '',
-          changeName:     (typeof info !== 'undefined' && info?.name) || '',
+          registId,
+          registName,
+          changeId:       registId,
+          changeName:     registName,
         };
 
         try {
           if (isNew) {
             await Api.post('/company/shop', payload);
-            UI.toast('등록되었습니다', 'success');
           } else {
             await Api.put('/company/shop', payload);
-            UI.toast('저장되었습니다', 'success');
+            // 비밀번호를 새로 입력했을 때만 별도 호출 — 일반 정보 저장과 완전히 분리해,
+            // "변경 안 함"을 이중 해싱하거나 실수로 지우는 사고를 막는다.
+            if (passwdInput) {
+              await Api.put('/company/shop/passwd', { shopCode, passwd: passwdInput, changeId: registId, changeName: registName });
+            }
           }
+          UI.toast(isNew ? '등록되었습니다' : '저장되었습니다', 'success');
           loadList();
           close();
         } catch (e) { UI.toast(e.message, 'error'); }

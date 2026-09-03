@@ -3,7 +3,10 @@ package com.shopwizard.authority.web;
 import com.shopwizard.authority.model.CustLoginRequest;
 import com.shopwizard.authority.model.Mngr;
 import com.shopwizard.authority.model.MngrLoginRequest;
+import com.shopwizard.authority.model.ShopLoginRequest;
 import com.shopwizard.authority.service.MngrService;
+import com.shopwizard.company.model.Shop;
+import com.shopwizard.company.service.ShopService;
 import com.shopwizard.profile.model.Cust;
 import com.shopwizard.profile.service.CustService;
 import jakarta.servlet.http.Cookie;
@@ -23,6 +26,7 @@ public class AuthController {
 
     private final MngrService mngrService;
     private final CustService custService;
+    private final ShopService shopService;
 
     // ─── 관리자 로그인 ──────────────────────────────────────────────
     @PostMapping("/mngr/login")
@@ -168,6 +172,69 @@ public class AuthController {
         result.put("branchName",   getCookieValue(request, "cust_branchName"));
         result.put("deptCode",     getCookieValue(request, "cust_deptCode"));
         result.put("deptName",     getCookieValue(request, "cust_deptName"));
+        return ResponseEntity.ok(result);
+    }
+
+    // ─── 상점(거래처) 계정 로그인 ─────────────────────────────────────
+    // 관리자/회원과 완전히 분리된 별도 로그인 — 상점 계정이 인증되어도 관리자 화면(mngr_loginId
+    // 필요)이나 회원 전용 API(cust_id 필요)에는 전혀 접근할 수 없다. WebMvcConfig에 shop_code
+    // 인터셉터로 보호되는 상점 전용 API(내 정보/내 주문 조회)만 이 쿠키로 접근 가능하다.
+    @PostMapping("/shop/login")
+    public ResponseEntity<Map<String, Object>> shopLogin(
+            @RequestBody ShopLoginRequest req,
+            HttpServletResponse response) {
+
+        Shop shop = shopService.login(req.getLoginId(), req.getPasswd());
+
+        Map<String, Object> result = new HashMap<>();
+        if (shop == null) {
+            result.put("success", false);
+            result.put("message", "아이디 또는 비밀번호가 일치하지 않습니다.");
+            return ResponseEntity.ok(result);
+        }
+
+        shop.setPasswd(null);
+        setCookie(response, "shop_code",       shop.getShopCode()          );
+        setCookie(response, "shop_name",       nvl(shop.getShopName())     );
+        setCookie(response, "shop_loginId",    nvl(shop.getLoginId())      );
+        setCookie(response, "shop_supplyCode", nvl(shop.getSupplyCode())   );
+        // 주문 조회 시 OrderProdMapper의 selectList/selectListCount가 pSvcCode 유무로
+        // 결제/상품/상점 조인 여부를 결정하므로(공용 쿼리, order-list.js도 항상 svcCode를 실어보냄)
+        // 여기서도 쿠키에 실어둔다 — 없으면 /order/orderprod/shop/list가 SQL 오류로 500난다.
+        setCookie(response, "shop_svcCode",    nvl(shop.getSvcCode())      );
+
+        result.put("success", true);
+        result.put("shop", shop);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/shop/logout")
+    public ResponseEntity<Map<String, Object>> shopLogout(HttpServletResponse response) {
+        clearCookie(response, "shop_code");
+        clearCookie(response, "shop_name");
+        clearCookie(response, "shop_loginId");
+        clearCookie(response, "shop_supplyCode");
+        clearCookie(response, "shop_svcCode");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/shop/me")
+    public ResponseEntity<Map<String, Object>> shopMe(HttpServletRequest request) {
+        String shopCode = getCookieValue(request, "shop_code");
+        Map<String, Object> result = new HashMap<>();
+        if (shopCode == null || shopCode.isEmpty()) {
+            result.put("authenticated", false);
+            return ResponseEntity.ok(result);
+        }
+        result.put("authenticated", true);
+        result.put("shopCode",   shopCode);
+        result.put("name",       getCookieValue(request, "shop_name"));
+        result.put("loginId",    getCookieValue(request, "shop_loginId"));
+        result.put("supplyCode", getCookieValue(request, "shop_supplyCode"));
+        result.put("svcCode",    getCookieValue(request, "shop_svcCode"));
         return ResponseEntity.ok(result);
     }
 
