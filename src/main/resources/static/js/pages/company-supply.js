@@ -115,16 +115,26 @@ const PageCompanySupply = (() => {
   function renderTable(list) {
     const wrap = document.getElementById('spTableWrap');
 
-    const rows = list.map(s => `
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다 (order-list.js 등 다른 화면의 기존 패턴과 통일).
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    const rows = list.map(s => {
+      // SupplyName은 레거시 데이터의 상당수가 실제로 비어있다 (검증 시점 기준 111건 중 66건).
+      // 비어있는데도 소속회사명만 표시하면 그게 공급사명인 것처럼 착각하기 쉬워, 미입력 상태를
+      // 명시적으로 구분해서 보여준다.
+      const nameHtml = s.supplyName
+        ? `<div style="font-weight:500;font-size:13px;${ell}" title="${s.supplyName}">${s.supplyName}</div>`
+        : `<div style="font-size:13px;color:var(--text-muted);font-style:italic">(공급사명 미입력)</div>`;
+      return `
       <tr>
-        <td style="font-size:11px;font-family:monospace">${s.supplyCode || ''}</td>
-        <td>
-          <div style="font-weight:500;font-size:13px">${s.supplyName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${s.comp?.compName || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${ell}" title="${s.supplyCode || ''}">${s.supplyCode || ''}</td>
+        <td style="${ell}">
+          ${nameHtml}
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${s.comp?.compName || ''}">소속: ${s.comp?.compName || ''}</div>
         </td>
-        <td style="font-size:12px">${s.mngrName || ''}</td>
-        <td style="font-size:12px">${s.mobileNo || s.phoneNo || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${s.email || ''}</td>
+        <td style="font-size:12px;${ell}" title="${s.mngrName || ''}">${s.mngrName || ''}</td>
+        <td style="font-size:12px;${ell}" title="${s.mobileNo || s.phoneNo || ''}">${s.mobileNo || s.phoneNo || ''}</td>
+        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${s.email || ''}">${s.email || ''}</td>
         <td style="text-align:center">
           <span class="badge ${s.state === 1 ? 'badge-green' : 'badge-gray'}">${s.state === 1 ? '정상' : '중지'}</span>
         </td>
@@ -134,19 +144,24 @@ const PageCompanySupply = (() => {
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
             data-action="del" data-code="${s.supplyCode}" data-name="${(s.supplyName||'').replace(/"/g,'&quot;')}">삭제</button>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
       <table style="table-layout:fixed;width:100%">
         <colgroup>
-          <col style="width:110px"><col><col style="width:80px">
-          <col style="width:110px"><col style="width:160px">
-          <col style="width:60px"><col style="width:90px">
+          <col style="width:100px"><col><col style="width:70px">
+          <col style="width:110px"><col style="width:150px">
+          <col style="width:55px"><col style="width:90px">
         </colgroup>
         <thead>
           <tr>
-            <th>공급사코드</th><th>공급사명 / 소속회사</th><th>담당자</th>
-            <th>연락처</th><th>이메일</th>
+            <th style="${thEll}">공급사코드</th>
+            <th style="${thEll}">공급사명 / 소속회사</th>
+            <th style="${thEll}">담당자</th>
+            <th style="${thEll}">연락처</th>
+            <th style="${thEll}">이메일</th>
             <th style="text-align:center">상태</th><th></th>
           </tr>
         </thead>
@@ -205,7 +220,7 @@ const PageCompanySupply = (() => {
     const v = supply || {};
 
     const compOpts = compOptions.map(c =>
-      `<option value="${c.compCode}" ${v.compCode === c.compCode ? 'selected' : ''}>${c.compName} (${c.compCode})</option>`
+      `<option value="${c.compCode}" ${v.compCode === c.compCode ? 'selected' : ''}>${c.compName || '(회사명 미입력)'} (${c.compCode})</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -224,7 +239,7 @@ const PageCompanySupply = (() => {
         </div>
         <div class="form-group full">
           <label>공급사명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="spFSupplyName" value="${v.supplyName || ''}">
+          <input class="input" id="spFSupplyName" value="${v.supplyName || ''}" placeholder="${!isNew && !v.supplyName ? '미입력 상태입니다 — 입력해주세요' : '공급사명'}">
         </div>
         <div class="form-group">
           <label>담당자명</label>
