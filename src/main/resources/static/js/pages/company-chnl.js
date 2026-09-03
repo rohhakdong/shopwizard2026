@@ -1,7 +1,7 @@
 /**
  * 채널 관리 (거래처 - 채널)
  * - 목록 조회 (페이지네이션)
- * - 등록 / 수정 (판매회사 / 채널정책 선택)
+ * - 등록 / 수정 (판매회사 선택 — 소속 회사는 판매회사에 종속되어 자동 결정된다)
  * - 삭제
  */
 const PageCompanyChnl = (() => {
@@ -9,8 +9,7 @@ const PageCompanyChnl = (() => {
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
-  let saleCompOptions   = []; // { saleCompCode, saleCompName }
-  let chnlPolicyOptions = []; // { chnlPolicyCode, chnlPolicyName }
+  let saleCompOptions = []; // { saleCompCode, saleCompName, compCode } — 판매회사 선택 시 compCode도 여기서 가져온다
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
@@ -78,14 +77,11 @@ const PageCompanyChnl = (() => {
     loadList();
   }
 
-  // 판매회사 / 채널정책 선택용 목록 (전체를 한 번에 불러온다)
+  // 판매회사 선택용 목록 (전체를 한 번에 불러온다)
   async function loadOptions() {
     try {
       saleCompOptions = await Api.get('/company/sale-comp', { pPageOffset: 0, pPageSize: 1000 });
     } catch (_) { saleCompOptions = []; }
-    try {
-      chnlPolicyOptions = await Api.get('/company/chnl-policy', { pPageOffset: 0, pPageSize: 1000 });
-    } catch (_) { chnlPolicyOptions = []; }
   }
 
   // ── 검색 파라미터 ──────────────────────────────────────────────────
@@ -229,11 +225,9 @@ const PageCompanyChnl = (() => {
     const v = chnl || {};
 
     const saleCompOpts = saleCompOptions.map(s =>
-      `<option value="${s.saleCompCode}" ${v.saleCompCode === s.saleCompCode ? 'selected' : ''}>${s.saleCompName} (${s.saleCompCode})</option>`
+      `<option value="${s.saleCompCode}" data-comp-code="${s.compCode || ''}" data-comp-name="${(s.comp?.compName || '').replace(/"/g,'&quot;')}" ${v.saleCompCode === s.saleCompCode ? 'selected' : ''}>${s.saleCompName} (${s.saleCompCode})</option>`
     ).join('');
-    const chnlPolicyOpts = chnlPolicyOptions.map(p =>
-      `<option value="${p.chnlPolicyCode}" ${v.chnlPolicyCode === p.chnlPolicyCode ? 'selected' : ''}>${p.chnlPolicyName} (${p.chnlPolicyCode})</option>`
-    ).join('');
+    const selectedSaleComp = saleCompOptions.find(s => s.saleCompCode === v.saleCompCode);
 
     const body = document.createElement('div');
     body.innerHTML = `
@@ -248,21 +242,16 @@ const PageCompanyChnl = (() => {
             <option value="">-- 선택 --</option>
             ${saleCompOpts}
           </select>
+          <!-- 소속 회사는 판매회사에 딸린 값이라 따로 입력받지 않는다 — 판매회사를 고르면
+               자동으로 정해지므로 참고용으로만 표시한다 (공급사 선택 시 상점의 소속이
+               자동으로 정해지는 것과 동일한 관계: 판매회사 → 소속 회사). -->
+          <div id="chSelectedCompName" style="font-size:12px;color:var(--text-muted);margin-top:4px">
+            ${selectedSaleComp ? `소속 회사: ${selectedSaleComp.comp?.compName || '(회사명 미입력)'} (${selectedSaleComp.compCode || ''})` : ''}
+          </div>
         </div>
         <div class="form-group full">
           <label>채널명 <span style="color:var(--danger)">*</span></label>
           <input class="input" id="chFChnlName" value="${v.chnlName || ''}">
-        </div>
-        <div class="form-group">
-          <label>채널정책</label>
-          <select class="input" id="chFChnlPolicyCode">
-            <option value="">-- 선택 안 함 --</option>
-            ${chnlPolicyOpts}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>소속 회사코드</label>
-          <input class="input" id="chFCompCode" value="${v.compCode || ''}" placeholder="회사코드">
         </div>
         <div class="form-group full">
           <label>채널 URL</label>
@@ -309,6 +298,15 @@ const PageCompanyChnl = (() => {
         </div>
       </div>`;
 
+    // 판매회사를 바꿀 때마다 참고용 소속 회사 표시를 갱신한다.
+    body.querySelector('#chFSaleCompCode').addEventListener('change', e => {
+      const opt = e.target.selectedOptions[0];
+      const label = document.getElementById('chSelectedCompName');
+      label.textContent = opt && opt.value
+        ? `소속 회사: ${opt.dataset.compName || '(회사명 미입력)'} (${opt.dataset.compCode || ''})`
+        : '';
+    });
+
     UI.modal({
       title: isNew ? '채널 신규 등록' : `채널 수정 – ${v.chnlCode}`,
       body,
@@ -322,12 +320,19 @@ const PageCompanyChnl = (() => {
         if (!saleCompCode) { UI.toast('판매회사를 선택하세요', 'error'); return; }
         if (!chnlName)     { UI.toast('채널명을 입력하세요', 'error'); return; }
 
+        // 소속 회사코드는 입력받지 않고 선택된 판매회사의 compCode를 그대로 따라간다.
+        const selected = saleCompOptions.find(s => s.saleCompCode === saleCompCode);
+        const compCode = selected?.compCode || '';
+
         const payload = {
           chnlCode,
           saleCompCode,
           chnlName,
-          chnlPolicyCode: document.getElementById('chFChnlPolicyCode').value || null,
-          compCode:       document.getElementById('chFCompCode').value.trim(),
+          // 채널정책은 등록화면에서 더 이상 입력받지 않는다 (tCmpChnlPolicy가 비어있어
+          // 실질적으로 고를 게 없는 상태) — 기존에 저장돼 있던 값은 수정 시 그대로 보존해
+          // 화면에서 손대지 않은 값을 의도치 않게 지우는 일이 없도록 한다.
+          chnlPolicyCode: isNew ? null : (v.chnlPolicyCode || null),
+          compCode,
           chnlUrl:        document.getElementById('chFChnlUrl').value.trim(),
           mngrName:       document.getElementById('chFMngrName').value.trim(),
           mngrMd:         document.getElementById('chFMngrMd').value.trim(),
