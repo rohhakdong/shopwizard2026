@@ -43,7 +43,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/product/prod",
                         "/product/proditem/list",
                         "/catalog/prod-item/list",
-                        "/company/shop",
+                        // shopCode/shopName만 반환하는 공개 목록 — "/company/shop" 자체(전체 필드,
+                        // loginId/passwd 포함)를 여기 넣으면 excludePathPatterns가 HTTP 메서드를
+                        // 구분하지 못해 POST/PUT/DELETE까지 통째로 인증 없이 뚫린다(실제로 뚫려있던
+                        // 버그를 고침) — 경로 자체를 분리해서 공개 범위를 최소화했다.
+                        "/company/shop/public",
                         // 고객 인증 필요 API (별도 인터셉터)
                         "/order/basket/**",
                         "/order/order",

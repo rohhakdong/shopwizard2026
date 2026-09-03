@@ -748,7 +748,7 @@ createApp({
     /* ── 쇼핑몰 목록 ── */
     const loadShops = async () => {
       try {
-        shopList.value = await api('GET', '/company/shop', {});
+        shopList.value = await api('GET', '/company/shop/public');
       } catch(_) {}
     };
 

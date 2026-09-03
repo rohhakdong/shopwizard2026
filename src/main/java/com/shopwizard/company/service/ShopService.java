@@ -2,6 +2,7 @@ package com.shopwizard.company.service;
 
 import com.shopwizard.company.mapper.ShopMapper;
 import com.shopwizard.company.model.Shop;
+import com.shopwizard.company.model.ShopPublicView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ public class ShopService {
     private final ShopMapper shopMapper;
 
     public List<Shop> getList(Map<String, Object> params) { return shopMapper.selectList(params); }
+    public List<ShopPublicView> getPublicList() { return shopMapper.selectPublicList(); }
     public int getCount(Map<String, Object> params) { return shopMapper.selectCount(params); }
     public String getMax(String supplyCode) { return shopMapper.selectMax(supplyCode); }
     public Shop get(String shopCode) { return shopMapper.select(shopCode); }

@@ -49,6 +49,14 @@
         <result property="changeDate" column="ChangeDate"/>
     </resultMap>
 
+    <!-- 비회원도 호출하는 공개 API용 (WebMvcConfig에서 인증 예외 처리) — shopCode/shopName만 반환 -->
+    <select id="selectPublicList" resultType="com.shopwizard.company.model.ShopPublicView">
+        SELECT ShopCode AS shopCode, ShopName AS shopName
+        FROM shopwizard.tCmpShop
+        WHERE State = 1
+        ORDER BY ShopName
+    </select>
+
     <select id="selectList" parameterType="map" resultMap="ShopResult">
         SELECT S.*, SC.SupplyName AS SupplyName
         FROM shopwizard.tCmpShop S
@@ -71,7 +79,7 @@
             <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
             <otherwise>ORDER BY ShopName</otherwise>
         </choose>
-        <if test="pPageSize != null">LIMIT ${pPageOffset}, ${pPageSize}</if>
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
