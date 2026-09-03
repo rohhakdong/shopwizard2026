@@ -1,7 +1,7 @@
 /**
- * 쇼핑몰 관리
- * - 목록 조회 (페이지네이션)
- * - 상세보기 / 수정
+ * 상점 관리 (거래처 - 상점)
+ * - 목록 조회 (페이지네이션, 공급사 선택 필터 포함)
+ * - 등록 / 수정 (공급사 선택)
  * - 삭제
  */
 const PageCompanyShop = (() => {
@@ -9,23 +9,30 @@ const PageCompanyShop = (() => {
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
+  let supplyOptions = []; // { supplyCode, supplyName } — 공급사 선택용, 진입 시 1회 로드
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="card-header">쇼핑몰 관리</div>
+        <div class="card-header">상점 관리</div>
         <div class="card-body" style="padding:12px 16px">
 
           <!-- 검색바 -->
           <div class="search-bar" style="gap:8px;flex-wrap:wrap">
             <div class="form-group">
-              <label>쇼핑몰코드</label>
-              <input class="input" id="shShopCode" placeholder="쇼핑몰코드" style="width:130px">
+              <label>상점코드</label>
+              <input class="input" id="shShopCode" placeholder="상점코드" style="width:130px">
             </div>
             <div class="form-group">
-              <label>쇼핑몰명</label>
-              <input class="input" id="shShopName" placeholder="쇼핑몰명" style="width:160px">
+              <label>상점명</label>
+              <input class="input" id="shShopName" placeholder="상점명" style="width:160px">
+            </div>
+            <div class="form-group">
+              <label>공급사</label>
+              <select class="input" id="shSupplyCode" style="width:180px">
+                <option value="">전체</option>
+              </select>
             </div>
             <div class="form-group">
               <label>상태</label>
@@ -61,15 +68,29 @@ const PageCompanyShop = (() => {
     });
     document.getElementById('shBtnNew').addEventListener('click', () => openEditModal(null));
 
+    loadSupplyOptions().then(() => {
+      const sel = document.getElementById('shSupplyCode');
+      sel.innerHTML = '<option value="">전체</option>' + supplyOptions.map(sc =>
+        `<option value="${sc.supplyCode}">${sc.supplyName || '(공급사명 미입력)'} (${sc.supplyCode})</option>`
+      ).join('');
+    });
     loadList();
+  }
+
+  // 공급사 선택용 목록 (검색 필터 + 등록/수정 모달 공용, 전체를 한 번에 불러온다)
+  async function loadSupplyOptions() {
+    try {
+      supplyOptions = await Api.get('/company/supply-comp', { pPageOffset: 0, pPageSize: 2000 });
+    } catch (_) { supplyOptions = []; }
   }
 
   // ── 검색 파라미터 ──────────────────────────────────────────────────
   function getParams() {
     return {
-      pShopCode: document.getElementById('shShopCode').value.trim(),
-      pShopName: document.getElementById('shShopName').value.trim(),
-      pState:    document.getElementById('shState').value,
+      pShopCode:   document.getElementById('shShopCode').value.trim(),
+      pShopName:   document.getElementById('shShopName').value.trim(),
+      pSupplyCode: document.getElementById('shSupplyCode').value,
+      pState:      document.getElementById('shState').value,
     };
   }
 
@@ -134,7 +155,7 @@ const PageCompanyShop = (() => {
         </td>
       </tr>`).join('');
 
-    // table-layout:fixed + width:100%에서 폭 미지정 열("쇼핑몰명/협력사")은 지정된 열들의
+    // table-layout:fixed + width:100%에서 폭 미지정 열("상점명/공급사")은 지정된 열들의
     // 폭 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블
     // 자체는 width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
     // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
@@ -148,7 +169,7 @@ const PageCompanyShop = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">쇼핑몰코드</th><th style="${thEll}">쇼핑몰명 / 협력사</th><th style="${thEll}">담당자</th>
+            <th style="${thEll}">상점코드</th><th style="${thEll}">상점명 / 공급사</th><th style="${thEll}">담당자</th>
             <th style="${thEll}">연락처</th><th style="${thEll}">이메일</th><th style="${thEll}">계약기간</th>
             <th style="${thEll};text-align:center">상태</th><th></th>
           </tr>
@@ -169,7 +190,7 @@ const PageCompanyShop = (() => {
     // 삭제
     wrap.querySelectorAll('[data-action=del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        UI.confirm(`[${btn.dataset.name}] 쇼핑몰을 삭제하시겠습니까?`, async close => {
+        UI.confirm(`[${btn.dataset.name}] 상점을 삭제하시겠습니까?`, async close => {
           try {
             await Api.delete(`/company/shop/${btn.dataset.code}`);
             UI.toast('삭제되었습니다', 'success');
@@ -209,24 +230,31 @@ const PageCompanyShop = (() => {
     const isNew = !shop;
     const v = shop || {};
 
+    const supplyOpts = supplyOptions.map(sc =>
+      `<option value="${sc.supplyCode}" ${v.supplyCode === sc.supplyCode ? 'selected' : ''}>${sc.supplyName || '(공급사명 미입력)'} (${sc.supplyCode})</option>`
+    ).join('');
+
     const body = document.createElement('div');
     body.innerHTML = `
       <div class="form-grid">
         <div class="form-group">
-          <label>쇼핑몰코드 <span style="color:var(--danger)">*</span></label>
+          <label>상점코드 <span style="color:var(--danger)">*</span></label>
           <input class="input" id="shFShopCode" value="${v.shopCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="예: SHP001A001">
         </div>
         <div class="form-group">
-          <label>협력사코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="shFSupplyCode" value="${v.supplyCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="협력사코드">
+          <label>공급사 <span style="color:var(--danger)">*</span></label>
+          <select class="input" id="shFSupplyCode" ${!isNew ? 'disabled style="background:#f8fafc"' : ''}>
+            <option value="">-- 선택 --</option>
+            ${supplyOpts}
+          </select>
         </div>
         <div class="form-group full">
-          <label>쇼핑몰명 <span style="color:var(--danger)">*</span></label>
+          <label>상점명 <span style="color:var(--danger)">*</span></label>
           <input class="input" id="shFShopName" value="${v.shopName || ''}">
         </div>
         <div class="form-group">
           <label>로그인ID <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="shFLoginId" value="${v.loginId || ''}" placeholder="쇼핑몰 로그인 ID">
+          <input class="input" id="shFLoginId" value="${v.loginId || ''}" placeholder="상점 로그인 ID">
         </div>
         <div class="form-group">
           <label>비밀번호 ${!isNew ? '<span style="font-weight:400;color:var(--text-muted)">(변경 시에만 입력)</span>' : '<span style="color:var(--danger)">*</span>'}</label>
@@ -281,12 +309,13 @@ const PageCompanyShop = (() => {
       </div>`;
 
     UI.modal({
-      title: isNew ? '쇼핑몰 신규 등록' : `쇼핑몰 수정 – ${v.shopCode}`,
+      title: isNew ? '상점 신규 등록' : `상점 수정 – ${v.shopCode}`,
       body,
       confirmText: '저장',
       onConfirm: async close => {
         const shopCode   = document.getElementById('shFShopCode').value.trim();
-        const supplyCode = document.getElementById('shFSupplyCode').value.trim();
+        // 수정 모드에선 select가 disabled라 .value가 빈 문자열로 읽히므로, 기존 값(v.supplyCode)을 그대로 쓴다.
+        const supplyCode = isNew ? document.getElementById('shFSupplyCode').value : (v.supplyCode || '');
         const shopName   = document.getElementById('shFShopName').value.trim();
         const loginId    = document.getElementById('shFLoginId').value.trim();
         const passwdInput = document.getElementById('shFPasswd').value;
@@ -294,9 +323,9 @@ const PageCompanyShop = (() => {
         // 수정 시엔 비워두면 기존 값을 그대로 유지한다 (수정할 때마다 재입력을 강제하지 않기 위함).
         const passwd = passwdInput ? passwdInput : (v.passwd || '');
 
-        if (!shopCode)   { UI.toast('쇼핑몰코드를 입력하세요', 'error'); return; }
-        if (!supplyCode) { UI.toast('협력사코드를 입력하세요', 'error'); return; }
-        if (!shopName)   { UI.toast('쇼핑몰명을 입력하세요', 'error'); return; }
+        if (!shopCode)   { UI.toast('상점코드를 입력하세요', 'error'); return; }
+        if (!supplyCode) { UI.toast('공급사를 선택하세요', 'error'); return; }
+        if (!shopName)   { UI.toast('상점명을 입력하세요', 'error'); return; }
         if (!loginId)    { UI.toast('로그인ID를 입력하세요', 'error'); return; }
         if (!passwd)     { UI.toast('비밀번호를 입력하세요', 'error'); return; }
 
