@@ -117,19 +117,22 @@ const PageProfileCust = (() => {
   // ── 테이블 렌더 ────────────────────────────────────────────────────
   function renderTable(list) {
     const wrap = document.getElementById('cTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(c => `
       <tr>
-        <td style="font-size:12px">${c.loginId || ''}</td>
-        <td>${c.custName || ''}</td>
-        <td style="font-size:12px">${c.custGroupName || '-'}</td>
-        <td style="font-size:12px">${c.mobilePhoneNo || c.homePhoneNo || ''}</td>
-        <td style="font-size:12px">${c.email || ''}</td>
-        <td style="font-size:11px;color:var(--text-muted)">${c.chnlName || ''}</td>
+        <td style="font-size:12px;${ell}" title="${c.loginId || ''}">${c.loginId || ''}</td>
+        <td style="${ell}" title="${c.custName || ''}">${c.custName || ''}</td>
+        <td style="font-size:12px;${ell}" title="${c.custGroupName || ''}">${c.custGroupName || '-'}</td>
+        <td style="font-size:12px;${ell}" title="${c.mobilePhoneNo || c.homePhoneNo || ''}">${c.mobilePhoneNo || c.homePhoneNo || ''}</td>
+        <td style="font-size:12px;${ell}" title="${c.email || ''}">${c.email || ''}</td>
+        <td style="font-size:11px;color:var(--text-muted);${ell}" title="${c.chnlName || ''}">${c.chnlName || ''}</td>
         <td style="text-align:center">
           <span class="badge ${c.state === 1 ? 'badge-green' : 'badge-gray'}">${c.state === 1 ? '사용' : '미사용'}</span>
         </td>
-        <td style="font-size:11px;color:var(--text-muted)">${c.registDate ? c.registDate.substring(0, 10) : ''}</td>
+        <td style="font-size:11px;color:var(--text-muted);${ell}">${c.registDate ? c.registDate.substring(0, 10) : ''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
             data-action="edit" data-custid="${c.custId}">수정</button>
@@ -140,18 +143,23 @@ const PageProfileCust = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("이메일")은 지정된 열들의 폭 합계가
+    // 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블 자체는
+    // width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:970px">
         <colgroup>
           <col style="width:100px"><col style="width:90px"><col style="width:100px">
-          <col style="width:110px"><col><col style="width:80px">
+          <col style="width:110px"><col style="width:180px"><col style="width:80px">
           <col style="width:60px"><col style="width:80px"><col style="width:170px">
         </colgroup>
         <thead>
           <tr>
-            <th>아이디</th><th>이름</th><th>등급</th><th>연락처</th>
-            <th>이메일</th><th>가입채널</th><th style="text-align:center">상태</th>
-            <th>가입일</th><th></th>
+            <th style="${thEll}">아이디</th><th style="${thEll}">이름</th><th style="${thEll}">등급</th><th style="${thEll}">연락처</th>
+            <th style="${thEll}">이메일</th><th style="${thEll}">가입채널</th><th style="${thEll};text-align:center">상태</th>
+            <th style="${thEll}">가입일</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

@@ -140,19 +140,22 @@ const PageProductProd = (() => {
   // ── 테이블 렌더 ────────────────────────────────────────────────────
   function renderTable(list) {
     const wrap = document.getElementById('psTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(p => `
       <tr>
-        <td style="font-size:11px">
+        <td style="font-size:11px;${ell}">
           <code>${p.prodCode || ''}</code><br>
           <span style="color:var(--text-muted)">${p.shopProdCode || ''}</span>
         </td>
-        <td>
-          <div style="font-weight:500;font-size:13px">${p.prodName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${p.brandName || ''}</div>
+        <td style="${ell}">
+          <div style="font-weight:500;font-size:13px;${ell}" title="${p.prodName || ''}">${p.prodName || ''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${p.brandName || ''}">${p.brandName || ''}</div>
         </td>
-        <td style="font-size:12px">${p.shopName || ''}</td>
-        <td style="font-size:12px">${p.supplyName || ''}</td>
+        <td style="font-size:12px;${ell}" title="${p.shopName || ''}">${p.shopName || ''}</td>
+        <td style="font-size:12px;${ell}" title="${p.supplyName || ''}">${p.supplyName || ''}</td>
         <td style="text-align:right;font-size:13px;font-weight:500">
           ${p.salePrice != null ? p.salePrice.toLocaleString() + '원' : '-'}
         </td>
@@ -162,7 +165,7 @@ const PageProductProd = (() => {
         <td style="text-align:center">
           <span class="badge ${p.saleYn === 1 ? 'badge-green' : 'badge-gray'}">${p.saleYn === 1 ? '판매' : '미판매'}</span>
         </td>
-        <td style="font-size:11px;color:var(--text-muted)">${p.registDate ? p.registDate.substring(0,10) : ''}</td>
+        <td style="font-size:11px;color:var(--text-muted);${ell}">${p.registDate ? p.registDate.substring(0,10) : ''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
             data-action="detail" data-code="${p.prodCode}">상세</button>
@@ -177,20 +180,25 @@ const PageProductProd = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("상품명")은 지정된 열들의 폭 합계가
+    // 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블 자체는
+    // width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:955px">
         <colgroup>
-          <col style="width:130px"><col><col style="width:90px"><col style="width:90px">
+          <col style="width:130px"><col style="width:200px"><col style="width:90px"><col style="width:90px">
           <col style="width:90px"><col style="width:70px"><col style="width:55px">
           <col style="width:80px"><col style="width:150px">
         </colgroup>
         <thead>
           <tr>
-            <th>상품코드</th><th>상품명</th><th>쇼핑몰</th><th>협력사</th>
-            <th style="text-align:right">판매가</th>
-            <th style="text-align:right">재고</th>
-            <th style="text-align:center">판매</th>
-            <th>등록일</th><th></th>
+            <th style="${thEll}">상품코드</th><th style="${thEll}">상품명</th><th style="${thEll}">쇼핑몰</th><th style="${thEll}">협력사</th>
+            <th style="${thEll};text-align:right">판매가</th>
+            <th style="${thEll};text-align:right">재고</th>
+            <th style="${thEll};text-align:center">판매</th>
+            <th style="${thEll}">등록일</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

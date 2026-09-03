@@ -98,16 +98,19 @@ const PageCompanyDeli = (() => {
   // ── 테이블 렌더 ────────────────────────────────────────────────────
   function renderTable(list) {
     const wrap = document.getElementById('dlTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(d => `
       <tr>
-        <td style="font-size:11px;font-family:monospace">${d.deliCompCode ?? ''}</td>
-        <td>
-          <div style="font-weight:500;font-size:13px">${d.deliCompName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${d.deliCompDesc || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${ell}" title="${d.deliCompCode ?? ''}">${d.deliCompCode ?? ''}</td>
+        <td style="${ell}">
+          <div style="font-weight:500;font-size:13px;${ell}" title="${d.deliCompName || ''}">${d.deliCompName || ''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${d.deliCompDesc || ''}">${d.deliCompDesc || ''}</div>
         </td>
-        <td style="font-size:12px;color:var(--text-muted)">${d.linkUrl || ''}</td>
-        <td style="font-size:12px">${d.invNoVar || ''}</td>
+        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${d.linkUrl || ''}">${d.linkUrl || ''}</td>
+        <td style="font-size:12px;${ell}" title="${d.invNoVar || ''}">${d.invNoVar || ''}</td>
         <td style="text-align:center">
           <span class="badge ${d.state === 1 ? 'badge-green' : 'badge-gray'}">${d.state === 1 ? '정상' : '중지'}</span>
         </td>
@@ -119,16 +122,21 @@ const PageCompanyDeli = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("택배회사명/설명")은 지정된 열들의
+    // 폭 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블
+    // 자체는 width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:760px">
         <colgroup>
-          <col style="width:110px"><col><col style="width:200px">
+          <col style="width:110px"><col style="width:180px"><col style="width:200px">
           <col style="width:120px"><col style="width:60px"><col style="width:90px">
         </colgroup>
         <thead>
           <tr>
-            <th>코드</th><th>택배회사명 / 설명</th><th>배송조회 URL</th>
-            <th>운송장번호 형식</th><th style="text-align:center">상태</th><th></th>
+            <th style="${thEll}">코드</th><th style="${thEll}">택배회사명 / 설명</th><th style="${thEll}">배송조회 URL</th>
+            <th style="${thEll}">운송장번호 형식</th><th style="${thEll};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

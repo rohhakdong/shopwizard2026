@@ -156,6 +156,9 @@ const PageOrderList = (() => {
   // ── 테이블 렌더 ────────────────────────────────────────────────────
   function renderTable(list) {
     const wrap = document.getElementById('olTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(o => {
       const reciptDate = o.orderReciptDate ? o.orderReciptDate.substring(0, 10) : '-';
@@ -172,19 +175,18 @@ const PageOrderList = (() => {
 
       return `
         <tr style="cursor:pointer" data-orderno="${o.orderNo}">
-          <td style="font-size:12px;font-weight:600">${o.orderNo || ''}</td>
-          <td style="font-size:12px">${reciptDate}</td>
-          <td>
-            <div style="font-size:13px;font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-                 title="${prodLabel}">${prodLabel}</div>
+          <td style="font-size:12px;font-weight:600;${ell}" title="${o.orderNo || ''}">${o.orderNo || ''}</td>
+          <td style="font-size:12px;${ell}">${reciptDate}</td>
+          <td style="${ell}">
+            <div style="font-size:13px;font-weight:500;${ell}" title="${prodLabel}">${prodLabel}</div>
             <div style="font-size:11px;color:var(--text-muted)">${o.prodQty != null ? o.prodQty + '개' : ''}</div>
           </td>
-          <td style="font-size:12px">${o.orderName || ''}</td>
-          <td style="font-size:12px">${o.recverName || ''}</td>
-          <td style="text-align:right;font-size:13px;font-weight:500">${amt}</td>
+          <td style="font-size:12px;${ell}" title="${o.orderName || ''}">${o.orderName || ''}</td>
+          <td style="font-size:12px;${ell}" title="${o.recverName || ''}">${o.recverName || ''}</td>
+          <td style="text-align:right;font-size:13px;font-weight:500;${ell}">${amt}</td>
           <td style="font-size:11px;line-height:1.8">${states.join('<br>')}</td>
           <td style="text-align:center">${stateBadge(o.orderState)}</td>
-          <td style="font-size:11px;color:var(--text-muted)">${o.chnlName || ''}</td>
+          <td style="font-size:11px;color:var(--text-muted);${ell}" title="${o.chnlName || ''}">${o.chnlName || ''}</td>
           <td style="white-space:nowrap">
             <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
               data-action="detail" data-orderno="${o.orderNo}">상세</button>
@@ -195,19 +197,24 @@ const PageOrderList = (() => {
         </tr>`;
     }).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("상품")은 지정된 열들의 폭 합계가
+    // 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블 자체는
+    // width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:970px">
         <colgroup>
-          <col style="width:80px"><col style="width:90px"><col><col style="width:80px">
+          <col style="width:80px"><col style="width:90px"><col style="width:220px"><col style="width:80px">
           <col style="width:80px"><col style="width:90px"><col style="width:90px">
           <col style="width:70px"><col style="width:90px"><col style="width:80px">
         </colgroup>
         <thead>
           <tr>
-            <th>주문번호</th><th>접수일</th><th>상품</th><th>주문자</th>
-            <th>수취인</th><th style="text-align:right">주문금액</th>
-            <th>품목상태</th><th style="text-align:center">주문상태</th>
-            <th>채널</th><th></th>
+            <th style="${thEll}">주문번호</th><th style="${thEll}">접수일</th><th style="${thEll}">상품</th><th style="${thEll}">주문자</th>
+            <th style="${thEll}">수취인</th><th style="${thEll};text-align:right">주문금액</th>
+            <th style="${thEll}">품목상태</th><th style="${thEll};text-align:center">주문상태</th>
+            <th style="${thEll}">채널</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

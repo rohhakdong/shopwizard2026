@@ -105,18 +105,21 @@ const PageCompanyShop = (() => {
   // ── 테이블 렌더 ────────────────────────────────────────────────────
   function renderTable(list) {
     const wrap = document.getElementById('shTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(s => `
       <tr>
-        <td style="font-size:11px;font-family:monospace">${s.shopCode || ''}</td>
-        <td>
-          <div style="font-weight:500;font-size:13px">${s.shopName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${s.supplyName || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${ell}" title="${s.shopCode || ''}">${s.shopCode || ''}</td>
+        <td style="${ell}">
+          <div style="font-weight:500;font-size:13px;${ell}" title="${s.shopName || ''}">${s.shopName || ''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${s.supplyName || ''}">${s.supplyName || ''}</div>
         </td>
-        <td style="font-size:12px">${s.mngrName || ''}</td>
-        <td style="font-size:12px">${s.mobileNo || s.phoneNo || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${s.email || ''}</td>
-        <td style="font-size:11px">
+        <td style="font-size:12px;${ell}" title="${s.mngrName || ''}">${s.mngrName || ''}</td>
+        <td style="font-size:12px;${ell}" title="${s.mobileNo || s.phoneNo || ''}">${s.mobileNo || s.phoneNo || ''}</td>
+        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${s.email || ''}">${s.email || ''}</td>
+        <td style="font-size:11px;${ell}">
           ${s.applyStartDate ? `${s.applyStartDate.substring(0,10)} ~` : ''}
           ${s.applyEndDate ? s.applyEndDate.substring(0,10) : ''}
         </td>
@@ -131,18 +134,23 @@ const PageCompanyShop = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("쇼핑몰명/협력사")은 지정된 열들의
+    // 폭 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블
+    // 자체는 width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:930px">
         <colgroup>
-          <col style="width:110px"><col><col style="width:80px">
+          <col style="width:110px"><col style="width:200px"><col style="width:80px">
           <col style="width:110px"><col style="width:140px">
           <col style="width:140px"><col style="width:60px"><col style="width:90px">
         </colgroup>
         <thead>
           <tr>
-            <th>쇼핑몰코드</th><th>쇼핑몰명 / 협력사</th><th>담당자</th>
-            <th>연락처</th><th>이메일</th><th>계약기간</th>
-            <th style="text-align:center">상태</th><th></th>
+            <th style="${thEll}">쇼핑몰코드</th><th style="${thEll}">쇼핑몰명 / 협력사</th><th style="${thEll}">담당자</th>
+            <th style="${thEll}">연락처</th><th style="${thEll}">이메일</th><th style="${thEll}">계약기간</th>
+            <th style="${thEll};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

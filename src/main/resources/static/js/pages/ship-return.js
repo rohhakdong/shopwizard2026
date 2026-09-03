@@ -127,19 +127,22 @@ const PageShipReturn = (() => {
 
   function renderTable(list) {
     const wrap = document.getElementById('rtTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(d => `
       <tr>
-        <td style="font-size:11px">${d.orderNo || ''}<br><span style="color:var(--text-muted)">${d.orderProdNo || ''}</span></td>
-        <td style="font-size:11px">${d.returnRqstDate ? d.returnRqstDate.substring(0,10) : '-'}</td>
-        <td>
-          <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.prodName||''}">${d.prodName||''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${d.itemName||''}</div>
+        <td style="font-size:11px;${ell}">${d.orderNo || ''}<br><span style="color:var(--text-muted)">${d.orderProdNo || ''}</span></td>
+        <td style="font-size:11px;${ell}">${d.returnRqstDate ? d.returnRqstDate.substring(0,10) : '-'}</td>
+        <td style="${ell}">
+          <div style="font-size:13px;font-weight:500;${ell}" title="${d.prodName||''}">${d.prodName||''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${d.itemName||''}">${d.itemName||''}</div>
         </td>
-        <td style="font-size:12px">${d.orderName||''}</td>
-        <td style="font-size:12px">${d.shopName||''}</td>
-        <td style="font-size:12px;max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.returnReason||''}">${d.returnReason||'-'}</td>
-        <td style="font-size:12px">${d.invNo||'-'}</td>
+        <td style="font-size:12px;${ell}" title="${d.orderName||''}">${d.orderName||''}</td>
+        <td style="font-size:12px;${ell}" title="${d.shopName||''}">${d.shopName||''}</td>
+        <td style="font-size:12px;${ell}" title="${d.returnReason||''}">${d.returnReason||'-'}</td>
+        <td style="font-size:12px;${ell}" title="${d.invNo||''}">${d.invNo||'-'}</td>
         <td style="text-align:center">
           <span class="badge ${d.returnCmpletDate ? 'badge-green' : 'badge-orange'}">${d.returnCmpletDate ? '완료' : '처리중'}</span>
         </td>
@@ -152,18 +155,23 @@ const PageShipReturn = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("상품명")은 지정된 열들의 폭 합계가
+    // 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블 자체는
+    // width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:920px">
         <colgroup>
-          <col style="width:90px"><col style="width:90px"><col><col style="width:75px">
+          <col style="width:90px"><col style="width:90px"><col style="width:200px"><col style="width:75px">
           <col style="width:90px"><col style="width:100px"><col style="width:100px">
           <col style="width:65px"><col style="width:110px">
         </colgroup>
         <thead>
           <tr>
-            <th>주문/상품번호</th><th>반품요청일</th><th>상품명</th><th>주문자</th>
-            <th>쇼핑몰</th><th>반품사유</th><th>송장번호</th>
-            <th style="text-align:center">상태</th><th></th>
+            <th style="${thEll}">주문/상품번호</th><th style="${thEll}">반품요청일</th><th style="${thEll}">상품명</th><th style="${thEll}">주문자</th>
+            <th style="${thEll}">쇼핑몰</th><th style="${thEll}">반품사유</th><th style="${thEll}">송장번호</th>
+            <th style="${thEll};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

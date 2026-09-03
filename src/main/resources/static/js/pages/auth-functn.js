@@ -223,7 +223,7 @@ const PageAuthFunctn = (() => {
           <code style="font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
             title="${f.functnUri || ''}">${f.functnUri || ''}</code>
         </td>
-        <td>${f.functnDesc || ''}</td>
+        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.functnDesc || ''}">${f.functnDesc || ''}</td>
         <td style="text-align:center">
           <span class="badge ${f.state === 1 ? 'badge-green' : 'badge-gray'}">${f.state === 1 ? '사용' : '미사용'}</span>
         </td>

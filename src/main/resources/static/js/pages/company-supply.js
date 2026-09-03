@@ -147,11 +147,15 @@ const PageCompanySupply = (() => {
       </tr>`;
     }).join('');
 
+    // table-layout:fixed + width:100%에서 폭을 못 준 열("공급사명/소속회사")은 지정된
+    // 열들의 폭 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 이 열에도 고정폭을 주고
+    // 테이블 자체는 width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는
+    // 대신 table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
     const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:805px">
         <colgroup>
-          <col style="width:100px"><col><col style="width:70px">
+          <col style="width:100px"><col style="width:230px"><col style="width:70px">
           <col style="width:110px"><col style="width:150px">
           <col style="width:55px"><col style="width:90px">
         </colgroup>

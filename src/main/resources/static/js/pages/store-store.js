@@ -91,6 +91,9 @@ const PageStoreStore = (() => {
   // ── 테이블 렌더 ────────────────────────────────────────────────────
   function renderTable(list) {
     const wrap = document.getElementById('stTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(s => {
       // 경로 표시: 비어 있지 않은 레벨들을 ' > ' 로 연결
@@ -106,13 +109,13 @@ const PageStoreStore = (() => {
 
       return `
         <tr>
-          <td style="font-size:12px;padding-left:${8 + indent}px">
+          <td style="font-size:12px;padding-left:${8 + indent}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.storeName || ''}">
             ${'└'.repeat(s.storeLevel > 0 ? 1 : 0)}
             <strong>${lastName || s.storeName}</strong>
-            ${path ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${path}</div>` : ''}
+            ${path ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${path}">${path}</div>` : ''}
           </td>
-          <td style="font-size:11px;font-family:monospace">${s.storeCode}</td>
-          <td style="font-size:12px;color:var(--text-muted)">${s.storeDesc || ''}</td>
+          <td style="font-size:11px;font-family:monospace;${ell}" title="${s.storeCode}">${s.storeCode}</td>
+          <td style="font-size:12px;color:var(--text-muted);${ell}" title="${s.storeDesc || ''}">${s.storeDesc || ''}</td>
           <td style="text-align:center;font-size:12px">${s.storeLevel ?? ''}</td>
           <td style="text-align:center;font-size:12px">${s.storeSeq ?? ''}</td>
           <td style="text-align:center">
@@ -139,19 +142,24 @@ const PageStoreStore = (() => {
         </tr>`;
     }).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("스토어명")은 지정된 열들의 폭
+    // 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블 자체는
+    // width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:735px">
         <colgroup>
-          <col><col style="width:110px"><col style="width:140px">
+          <col style="width:220px"><col style="width:110px"><col style="width:140px">
           <col style="width:55px"><col style="width:55px">
           <col style="width:65px"><col style="width:90px">
         </colgroup>
         <thead>
           <tr>
-            <th>스토어명</th><th>스토어코드</th><th>설명</th>
-            <th style="text-align:center">레벨</th>
-            <th style="text-align:center">순서</th>
-            <th style="text-align:center">상태</th>
+            <th style="${thEll}">스토어명</th><th style="${thEll}">스토어코드</th><th style="${thEll}">설명</th>
+            <th style="${thEll};text-align:center">레벨</th>
+            <th style="${thEll};text-align:center">순서</th>
+            <th style="${thEll};text-align:center">상태</th>
             <th></th>
           </tr>
         </thead>

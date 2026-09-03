@@ -123,25 +123,28 @@ const PageAdjustList = (() => {
 
   function renderTable(list) {
     const wrap = document.getElementById('ajTableWrap');
+    // 고정폭(table-layout:fixed) 셀에 overflow:hidden + ellipsis가 없으면 긴 텍스트가
+    // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
+    const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
     const rows = list.map(a => `
       <tr>
-        <td style="font-size:12px;font-weight:600">${a.adjustNo || ''}</td>
-        <td style="font-size:12px">${fmtDate(a.adjustStartDate)} ~ ${fmtDate(a.adjustEndDate)}</td>
-        <td>
-          <div style="font-size:13px;font-weight:500">${a.shopName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${a.supplyName || ''}</div>
+        <td style="font-size:12px;font-weight:600;${ell}">${a.adjustNo || ''}</td>
+        <td style="font-size:12px;${ell}">${fmtDate(a.adjustStartDate)} ~ ${fmtDate(a.adjustEndDate)}</td>
+        <td style="${ell}">
+          <div style="font-size:13px;font-weight:500;${ell}" title="${a.shopName || ''}">${a.shopName || ''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${a.supplyName || ''}">${a.supplyName || ''}</div>
         </td>
-        <td style="text-align:right;font-size:13px;font-weight:500">
+        <td style="text-align:right;font-size:13px;font-weight:500;${ell}">
           ${a.saleAmt != null ? a.saleAmt.toLocaleString()+'원' : '-'}
         </td>
-        <td style="text-align:right;font-size:13px">
+        <td style="text-align:right;font-size:13px;${ell}">
           ${a.buyAmt != null ? a.buyAmt.toLocaleString()+'원' : '-'}
         </td>
-        <td style="text-align:right;font-size:13px">
+        <td style="text-align:right;font-size:13px;${ell}">
           ${a.prodMargin != null ? a.prodMargin.toLocaleString()+'원' : '-'}
         </td>
-        <td style="font-size:11px;color:var(--text-muted)">${fmtDate(a.payDate)}</td>
+        <td style="font-size:11px;color:var(--text-muted);${ell}">${fmtDate(a.payDate)}</td>
         <td style="text-align:center">${stateBadge(a.state)}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="detail"
@@ -154,21 +157,26 @@ const PageAdjustList = (() => {
         </td>
       </tr>`).join('');
 
+    // table-layout:fixed + width:100%에서 폭 미지정 열("쇼핑몰/협력사")은 지정된 열들의
+    // 폭 합계가 카드 폭을 넘는 순간 강제로 찌부러진다. 모든 열에 고정폭을 주고 테이블
+    // 자체는 width:100% 대신 열 합계 그대로 두면, 카드가 좁을 때 열이 찌그러지는 대신
+    // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
+    const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:100%">
+      <table style="table-layout:fixed;width:990px">
         <colgroup>
-          <col style="width:80px"><col style="width:155px"><col>
+          <col style="width:80px"><col style="width:155px"><col style="width:180px">
           <col style="width:100px"><col style="width:100px"><col style="width:100px">
           <col style="width:90px"><col style="width:65px"><col style="width:120px">
         </colgroup>
         <thead>
           <tr>
-            <th>정산번호</th><th>정산기간</th><th>쇼핑몰 / 협력사</th>
-            <th style="text-align:right">판매금액</th>
-            <th style="text-align:right">매입금액</th>
-            <th style="text-align:right">마진</th>
-            <th>지급예정일</th>
-            <th style="text-align:center">상태</th><th></th>
+            <th style="${thEll}">정산번호</th><th style="${thEll}">정산기간</th><th style="${thEll}">쇼핑몰 / 협력사</th>
+            <th style="${thEll};text-align:right">판매금액</th>
+            <th style="${thEll};text-align:right">매입금액</th>
+            <th style="${thEll};text-align:right">마진</th>
+            <th style="${thEll}">지급예정일</th>
+            <th style="${thEll};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
