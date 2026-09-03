@@ -41,8 +41,14 @@ public class DeliCompController {
         return deliCompService.update(deliComp);
     }
 
-    @DeleteMapping
-    public int delete(@RequestBody DeliComp deliComp) {
+    /**
+     * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
+     * (auth-mngr.js 등 기존 화면들도 대부분 이 방식), @RequestBody 대신 경로변수를 받는다.
+     */
+    @DeleteMapping("/{deliCompCode}")
+    public int delete(@PathVariable int deliCompCode) {
+        DeliComp deliComp = new DeliComp();
+        deliComp.setDeliCompCode(deliCompCode);
         return deliCompService.delete(deliComp);
     }
 }

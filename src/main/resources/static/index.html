@@ -112,7 +112,11 @@
   <script src="/js/pages/product-prod.js"></script>
   <script src="/js/pages/order-list.js"></script>
   <script src="/js/pages/store-store.js"></script>
+  <script src="/js/pages/company-comp.js"></script>
+  <script src="/js/pages/company-supply.js"></script>
   <script src="/js/pages/company-shop.js"></script>
+  <script src="/js/pages/company-chnl.js"></script>
+  <script src="/js/pages/company-deli.js"></script>
   <script src="/js/pages/ship-direct.js"></script>
   <script src="/js/pages/ship-return.js"></script>
   <script src="/js/pages/adjust-list.js"></script>
@@ -150,7 +154,16 @@
         section: '운영',
         items: [
           { key: 'store',          label: '스토어 관리',    icon: '🏪', page: 'store/list' },
-          { key: 'company-shop',   label: '쇼핑몰 관리',   icon: '🏢', page: 'company/shop' },
+        ]
+      },
+      {
+        section: '거래처',
+        items: [
+          { key: 'company-comp',   label: '회사 관리',      icon: '🏢', page: 'company/comp' },
+          { key: 'company-supply', label: '공급사 관리',    icon: '🏭', page: 'company/supply-comp' },
+          { key: 'company-shop',   label: '상점 관리',      icon: '🛍️', page: 'company/shop' },
+          { key: 'company-chnl',   label: '채널 관리',      icon: '🔗', page: 'company/chnl' },
+          { key: 'company-deli',   label: '택배회사 관리',  icon: '🚛', page: 'company/deli-comp' },
         ]
       },
       {
@@ -257,8 +270,16 @@
         PageProfileCust.render(content);
       } else if (key === 'store') {
         PageStoreStore.render(content);
+      } else if (key === 'company-comp') {
+        PageCompanyComp.render(content);
+      } else if (key === 'company-supply') {
+        PageCompanySupply.render(content);
       } else if (key === 'company-shop') {
         PageCompanyShop.render(content);
+      } else if (key === 'company-chnl') {
+        PageCompanyChnl.render(content);
+      } else if (key === 'company-deli') {
+        PageCompanyDeli.render(content);
       } else if (key === 'ship-direct') {
         PageShipDirect.render(content);
       } else if (key === 'ship-return') {

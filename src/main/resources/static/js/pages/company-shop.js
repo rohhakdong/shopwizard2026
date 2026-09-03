@@ -163,7 +163,7 @@ const PageCompanyShop = (() => {
       btn.addEventListener('click', () => {
         UI.confirm(`[${btn.dataset.name}] 쇼핑몰을 삭제하시겠습니까?`, async close => {
           try {
-            await Api.delete('/company/shop', { shopCode: btn.dataset.code });
+            await Api.delete(`/company/shop/${btn.dataset.code}`);
             UI.toast('삭제되었습니다', 'success');
             loadList();
           } catch (e) { UI.toast(e.message, 'error'); }
@@ -215,6 +215,14 @@ const PageCompanyShop = (() => {
         <div class="form-group full">
           <label>쇼핑몰명 <span style="color:var(--danger)">*</span></label>
           <input class="input" id="shFShopName" value="${v.shopName || ''}">
+        </div>
+        <div class="form-group">
+          <label>로그인ID <span style="color:var(--danger)">*</span></label>
+          <input class="input" id="shFLoginId" value="${v.loginId || ''}" placeholder="쇼핑몰 로그인 ID">
+        </div>
+        <div class="form-group">
+          <label>비밀번호 ${!isNew ? '<span style="font-weight:400;color:var(--text-muted)">(변경 시에만 입력)</span>' : '<span style="color:var(--danger)">*</span>'}</label>
+          <input class="input" id="shFPasswd" type="text" placeholder="${!isNew ? '기존 비밀번호 유지' : '비밀번호'}">
         </div>
         <div class="form-group">
           <label>담당자명</label>
@@ -272,15 +280,24 @@ const PageCompanyShop = (() => {
         const shopCode   = document.getElementById('shFShopCode').value.trim();
         const supplyCode = document.getElementById('shFSupplyCode').value.trim();
         const shopName   = document.getElementById('shFShopName').value.trim();
+        const loginId    = document.getElementById('shFLoginId').value.trim();
+        const passwdInput = document.getElementById('shFPasswd').value;
+        // LoginId/Passwd는 tCmpShop의 NOT NULL 컬럼이라, 신규 등록 시엔 반드시 입력받고
+        // 수정 시엔 비워두면 기존 값을 그대로 유지한다 (수정할 때마다 재입력을 강제하지 않기 위함).
+        const passwd = passwdInput ? passwdInput : (v.passwd || '');
 
         if (!shopCode)   { UI.toast('쇼핑몰코드를 입력하세요', 'error'); return; }
         if (!supplyCode) { UI.toast('협력사코드를 입력하세요', 'error'); return; }
         if (!shopName)   { UI.toast('쇼핑몰명을 입력하세요', 'error'); return; }
+        if (!loginId)    { UI.toast('로그인ID를 입력하세요', 'error'); return; }
+        if (!passwd)     { UI.toast('비밀번호를 입력하세요', 'error'); return; }
 
         const payload = {
           shopCode,
           supplyCode,
           shopName,
+          loginId,
+          passwd,
           mngrName:       document.getElementById('shFMngrName').value.trim(),
           mngrMd:         document.getElementById('shFMngrMd').value.trim(),
           mobileNo:       document.getElementById('shFMobileNo').value.trim(),

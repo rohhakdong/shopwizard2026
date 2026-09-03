@@ -55,8 +55,16 @@ public class ShopController {
         return shopService.update(shop);
     }
 
-    @DeleteMapping
-    public int delete(@RequestBody Shop shop) {
+    /**
+     * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
+     * (auth-mngr.js 등 기존 화면들도 대부분 이 방식), @RequestBody 대신 경로변수를 받는다.
+     * (이전엔 @RequestBody라 실제로 호출하면 500이 나던 상태였다 — company-shop.js의 삭제 버튼이
+     * 한 번도 정상 동작한 적이 없었다는 뜻.)
+     */
+    @DeleteMapping("/{shopCode}")
+    public int delete(@PathVariable String shopCode) {
+        Shop shop = new Shop();
+        shop.setShopCode(shopCode);
         return shopService.delete(shop);
     }
 }

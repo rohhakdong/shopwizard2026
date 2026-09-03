@@ -68,7 +68,7 @@
             <if test="pState != null and pState != ''">AND SC.State = #{pState}</if>
         </where>
         <if test="sidx != null and sidx != ''">ORDER BY SC.${sidx} ${sord}</if>
-        <if test="pPageSize != null">ORDER BY SC.SupplyCode LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">ORDER BY SC.SupplyCode LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">

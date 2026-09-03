@@ -27,7 +27,7 @@
             <if test="pState != null and pState != ''">AND State = #{pState}</if>
         </where>
         <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">

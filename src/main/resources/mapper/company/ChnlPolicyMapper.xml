@@ -44,7 +44,7 @@
             <if test="pChnlPolicyCode != null and pChnlPolicyCode != ''">AND ChnlPolicyCode = #{pChnlPolicyCode}</if>
             <if test="pChnlPolicyName != null and pChnlPolicyName != ''">AND ChnlPolicyName LIKE CONCAT('%',#{pChnlPolicyName},'%')</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
