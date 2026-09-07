@@ -239,7 +239,7 @@ const PageCompanyShop = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>상점코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="shFShopCode" value="${v.shopCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="예: SHP001A001">
+          <input class="input" id="shFShopCode" value="${v.shopCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="공급사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>공급사 <span style="color:var(--danger)">*</span></label>
@@ -312,6 +312,25 @@ const PageCompanyShop = (() => {
           <input class="input" id="shFRemark" value="${v.remark || ''}">
         </div>
       </div>`;
+
+    // 상점코드 = 공급사코드 + 순번(1부터) 관례 (기존 112건 전부 이 규칙을 따름) — 신규
+    // 등록 시 공급사를 고르면 그 공급사의 마지막 상점코드 다음 번호로 자동 채워준다.
+    // 완전히 잠그지는 않고 필요하면 직접 고칠 수 있게 둔다.
+    if (isNew) {
+      body.querySelector('#shFSupplyCode').addEventListener('change', async e => {
+        const supplyCode = e.target.value;
+        const shopCodeInput = document.getElementById('shFShopCode');
+        if (!supplyCode) { shopCodeInput.value = ''; return; }
+        try {
+          const maxCode = await Api.get('/company/shop/max', { supplyCode });
+          const suffix = maxCode && maxCode.startsWith(supplyCode) ? maxCode.slice(supplyCode.length) : '';
+          const n = parseInt(suffix, 10);
+          shopCodeInput.value = supplyCode + (Number.isFinite(n) ? n + 1 : 1);
+        } catch (_) {
+          shopCodeInput.value = supplyCode + '1';
+        }
+      });
+    }
 
     UI.modal({
       title: isNew ? '상점 신규 등록' : `상점 수정 – ${v.shopCode}`,

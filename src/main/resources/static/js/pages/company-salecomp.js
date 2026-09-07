@@ -224,7 +224,7 @@ const PageCompanySaleComp = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>판매사코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="scFSaleCompCode" value="${v.saleCompCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="판매사코드">
+          <input class="input" id="scFSaleCompCode" value="${v.saleCompCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="소속 회사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>소속 회사 <span style="color:var(--danger)">*</span></label>
@@ -262,6 +262,15 @@ const PageCompanySaleComp = (() => {
           <input class="input" id="scFRemark" value="${v.remark || ''}">
         </div>
       </div>`;
+
+    // 판매사코드 = 회사코드 + "Z" 관례 (기존 26건 전부 이 규칙을 따름) — 신규 등록 시
+    // 소속 회사를 고르면 자동으로 채워준다. 완전히 잠그지는 않고 필요하면 직접 고칠 수 있게 둔다.
+    if (isNew) {
+      body.querySelector('#scFCompCode').addEventListener('change', e => {
+        const compCode = e.target.value;
+        document.getElementById('scFSaleCompCode').value = compCode ? `${compCode}Z` : '';
+      });
+    }
 
     UI.modal({
       title: isNew ? '판매사 신규 등록' : `판매사 수정 – ${v.saleCompCode}`,

@@ -234,7 +234,7 @@ const PageCompanyChnl = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>채널코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="chFChnlCode" value="${v.chnlCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="채널코드">
+          <input class="input" id="chFChnlCode" value="${v.chnlCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="판매회사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>판매회사 <span style="color:var(--danger)">*</span></label>
@@ -298,13 +298,29 @@ const PageCompanyChnl = (() => {
         </div>
       </div>`;
 
-    // 판매회사를 바꿀 때마다 참고용 소속 회사 표시를 갱신한다.
-    body.querySelector('#chFSaleCompCode').addEventListener('change', e => {
+    // 판매회사를 바꿀 때마다 참고용 소속 회사 표시를 갱신하고 (신규 등록 시) 채널코드도
+    // 자동으로 채워준다. 채널코드 = 판매사코드 + 순번(1부터) 관례 (기존 90건 중 88건이
+    // 이 규칙을 따름) — 그 판매사의 마지막 채널코드 다음 번호를 자동으로 채워준다.
+    // 완전히 잠그지는 않고 필요하면 직접 고칠 수 있게 둔다.
+    body.querySelector('#chFSaleCompCode').addEventListener('change', async e => {
       const opt = e.target.selectedOptions[0];
       const label = document.getElementById('chSelectedCompName');
       label.textContent = opt && opt.value
         ? `소속 회사: ${opt.dataset.compName || '(회사명 미입력)'} (${opt.dataset.compCode || ''})`
         : '';
+
+      if (!isNew) return;
+      const saleCompCode = e.target.value;
+      const chnlCodeInput = document.getElementById('chFChnlCode');
+      if (!saleCompCode) { chnlCodeInput.value = ''; return; }
+      try {
+        const maxCode = await Api.get('/company/chnl/max', { saleCompCode });
+        const suffix = maxCode && maxCode.startsWith(saleCompCode) ? maxCode.slice(saleCompCode.length) : '';
+        const n = parseInt(suffix, 10);
+        chnlCodeInput.value = saleCompCode + (Number.isFinite(n) ? n + 1 : 1);
+      } catch (_) {
+        chnlCodeInput.value = saleCompCode + '1';
+      }
     });
 
     UI.modal({

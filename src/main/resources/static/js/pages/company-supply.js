@@ -232,7 +232,7 @@ const PageCompanySupply = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>공급사코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="spFSupplyCode" value="${v.supplyCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="공급사코드">
+          <input class="input" id="spFSupplyCode" value="${v.supplyCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="소속 회사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>소속 회사 <span style="color:var(--danger)">*</span></label>
@@ -293,6 +293,16 @@ const PageCompanySupply = (() => {
           <input class="input" id="spFRemark" value="${v.remark || ''}">
         </div>
       </div>`;
+
+    // 공급사코드 = 회사코드 + "A" 관례 (기존 111건 중 110건이 이 규칙을 따름) — 신규 등록
+    // 시 소속 회사를 고르면 자동으로 채워준다. 완전히 잠그지는 않는다: 실제로 예외가
+    // 존재하므로(한 건은 A 대신 D가 붙어 있음) 필요하면 직접 고칠 수 있게 둔다.
+    if (isNew) {
+      body.querySelector('#spFCompCode').addEventListener('change', e => {
+        const compCode = e.target.value;
+        document.getElementById('spFSupplyCode').value = compCode ? `${compCode}A` : '';
+      });
+    }
 
     UI.modal({
       title: isNew ? '공급사 신규 등록' : `공급사 수정 – ${v.supplyCode}`,
