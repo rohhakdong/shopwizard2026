@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWizard 창고 마이페이지</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .warehs-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: #fff; border-bottom: 1px solid var(--border);
+    }
+    .warehs-topbar .brand { font-weight: 700; font-size: 16px; }
+    .warehs-topbar .who { color: var(--text-muted); font-size: 13px; margin-left: 10px; }
+    .warehs-main { max-width: 640px; margin: 24px auto; padding: 0 16px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .info-row .label { color: var(--text-muted); }
+    .info-row .value { font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="warehs-topbar">
+    <div>
+      <span class="brand">📦 ShopWizard 창고</span>
+      <span class="who" id="whoLabel"></span>
+    </div>
+    <button class="btn btn-ghost" id="logoutBtn">로그아웃</button>
+  </div>
+
+  <div class="warehs-main">
+    <div class="card">
+      <div class="card-header">내 정보</div>
+      <div class="card-body">
+        <div class="info-grid" id="infoGrid">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/warehs-auth.js"></script>
+  <script>
+    async function init() {
+      const ok = await WarehsAuth.requireLogin();
+      if (!ok) return;
+
+      const info = await WarehsAuth.getInfo();
+      document.getElementById('whoLabel').textContent = `${info.name} (${info.loginId})`;
+      document.getElementById('infoGrid').innerHTML = `
+        <div class="info-row"><span class="label">창고코드</span><span class="value">${info.warehsCode}</span></div>
+        <div class="info-row"><span class="label">창고명</span><span class="value">${info.name}</span></div>
+        <div class="info-row"><span class="label">로그인ID</span><span class="value">${info.loginId}</span></div>
+      `;
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await WarehsAuth.logout();
+        location.href = '/warehs-login.html';
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

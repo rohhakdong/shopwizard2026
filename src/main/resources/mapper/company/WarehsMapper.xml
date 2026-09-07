@@ -34,10 +34,14 @@
         </if>
         <where>
             <if test="pWarehsCode != null and pWarehsCode != ''">AND W.WarehsCode = #{pWarehsCode}</if>
-            <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName = #{pWarehsName}</if>
+            <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName LIKE CONCAT('%',#{pWarehsName},'%')</if>
             <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        ORDER BY W.WarehsCode
+        <!-- pPageOffset/pPageSize는 @RequestParam Map<String,Object>로 넘어와 String 타입이라
+             #{}로 바인딩하면 MySQL이 LIMIT '0','20' 형태의 SQL 오류를 낸다 — ${} 치환이 필요하되
+             숫자만 허용하도록 검증해 SQL 인젝션을 막는다 (이 프로젝트 전역에서 반복된 패턴). -->
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
@@ -48,7 +52,7 @@
         </if>
         <where>
             <if test="pWarehsCode != null and pWarehsCode != ''">AND W.WarehsCode = #{pWarehsCode}</if>
-            <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName = #{pWarehsName}</if>
+            <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName LIKE CONCAT('%',#{pWarehsName},'%')</if>
             <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
         </where>
     </select>
@@ -57,6 +61,22 @@
         SELECT *
         FROM shopwizard.tCmpWarehs
         WHERE WarehsCode = #{warehsCode}
+    </select>
+
+    <!-- 로그인 전용 (창고 계정 인증) -->
+    <select id="selectByLoginId" parameterType="string" resultMap="WarehsResult">
+        SELECT *
+        FROM shopwizard.tCmpWarehs
+        WHERE LoginId = #{value}
+    </select>
+
+    <!-- 창고코드 = 소속회사코드 + "W" + 순번(1부터) 관례 — 신규 등록 시 다음 순번 자동 채움용.
+         WarehsCode에는 소속회사 FK 컬럼이 따로 없어(레거시 설계), 코드 문자열 자체로 소속을
+         가려낸다. -->
+    <select id="selectMax" parameterType="string" resultType="string">
+        SELECT MAX(WarehsCode)
+        FROM shopwizard.tCmpWarehs
+        WHERE WarehsCode LIKE CONCAT(#{value}, 'W%')
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.company.model.Warehs">
@@ -73,13 +93,24 @@
         )
     </insert>
 
+    <!-- 비밀번호는 일부러 여기서 다루지 않는다 (updatePasswd 참고) — 이 update는 프론트가
+         "변경 안 함"으로 재전송하는 기존 해시값을 다시 저장하다가 통째로 재해싱해버리는
+         사고를 막기 위해 일반 정보 수정 전용으로 분리되어 있다. -->
     <update id="update" parameterType="com.shopwizard.company.model.Warehs">
         UPDATE shopwizard.tCmpWarehs SET
             WarehsName = #{warehsName}, AdjustPeriodCode = #{adjustPeriodCode},
-            LoginId = #{loginId}, Passwd = #{passwd}, MngrName = #{mngrName},
+            LoginId = #{loginId}, MngrName = #{mngrName},
             PhoneNo = #{phoneNo}, MobileNo = #{mobileNo}, FaxNo = #{faxNo},
-            Email = #{email}, PasswdChangeDate = NOW(), SvcCode = #{svcCode},
+            Email = #{email}, SvcCode = #{svcCode},
             State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE WarehsCode = #{warehsCode}
+    </update>
+
+    <!-- 비밀번호 변경 전용 (해싱은 WarehsService에서 수행) -->
+    <update id="updatePasswd" parameterType="map">
+        UPDATE shopwizard.tCmpWarehs SET
+            Passwd = #{passwd}, PasswdChangeDate = NOW(),
             ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE WarehsCode = #{warehsCode}
     </update>

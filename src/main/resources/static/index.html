@@ -118,6 +118,7 @@
   <script src="/js/pages/company-salecomp.js"></script>
   <script src="/js/pages/company-chnl.js"></script>
   <script src="/js/pages/company-deli.js"></script>
+  <script src="/js/pages/company-warehs.js"></script>
   <script src="/js/pages/ship-direct.js"></script>
   <script src="/js/pages/ship-return.js"></script>
   <script src="/js/pages/adjust-list.js"></script>
@@ -166,6 +167,7 @@
           { key: 'company-salecomp', label: '판매사 관리',  icon: '💼', page: 'company/sale-comp' },
           { key: 'company-chnl',   label: '채널 관리',      icon: '🔗', page: 'company/chnl' },
           { key: 'company-deli',   label: '택배회사 관리',  icon: '🚛', page: 'company/deli-comp' },
+          { key: 'company-warehs', label: '창고 관리',      icon: '📦', page: 'company/warehs' },
         ]
       },
       {
@@ -284,6 +286,8 @@
         PageCompanyChnl.render(content);
       } else if (key === 'company-deli') {
         PageCompanyDeli.render(content);
+      } else if (key === 'company-warehs') {
+        PageCompanyWarehs.render(content);
       } else if (key === 'ship-direct') {
         PageShipDirect.render(content);
       } else if (key === 'ship-return') {

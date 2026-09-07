@@ -4,9 +4,12 @@ import com.shopwizard.authority.model.CustLoginRequest;
 import com.shopwizard.authority.model.Mngr;
 import com.shopwizard.authority.model.MngrLoginRequest;
 import com.shopwizard.authority.model.ShopLoginRequest;
+import com.shopwizard.authority.model.WarehsLoginRequest;
 import com.shopwizard.authority.service.MngrService;
 import com.shopwizard.company.model.Shop;
+import com.shopwizard.company.model.Warehs;
 import com.shopwizard.company.service.ShopService;
+import com.shopwizard.company.service.WarehsService;
 import com.shopwizard.profile.model.Cust;
 import com.shopwizard.profile.service.CustService;
 import jakarta.servlet.http.Cookie;
@@ -27,6 +30,7 @@ public class AuthController {
     private final MngrService mngrService;
     private final CustService custService;
     private final ShopService shopService;
+    private final WarehsService warehsService;
 
     // ─── 관리자 로그인 ──────────────────────────────────────────────
     @PostMapping("/mngr/login")
@@ -235,6 +239,60 @@ public class AuthController {
         result.put("loginId",    getCookieValue(request, "shop_loginId"));
         result.put("supplyCode", getCookieValue(request, "shop_supplyCode"));
         result.put("svcCode",    getCookieValue(request, "shop_svcCode"));
+        return ResponseEntity.ok(result);
+    }
+
+    // ─── 창고(거래처) 계정 로그인 ─────────────────────────────────────
+    // 관리자/회원/상점과 완전히 분리된 별도 로그인 — 창고 계정이 인증되어도 다른 화면/API에는
+    // 전혀 접근할 수 없다. WebMvcConfig에 warehs_code 인터셉터로 보호되는 본인 정보 조회만
+    // 이 쿠키로 접근 가능하다 (현재 범위: 로그인 + 내 정보 확인까지).
+    @PostMapping("/warehs/login")
+    public ResponseEntity<Map<String, Object>> warehsLogin(
+            @RequestBody WarehsLoginRequest req,
+            HttpServletResponse response) {
+
+        Warehs warehs = warehsService.login(req.getLoginId(), req.getPasswd());
+
+        Map<String, Object> result = new HashMap<>();
+        if (warehs == null) {
+            result.put("success", false);
+            result.put("message", "아이디 또는 비밀번호가 일치하지 않습니다.");
+            return ResponseEntity.ok(result);
+        }
+
+        warehs.setPasswd(null);
+        setCookie(response, "warehs_code",    warehs.getWarehsCode()     );
+        setCookie(response, "warehs_name",    nvl(warehs.getWarehsName()));
+        setCookie(response, "warehs_loginId", nvl(warehs.getLoginId())   );
+
+        result.put("success", true);
+        result.put("warehs", warehs);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/warehs/logout")
+    public ResponseEntity<Map<String, Object>> warehsLogout(HttpServletResponse response) {
+        clearCookie(response, "warehs_code");
+        clearCookie(response, "warehs_name");
+        clearCookie(response, "warehs_loginId");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/warehs/me")
+    public ResponseEntity<Map<String, Object>> warehsMe(HttpServletRequest request) {
+        String warehsCode = getCookieValue(request, "warehs_code");
+        Map<String, Object> result = new HashMap<>();
+        if (warehsCode == null || warehsCode.isEmpty()) {
+            result.put("authenticated", false);
+            return ResponseEntity.ok(result);
+        }
+        result.put("authenticated", true);
+        result.put("warehsCode", warehsCode);
+        result.put("name",       getCookieValue(request, "warehs_name"));
+        result.put("loginId",    getCookieValue(request, "warehs_loginId"));
         return ResponseEntity.ok(result);
     }
 

@@ -62,7 +62,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         // 상점(거래처) 계정 전용 API (별도 shop_code 인터셉터로 보호)
                         "/company/shop/me",
                         "/order/orderprod/shop/list",
-                        "/order/orderprod/shop/list/count"
+                        "/order/orderprod/shop/list/count",
+                        // 창고(거래처) 계정 전용 API (별도 warehs_code 인터셉터로 보호)
+                        "/company/warehs/me"
                 );
 
         // 고객 API 인증 체크: cust_id 쿠키 필요
@@ -87,6 +89,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/company/shop/me",
                         "/order/orderprod/shop/list",
                         "/order/orderprod/shop/list/count"
+                );
+
+        // 창고(거래처) 계정 API 인증 체크: warehs_code 쿠키 필요
+        // 관리자/회원/상점과 완전히 분리된 별도 로그인이라, 여기 걸린 경로는 다른 쿠키만으로는
+        // 접근할 수 없다. 현재 범위는 본인 정보 조회까지 (로그인 + 내 정보).
+        registry.addInterceptor(new AuthInterceptor("warehs_code"))
+                .addPathPatterns(
+                        "/company/warehs/me"
                 );
     }
 }

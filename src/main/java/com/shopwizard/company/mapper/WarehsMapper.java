@@ -10,7 +10,10 @@ public interface WarehsMapper {
     List<Warehs> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     Warehs select(Map<String, Object> params);
+    Warehs selectByLoginId(String loginId);
+    String selectMax(String compCode);
     int insert(Warehs warehs);
     int update(Warehs warehs);
+    int updatePasswd(Map<String, Object> params);
     int delete(Warehs warehs);
 }
