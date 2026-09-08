@@ -26,8 +26,14 @@
                 AND (O.OriginKorName LIKE CONCAT('%',#{pOriginName},'%') OR O.OriginEngName LIKE CONCAT('%',#{pOriginName},'%'))
             </if>
         </where>
-        <if test="sidx != null and sidx != ''">ORDER BY O.${sidx} ${sord}</if>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <choose>
+            <when test="sidx != null and sidx != ''">ORDER BY O.${sidx} ${sord}</when>
+            <otherwise>ORDER BY O.OriginId DESC</otherwise>
+        </choose>
+        <!-- pPageOffset/pPageSize는 @RequestParam Map<String,Object>로 넘어와 String 타입이라
+             #{}로 바인딩하면 MySQL이 LIMIT '0','20' 형태의 SQL 오류를 낸다 — ${} 치환이 필요하되
+             숫자만 허용하도록 검증해 SQL 인젝션을 막는다 (이 프로젝트 전역에서 반복된 패턴). -->
+        <if test="pPageSize != null and pPageOffset.toString().matches('^[0-9]+$') and pPageSize.toString().matches('^[0-9]+$')">LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">

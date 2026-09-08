@@ -110,6 +110,9 @@
   <script src="/js/pages/auth-functn.js"></script>
   <script src="/js/pages/catalog-prod.js"></script>
   <script src="/js/pages/catalog-cate.js"></script>
+  <script src="/js/pages/catalog-brand.js"></script>
+  <script src="/js/pages/catalog-maker.js"></script>
+  <script src="/js/pages/catalog-origin.js"></script>
   <script src="/js/pages/product-prod.js"></script>
   <script src="/js/pages/order-list.js"></script>
   <script src="/js/pages/store-store.js"></script>
@@ -139,6 +142,9 @@
           { key: 'product-prod',   label: '상품 관리',      icon: '📦', page: 'product/prod' },
           { key: 'catalog-prod',   label: '카탈로그 상품',  icon: '📂', page: 'catalog/prod' },
           { key: 'catalog-cate',   label: '카테고리 관리',  icon: '🗃️', page: 'catalog/cate' },
+          { key: 'catalog-brand',  label: '브랜드 관리',    icon: '🏷️', page: 'catalog/brand' },
+          { key: 'catalog-maker',  label: '제조사 관리',    icon: '🏭', page: 'catalog/maker' },
+          { key: 'catalog-origin', label: '원산지 관리',    icon: '🌍', page: 'catalog/origin' },
         ]
       },
       {
@@ -270,6 +276,12 @@
         PageCatalogProd.render(content);
       } else if (key === 'catalog-cate') {
         PageCatalogCate.render(content);
+      } else if (key === 'catalog-brand') {
+        PageCatalogBrand.render(content);
+      } else if (key === 'catalog-maker') {
+        PageCatalogMaker.render(content);
+      } else if (key === 'catalog-origin') {
+        PageCatalogOrigin.render(content);
       } else if (key === 'product-prod') {
         PageProductProd.render(content);
       } else if (key === 'order-list') {
