@@ -1,12 +1,31 @@
 package com.shopwizard.config;
 
 import com.shopwizard.framework.interceptor.AuthInterceptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.io.File;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    // application.yml의 upload.dir (상대경로면 실행 위치 기준). 상품이미지 업로드 파일이 저장되는 루트.
+    @Value("${upload.dir:uploads}")
+    private String uploadDir;
+
+    /**
+     * 업로드된 상품이미지(원본+대/중/소 등 6단계 썸네일)를 정적 리소스로 서빙한다.
+     * 실제 데이터의 기존 URL 패턴(/images/product/{shopCode}/{yyyymmdd}/{prodCode}...)과
+     * 맞추기 위해 /images/** 로 매핑한다. classpath:/static/images/ 는 현재 비어 있어 충돌하지 않는다.
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String location = "file:" + new File(uploadDir).getAbsolutePath() + File.separator;
+        registry.addResourceHandler("/images/**").addResourceLocations(location);
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

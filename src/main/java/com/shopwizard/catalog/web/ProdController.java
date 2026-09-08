@@ -2,10 +2,13 @@ package com.shopwizard.catalog.web;
 
 import com.shopwizard.catalog.model.Prod;
 import com.shopwizard.catalog.model.ProdDashBoard;
+import com.shopwizard.catalog.service.ProdImgUploadService;
 import com.shopwizard.catalog.service.ProdService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +17,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ProdController {
     private final ProdService prodService;
+    private final ProdImgUploadService prodImgUploadService;
+
+    /**
+     * 상품 대표이미지 업로드. 원본 1장을 받아 50/80/100/160/220/280px 썸네일 6장을 자동 생성하고,
+     * 저장된 각 파일의 URL만 반환한다 — DB에는 이 URL 문자열들만 ImgUrl/ImgUrl50~280 컬럼에 넣으면 된다.
+     * (프론트는 아직 ProdCode가 확정되지 않은 신규 등록 화면에서도 호출하므로 prodCode를 별도 파라미터로 받는다.)
+     */
+    @PostMapping("/img/upload")
+    public Map<String, String> uploadImg(@RequestParam("file") MultipartFile file,
+                                          @RequestParam String shopCode,
+                                          @RequestParam String prodCode) throws IOException {
+        return prodImgUploadService.upload(file, shopCode, prodCode);
+    }
 
     @GetMapping("/list") public List<Prod> selectList(@RequestParam Map<String, Object> params) { return prodService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return prodService.selectCount(params); }

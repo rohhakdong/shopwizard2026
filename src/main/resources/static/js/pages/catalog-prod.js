@@ -325,6 +325,11 @@ const PageCatalogProd = (() => {
         ${row('쇼핑몰상품코드', p.shopProdCode)}
         ${row('상품명', p.prodName, true)}
         ${row('진열명', p.prodDsplName, true)}
+        ${p.imgUrl ? `
+        <div class="form-group full">
+          <label>대표이미지</label>
+          <img src="${p.imgUrl100 || p.imgUrl}" style="width:100px;height:100px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius)">
+        </div>` : ''}
         ${row('상점', p.shopName)}
         ${row('카테고리', p.cateName)}
         ${row('브랜드', p.brandName)}
@@ -428,6 +433,13 @@ const PageCatalogProd = (() => {
     const v = prod || {};
     let selectedCateCode = v.cateCode || '';
     let selectedCatePath = v.cateName || '';
+
+    // 대표이미지: 서버가 업로드된 원본으로부터 만들어준 6단계 썸네일 URL을 여기 모아뒀다가
+    // 저장 시 그대로 payload에 실어 보낸다 (사용자가 직접 URL을 입력하지 않는다).
+    let imgUrls = {
+      imgUrl: v.imgUrl || '', imgUrl50: v.imgUrl50 || '', imgUrl80: v.imgUrl80 || '', imgUrl100: v.imgUrl100 || '',
+      imgUrl160: v.imgUrl160 || '', imgUrl220: v.imgUrl220 || '', imgUrl280: v.imgUrl280 || '',
+    };
 
     // 상품코드 자동 채번: PK가 순번 숫자(char(10))라 목록을 ProdCode 내림차순 1건만 조회해
     // 최댓값+1을 계산한다 (전용 /max 엔드포인트가 따로 없어 기존 목록 API를 재사용).
@@ -579,8 +591,14 @@ const PageCatalogProd = (() => {
           <input class="input" id="pFLeadTime" type="number" min="0" value="${v.leadTime ?? ''}">
         </div>
         <div class="form-group full">
-          <label>대표이미지 URL</label>
-          <input class="input" id="pFImgUrl" value="${v.imgUrl || ''}" placeholder="https://...">
+          <label>대표이미지</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <img id="pFImgPreview" src="${imgUrls.imgUrl}" style="width:72px;height:72px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);background:#f8fafc;${imgUrls.imgUrl ? '' : 'display:none'}">
+            <div>
+              <input type="file" id="pFImgFile" accept="image/*">
+              <div id="pFImgStatus" style="font-size:12px;color:var(--text-muted);margin-top:4px">${imgUrls.imgUrl ? '등록된 이미지가 있습니다. 변경하려면 새 파일을 선택하세요.' : '이미지를 선택하면 50/80/100/160/220/280px 썸네일이 자동 생성됩니다.'}</div>
+            </div>
+          </div>
         </div>
         <div class="form-group full">
           <label>상품설명</label>
@@ -598,6 +616,37 @@ const PageCatalogProd = (() => {
       const shop = shopList.find(s => s.shopCode === shopCode);
       return shop?.svcCode || '';
     }
+
+    // 이미지 선택 즉시 업로드 (등록/수정 저장을 누르기 전에 먼저 서버에 반영해두고,
+    // 결과 URL만 payload에 실어 보낸다 — 신규 등록 중이라도 위에서 미리 계산해둔
+    // newProdCode를 상품코드로 넘기면 되므로 문제 없다).
+    body.querySelector('#pFImgFile').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const shopCode = document.getElementById('pFShopCode').value;
+      if (!shopCode) { UI.toast('쇼핑몰을 먼저 선택하세요', 'error'); e.target.value = ''; return; }
+
+      const statusEl = document.getElementById('pFImgStatus');
+      statusEl.textContent = '업로드 중...';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('shopCode', shopCode);
+      formData.append('prodCode', isNew ? newProdCode : v.prodCode);
+
+      try {
+        const uploaded = await Api.upload('/catalog/prod/img/upload', formData);
+        imgUrls = uploaded;
+        const preview = document.getElementById('pFImgPreview');
+        preview.src = uploaded.imgUrl;
+        preview.style.display = '';
+        statusEl.textContent = '업로드 완료 (50/80/100/160/220/280px 썸네일 자동 생성됨)';
+      } catch (err) {
+        statusEl.textContent = '업로드 실패';
+        UI.toast(err.message, 'error');
+      }
+    });
 
     body.querySelector('#pFCateBtn').addEventListener('click', () => {
       const svcCode = currentSvcCode();
@@ -656,7 +705,7 @@ const PageCatalogProd = (() => {
           deliFeeType:   document.getElementById('pFDeliFeeType').value.trim(),
           deliFeeAmt:    parseInt(document.getElementById('pFDeliFeeAmt').value) || 0,
           leadTime:      parseInt(document.getElementById('pFLeadTime').value) || 0,
-          imgUrl:        document.getElementById('pFImgUrl').value.trim(),
+          ...imgUrls,
           prodDesc,
           remark:        document.getElementById('pFRemark').value.trim(),
           state:         v.state ?? 1,

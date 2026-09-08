@@ -2,6 +2,9 @@
 build/
 .gradle/
 
+# 상품이미지 등 업로드 파일 저장소 (application.yml의 upload.dir) — 런타임 데이터라 커밋하지 않는다
+uploads/
+
 # Logs
 logs/
 *.log

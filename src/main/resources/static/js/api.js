@@ -37,10 +37,22 @@ const Api = (() => {
     return res.text();
   }
 
+  // 파일 업로드 전용 (multipart/form-data). Content-Type은 boundary가 필요해서
+  // 브라우저가 자동으로 붙이도록 헤더를 직접 지정하지 않는다 — request()의 JSON 강제와는 별도 경로.
+  async function upload(url, formData) {
+    const res = await fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+    }
+    return res.json();
+  }
+
   return {
     get:    (url, params)  => request('GET',    url, params),
     post:   (url, body)    => request('POST',   url, body),
     put:    (url, body)    => request('PUT',    url, body),
     delete: (url, params)  => request('DELETE', url, params),
+    upload,
   };
 })();
