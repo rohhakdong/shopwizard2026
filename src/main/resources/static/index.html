@@ -109,6 +109,7 @@
   <script src="/js/pages/auth-menu.js"></script>
   <script src="/js/pages/auth-functn.js"></script>
   <script src="/js/pages/catalog-prod.js"></script>
+  <script src="/js/pages/catalog-cate.js"></script>
   <script src="/js/pages/product-prod.js"></script>
   <script src="/js/pages/order-list.js"></script>
   <script src="/js/pages/store-store.js"></script>
@@ -137,6 +138,7 @@
         items: [
           { key: 'product-prod',   label: '상품 관리',      icon: '📦', page: 'product/prod' },
           { key: 'catalog-prod',   label: '카탈로그 상품',  icon: '📂', page: 'catalog/prod' },
+          { key: 'catalog-cate',   label: '카테고리 관리',  icon: '🗃️', page: 'catalog/cate' },
         ]
       },
       {
@@ -266,6 +268,8 @@
         PageAuthFunctn.render(content);
       } else if (key === 'catalog-prod') {
         PageCatalogProd.render(content);
+      } else if (key === 'catalog-cate') {
+        PageCatalogCate.render(content);
       } else if (key === 'product-prod') {
         PageProductProd.render(content);
       } else if (key === 'order-list') {

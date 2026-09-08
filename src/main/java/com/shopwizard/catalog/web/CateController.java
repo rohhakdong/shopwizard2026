@@ -23,5 +23,18 @@ public class CateController {
     @GetMapping("/count-child") public int selectCountChild(@RequestParam Map<String, Object> params) { return cateService.selectCountChild(params); }
     @PostMapping public int insert(@RequestBody Cate cate) { return cateService.insert(cate); }
     @PutMapping public int update(@RequestBody Cate cate) { return cateService.update(cate); }
-    @DeleteMapping public int delete(@RequestBody Cate cate) { return cateService.delete(cate); }
+
+    /**
+     * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
+     * (다른 관리 화면들도 대부분 이 방식), @RequestBody 대신 쿼리 파라미터로 받는다.
+     * (이전엔 @RequestBody라 실제로 호출하면 500이 나던 상태였다.) 복합키(svcCode+cateCode)라
+     * 경로변수 하나로는 표현이 안 돼 쿼리 파라미터 둘을 받는다.
+     */
+    @DeleteMapping
+    public int delete(@RequestParam String svcCode, @RequestParam String cateCode) {
+        Cate cate = new Cate();
+        cate.setSvcCode(svcCode);
+        cate.setCateCode(cateCode);
+        return cateService.delete(cate);
+    }
 }
