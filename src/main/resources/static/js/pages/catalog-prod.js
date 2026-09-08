@@ -290,13 +290,14 @@ const PageCatalogProd = (() => {
     // 엔드포인트/파라미터 모양을 쓰도록 통일했다.
     wrap.querySelectorAll('[data-action=approv]').forEach(btn => {
       btn.addEventListener('click', () => {
-        UI.confirm(`[${btn.dataset.name}] 상품을 승인하시겠습니까?`, async close => {
+        UI.confirm(`[${btn.dataset.name}] 상품을 승인하시겠습니까? (승인 즉시 쇼핑몰에 노출됩니다)`, async close => {
           try {
             await Api.put('/catalog/prod/approv', {
               prodCodes:  [btn.dataset.code],
               approvId:   info?.loginId,
               approvName: info?.name,
             });
+            await publishToShopion([btn.dataset.code]);
             UI.toast('승인되었습니다', 'success');
             loadList();
           } catch (e) { UI.toast(e.message, 'error'); }
@@ -328,18 +329,46 @@ const PageCatalogProd = (() => {
     const codes = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.code);
     if (codes.length === 0) { UI.toast('승인할 상품을 먼저 선택하세요', 'error'); return; }
 
-    UI.confirm(`선택한 ${codes.length}건을 일괄승인 하시겠습니까?`, async close => {
+    UI.confirm(`선택한 ${codes.length}건을 일괄승인 하시겠습니까? (승인 즉시 쇼핑몰에 노출됩니다)`, async close => {
       try {
         await Api.put('/catalog/prod/approv', {
           prodCodes:  codes,
           approvId:   info?.loginId,
           approvName: info?.name,
         });
+        await publishToShopion(codes);
         UI.toast(`${codes.length}건 승인되었습니다`, 'success');
         loadList();
       } catch (e) { UI.toast(e.message, 'error'); }
       close();
     });
+  }
+
+  // ── 승인된 상품을 실제 판매 스키마(shopion)로 반영 ────────────────────
+  // catalog.ProdController/ProdItemController의 copy2shopion을 그대로 재사용한다.
+  // 이전까지는 두 엔드포인트 다(상품쪽은 컨트롤러까지 있었지만, 옵션쪽은 서비스
+  // 레이어에만 있고 컨트롤러 자체가 없어서 호출이 원천적으로 불가능했다) 실제로
+  // 어디서도 호출되지 않아서, 카탈로그에서 아무리 등록→승인해도 shop.html(고객
+  // 화면)에는 영원히 나타날 수 없었다 — "승인 = 쇼핑몰 노출"이 되도록 여기서
+  // 연결한다. 상품 하나가 실패해도 나머지는 계속 시도하고, 실패한 것만 모아
+  // 알려준다(승인 자체는 이미 DB에 반영된 뒤이므로 조용히 삼키면 안 된다).
+  async function publishToShopion(prodCodes) {
+    const failed = [];
+    for (const prodCode of prodCodes) {
+      try {
+        await Api.post('/catalog/prod/copy2shopion', { prodCode });
+        await Api.post('/catalog/prod-item/copy2shopion', {
+          prodCode,
+          registId:   info?.loginId,
+          registName: info?.name,
+        });
+      } catch (e) {
+        failed.push(prodCode);
+      }
+    }
+    if (failed.length > 0) {
+      UI.toast(`다음 상품은 쇼핑몰 반영에 실패했습니다: ${failed.join(', ')}`, 'error');
+    }
   }
 
   // ── 페이지네이션 ───────────────────────────────────────────────────
