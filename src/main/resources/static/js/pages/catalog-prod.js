@@ -68,9 +68,12 @@ const PageCatalogProd = (() => {
             <button class="btn btn-ghost" id="btnNew" style="margin-top:18px">+ 신규</button>
           </div>
 
-          <!-- 건수 -->
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
-            총 <strong id="totalCountLabel">0</strong>건
+          <!-- 건수 + 일괄승인 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;color:var(--text-muted)">
+              총 <strong id="totalCountLabel">0</strong>건
+            </div>
+            <button class="btn btn-primary" id="btnBulkApprov" style="padding:4px 10px;font-size:12px">선택 일괄승인</button>
           </div>
 
           <!-- 목록 -->
@@ -86,6 +89,7 @@ const PageCatalogProd = (() => {
 
     document.getElementById('btnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
     document.getElementById('btnNew').addEventListener('click', () => openEditModal(null));
+    document.getElementById('btnBulkApprov').addEventListener('click', bulkApprov);
     ['sProdCode','sProdName'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
     });
@@ -172,6 +176,9 @@ const PageCatalogProd = (() => {
 
     const rows = list.map(p => `
       <tr>
+        <td style="text-align:center">
+          ${!p.approvDate ? `<input type="checkbox" class="row-check" data-code="${p.prodCode}">` : ''}
+        </td>
         <td style="font-size:11px;${ell}">
           <code>${p.prodCode || ''}</code><br>
           <span style="color:var(--text-muted)">${p.shopProdCode || ''}</span>
@@ -199,6 +206,8 @@ const PageCatalogProd = (() => {
             data-action="detail" data-code="${p.prodCode}">상세</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
             data-action="edit" data-code="${p.prodCode}">수정</button>
+          <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
+            data-action="option" data-code="${p.prodCode}" data-name="${p.prodName}">옵션</button>
           ${!p.approvDate ? `<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)"
             data-action="approv" data-code="${p.prodCode}" data-name="${p.prodName}">승인</button>` : ''}
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
@@ -212,14 +221,16 @@ const PageCatalogProd = (() => {
     // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
     const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:890px">
+      <table style="table-layout:fixed;width:970px">
         <colgroup>
+          <col style="width:30px">
           <col style="width:130px"><col style="width:200px"><col style="width:90px"><col style="width:90px">
           <col style="width:90px"><col style="width:55px"><col style="width:55px">
-          <col style="width:80px"><col style="width:100px">
+          <col style="width:80px"><col style="width:150px">
         </colgroup>
         <thead>
           <tr>
+            <th style="text-align:center"><input type="checkbox" id="checkAll"></th>
             <th style="${thEll}">상품코드</th><th style="${thEll}">상품명</th><th style="${thEll}">상점</th><th style="${thEll}">카테고리</th>
             <th style="${thEll};text-align:right">판매가</th><th style="${thEll};text-align:center">판매</th>
             <th style="${thEll};text-align:center">승인</th><th style="${thEll}">등록일</th><th></th>
@@ -227,6 +238,14 @@ const PageCatalogProd = (() => {
         </thead>
         <tbody>${rows}</tbody>
       </table>`;
+
+    // 전체선택: 현재 페이지에 보이는(=미승인) 체크박스만 대상으로 한다.
+    const checkAll = wrap.querySelector('#checkAll');
+    if (checkAll) {
+      checkAll.addEventListener('change', () => {
+        wrap.querySelectorAll('.row-check').forEach(cb => { cb.checked = checkAll.checked; });
+      });
+    }
 
     // 상세
     wrap.querySelectorAll('[data-action=detail]').forEach(btn => {
@@ -248,13 +267,29 @@ const PageCatalogProd = (() => {
       });
     });
 
+    // 옵션(사이즈/색상 등) 관리
+    wrap.querySelectorAll('[data-action=option]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          const prod = await Api.get('/catalog/prod/' + btn.dataset.code);
+          openProdItemModal(prod);
+        } catch (e) { UI.toast(e.message, 'error'); }
+      });
+    });
+
     // 승인
+    // 주의: 백엔드 ProdMapper.xml의 approv 쿼리는 ProdCode IN (...) 을 위해
+    // 파라미터 맵에 반드시 "prodCodes"(배열)를 요구한다 — 예전에는 여기서 "prodCode"
+    // (단수)를 보내고 있어서 MyBatis가 "The expression 'prodCodes' evaluated to a
+    // null value" 예외를 던지며 버튼을 누를 때마다 500이 났다(한 번도 성공한 적이
+    // 없었던 것으로 보인다). 배열로 보내도록 고치면서, 아래 일괄승인과 완전히 같은
+    // 엔드포인트/파라미터 모양을 쓰도록 통일했다.
     wrap.querySelectorAll('[data-action=approv]').forEach(btn => {
       btn.addEventListener('click', () => {
         UI.confirm(`[${btn.dataset.name}] 상품을 승인하시겠습니까?`, async close => {
           try {
             await Api.put('/catalog/prod/approv', {
-              prodCode:   btn.dataset.code,
+              prodCodes:  [btn.dataset.code],
               approvId:   info?.loginId,
               approvName: info?.name,
             });
@@ -278,6 +313,28 @@ const PageCatalogProd = (() => {
           close();
         });
       });
+    });
+  }
+
+  // ── 선택 일괄승인 ──────────────────────────────────────────────────
+  // 개별 승인 버튼과 동일한 /catalog/prod/approv 엔드포인트를 그대로 재사용한다
+  // (백엔드 쿼리 자체가 처음부터 ProdCode IN (...) 이라 다건 승인을 염두에 두고
+  // 만들어져 있었는데, 정작 프론트에는 여러 건을 한 번에 선택할 UI가 없었다).
+  function bulkApprov() {
+    const codes = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.code);
+    if (codes.length === 0) { UI.toast('승인할 상품을 먼저 선택하세요', 'error'); return; }
+
+    UI.confirm(`선택한 ${codes.length}건을 일괄승인 하시겠습니까?`, async close => {
+      try {
+        await Api.put('/catalog/prod/approv', {
+          prodCodes:  codes,
+          approvId:   info?.loginId,
+          approvName: info?.name,
+        });
+        UI.toast(`${codes.length}건 승인되었습니다`, 'success');
+        loadList();
+      } catch (e) { UI.toast(e.message, 'error'); }
+      close();
     });
   }
 
@@ -425,6 +482,216 @@ const PageCatalogProd = (() => {
     });
     document.getElementById('cateSearchBtn').addEventListener('click', runSearch);
     document.getElementById('cateSearchKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  }
+
+  // ── 상품옵션(사이즈/색상 등) 관리 모달 ────────────────────────────────
+  // tCatProd.AttrName1~4 (옵션명, 상품 수정화면에서 설정)에 대응하는 실제 값 조합을
+  // tCatProdItem(ProdCode+ItemCode PK)에 재고/가격까지 포함해 여러 건 등록하는 화면.
+  // 백엔드(ProdItemController/Service/Mapper)는 이미 있었지만 화면이 어디에도 없었다.
+  async function openProdItemModal(prod) {
+    const attrNames = [prod.attrName1, prod.attrName2, prod.attrName3, prod.attrName4];
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      ${attrNames.every(n => !n) ? `
+      <div style="background:#fffbea;border:1px solid #fde68a;border-radius:var(--radius);padding:10px 12px;font-size:12px;margin-bottom:12px">
+        옵션명이 설정되지 않았습니다. '수정' 화면의 '옵션명(사이즈/색상 등)'에 이름을 먼저 입력하면
+        아래 옵션값 입력란에 그 이름이 라벨로 표시됩니다. (비워도 옵션값 자체는 등록할 수 있습니다.)
+      </div>` : ''}
+      <div style="margin-bottom:10px">
+        <button class="btn btn-primary" id="piAddBtn" style="padding:5px 12px;font-size:12px">+ 옵션 추가</button>
+      </div>
+      <div id="piTableWrap"></div>`;
+
+    async function refresh() {
+      const wrap = body.querySelector('#piTableWrap');
+      wrap.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)">불러오는 중...</div>';
+      let items = [];
+      try { items = await Api.get('/catalog/prod-item/list', { pProdCode: prod.prodCode }); }
+      catch (e) { wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`; return; }
+
+      if (items.length === 0) {
+        wrap.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)">등록된 옵션이 없습니다</div>';
+        return;
+      }
+
+      const attrLabel = (i) => attrNames[i] || `옵션값${i + 1}`;
+      const rows = items.map(it => `
+        <tr>
+          <td style="font-size:12px">${it.attrVal1 || '-'}</td>
+          <td style="font-size:12px">${it.attrVal2 || '-'}</td>
+          <td style="font-size:12px">${it.attrVal3 || '-'}</td>
+          <td style="font-size:12px">${it.attrVal4 || '-'}</td>
+          <td style="text-align:right;font-size:12px">${it.supplyQty ?? 0}</td>
+          <td style="text-align:right;font-size:12px">${it.salePrice != null ? it.salePrice.toLocaleString() : '-'}</td>
+          <td style="text-align:center">
+            <span class="badge ${it.saleYn === 1 ? 'badge-green' : 'badge-gray'}">${it.saleYn === 1 ? '판매' : '중지'}</span>
+          </td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="pi-edit" data-item="${it.itemCode}">수정</button>
+            <button class="btn btn-danger" style="padding:2px 7px;font-size:11px" data-action="pi-del" data-item="${it.itemCode}">삭제</button>
+          </td>
+        </tr>`).join('');
+
+      wrap.innerHTML = `
+        <table style="width:100%;table-layout:fixed">
+          <colgroup>
+            <col><col><col><col><col style="width:70px"><col style="width:80px"><col style="width:60px"><col style="width:110px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="font-size:11px;text-align:left">${attrLabel(0)}</th><th style="font-size:11px;text-align:left">${attrLabel(1)}</th>
+              <th style="font-size:11px;text-align:left">${attrLabel(2)}</th><th style="font-size:11px;text-align:left">${attrLabel(3)}</th>
+              <th style="font-size:11px;text-align:right">재고</th><th style="font-size:11px;text-align:right">판매가</th>
+              <th style="font-size:11px;text-align:center">판매</th><th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+
+      wrap.querySelectorAll('[data-action=pi-edit]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = items.find(it => String(it.itemCode) === btn.dataset.item);
+          openProdItemEditModal(prod, item, items, refresh);
+        });
+      });
+      wrap.querySelectorAll('[data-action=pi-del]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          UI.confirm('이 옵션을 삭제하시겠습니까?', async close => {
+            try {
+              await Api.delete('/catalog/prod-item', { prodCode: prod.prodCode, itemCode: btn.dataset.item });
+              UI.toast('삭제되었습니다', 'success');
+              refresh();
+            } catch (e) { UI.toast(e.message, 'error'); }
+            close();
+          });
+        });
+      });
+    }
+
+    UI.modal({
+      title: `상품옵션 관리 – ${prod.prodName}`,
+      body,
+      confirmText: null,
+      cancelText: '닫기',
+    });
+
+    body.querySelector('#piAddBtn').addEventListener('click', async () => {
+      let items = [];
+      try { items = await Api.get('/catalog/prod-item/list', { pProdCode: prod.prodCode }); } catch (_) { items = []; }
+      openProdItemEditModal(prod, null, items, refresh);
+    });
+
+    refresh();
+  }
+
+  // 옵션 1건 등록/수정 (openProdItemModal 위에 중첩되는 모달)
+  function openProdItemEditModal(prod, item, existingItems, onSaved) {
+    const isNew = !item;
+    const v = item || {};
+    const attrNames = [prod.attrName1, prod.attrName2, prod.attrName3, prod.attrName4];
+
+    // ItemCode는 전용 채번 엔드포인트가 없어 상품코드 자동채번([[#카탈로그 상품 신규 등록/수정]])과
+    // 같은 방식으로, 이미 불러와둔 목록에서 최댓값+1을 클라이언트에서 계산한다.
+    const newItemCode = isNew
+      ? (existingItems.length ? Math.max(...existingItems.map(it => it.itemCode)) + 1 : 1)
+      : v.itemCode;
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div class="form-grid">
+        <div class="form-group">
+          <label>옵션코드</label>
+          <input class="input" value="${newItemCode}" readonly style="background:#f8fafc;font-family:monospace">
+        </div>
+        <div class="form-group">
+          <label>${attrNames[0] || '옵션값1'}</label>
+          <input class="input" id="piAttrVal1" value="${v.attrVal1 || ''}">
+        </div>
+        <div class="form-group">
+          <label>${attrNames[1] || '옵션값2'}</label>
+          <input class="input" id="piAttrVal2" value="${v.attrVal2 || ''}">
+        </div>
+        <div class="form-group">
+          <label>${attrNames[2] || '옵션값3'}</label>
+          <input class="input" id="piAttrVal3" value="${v.attrVal3 || ''}">
+        </div>
+        <div class="form-group">
+          <label>${attrNames[3] || '옵션값4'}</label>
+          <input class="input" id="piAttrVal4" value="${v.attrVal4 || ''}">
+        </div>
+        <div class="form-group">
+          <label>재고수량</label>
+          <input class="input" id="piSupplyQty" type="number" min="0" value="${v.supplyQty ?? 0}">
+        </div>
+        <div class="form-group">
+          <label>판매가(옵션추가금 아님)</label>
+          <input class="input" id="piSalePrice" type="number" min="0" value="${v.salePrice ?? prod.salePrice ?? 0}">
+        </div>
+        <div class="form-group">
+          <label>옵션추가금액</label>
+          <input class="input" id="piOptionPrice" type="number" min="0" value="${v.optionPrice ?? 0}">
+        </div>
+        <div class="form-group">
+          <label>공급가</label>
+          <input class="input" id="piSupplyPrice" type="number" min="0" value="${v.supplyPrice ?? 0}">
+        </div>
+        <div class="form-group">
+          <label>매입가</label>
+          <input class="input" id="piBuyPrice" type="number" min="0" value="${v.buyPrice ?? 0}">
+        </div>
+        <div class="form-group">
+          <label>판매여부</label>
+          <select class="input" id="piSaleYn">
+            <option value="1" ${(v.saleYn ?? 1) === 1 ? 'selected' : ''}>판매</option>
+            <option value="0" ${v.saleYn === 0 ? 'selected' : ''}>중지</option>
+          </select>
+        </div>
+      </div>`;
+
+    UI.modal({
+      title: isNew ? '옵션 추가' : `옵션 수정 – #${v.itemCode}`,
+      body,
+      confirmText: '저장',
+      onConfirm: async close => {
+        const attrVal1 = document.getElementById('piAttrVal1').value.trim();
+        const attrVal2 = document.getElementById('piAttrVal2').value.trim();
+        const attrVal3 = document.getElementById('piAttrVal3').value.trim();
+        const attrVal4 = document.getElementById('piAttrVal4').value.trim();
+        if (!attrVal1 && !attrVal2 && !attrVal3 && !attrVal4) {
+          UI.toast('옵션값을 최소 1개 이상 입력하세요', 'error'); return;
+        }
+
+        const registId   = (typeof info !== 'undefined' && info?.loginId) || '';
+        const registName = (typeof info !== 'undefined' && info?.name) || '';
+
+        const payload = {
+          prodCode: prod.prodCode,
+          itemCode: newItemCode,
+          attrVal1, attrVal2, attrVal3, attrVal4,
+          supplyQty:   parseInt(document.getElementById('piSupplyQty').value) || 0,
+          salePrice:   parseInt(document.getElementById('piSalePrice').value) || 0,
+          optionPrice: parseInt(document.getElementById('piOptionPrice').value) || 0,
+          supplyPrice: parseInt(document.getElementById('piSupplyPrice').value) || 0,
+          buyPrice:    parseInt(document.getElementById('piBuyPrice').value) || 0,
+          saleYn:      parseInt(document.getElementById('piSaleYn').value),
+          state: 1,
+          registId, registName, changeId: registId, changeName: registName,
+        };
+
+        try {
+          if (isNew) {
+            await Api.post('/catalog/prod-item', payload);
+            UI.toast('등록되었습니다', 'success');
+          } else {
+            await Api.put('/catalog/prod-item', payload);
+            UI.toast('저장되었습니다', 'success');
+          }
+          onSaved();
+          close();
+        } catch (e) { UI.toast(e.message, 'error'); }
+      },
+    });
   }
 
   // ── 신규/수정 모달 ─────────────────────────────────────────────────
@@ -591,6 +858,19 @@ const PageCatalogProd = (() => {
           <input class="input" id="pFLeadTime" type="number" min="0" value="${v.leadTime ?? ''}">
         </div>
         <div class="form-group full">
+          <label>옵션명 (사이즈/색상 등, 최대 4개)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <input class="input" id="pFAttrName1" placeholder="예: 사이즈" value="${v.attrName1 || ''}">
+            <input class="input" id="pFAttrName2" placeholder="예: 색상" value="${v.attrName2 || ''}">
+            <input class="input" id="pFAttrName3" placeholder="옵션3명" value="${v.attrName3 || ''}">
+            <input class="input" id="pFAttrName4" placeholder="옵션4명" value="${v.attrName4 || ''}">
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+            여기 입력한 이름이 아래 '옵션 관리'에서 사이즈/색상 등 실제 옵션값(재고·가격 포함)을
+            등록할 때 항목명으로 쓰입니다. 옵션이 필요 없는 상품은 비워두세요.
+          </div>
+        </div>
+        <div class="form-group full">
           <label>대표이미지</label>
           <div style="display:flex;align-items:center;gap:12px">
             <img id="pFImgPreview" src="${imgUrls.imgUrl}" style="width:72px;height:72px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);background:#f8fafc;${imgUrls.imgUrl ? '' : 'display:none'}">
@@ -705,6 +985,10 @@ const PageCatalogProd = (() => {
           deliFeeType:   document.getElementById('pFDeliFeeType').value.trim(),
           deliFeeAmt:    parseInt(document.getElementById('pFDeliFeeAmt').value) || 0,
           leadTime:      parseInt(document.getElementById('pFLeadTime').value) || 0,
+          attrName1:     document.getElementById('pFAttrName1').value.trim(),
+          attrName2:     document.getElementById('pFAttrName2').value.trim(),
+          attrName3:     document.getElementById('pFAttrName3').value.trim(),
+          attrName4:     document.getElementById('pFAttrName4').value.trim(),
           ...imgUrls,
           prodDesc,
           remark:        document.getElementById('pFRemark').value.trim(),
