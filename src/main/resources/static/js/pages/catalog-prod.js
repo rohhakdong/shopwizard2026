@@ -7,9 +7,10 @@
  *   마스터와 DB상 FK로 연결돼 있지 않다 — 카테고리(CateCode)만 실제 FK. 값 자체는
  *   여전히 텍스트로 저장되지만, 선택 실수를 줄이도록 마스터 관리 화면에 등록된 이름만
  *   고를 수 있는 select로 제공한다(자유 입력은 막고 마스터 등록을 먼저 하도록 유도).
- * - 부가세율(VatRate)과 배송비유형(DeliFeeType)은 공통코드(wizardn.tCodConstrVal의
- *   cTaxType/cDeliFeeType)를 select 옵션으로 사용한다. cTaxType은 코드값 자체가
- *   세율(%) 문자열(0=면세, 10=과세)이라 그대로 VatRate에 저장해도 의미가 맞아떨어진다.
+ * - 부가세율(VatRate), 배송비유형(DeliFeeType), 판매여부(SaleYn)는 공통코드
+ *   (wizardn.tCodConstrVal의 cTaxType/cDeliFeeType/cSaleYnType)를 select 옵션으로
+ *   사용한다. cTaxType은 코드값 자체가 세율(%) 문자열(0=면세, 10=과세)이라 그대로
+ *   VatRate에 저장해도 의미가 맞아떨어진다.
  */
 const PageCatalogProd = (() => {
 
@@ -22,6 +23,7 @@ const PageCatalogProd = (() => {
   let originOptions  = [];
   let taxTypeOptions = [];
   let deliFeeTypeOptions = [];
+  let saleYnTypeOptions  = [];
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
@@ -116,6 +118,7 @@ const PageCatalogProd = (() => {
     // 일치). ConstrValSeq 오름차순 정렬로 받아온다.
     try { taxTypeOptions     = await Api.get('/code/constr-val', { pConstrCode: 'cTaxType',     sidx: 'ConstrValSeq', sord: 'ASC' }); } catch (_) { taxTypeOptions     = []; }
     try { deliFeeTypeOptions = await Api.get('/code/constr-val', { pConstrCode: 'cDeliFeeType', sidx: 'ConstrValSeq', sord: 'ASC' }); } catch (_) { deliFeeTypeOptions = []; }
+    try { saleYnTypeOptions  = await Api.get('/code/constr-val', { pConstrCode: 'cSaleYnType',  sidx: 'ConstrValSeq', sord: 'ASC' }); } catch (_) { saleYnTypeOptions  = []; }
   }
 
   // ── 목록 조회 ─────────────────────────────────────────────────────
@@ -339,8 +342,8 @@ const PageCatalogProd = (() => {
         ${row('부가세율', p.vatRate != null ? p.vatRate + '%' : null)}
       </div>
       <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">배송 / 판매</div>
-      <div class="form-grid">
-        ${row('판매여부', p.saleYn === 1 ? '판매' : '미판매')}
+      <div class="form-grid" style="margin-bottom:16px">
+        ${row('판매여부', saleYnTypeOptions.find(s => s.constrVal === String(p.saleYn))?.constrValDesc ?? p.saleYn)}
         ${row('승인일', p.approvDate || '미승인')}
         ${row('배송방법', p.deliMethod)}
         ${row('배송비유형', p.deliFeeType)}
@@ -348,7 +351,10 @@ const PageCatalogProd = (() => {
         ${row('성인상품', p.adultYn === 1 ? '예' : '아니오')}
         ${row('등록일', p.registDate ? p.registDate.substring(0,10) : null)}
         ${row('등록자', p.registName)}
-      </div>`;
+      </div>
+      ${p.prodDesc ? `
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">상품설명</div>
+      <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:#fff">${p.prodDesc}</div>` : ''}`;
 
     UI.modal({
       title: `상품 상세 – ${p.prodCode}`,
@@ -452,6 +458,9 @@ const PageCatalogProd = (() => {
     const deliFeeTypeOpts = deliFeeTypeOptions.map(d =>
       `<option value="${d.constrVal}" ${v.deliFeeType === d.constrVal ? 'selected' : ''}>${d.constrValDesc}</option>`
     ).join('');
+    const saleYnOpts = saleYnTypeOptions.map(s =>
+      `<option value="${s.constrVal}" ${String(v.saleYn ?? 1) === s.constrVal ? 'selected' : ''}>${s.constrValDesc}</option>`
+    ).join('');
 
     const body = document.createElement('div');
     body.innerHTML = `
@@ -540,9 +549,7 @@ const PageCatalogProd = (() => {
         <div class="form-group">
           <label>판매여부</label>
           <select class="input" id="pFSaleYn">
-            <option value="1"  ${(v.saleYn ?? 1) === 1  ? 'selected' : ''}>판매</option>
-            <option value="0"  ${v.saleYn === 0  ? 'selected' : ''}>미판매</option>
-            <option value="-1" ${v.saleYn === -1 ? 'selected' : ''}>대기</option>
+            ${saleYnOpts}
           </select>
         </div>
         <div class="form-group">
@@ -577,7 +584,7 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group full">
           <label>상품설명</label>
-          <textarea class="input" id="pFProdDesc" rows="4" style="resize:vertical">${v.prodDesc || ''}</textarea>
+          <div id="pFProdDescEditor" style="background:#fff"></div>
         </div>
         <div class="form-group full">
           <label>비고</label>
@@ -602,11 +609,20 @@ const PageCatalogProd = (() => {
       });
     });
 
+    // Quill 인스턴스는 UI.modal()이 body를 실제 document에 붙인 뒤에 생성해야 한다
+    // (모달 열기 전에는 #pFProdDescEditor가 아직 문서에 붙어있지 않은 상태).
+    let quill;
+
     UI.modal({
       title: isNew ? '상품 신규 등록' : `상품 수정 – ${v.prodCode}`,
       body,
       confirmText: '저장',
       onConfirm: async close => {
+        // Quill은 root.innerHTML로 HTML을 읽어오는데, 아무것도 입력하지 않은 상태의
+        // 기본값이 빈 문자열이 아니라 '<p><br></p>'이므로 그대로 저장하면 DB에
+        // 의미없는 태그만 남는다 — 빈 값으로 정규화한다.
+        const prodDescHtml = quill.root.innerHTML;
+        const prodDesc = prodDescHtml === '<p><br></p>' ? '' : prodDescHtml;
         const shopCode  = document.getElementById('pFShopCode').value;
         const prodName  = document.getElementById('pFProdName').value.trim();
 
@@ -641,7 +657,7 @@ const PageCatalogProd = (() => {
           deliFeeAmt:    parseInt(document.getElementById('pFDeliFeeAmt').value) || 0,
           leadTime:      parseInt(document.getElementById('pFLeadTime').value) || 0,
           imgUrl:        document.getElementById('pFImgUrl').value.trim(),
-          prodDesc:      document.getElementById('pFProdDesc').value.trim(),
+          prodDesc,
           remark:        document.getElementById('pFRemark').value.trim(),
           state:         v.state ?? 1,
           registId, registName,
@@ -661,6 +677,13 @@ const PageCatalogProd = (() => {
         } catch (e) { UI.toast(e.message, 'error'); }
       },
     });
+
+    // 모달이 열려 body가 document에 붙은 뒤 Quill을 초기화하고 기존 값(HTML)을 채운다.
+    quill = new Quill(body.querySelector('#pFProdDescEditor'), {
+      theme: 'snow',
+      placeholder: '상품 상세 설명을 입력하세요...',
+    });
+    if (v.prodDesc) quill.clipboard.dangerouslyPasteHTML(v.prodDesc);
   }
 
   return { render };
