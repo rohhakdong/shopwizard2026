@@ -4,8 +4,12 @@
  * - 승인된 상품은 별도 API(copy2shopion, 이 화면에는 노출 안 함)로 실제 판매 스키마
  *   (shopion.tPrdProd, "상품 관리"/product-prod.js 화면)로 복사되는 구조로 보인다.
  * - 브랜드/제조사/원산지는 tCatProd에 자유 텍스트로 저장되며 tCatBrand/Maker/Origin
- *   마스터와 DB상 FK로 연결돼 있지 않다 — 카테고리(CateCode)만 실제 FK. 그래서 여기서는
- *   마스터 목록을 <datalist> 자동완성 후보로만 제공하고, 값 자체는 자유 입력을 허용한다.
+ *   마스터와 DB상 FK로 연결돼 있지 않다 — 카테고리(CateCode)만 실제 FK. 값 자체는
+ *   여전히 텍스트로 저장되지만, 선택 실수를 줄이도록 마스터 관리 화면에 등록된 이름만
+ *   고를 수 있는 select로 제공한다(자유 입력은 막고 마스터 등록을 먼저 하도록 유도).
+ * - 부가세율(VatRate)과 배송비유형(DeliFeeType)은 공통코드(wizardn.tCodConstrVal의
+ *   cTaxType/cDeliFeeType)를 select 옵션으로 사용한다. cTaxType은 코드값 자체가
+ *   세율(%) 문자열(0=면세, 10=과세)이라 그대로 VatRate에 저장해도 의미가 맞아떨어진다.
  */
 const PageCatalogProd = (() => {
 
@@ -13,9 +17,11 @@ const PageCatalogProd = (() => {
   let currentPage = 1;
   let totalCount  = 0;
   let shopList    = [];
-  let brandOptions  = [];
-  let makerOptions  = [];
-  let originOptions = [];
+  let brandOptions   = [];
+  let makerOptions   = [];
+  let originOptions  = [];
+  let taxTypeOptions = [];
+  let deliFeeTypeOptions = [];
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
@@ -35,7 +41,7 @@ const PageCatalogProd = (() => {
               <input class="input" id="sProdName" placeholder="상품명" style="width:180px">
             </div>
             <div class="form-group">
-              <label>쇼핑몰</label>
+              <label>상점</label>
               <select class="input" id="sShopCode" style="width:160px">
                 <option value="">전체</option>
               </select>
@@ -100,11 +106,16 @@ const PageCatalogProd = (() => {
     } catch (_) {}
   }
 
-  // 브랜드/제조사/원산지 마스터 — 등록/수정 모달의 자동완성 후보용 (전체를 한 번에 불러온다).
+  // 브랜드/제조사/원산지 마스터 + 부가세율/배송비유형 공통코드 — 등록/수정 모달의
+  // select 옵션용 (전체를 한 번에 불러온다).
   async function loadMasterOptions() {
     try { brandOptions  = await Api.get('/catalog/brand/list',  { pPageOffset: 0, pPageSize: 2000 }); } catch (_) { brandOptions  = []; }
     try { makerOptions  = await Api.get('/catalog/maker/list',  { pPageOffset: 0, pPageSize: 2000 }); } catch (_) { makerOptions  = []; }
     try { originOptions = await Api.get('/catalog/origin/list', { pPageOffset: 0, pPageSize: 2000 }); } catch (_) { originOptions = []; }
+    // cTaxType 코드값 자체가 세율(%) 문자열이다 (0=면세, 10=과세 — 국세청 부가세율 체계와
+    // 일치). ConstrValSeq 오름차순 정렬로 받아온다.
+    try { taxTypeOptions     = await Api.get('/code/constr-val', { pConstrCode: 'cTaxType',     sidx: 'ConstrValSeq', sord: 'ASC' }); } catch (_) { taxTypeOptions     = []; }
+    try { deliFeeTypeOptions = await Api.get('/code/constr-val', { pConstrCode: 'cDeliFeeType', sidx: 'ConstrValSeq', sord: 'ASC' }); } catch (_) { deliFeeTypeOptions = []; }
   }
 
   // ── 목록 조회 ─────────────────────────────────────────────────────
@@ -206,7 +217,7 @@ const PageCatalogProd = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">상품코드</th><th style="${thEll}">상품명</th><th style="${thEll}">쇼핑몰</th><th style="${thEll}">카테고리</th>
+            <th style="${thEll}">상품코드</th><th style="${thEll}">상품명</th><th style="${thEll}">상점</th><th style="${thEll}">카테고리</th>
             <th style="${thEll};text-align:right">판매가</th><th style="${thEll};text-align:center">판매</th>
             <th style="${thEll};text-align:center">승인</th><th style="${thEll}">등록일</th><th></th>
           </tr>
@@ -311,7 +322,7 @@ const PageCatalogProd = (() => {
         ${row('쇼핑몰상품코드', p.shopProdCode)}
         ${row('상품명', p.prodName, true)}
         ${row('진열명', p.prodDsplName, true)}
-        ${row('쇼핑몰', p.shopName)}
+        ${row('상점', p.shopName)}
         ${row('카테고리', p.cateName)}
         ${row('브랜드', p.brandName)}
         ${row('제조사', p.makerName)}
@@ -325,7 +336,7 @@ const PageCatalogProd = (() => {
         ${row('공급가', p.supplyPrice != null ? p.supplyPrice.toLocaleString() + '원' : null)}
         ${row('할인가', p.discntPrice != null ? p.discntPrice.toLocaleString() + '원' : null)}
         ${row('할인기간', p.discntStartDate ? `${p.discntStartDate} ~ ${p.discntEndDate}` : null)}
-        ${row('VAT율', p.vatRate != null ? p.vatRate + '%' : null)}
+        ${row('부가세율', p.vatRate != null ? p.vatRate + '%' : null)}
       </div>
       <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">배송 / 판매</div>
       <div class="form-grid">
@@ -426,9 +437,21 @@ const PageCatalogProd = (() => {
     const shopOpts = shopList.map(s =>
       `<option value="${s.shopCode}" ${v.shopCode === s.shopCode ? 'selected' : ''}>${s.shopName || s.shopCode} (${s.shopCode})</option>`
     ).join('');
-    const brandListOpts  = brandOptions.map(b => `<option value="${b.brandKorName}">`).join('');
-    const makerListOpts  = makerOptions.map(m => `<option value="${m.makerKorName}">`).join('');
-    const originListOpts = originOptions.map(o => `<option value="${o.originKorName}">`).join('');
+    const brandOpts  = brandOptions.map(b =>
+      `<option value="${b.brandKorName}" ${v.brandName === b.brandKorName ? 'selected' : ''}>${b.brandKorName}</option>`
+    ).join('');
+    const makerOpts  = makerOptions.map(m =>
+      `<option value="${m.makerKorName}" ${v.makerName === m.makerKorName ? 'selected' : ''}>${m.makerKorName}</option>`
+    ).join('');
+    const originOpts = originOptions.map(o =>
+      `<option value="${o.originKorName}" ${v.originName === o.originKorName ? 'selected' : ''}>${o.originKorName}</option>`
+    ).join('');
+    const taxTypeOpts = taxTypeOptions.map(t =>
+      `<option value="${t.constrVal}" ${String(v.vatRate ?? 10) === t.constrVal ? 'selected' : ''}>${t.constrValDesc} (${t.constrVal}%)</option>`
+    ).join('');
+    const deliFeeTypeOpts = deliFeeTypeOptions.map(d =>
+      `<option value="${d.constrVal}" ${v.deliFeeType === d.constrVal ? 'selected' : ''}>${d.constrValDesc}</option>`
+    ).join('');
 
     const body = document.createElement('div');
     body.innerHTML = `
@@ -438,7 +461,7 @@ const PageCatalogProd = (() => {
           <input class="input" value="${isNew ? newProdCode : v.prodCode}" readonly style="background:#f8fafc;font-family:monospace">
         </div>
         <div class="form-group">
-          <label>쇼핑몰 <span style="color:var(--danger)">*</span></label>
+          <label>상점 <span style="color:var(--danger)">*</span></label>
           <select class="input" id="pFShopCode" ${!isNew ? 'disabled style="background:#f8fafc"' : ''}>
             <option value="">-- 선택 --</option>
             ${shopOpts}
@@ -469,18 +492,24 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group">
           <label>브랜드명</label>
-          <input class="input" id="pFBrandName" value="${v.brandName || ''}" list="pFBrandList" placeholder="브랜드 관리에 등록된 이름 자동완성">
-          <datalist id="pFBrandList">${brandListOpts}</datalist>
+          <select class="input" id="pFBrandName">
+            <option value="">-- 선택 안 함 --</option>
+            ${brandOpts}
+          </select>
         </div>
         <div class="form-group">
           <label>제조사명</label>
-          <input class="input" id="pFMakerName" value="${v.makerName || ''}" list="pFMakerList">
-          <datalist id="pFMakerList">${makerListOpts}</datalist>
+          <select class="input" id="pFMakerName">
+            <option value="">-- 선택 안 함 --</option>
+            ${makerOpts}
+          </select>
         </div>
         <div class="form-group">
           <label>원산지명</label>
-          <input class="input" id="pFOriginName" value="${v.originName || ''}" list="pFOriginList">
-          <datalist id="pFOriginList">${originListOpts}</datalist>
+          <select class="input" id="pFOriginName">
+            <option value="">-- 선택 안 함 --</option>
+            ${originOpts}
+          </select>
         </div>
         <div class="form-group">
           <label>정가</label>
@@ -499,8 +528,10 @@ const PageCatalogProd = (() => {
           <input class="input" id="pFBuyPrice" type="number" min="0" value="${v.buyPrice ?? ''}">
         </div>
         <div class="form-group">
-          <label>VAT율(%)</label>
-          <input class="input" id="pFVatRate" type="number" min="0" max="100" value="${v.vatRate ?? 10}">
+          <label>부가세율</label>
+          <select class="input" id="pFVatRate">
+            ${taxTypeOpts}
+          </select>
         </div>
         <div class="form-group">
           <label>재고수량</label>
@@ -527,7 +558,10 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group">
           <label>배송비유형</label>
-          <input class="input" id="pFDeliFeeType" value="${v.deliFeeType || ''}">
+          <select class="input" id="pFDeliFeeType">
+            <option value="">-- 선택 안 함 --</option>
+            ${deliFeeTypeOpts}
+          </select>
         </div>
         <div class="form-group">
           <label>배송비</label>
