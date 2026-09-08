@@ -15,6 +15,10 @@
 const PageCatalogProd = (() => {
 
   const PAGE_SIZE = 20;
+  // 상품 등록 시 서버(ProdService.insert)가 항상 자동으로 만들어두는 "선택사항없음" 기본
+  // 옵션(tCatProdItem)의 ItemCode. 이 프로젝트의 기존 데이터 전체에서 확립된 관례라 백엔드
+  // 상수와 값을 맞춰뒀다 — 옵션 관리 화면에서 이 항목은 실제 등록 옵션이 아니므로 숨긴다.
+  const DEFAULT_ITEM_CODE = 20000;
   let currentPage = 1;
   let totalCount  = 0;
   let shopList    = [];
@@ -510,13 +514,19 @@ const PageCatalogProd = (() => {
       try { items = await Api.get('/catalog/prod-item/list', { pProdCode: prod.prodCode }); }
       catch (e) { wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`; return; }
 
-      if (items.length === 0) {
+      // ItemCode 20000은 상품 등록 시 서버가 자동으로 만들어두는 "선택사항없음" 기본
+      // 아이템이다(ProdService.insert 참고) — 관리자가 실제로 등록한 옵션이 아니므로
+      // 목록에는 보여주지 않는다. ItemCode 채번(신규 추가 시 최댓값+1)에는 계속 포함시켜야
+      // 하므로 items 자체는 그대로 두고 화면에 그릴 목록만 따로 거른다.
+      const visibleItems = items.filter(it => it.itemCode !== DEFAULT_ITEM_CODE);
+
+      if (visibleItems.length === 0) {
         wrap.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)">등록된 옵션이 없습니다</div>';
         return;
       }
 
       const attrLabel = (i) => attrNames[i] || `옵션값${i + 1}`;
-      const rows = items.map(it => `
+      const rows = visibleItems.map(it => `
         <tr>
           <td style="font-size:12px">${it.attrVal1 || '-'}</td>
           <td style="font-size:12px">${it.attrVal2 || '-'}</td>
@@ -593,8 +603,13 @@ const PageCatalogProd = (() => {
 
     // ItemCode는 전용 채번 엔드포인트가 없어 상품코드 자동채번([[#카탈로그 상품 신규 등록/수정]])과
     // 같은 방식으로, 이미 불러와둔 목록에서 최댓값+1을 클라이언트에서 계산한다.
+    // 상품 등록 시 서버가 항상 ItemCode=20000짜리 "선택사항없음" 기본 아이템을 미리 만들어두므로
+    // (ProdService.insert 참고 — 옵션 유무와 무관하게 tCatProdItem을 항상 조인 가능하게 하는 기존
+    // 데이터 전체의 확립된 관례), 실제 옵션은 자연스럽게 20001부터 이어붙는다. 혹시 그 기본
+    // 아이템이 지워진 등 예외적으로 목록이 비어 있는 경우에도 1이 아닌 20001부터 시작해
+    // 레거시 채번 규칙과 어긋나지 않게 한다.
     const newItemCode = isNew
-      ? (existingItems.length ? Math.max(...existingItems.map(it => it.itemCode)) + 1 : 1)
+      ? (existingItems.length ? Math.max(...existingItems.map(it => it.itemCode)) + 1 : 20001)
       : v.itemCode;
 
     const body = document.createElement('div');

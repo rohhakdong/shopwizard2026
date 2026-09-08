@@ -86,6 +86,12 @@
         DELETE FROM shopwizard.tCatProdItem WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
     </delete>
 
+    <!-- 상품(tCatProd) 삭제 시 함께 호출한다 — 기본 아이템(ItemCode=20000)을 포함해
+         해당 상품의 모든 옵션 행을 정리해서 고아 데이터가 남지 않게 한다. -->
+    <delete id="deleteByProdCode" parameterType="string">
+        DELETE FROM shopwizard.tCatProdItem WHERE ProdCode = #{value}
+    </delete>
+
     <update id="disable" parameterType="string">
         UPDATE shopwizard.tCatProdItem SET SaleYn = 0, SaleStopDate = NOW() WHERE ProdCode = #{value}
     </update>

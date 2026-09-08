@@ -17,6 +17,7 @@ public interface ProdItemMapper {
     int update(ProdItem prodItem);
     int updateItemlist(Map<String, Object> params);
     int delete(ProdItem prodItem);
+    int deleteByProdCode(String prodCode);
     int disable(String prodCode);
     int enable(Map<String, Object> params);
     int copy2Shopion(Map<String, Object> params);
