@@ -1,8 +1,11 @@
 /**
- * 카탈로그 상품 관리
- * - 목록 조회 (페이지네이션)
- * - 상세보기 (읽기 전용)
- * - 승인 / 삭제
+ * 카탈로그 상품 관리 (tCatProd — shopwizard 스키마, 승인 워크플로우의 시작점)
+ * - 목록 조회 (페이지네이션) / 신규 등록 / 수정 / 상세보기(읽기 전용) / 승인 / 삭제
+ * - 승인된 상품은 별도 API(copy2shopion, 이 화면에는 노출 안 함)로 실제 판매 스키마
+ *   (shopion.tPrdProd, "상품 관리"/product-prod.js 화면)로 복사되는 구조로 보인다.
+ * - 브랜드/제조사/원산지는 tCatProd에 자유 텍스트로 저장되며 tCatBrand/Maker/Origin
+ *   마스터와 DB상 FK로 연결돼 있지 않다 — 카테고리(CateCode)만 실제 FK. 그래서 여기서는
+ *   마스터 목록을 <datalist> 자동완성 후보로만 제공하고, 값 자체는 자유 입력을 허용한다.
  */
 const PageCatalogProd = (() => {
 
@@ -10,6 +13,9 @@ const PageCatalogProd = (() => {
   let currentPage = 1;
   let totalCount  = 0;
   let shopList    = [];
+  let brandOptions  = [];
+  let makerOptions  = [];
+  let originOptions = [];
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
@@ -51,6 +57,7 @@ const PageCatalogProd = (() => {
               </select>
             </div>
             <button class="btn btn-primary" id="btnSearch" style="margin-top:18px">검색</button>
+            <button class="btn btn-ghost" id="btnNew" style="margin-top:18px">+ 신규</button>
           </div>
 
           <!-- 건수 -->
@@ -70,11 +77,13 @@ const PageCatalogProd = (() => {
       </div>`;
 
     document.getElementById('btnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
+    document.getElementById('btnNew').addEventListener('click', () => openEditModal(null));
     ['sProdCode','sProdName'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
     });
 
     loadShopList().then(() => { currentPage = 1; loadList(); });
+    loadMasterOptions();
   }
 
   // ── 쇼핑몰 목록 ────────────────────────────────────────────────────
@@ -89,6 +98,13 @@ const PageCatalogProd = (() => {
         sel.appendChild(opt);
       });
     } catch (_) {}
+  }
+
+  // 브랜드/제조사/원산지 마스터 — 등록/수정 모달의 자동완성 후보용 (전체를 한 번에 불러온다).
+  async function loadMasterOptions() {
+    try { brandOptions  = await Api.get('/catalog/brand/list',  { pPageOffset: 0, pPageSize: 2000 }); } catch (_) { brandOptions  = []; }
+    try { makerOptions  = await Api.get('/catalog/maker/list',  { pPageOffset: 0, pPageSize: 2000 }); } catch (_) { makerOptions  = []; }
+    try { originOptions = await Api.get('/catalog/origin/list', { pPageOffset: 0, pPageSize: 2000 }); } catch (_) { originOptions = []; }
   }
 
   // ── 목록 조회 ─────────────────────────────────────────────────────
@@ -167,6 +183,8 @@ const PageCatalogProd = (() => {
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
             data-action="detail" data-code="${p.prodCode}">상세</button>
+          <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
+            data-action="edit" data-code="${p.prodCode}">수정</button>
           ${!p.approvDate ? `<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)"
             data-action="approv" data-code="${p.prodCode}" data-name="${p.prodName}">승인</button>` : ''}
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
@@ -202,6 +220,16 @@ const PageCatalogProd = (() => {
         try {
           const prod = await Api.get('/catalog/prod/' + btn.dataset.code);
           openDetailModal(prod);
+        } catch (e) { UI.toast(e.message, 'error'); }
+      });
+    });
+
+    // 수정
+    wrap.querySelectorAll('[data-action=edit]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          const prod = await Api.get('/catalog/prod/' + btn.dataset.code);
+          openEditModal(prod);
         } catch (e) { UI.toast(e.message, 'error'); }
       });
     });
@@ -316,6 +344,288 @@ const PageCatalogProd = (() => {
       confirmText: null,
       cancelText: '닫기',
       body,
+    });
+  }
+
+  // ── 카테고리 검색 모달 ─────────────────────────────────────────────
+  // 카테고리는 대/중/소/세 4단 트리라 목록 전체를 select에 넣을 수 없다. 이미 준비돼 있던
+  // GET /catalog/cate/list-final-table(리프 카테고리를 "대>중>소>세" 경로 포함해서 검색하는
+  // 전용 쿼리 — catalog-cate.js가 만들어지기 전부터 백엔드에 있었지만 어디서도 안 쓰이고
+  // 있었다)를 이용해 이름으로 검색한 뒤 하나를 선택하는 방식으로 구현한다.
+  function openCateSearchModal(svcCode, onSelect) {
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div class="search-bar" style="margin-bottom:10px">
+        <div class="form-group full">
+          <label>분류명 검색</label>
+          <input class="input" id="cateSearchKeyword" placeholder="분류명을 입력하세요 (대/중/소/세분류 통합 검색)">
+        </div>
+        <button type="button" class="btn btn-primary" id="cateSearchBtn" style="margin-top:18px">검색</button>
+      </div>
+      <div id="cateSearchResult" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">검색어를 입력하세요</div>
+      </div>`;
+
+    async function runSearch() {
+      const keyword = document.getElementById('cateSearchKeyword').value.trim();
+      const resultEl = document.getElementById('cateSearchResult');
+      if (!keyword) { resultEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">검색어를 입력하세요</div>'; return; }
+      resultEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">검색 중...</div>';
+      try {
+        const list = await Api.get('/catalog/cate/list-final-table', { pSvcCode: svcCode, pCateName: keyword });
+        if (!list.length) {
+          resultEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">일치하는 분류가 없습니다</div>';
+          return;
+        }
+        resultEl.innerHTML = list.map(c => {
+          const path = [c.cateName1, c.cateName2, c.cateName3, c.cateName4].filter(Boolean).join(' > ');
+          return `<div class="cate-pick" data-code="${c.cateCode}" data-path="${path.replace(/"/g,'&quot;')}"
+                    style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px">${path}</div>`;
+        }).join('');
+        resultEl.querySelectorAll('.cate-pick').forEach(el => {
+          el.addEventListener('click', () => {
+            onSelect(el.dataset.code, el.dataset.path);
+            close();
+          });
+          el.addEventListener('mouseenter', () => el.style.background = '#f8fafc');
+          el.addEventListener('mouseleave', () => el.style.background = '');
+        });
+      } catch (e) {
+        resultEl.innerHTML = `<div style="padding:16px;color:var(--danger)">${e.message}</div>`;
+      }
+    }
+
+    const { close } = UI.modal({
+      title: '분류 선택',
+      body,
+      confirmText: null,
+      cancelText: '닫기',
+    });
+    document.getElementById('cateSearchBtn').addEventListener('click', runSearch);
+    document.getElementById('cateSearchKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  }
+
+  // ── 신규/수정 모달 ─────────────────────────────────────────────────
+  async function openEditModal(prod) {
+    const isNew = !prod;
+    const v = prod || {};
+    let selectedCateCode = v.cateCode || '';
+    let selectedCatePath = v.cateName || '';
+
+    // 상품코드 자동 채번: PK가 순번 숫자(char(10))라 목록을 ProdCode 내림차순 1건만 조회해
+    // 최댓값+1을 계산한다 (전용 /max 엔드포인트가 따로 없어 기존 목록 API를 재사용).
+    let newProdCode = '';
+    if (isNew) {
+      try {
+        const maxList = await Api.get('/catalog/prod/list', { pPageOffset: 0, pPageSize: 1 });
+        const maxCode = maxList[0]?.prodCode;
+        newProdCode = maxCode ? String(parseInt(maxCode, 10) + 1) : '1000000001';
+      } catch (_) { newProdCode = ''; }
+    }
+
+    const shopOpts = shopList.map(s =>
+      `<option value="${s.shopCode}" ${v.shopCode === s.shopCode ? 'selected' : ''}>${s.shopName || s.shopCode} (${s.shopCode})</option>`
+    ).join('');
+    const brandListOpts  = brandOptions.map(b => `<option value="${b.brandKorName}">`).join('');
+    const makerListOpts  = makerOptions.map(m => `<option value="${m.makerKorName}">`).join('');
+    const originListOpts = originOptions.map(o => `<option value="${o.originKorName}">`).join('');
+
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div class="form-grid">
+        <div class="form-group">
+          <label>상품코드</label>
+          <input class="input" value="${isNew ? newProdCode : v.prodCode}" readonly style="background:#f8fafc;font-family:monospace">
+        </div>
+        <div class="form-group">
+          <label>쇼핑몰 <span style="color:var(--danger)">*</span></label>
+          <select class="input" id="pFShopCode" ${!isNew ? 'disabled style="background:#f8fafc"' : ''}>
+            <option value="">-- 선택 --</option>
+            ${shopOpts}
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>분류(카테고리) <span style="color:var(--danger)">*</span></label>
+          <div style="display:flex;gap:8px">
+            <input class="input" id="pFCatePath" value="${selectedCatePath}" readonly placeholder="분류를 선택하세요" style="background:#f8fafc;flex:1">
+            <button type="button" class="btn btn-ghost" id="pFCateBtn">분류 선택</button>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>상품명 <span style="color:var(--danger)">*</span></label>
+          <input class="input" id="pFProdName" value="${v.prodName || ''}">
+        </div>
+        <div class="form-group full">
+          <label>진열명</label>
+          <input class="input" id="pFProdDsplName" value="${v.prodDsplName || ''}">
+        </div>
+        <div class="form-group">
+          <label>쇼핑몰상품코드</label>
+          <input class="input" id="pFShopProdCode" value="${v.shopProdCode || ''}">
+        </div>
+        <div class="form-group">
+          <label>모델명</label>
+          <input class="input" id="pFModelName" value="${v.modelName || ''}">
+        </div>
+        <div class="form-group">
+          <label>브랜드명</label>
+          <input class="input" id="pFBrandName" value="${v.brandName || ''}" list="pFBrandList" placeholder="브랜드 관리에 등록된 이름 자동완성">
+          <datalist id="pFBrandList">${brandListOpts}</datalist>
+        </div>
+        <div class="form-group">
+          <label>제조사명</label>
+          <input class="input" id="pFMakerName" value="${v.makerName || ''}" list="pFMakerList">
+          <datalist id="pFMakerList">${makerListOpts}</datalist>
+        </div>
+        <div class="form-group">
+          <label>원산지명</label>
+          <input class="input" id="pFOriginName" value="${v.originName || ''}" list="pFOriginList">
+          <datalist id="pFOriginList">${originListOpts}</datalist>
+        </div>
+        <div class="form-group">
+          <label>정가</label>
+          <input class="input" id="pFListPrice" type="number" min="0" value="${v.listPrice ?? ''}">
+        </div>
+        <div class="form-group">
+          <label>판매가</label>
+          <input class="input" id="pFSalePrice" type="number" min="0" value="${v.salePrice ?? ''}">
+        </div>
+        <div class="form-group">
+          <label>공급가</label>
+          <input class="input" id="pFSupplyPrice" type="number" min="0" value="${v.supplyPrice ?? ''}">
+        </div>
+        <div class="form-group">
+          <label>매입가</label>
+          <input class="input" id="pFBuyPrice" type="number" min="0" value="${v.buyPrice ?? ''}">
+        </div>
+        <div class="form-group">
+          <label>VAT율(%)</label>
+          <input class="input" id="pFVatRate" type="number" min="0" max="100" value="${v.vatRate ?? 10}">
+        </div>
+        <div class="form-group">
+          <label>재고수량</label>
+          <input class="input" id="pFSupplyQty" type="number" min="0" value="${v.supplyQty ?? 9999}">
+        </div>
+        <div class="form-group">
+          <label>판매여부</label>
+          <select class="input" id="pFSaleYn">
+            <option value="1"  ${(v.saleYn ?? 1) === 1  ? 'selected' : ''}>판매</option>
+            <option value="0"  ${v.saleYn === 0  ? 'selected' : ''}>미판매</option>
+            <option value="-1" ${v.saleYn === -1 ? 'selected' : ''}>대기</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>성인상품</label>
+          <select class="input" id="pFAdultYn">
+            <option value="0" ${(v.adultYn ?? 0) === 0 ? 'selected' : ''}>아니오</option>
+            <option value="1" ${v.adultYn === 1 ? 'selected' : ''}>예</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>배송방법</label>
+          <input class="input" id="pFDeliMethod" value="${v.deliMethod || ''}">
+        </div>
+        <div class="form-group">
+          <label>배송비유형</label>
+          <input class="input" id="pFDeliFeeType" value="${v.deliFeeType || ''}">
+        </div>
+        <div class="form-group">
+          <label>배송비</label>
+          <input class="input" id="pFDeliFeeAmt" type="number" min="0" value="${v.deliFeeAmt ?? 0}">
+        </div>
+        <div class="form-group">
+          <label>리드타임(일)</label>
+          <input class="input" id="pFLeadTime" type="number" min="0" value="${v.leadTime ?? ''}">
+        </div>
+        <div class="form-group full">
+          <label>대표이미지 URL</label>
+          <input class="input" id="pFImgUrl" value="${v.imgUrl || ''}" placeholder="https://...">
+        </div>
+        <div class="form-group full">
+          <label>상품설명</label>
+          <textarea class="input" id="pFProdDesc" rows="4" style="resize:vertical">${v.prodDesc || ''}</textarea>
+        </div>
+        <div class="form-group full">
+          <label>비고</label>
+          <input class="input" id="pFRemark" value="${v.remark || ''}">
+        </div>
+      </div>`;
+
+    // 쇼핑몰 선택이 바뀌면 그 쇼핑몰의 서비스코드로 분류 검색 범위를 맞춘다.
+    function currentSvcCode() {
+      const shopCode = document.getElementById('pFShopCode').value;
+      const shop = shopList.find(s => s.shopCode === shopCode);
+      return shop?.svcCode || '';
+    }
+
+    body.querySelector('#pFCateBtn').addEventListener('click', () => {
+      const svcCode = currentSvcCode();
+      if (!svcCode) { UI.toast('쇼핑몰을 먼저 선택하세요', 'error'); return; }
+      openCateSearchModal(svcCode, (cateCode, path) => {
+        selectedCateCode = cateCode;
+        selectedCatePath = path;
+        document.getElementById('pFCatePath').value = path;
+      });
+    });
+
+    UI.modal({
+      title: isNew ? '상품 신규 등록' : `상품 수정 – ${v.prodCode}`,
+      body,
+      confirmText: '저장',
+      onConfirm: async close => {
+        const shopCode  = document.getElementById('pFShopCode').value;
+        const prodName  = document.getElementById('pFProdName').value.trim();
+
+        if (!shopCode)          { UI.toast('쇼핑몰을 선택하세요', 'error'); return; }
+        if (!selectedCateCode)  { UI.toast('분류를 선택하세요', 'error'); return; }
+        if (!prodName)          { UI.toast('상품명을 입력하세요', 'error'); return; }
+
+        const registId   = (typeof info !== 'undefined' && info?.loginId) || '';
+        const registName = (typeof info !== 'undefined' && info?.name) || '';
+
+        const payload = {
+          prodCode:      isNew ? newProdCode : v.prodCode,
+          shopCode,
+          cateCode:      selectedCateCode,
+          prodName,
+          prodDsplName:  document.getElementById('pFProdDsplName').value.trim(),
+          shopProdCode:  document.getElementById('pFShopProdCode').value.trim(),
+          modelName:     document.getElementById('pFModelName').value.trim(),
+          brandName:     document.getElementById('pFBrandName').value.trim(),
+          makerName:     document.getElementById('pFMakerName').value.trim(),
+          originName:    document.getElementById('pFOriginName').value.trim(),
+          listPrice:     parseInt(document.getElementById('pFListPrice').value) || 0,
+          salePrice:     parseInt(document.getElementById('pFSalePrice').value) || 0,
+          supplyPrice:   parseInt(document.getElementById('pFSupplyPrice').value) || 0,
+          buyPrice:      parseInt(document.getElementById('pFBuyPrice').value) || 0,
+          vatRate:       parseInt(document.getElementById('pFVatRate').value) || 0,
+          supplyQty:     parseInt(document.getElementById('pFSupplyQty').value) || 0,
+          saleYn:        parseInt(document.getElementById('pFSaleYn').value),
+          adultYn:       parseInt(document.getElementById('pFAdultYn').value),
+          deliMethod:    document.getElementById('pFDeliMethod').value.trim(),
+          deliFeeType:   document.getElementById('pFDeliFeeType').value.trim(),
+          deliFeeAmt:    parseInt(document.getElementById('pFDeliFeeAmt').value) || 0,
+          leadTime:      parseInt(document.getElementById('pFLeadTime').value) || 0,
+          imgUrl:        document.getElementById('pFImgUrl').value.trim(),
+          prodDesc:      document.getElementById('pFProdDesc').value.trim(),
+          remark:        document.getElementById('pFRemark').value.trim(),
+          state:         v.state ?? 1,
+          registId, registName,
+          changeId: registId, changeName: registName,
+        };
+
+        try {
+          if (isNew) {
+            await Api.post('/catalog/prod', payload);
+            UI.toast('등록되었습니다', 'success');
+          } else {
+            await Api.put('/catalog/prod', payload);
+            UI.toast('저장되었습니다', 'success');
+          }
+          loadList();
+          close();
+        } catch (e) { UI.toast(e.message, 'error'); }
+      },
     });
   }
 

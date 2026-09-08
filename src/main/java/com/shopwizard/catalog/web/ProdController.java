@@ -25,7 +25,19 @@ public class ProdController {
     @PutMapping public int update(@RequestBody Prod prod) { return prodService.update(prod); }
     @PutMapping("/price") public int updatePrice(@RequestBody Map<String, Object> params) { return prodService.updatePrice(params); }
     @PutMapping("/approv") public int approv(@RequestBody Map<String, Object> params) { return prodService.approv(params); }
-    @DeleteMapping public int delete(@RequestBody Prod prod) { return prodService.delete(prod); }
+
+    /**
+     * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
+     * (다른 관리 화면들도 대부분 이 방식), @RequestBody 대신 쿼리 파라미터로 받는다.
+     * (이 화면에 등록/수정 기능이 없던 동안 삭제 버튼도 실제로는 한 번도 눌려본 적이 없어
+     * 이번에 신규 등록 기능을 만들며 처음 눌러보고 나서야 500이 나는 걸 발견했다.)
+     */
+    @DeleteMapping
+    public int delete(@RequestParam String prodCode) {
+        Prod prod = new Prod();
+        prod.setProdCode(prodCode);
+        return prodService.delete(prod);
+    }
     @PostMapping("/copy2shopion") public int copy2Shopion(@RequestBody Map<String, Object> params) { return prodService.copy2Shopion(params); }
     @DeleteMapping("/shopion/{prodCode}") public int delete2Shopion(@PathVariable String prodCode) { return prodService.delete2Shopion(prodCode); }
 }
