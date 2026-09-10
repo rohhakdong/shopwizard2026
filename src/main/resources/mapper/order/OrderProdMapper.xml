@@ -68,6 +68,13 @@
             <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
             <if test="pProdName != null and pProdName != ''">AND OP.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
             <if test="pRecverName != null and pRecverName != ''">AND O.RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>
+            <!-- 주문관리(order-list.js) 검색 조건 — 상품코드/채널주문번호/전화번호 -->
+            <if test="pProdCode != null and pProdCode != ''">AND OP.ProdCode = #{pProdCode}</if>
+            <if test="pChnlOrderNo != null and pChnlOrderNo != ''">AND OP.ChnlOrderNo LIKE CONCAT('%',#{pChnlOrderNo},'%')</if>
+            <if test="pPhoneNo != null and pPhoneNo != ''">
+                AND (O.OrderPhoneNo LIKE CONCAT('%',#{pPhoneNo},'%') OR O.OrderMobileNo LIKE CONCAT('%',#{pPhoneNo},'%')
+                     OR O.RecverPhoneNo LIKE CONCAT('%',#{pPhoneNo},'%') OR O.RecverMobileNo LIKE CONCAT('%',#{pPhoneNo},'%'))
+            </if>
             <if test="pCustId != null and pCustId != ''">
                 <if test="pCustId.toString() != '0'">AND O.CustId = #{pCustId}</if>
                 <if test="pCustId.toString() == '0'">
