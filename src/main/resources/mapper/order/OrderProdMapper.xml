@@ -278,6 +278,77 @@
         AND OP.OrderProdNo = #{orderProdNo}
     </select>
 
+    <!-- ===== 상품 매칭 화면 (order-prod-match.js) ===== -->
+
+    <sql id="unmatchedWhere">
+        <where>
+            AND (OP.ProdCode IS NULL OR OP.ProdCode = '')
+            AND Ch.SvcCode = #{pSvcCode}
+            AND OP.OrderState NOT IN ('주문취소', '환불완료')
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND OP.ProdName LIKE CONCAT('%', #{pProdName}, '%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d')
+                          AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectListUnmatched" parameterType="map" resultType="map">
+        SELECT
+            IFNULL(OP.ProdName, '')  AS prodName,
+            IFNULL(OP.ItemName, '')  AS prodOption,
+            COUNT(*)                 AS cnt,
+            MIN(OP.OrderNo)          AS sampleOrderNo,
+            GROUP_CONCAT(DISTINCT Ch.ChnlName ORDER BY Ch.ChnlName SEPARATOR ', ') AS chnlNames,
+            MAX(OP.RegistDate)       AS lastRegistDate
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <include refid="unmatchedWhere"/>
+        GROUP BY IFNULL(OP.ProdName, ''), IFNULL(OP.ItemName, '')
+        ORDER BY cnt DESC, lastRegistDate DESC
+        <if test="topCnt != null and topCnt.toString().matches('^[0-9]+$') and countPerPage != null and countPerPage.toString().matches('^[0-9]+$')">
+            LIMIT ${topCnt}, ${countPerPage}
+        </if>
+    </select>
+
+    <select id="selectListUnmatchedCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            <include refid="unmatchedWhere"/>
+            GROUP BY IFNULL(OP.ProdName, ''), IFNULL(OP.ItemName, '')
+        ) g
+    </select>
+
+    <select id="selectUnmatchedLinesByName" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT OP.OrderNo, OP.OrderProdNo, OP.SalePrice, OP.NvPrice, OP.ProdQty
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <where>
+            AND (OP.ProdCode IS NULL OR OP.ProdCode = '')
+            AND Ch.SvcCode = #{pSvcCode}
+            AND OP.OrderState NOT IN ('주문취소', '환불완료')
+            AND IFNULL(OP.ProdName, '') = #{pProdName}
+            AND IFNULL(OP.ItemName, '') = #{pProdOption}
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <!-- 화면에서 보고 있던 주문일 범위 안의 라인만 반영 (과거 주문 오염 방지). 범위가 없으면 전체. -->
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d')
+                          AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="selectLineRaw" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT * FROM shopion.tOrdOrderProd
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo}
+    </select>
+
     <!-- 토스 웹훅 등에서 주문 전체 취소 시, 라인별로 상태를 갱신하기 위해 OrderProdNo 목록만 조회 -->
     <select id="selectOrderProdNoList" parameterType="int" resultType="int">
         SELECT OrderProdNo FROM shopion.tOrdOrderProd WHERE OrderNo = #{orderNo}

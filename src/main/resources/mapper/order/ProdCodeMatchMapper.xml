@@ -44,4 +44,21 @@
         DELETE FROM shopwizard.tOrdProdCodeMatch WHERE ProdName = #{prodName}
     </delete>
 
+    <!-- 실제 PK 는 (ProdName, ProdOption). 수집 자동매칭·매칭화면에서 사용. -->
+    <select id="selectByNameOption" resultType="com.shopwizard.order.model.ProdCodeMatch">
+        SELECT * FROM shopwizard.tOrdProdCodeMatch
+        WHERE ProdName = #{prodName} AND ProdOption = #{prodOption} AND ProdCode &lt;&gt; ''
+        LIMIT 1
+    </select>
+
+    <insert id="upsert" parameterType="com.shopwizard.order.model.ProdCodeMatch">
+        INSERT INTO shopwizard.tOrdProdCodeMatch
+            (ProdName, ProdOption, ProdCode, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES
+            (#{prodName}, #{prodOption}, #{prodCode}, 1, #{remark}, #{registId}, #{registName}, NOW())
+        ON DUPLICATE KEY UPDATE
+            ProdCode = #{prodCode}, State = 1,
+            ChangeId = #{registId}, ChangeName = #{registName}, ChangeDate = NOW()
+    </insert>
+
 </mapper>

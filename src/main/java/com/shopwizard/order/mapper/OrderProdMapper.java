@@ -13,6 +13,15 @@ public interface OrderProdMapper {
     List<OrderProd> selectList(Map<String, Object> params);
     int selectListCount(Map<String, Object> params);
     OrderProd select(Map<String, Object> params);
+
+    /** 상품 미매칭(ProdCode NULL) 주문라인을 (상품명, 옵션) 단위로 묶은 목록. 상품 매칭 화면용. */
+    List<Map<String, Object>> selectListUnmatched(Map<String, Object> params);
+    int selectListUnmatchedCount(Map<String, Object> params);
+    /** 특정 (상품명, 옵션) 의 미매칭 라인들 (backfill 대상). */
+    List<OrderProd> selectUnmatchedLinesByName(Map<String, Object> params);
+    /** 조인 없이 주문상품 라인 1건 원본 조회. */
+    OrderProd selectLineRaw(Map<String, Object> params);
+
     List<Integer> selectOrderProdNoList(Integer orderNo);
     List<OrderProd> selectGuestOrderList(Map<String, Object> params);
     void insert(OrderProd orderProd);

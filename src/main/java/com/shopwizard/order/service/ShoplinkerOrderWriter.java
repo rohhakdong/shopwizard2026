@@ -3,9 +3,11 @@ package com.shopwizard.order.service;
 import com.shopwizard.external.shoplinker.Order;
 import com.shopwizard.framework.util.StringUtil;
 import com.shopwizard.order.mapper.OrderNoSeqMapper;
+import com.shopwizard.order.mapper.ProdCodeMatchMapper;
 import com.shopwizard.order.mapper.SlnkOrderMapper;
 import com.shopwizard.order.mapper.SlnkTransDetailMapper;
 import com.shopwizard.order.model.OrderNoSeq;
+import com.shopwizard.order.model.ProdCodeMatch;
 import com.shopwizard.order.model.OrderPay;
 import com.shopwizard.order.model.OrderProd;
 import com.shopwizard.order.model.SlnkTransDetail;
@@ -49,6 +51,7 @@ public class ShoplinkerOrderWriter {
     private final OrderPayService orderPayService;
     private final SlnkOrderMapper slnkOrderMapper;
     private final SlnkTransDetailMapper slnkTransDetailMapper;
+    private final ProdCodeMatchMapper prodCodeMatchMapper;
     private final ChnlService chnlService;
     private final ProdService prodService;
 
@@ -209,32 +212,26 @@ public class ShoplinkerOrderWriter {
         op.setRegistId(registId);
         op.setRegistName(registName);
 
-        // 상점상품코드로 실상품 매칭 → 공급사/상점/제조사/단위/세율/원가 채우기
+        // 상품 매칭 — (1) 상점상품코드(GoodNo) → shopion.tPrdProd,
+        //           (2) 실패 시 tOrdProdCodeMatch (상품명+옵션 → 상품코드) 규칙
+        //           매칭되면 공급사/상점/제조사/단위/세율/원가/마진을 상품 기준으로 채운다.
+        Prod matched = null;
         if (!op.getShopProdCode().isEmpty()) {
             Map<String, Object> pp = new HashMap<>();
             pp.put("pShopProdCode", op.getShopProdCode());
-            Prod prod = prodService.selectByShopProdCode(pp);
-            if (prod != null) {
-                op.setProdCode(prod.getProdCode());
-                op.setSupplyCode(prod.getSupplyCode());
-                op.setSupplyName(prod.getSupplyName());
-                op.setShopCode(prod.getShopCode());
-                op.setShopName(prod.getShopName());
-                op.setStoreCode(prod.getCateCode());
-                op.setMakerName(prod.getMakerName());
-                op.setModelName(prod.getModelName());
-                op.setProdUnit(prod.getProdUnit());
-                op.setProdImg(prod.getImgUrl());
-                if (prod.getVatRate() != null && prod.getVatRate() > 0) {
-                    op.setVatRate(prod.getVatRate());
-                    op.setVatAmt((int) ((long) salePrice * 100 / (100 + prod.getVatRate())));
-                }
-                if (prod.getBuyPrice() != null) {
-                    op.setBuyPrice(prod.getBuyPrice());
-                    op.setProdMargin(salePrice + optionAmt - prod.getBuyPrice());
-                    op.setNetMargin(supplyPrice - prod.getBuyPrice());
-                }
+            matched = prodService.selectByShopProdCode(pp);
+        }
+        if (matched == null) {
+            ProdCodeMatch rule = prodCodeMatchMapper.selectByNameOption(nz(op.getProdName()), nz(op.getItemName()));
+            if (rule != null && rule.getProdCode() != null && !rule.getProdCode().isBlank()) {
+                Map<String, Object> pc = new HashMap<>();
+                pc.put("pProdCode", rule.getProdCode());
+                java.util.List<Prod> list = prodService.selectList(pc);
+                if (!list.isEmpty()) matched = list.get(0);
             }
+        }
+        if (matched != null) {
+            ProdMatchService.backfillLine(op, matched);
         }
         orderProdService.insert(op);
 
