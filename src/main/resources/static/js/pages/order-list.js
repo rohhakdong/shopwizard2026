@@ -6,7 +6,9 @@
  *   관리자(info.svcCode, 보통 SHP001)를 항상 실어 보낸다.
  * - 기간유형: '' 주문일자(OrderReciptDate) / P 지불일자(PayCmpletDate) /
  *   S 배송일자(ShipCmpletDate) / R 환불일자(RefundCmpletDate)
- * - 검색: 주문번호/주문자명/수취인명/주문상태 + 상품명/상품코드/전화번호/채널주문번호
+ * - 검색: 주문상태 / 채널(pChnlCode) / 상점(pShopCode) / 담당MD(pMngrMd, S.MngrMd 정확일치)
+ *   + [검색조건 select] + [검색어] 한 칸 (주문번호/주문자명/수취인명/상품명/상품코드/
+ *   전화번호/채널주문번호 중 하나를 골라 입력) — SEARCH_PARAM 매핑으로 해당 p* 파라미터에 실음
  * - 행 클릭 또는 [상세]로 주문 상세 모달, [취소]로 주문(전체) 취소
  */
 const PageOrderList = (() => {
@@ -14,6 +16,21 @@ const PageOrderList = (() => {
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
+  let chnlList = [];   // { chnlCode, chnlName } — 관리자 svcCode의 채널
+  let shopList = [];   // { shopCode, shopName, mngrMd }
+  let mdList   = [];   // distinct S.MngrMd (담당MD 필터, pMngrMd 는 정확일치)
+
+  // 검색조건 select 값 → 백엔드 파라미터명. 값이 있을 때만 해당 파라미터를 실어 보낸다.
+  // (전화번호는 주문자/수취인 전화·휴대 4개 부분검색, 상품코드는 정확일치, 나머지는 LIKE)
+  const SEARCH_PARAM = {
+    '주문번호':     'pOrderNo',
+    '주문자명':     'pOrderName',
+    '수취인명':     'pRecverName',
+    '상품명':       'pProdName',
+    '상품코드':     'pProdCode',
+    '전화번호':     'pPhoneNo',
+    '채널주문번호': 'pChnlOrderNo',
+  };
 
   // ── 날짜 유틸 ──────────────────────────────────────────────────────
   function toDateStr(date) { return date.toISOString().slice(0, 10); }
@@ -154,32 +171,32 @@ const PageOrderList = (() => {
               </select>
             </div>
             <div class="form-group">
-              <label>주문번호</label>
-              <input class="input" id="olOrderNo" placeholder="주문번호" style="width:110px">
+              <label>채널</label>
+              <select class="input" id="olChnlCode" style="width:150px"><option value="">전체</option></select>
             </div>
             <div class="form-group">
-              <label>주문자명</label>
-              <input class="input" id="olOrderName" placeholder="주문자명" style="width:100px">
+              <label>상점</label>
+              <select class="input" id="olShopCode" style="width:150px"><option value="">전체</option></select>
             </div>
             <div class="form-group">
-              <label>수취인명</label>
-              <input class="input" id="olRecverName" placeholder="수취인명" style="width:100px">
+              <label>담당MD</label>
+              <select class="input" id="olMngrMd" style="width:100px"><option value="">전체</option></select>
             </div>
             <div class="form-group">
-              <label>상품명</label>
-              <input class="input" id="olProdName" placeholder="상품명" style="width:150px">
+              <label>검색조건</label>
+              <select class="input" id="olSearchCond" style="width:110px">
+                <option value="주문번호">주문번호</option>
+                <option value="주문자명">주문자명</option>
+                <option value="수취인명">수취인명</option>
+                <option value="상품명">상품명</option>
+                <option value="상품코드">상품코드</option>
+                <option value="전화번호">전화번호</option>
+                <option value="채널주문번호">채널주문번호</option>
+              </select>
             </div>
             <div class="form-group">
-              <label>상품코드</label>
-              <input class="input" id="olProdCode" placeholder="상품코드(정확히)" style="width:120px">
-            </div>
-            <div class="form-group">
-              <label>전화번호</label>
-              <input class="input" id="olPhoneNo" placeholder="주문/수취인 전화" style="width:130px">
-            </div>
-            <div class="form-group">
-              <label>채널주문번호</label>
-              <input class="input" id="olChnlOrderNo" placeholder="채널주문번호" style="width:130px">
+              <label>검색어</label>
+              <input class="input" id="olSearchValue" placeholder="검색어" style="width:180px">
             </div>
             <button class="btn btn-primary" id="olBtnSearch">검색</button>
           </div>
@@ -201,30 +218,55 @@ const PageOrderList = (() => {
       </div>`;
 
     document.getElementById('olBtnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
-    ['olOrderNo', 'olOrderName', 'olRecverName', 'olProdName', 'olProdCode', 'olPhoneNo', 'olChnlOrderNo'].forEach(id => {
-      document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
-    });
+    document.getElementById('olSearchValue').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
 
+    loadFilterOptions();
     loadList();
+  }
+
+  // ── 채널/상점/담당MD 옵션 로드 ─────────────────────────────────────
+  async function loadFilterOptions() {
+    const svcCode = (typeof info !== 'undefined' && info?.svcCode) || 'SHP001';
+    try {
+      const [chnls, shops] = await Promise.all([
+        Api.get('/company/chnl', { pSvcCode: svcCode, pPageOffset: 0, pPageSize: 2000 }),
+        Api.get('/company/shop', {}),
+      ]);
+      chnlList = (chnls || []).slice().sort((a, b) => (a.chnlName || '').localeCompare(b.chnlName || '', 'ko'));
+      shopList = (shops || []).filter(s => s.svcCode === svcCode)
+        .sort((a, b) => (a.shopName || '').localeCompare(b.shopName || '', 'ko'));
+      mdList = [...new Set(shopList.map(s => s.mngrMd).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+    } catch (_) { /* 옵션 로드 실패해도 목록 자체는 동작해야 하므로 조용히 넘어간다 */ }
+
+    const fill = (id, opts) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.insertAdjacentHTML('beforeend', opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join(''));
+    };
+    fill('olChnlCode', chnlList.map(c => ({ v: c.chnlCode, t: c.chnlName })));
+    fill('olShopCode', shopList.map(s => ({ v: s.shopCode, t: s.shopName })));
+    fill('olMngrMd', mdList.map(m => ({ v: m, t: m })));
   }
 
   // ── 검색 파라미터 ──────────────────────────────────────────────────
   function getParams() {
     const v = id => document.getElementById(id).value;
-    return {
+    const params = {
       pStartDate:     v('olStartDate'),
       pEndDate:       v('olEndDate'),
       pOrderDateType: v('olDateType'),
       pOrderState:    v('olOrderState'),
-      pOrderNo:       v('olOrderNo').trim(),
-      pOrderName:     v('olOrderName').trim(),
-      pRecverName:    v('olRecverName').trim(),
-      pProdName:      v('olProdName').trim(),
-      pProdCode:      v('olProdCode').trim(),
-      pPhoneNo:       v('olPhoneNo').trim(),
-      pChnlOrderNo:   v('olChnlOrderNo').trim(),
+      pChnlCode:      v('olChnlCode'),
+      pShopCode:      v('olShopCode'),
+      pMngrMd:        v('olMngrMd'),
       pSvcCode:       (typeof info !== 'undefined' && info?.svcCode) || 'SHP001',
     };
+    const val = v('olSearchValue').trim();
+    if (val) {
+      const key = SEARCH_PARAM[v('olSearchCond')];
+      if (key) params[key] = val;
+    }
+    return params;
   }
 
   // ── 목록 조회 ─────────────────────────────────────────────────────
