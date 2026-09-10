@@ -1,8 +1,10 @@
 /**
- * 카탈로그 상품 관리 (tCatProd — shopwizard 스키마, 승인 워크플로우의 시작점)
- * - 목록 조회 (페이지네이션) / 신규 등록 / 수정 / 상세보기(읽기 전용) / 승인 / 삭제
- * - 승인된 상품은 별도 API(copy2shopion, 이 화면에는 노출 안 함)로 실제 판매 스키마
- *   (shopion.tPrdProd, "상품 관리"/product-prod.js 화면)로 복사되는 구조로 보인다.
+ * 상품 등록/승인 (메뉴 라벨 기준. 구 "카탈로그 상품")
+ *   tCatProd — shopwizard 스키마, 승인 워크플로우의 시작점
+ * - 목록 조회 (페이지네이션) / 신규 등록 / 수정 / 상세보기(읽기 전용) / 옵션 / 승인 / 삭제
+ * - 승인하면 상품+옵션이 실제 판매 스키마(shopion.tPrdProd/tPrdProdItem,
+ *   "판매 상품 관리"/product-prod.js 화면)로 즉시 복사되어 shop.html에 노출된다
+ *   (approv 직후 copy2shopion 호출 — publishToShopion 참고).
  * - 브랜드/제조사/원산지는 tCatProd에 자유 텍스트로 저장되며 tCatBrand/Maker/Origin
  *   마스터와 DB상 FK로 연결돼 있지 않다 — 카테고리(CateCode)만 실제 FK. 값 자체는
  *   여전히 텍스트로 저장되지만, 선택 실수를 줄이도록 마스터 관리 화면에 등록된 이름만
@@ -33,7 +35,7 @@ const PageCatalogProd = (() => {
   function render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="card-header">카탈로그 상품</div>
+        <div class="card-header">상품 등록/승인</div>
         <div class="card-body" style="padding:12px 16px">
 
           <!-- 검색바 -->
@@ -630,8 +632,8 @@ const PageCatalogProd = (() => {
     const v = item || {};
     const attrNames = [prod.attrName1, prod.attrName2, prod.attrName3, prod.attrName4];
 
-    // ItemCode는 전용 채번 엔드포인트가 없어 상품코드 자동채번([[#카탈로그 상품 신규 등록/수정]])과
-    // 같은 방식으로, 이미 불러와둔 목록에서 최댓값+1을 클라이언트에서 계산한다.
+    // ItemCode는 전용 채번 엔드포인트가 없어 상품코드(ProdCode) 자동채번과 같은 방식으로,
+    // 이미 불러와둔 목록에서 최댓값+1을 클라이언트에서 계산한다.
     // 상품 등록 시 서버가 항상 ItemCode=20000짜리 "선택사항없음" 기본 아이템을 미리 만들어두므로
     // (ProdService.insert 참고 — 옵션 유무와 무관하게 tCatProdItem을 항상 조인 가능하게 하는 기존
     // 데이터 전체의 확립된 관례), 실제 옵션은 자연스럽게 20001부터 이어붙는다. 혹시 그 기본

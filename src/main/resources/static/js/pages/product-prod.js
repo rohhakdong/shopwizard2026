@@ -1,5 +1,6 @@
 /**
- * 상품 관리
+ * 판매 상품 관리 (메뉴 라벨 기준. 구 "상품 관리")
+ *   shopion.tPrdProd — "상품 등록/승인"(catalog-prod.js)에서 승인되어 실제 판매 중인 상품
  * - 목록 조회 (페이지네이션)
  * - 상세보기 (읽기 전용)
  * - 판매여부 변경 / 재고수량 변경 / 삭제
@@ -15,7 +16,7 @@ const PageProductProd = (() => {
   function render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="card-header">상품 관리</div>
+        <div class="card-header">판매 상품 관리</div>
         <div class="card-body" style="padding:12px 16px">
 
           <!-- 검색바 -->
