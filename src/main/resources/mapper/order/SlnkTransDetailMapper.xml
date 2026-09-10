@@ -3,42 +3,31 @@
 
 <mapper namespace="com.shopwizard.order.mapper.SlnkTransDetailMapper">
 
+    <!-- 실제 테이블: shopion.tOrdSlnkTransDetail
+         (TransId, TransDetailNo, SlnkOrderCode, ResultType, ResultMessag, State, Remark, Regist*/Change*) -->
+
     <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.SlnkTransDetail">
         SELECT *
         FROM shopion.tOrdSlnkTransDetail
-        WHERE TransId = #{transId}
-        ORDER BY TransDetailNo ASC
-    </select>
-
-    <select id="select" parameterType="map" resultType="com.shopwizard.order.model.SlnkTransDetail">
-        SELECT *
-        FROM shopion.tOrdSlnkTransDetail
-        WHERE TransId = #{transId}
-        AND TransDetailNo = #{transDetailNo}
+        <where>
+            <if test="pTransId != null and pTransId != ''">AND TransId = #{pTransId}</if>
+            <if test="pSlnkOrderCode != null and pSlnkOrderCode != ''">AND SlnkOrderCode = #{pSlnkOrderCode}</if>
+            <if test="pResultType != null and pResultType != ''">AND ResultType = #{pResultType}</if>
+        </where>
+        ORDER BY TransId DESC, TransDetailNo ASC
+        <if test="topCnt != null and topCnt.toString().matches('^[0-9]+$') and countPerPage != null and countPerPage.toString().matches('^[0-9]+$')">
+            LIMIT ${topCnt}, ${countPerPage}
+        </if>
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.order.model.SlnkTransDetail">
         INSERT INTO shopion.tOrdSlnkTransDetail (
-            TransId, TransDetailNo, TransData, ResultState, ResultMsg, OrderNo,
+            TransId, TransDetailNo, SlnkOrderCode, ResultType, ResultMessag,
             State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
-            #{transId}, #{transDetailNo}, #{transData}, #{resultState}, #{resultMsg}, #{orderNo},
+            #{transId}, #{transDetailNo}, #{slnkOrderCode}, #{resultType}, #{resultMessag},
             1, #{remark}, #{registId}, #{registName}, NOW()
         )
     </insert>
-
-    <update id="update" parameterType="com.shopwizard.order.model.SlnkTransDetail">
-        UPDATE shopion.tOrdSlnkTransDetail SET
-            ResultState = #{resultState}, ResultMsg = #{resultMsg}, OrderNo = #{orderNo},
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE TransId = #{transId}
-        AND TransDetailNo = #{transDetailNo}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tOrdSlnkTransDetail
-        WHERE TransId = #{transId}
-        <if test="transDetailNo != null">AND TransDetailNo = #{transDetailNo}</if>
-    </delete>
 
 </mapper>

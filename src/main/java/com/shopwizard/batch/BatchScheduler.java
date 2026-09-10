@@ -191,6 +191,30 @@ public class BatchScheduler {
         }
     }
 
+    /**
+     * 30분마다 — 샵링커 주문 자동 수집 (비활성 → 필요 시 활성화).
+     * 활성화하려면 아래 @Scheduled 주석을 풀고, ShoplinkerCollectService 를 주입한 뒤
+     * 수집 대상 몰 목록(MallTarget)을 채워 collect() 를 호출한다.
+     * 레거시 QuartzInsertOrderFromShoplinker 대응.
+     */
+    // @Scheduled(cron = "0 0/30 * * * ?")
+    // public void collectShoplinkerOrders() {
+    //     log.info("collectShoplinkerOrders schedule start");
+    //     try {
+    //         ShoplinkerCollectRequest req = new ShoplinkerCollectRequest();
+    //         String d = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+    //         req.setStartDate(d);
+    //         req.setEndDate(d);
+    //         req.setRegistId("system");
+    //         req.setRegistName("schedule");
+    //         req.setMalls(List.of(/* new MallTarget("", ""), ... */));
+    //         shoplinkerCollectService.collect(req);
+    //         log.info("collectShoplinkerOrders schedule finished");
+    //     } catch (Exception e) {
+    //         log.error("collectShoplinkerOrders schedule error: {}", e.getMessage(), e);
+    //     }
+    // }
+
     /** 매일 01:10 — 정산 상세 스케줄 적재 (비활성 → 필요 시 활성화) */
     // @Scheduled(cron = "0 10 1 * * ?")
     public void insertAdjustDetail() {

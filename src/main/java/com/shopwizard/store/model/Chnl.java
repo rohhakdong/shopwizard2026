@@ -23,6 +23,8 @@ public class Chnl {
     private String memberChnlCode;
     private String prsdntChnlCode;
     private String adjustChnlCode;
+    private String slnkMallCode;   // 샵링커 제휴몰명 (샵링커 주문수집 → 채널 매핑 기준)
+    private String loginId;        // 샵링커 제휴몰 아이디
     private Integer state;
     private String remark;
     private String registId;

@@ -16,8 +16,9 @@ public class SlnkTransService {
     private final SlnkTransMapper slnkTransMapper;
 
     public List<SlnkTrans> selectList(Map<String, Object> params) { return slnkTransMapper.selectList(params); }
+    public int selectCount(Map<String, Object> params) { return slnkTransMapper.selectCount(params); }
     public SlnkTrans select(Map<String, Object> params) { return slnkTransMapper.select(params); }
+    public int selectCountByResultType(String resultType) { return slnkTransMapper.selectCountByResultType(resultType); }
     public void insert(SlnkTrans slnkTrans) { slnkTransMapper.insert(slnkTrans); }
     public void update(SlnkTrans slnkTrans) { slnkTransMapper.update(slnkTrans); }
-    public void delete(Map<String, Object> params) { slnkTransMapper.delete(params); }
 }

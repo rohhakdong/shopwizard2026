@@ -16,8 +16,5 @@ public class SlnkTransDetailService {
     private final SlnkTransDetailMapper slnkTransDetailMapper;
 
     public List<SlnkTransDetail> selectList(Map<String, Object> params) { return slnkTransDetailMapper.selectList(params); }
-    public SlnkTransDetail select(Map<String, Object> params) { return slnkTransDetailMapper.select(params); }
     public void insert(SlnkTransDetail slnkTransDetail) { slnkTransDetailMapper.insert(slnkTransDetail); }
-    public void update(SlnkTransDetail slnkTransDetail) { slnkTransDetailMapper.update(slnkTransDetail); }
-    public void delete(Map<String, Object> params) { slnkTransDetailMapper.delete(params); }
 }

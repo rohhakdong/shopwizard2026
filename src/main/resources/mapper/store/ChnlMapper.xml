@@ -6,6 +6,7 @@
         SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
                CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
                MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               SlnkMallCode, LoginId,
                State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
         FROM shopion.tStrChnl
         <where>
@@ -48,6 +49,7 @@
         SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
                CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
                MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               SlnkMallCode, LoginId,
                State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
         FROM shopion.tStrChnl
         WHERE ChnlCode = #{chnlCode}
@@ -57,6 +59,7 @@
         SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
                CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
                MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               SlnkMallCode, LoginId,
                State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
         FROM shopion.tStrChnl
         WHERE ChnlName = #{chnlName}
@@ -66,16 +69,12 @@
         SELECT ChnlCode, ChnlName, ChnlDesc, ChnlUrl, ChnlPolicyCode, SvcCode, DesignId,
                CompCode, LogoImg, MngrName, MngrPhoneNo, MngrMobileNo, MngrFaxNo, MngrEmail,
                MallStartDate, MallEndDate, MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
+               SlnkMallCode, LoginId,
                State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
         FROM shopion.tStrChnl
-        <where>
-            <if test="pMemberChnlCode != null and pMemberChnlCode != ''">
-                AND MemberChnlCode = #{pMemberChnlCode}
-            </if>
-            <if test="pPrsdntChnlCode != null and pPrsdntChnlCode != ''">
-                AND PrsdntChnlCode = #{pPrsdntChnlCode}
-            </if>
-        </where>
+        WHERE SlnkMallCode = #{pSlnkMallCode}
+          AND LoginId = #{pLoginId}
+        LIMIT 1
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.store.model.Chnl">

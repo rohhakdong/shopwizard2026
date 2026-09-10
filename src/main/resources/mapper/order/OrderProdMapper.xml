@@ -11,26 +11,37 @@
     </sql>
 
     <sql id="prodShopJoin">
-        <if test="pSvcCode != null and pSvcCode != 'ANY001'">
-            <choose>
-                <when test="pDirectType != null and pDirectType == '출고지시'">
+        <choose>
+            <!-- 주문관리(order-list.js) 등 "존재하는 주문은 무조건 목록에 나와야 하는" 화면은 pProdJoin=LEFT
+                 를 보낸다. 샵링커/엑셀 수집 주문은 상품이 매칭 안 돼 ProdCode/ShopCode 가 NULL 일 수 있는데,
+                 tPrdProd/tCmpShop 를 INNER JOIN 하면 그런 주문이 통째로 빠진다. -->
+            <when test="pProdJoin != null and pProdJoin == 'LEFT'">
+            LEFT OUTER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+            LEFT OUTER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+            </when>
+            <otherwise>
+                <if test="pSvcCode != null and pSvcCode != 'ANY001'">
+                    <choose>
+                        <when test="pDirectType != null and pDirectType == '출고지시'">
+                        INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+                        INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+                        </when>
+                        <when test="pOrderState != null and pOrderState == '지불완료'">
+                        LEFT OUTER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+                        LEFT OUTER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+                        </when>
+                        <otherwise>
+                        INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
+                        INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
+                        </otherwise>
+                    </choose>
+                </if>
+                <if test="pSvcCode != null and pSvcCode == 'ANY001'">
                 INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
                 INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
-                </when>
-                <when test="pOrderState != null and pOrderState == '지불완료'">
-                LEFT OUTER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
-                LEFT OUTER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
-                </when>
-                <otherwise>
-                INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
-                INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
-                </otherwise>
-            </choose>
-        </if>
-        <if test="pSvcCode != null and pSvcCode == 'ANY001'">
-        INNER JOIN shopion.tPrdProd P ON OP.ProdCode = P.ProdCode
-        INNER JOIN shopwizard.tCmpShop S ON OP.ShopCode = S.ShopCode
-        </if>
+                </if>
+            </otherwise>
+        </choose>
     </sql>
 
     <sql id="custJoin">

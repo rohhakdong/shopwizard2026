@@ -9,8 +9,5 @@ import java.util.Map;
 @Mapper
 public interface SlnkTransDetailMapper {
     List<SlnkTransDetail> selectList(Map<String, Object> params);
-    SlnkTransDetail select(Map<String, Object> params);
     void insert(SlnkTransDetail slnkTransDetail);
-    void update(SlnkTransDetail slnkTransDetail);
-    void delete(Map<String, Object> params);
 }

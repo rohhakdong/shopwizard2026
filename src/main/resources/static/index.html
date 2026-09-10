@@ -126,6 +126,7 @@
   <script src="/js/pages/catalog-origin.js"></script>
   <script src="/js/pages/product-prod.js"></script>
   <script src="/js/pages/order-list.js"></script>
+  <script src="/js/pages/shoplinker-collect.js"></script>
   <script src="/js/pages/store-store.js"></script>
   <script src="/js/pages/company-comp.js"></script>
   <script src="/js/pages/company-supply.js"></script>
@@ -144,7 +145,8 @@
       {
         section: '주문',
         items: [
-          { key: 'order-list',     label: '주문관리',      icon: '📋', page: 'order/list' },
+          { key: 'order-list',        label: '주문관리',      icon: '📋', page: 'order/list' },
+          { key: 'shoplinker-collect', label: '샵링커 수집',   icon: '🔻', page: 'order/shoplinker' },
         ]
       },
       {
@@ -297,6 +299,8 @@
         PageProductProd.render(content);
       } else if (key === 'order-list') {
         PageOrderList.render(content);
+      } else if (key === 'shoplinker-collect') {
+        PageShoplinkerCollect.render(content);
       } else if (key === 'profile-cust') {
         PageProfileCust.render(content);
       } else if (key === 'store') {

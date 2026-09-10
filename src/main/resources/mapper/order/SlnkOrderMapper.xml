@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.SlnkOrderMapper">
+
+    <select id="countByCode" parameterType="string" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOrdOrderShoplinker WHERE Code = #{value}
+    </select>
+
+    <!-- 레거시 tOrdOrder.insert.shoplinker 그대로 (41컬럼). State=1 고정. -->
+    <insert id="insert" parameterType="com.shopwizard.external.shoplinker.Order">
+        INSERT INTO shopion.tOrdOrderShoplinker (
+            Code, Orderdate, Mallcode, Mallid, Stcode, Orderno, Sellerid, Paymethod, Receipt,
+            Canceldesc, Changeyn, GoodNo, GoodSlgoodno, GoodAuctionno, GoodBprice, GoodOribprice,
+            GoodSprice, GoodName, GoodOpt, GoodQty, BuyerId, BuyerName, BuyerTel, BuyerHp,
+            BuyerEmail, RcpName, RcpTel, RcpHp, RcpEmail, RcpZip, RcpAddr,
+            TransPolicy, TransName, TransNo, TransSendmemo, UpdateDate, ShopionOrderNo,
+            State, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{code}, #{orderdate}, #{mallcode}, #{mallid}, #{stcode}, #{orderno}, #{sellerid}, #{paymethod}, #{receipt},
+            #{canceldesc}, #{changeyn}, #{goodNo}, #{goodSlgoodno}, #{goodAuctionno}, #{goodBprice}, #{goodOribprice},
+            #{goodSprice}, #{goodName}, #{goodOpt}, #{goodQty}, #{buyerId}, #{buyerName}, #{buyerTel}, #{buyerHp},
+            #{buyerEmail}, #{rcpName}, #{rcpTel}, #{rcpHp}, #{rcpEmail}, #{rcpZip}, #{rcpAddr},
+            #{transPolicy}, #{transName}, #{transNo}, #{transSendmemo}, #{updateDate}, #{shopionOrderNo},
+            1, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+</mapper>

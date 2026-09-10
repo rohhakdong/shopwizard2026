@@ -3,9 +3,11 @@
 
 <mapper namespace="com.shopwizard.order.mapper.SlnkTransMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.SlnkTrans">
-        SELECT *
-        FROM shopion.tOrdSlnkTrans
+    <!-- 실제 테이블: shopion.tOrdSlnkTrans
+         (StartDate, EndDate, MallCode, LoginId, ResultType, ResultMessag, FileLoc,
+          TransStartDate, TransEndDate, ShoplinkerURL, State, Remark, Regist*/Change*) -->
+
+    <sql id="where">
         <where>
             <if test="pMallCode != null and pMallCode != ''">
                 <choose>
@@ -13,47 +15,64 @@
                     <otherwise>AND MallCode = #{pMallCode}</otherwise>
                 </choose>
             </if>
-            <if test="pTransType != null and pTransType != ''">AND TransType = #{pTransType}</if>
+            <if test="pLoginId != null and pLoginId != ''">AND LoginId = #{pLoginId}</if>
+            <if test="pResultType != null and pResultType != ''">AND ResultType = #{pResultType}</if>
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
-                <![CDATA[AND (TransStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND TransStartDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))]]>
+                <![CDATA[ AND (TransStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d')
+                          AND TransStartDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)) ]]>
             </if>
         </where>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.SlnkTrans">
+        SELECT *
+        FROM shopion.tOrdSlnkTrans
+        <include refid="where"/>
         <choose>
             <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
             <otherwise>ORDER BY TransId DESC</otherwise>
         </choose>
+        <!-- topCnt/countPerPage 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시
+             MySQL 이 LIMIT '0','20' 로 거부하므로, 숫자 검증 후 ${} 치환한다. -->
+        <if test="topCnt != null and topCnt.toString().matches('^[0-9]+$') and countPerPage != null and countPerPage.toString().matches('^[0-9]+$')">
+            LIMIT ${topCnt}, ${countPerPage}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdSlnkTrans
+        <include refid="where"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.SlnkTrans">
-        SELECT *
-        FROM shopion.tOrdSlnkTrans
-        WHERE TransId = #{transId}
+        SELECT * FROM shopion.tOrdSlnkTrans WHERE TransId = #{transId}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.order.model.SlnkTrans">
+    <select id="selectCountByResultType" parameterType="string" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOrdSlnkTrans WHERE ResultType = #{value}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.SlnkTrans"
+            useGeneratedKeys="true" keyProperty="transId">
         INSERT INTO shopion.tOrdSlnkTrans (
-            MallCode, TransType, TransState, TransStartDate, TransEndDate,
-            TotalCount, SuccessCount, FailCount,
-            State, Remark, RegistId, RegistName, RegistDate
+            StartDate, EndDate, MallCode, LoginId, ResultType, ResultMessag, FileLoc,
+            TransStartDate, TransEndDate, ShoplinkerURL, State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
-            #{mallCode}, #{transType}, #{transState}, #{transStartDate}, #{transEndDate},
-            #{totalCount}, #{successCount}, #{failCount},
-            1, #{remark}, #{registId}, #{registName}, NOW()
+            #{startDate}, #{endDate}, #{mallCode}, #{loginId}, #{resultType}, #{resultMessag}, #{fileLoc},
+            #{transStartDate}, #{transEndDate}, #{shoplinkerUrl}, 1, #{remark}, #{registId}, #{registName}, NOW()
         )
     </insert>
 
     <update id="update" parameterType="com.shopwizard.order.model.SlnkTrans">
         UPDATE shopion.tOrdSlnkTrans SET
-            TransState = #{transState}, TotalCount = #{totalCount},
-            SuccessCount = #{successCount}, FailCount = #{failCount},
-            <if test="transStartDate != null and transStartDate != ''">TransStartDate = #{transStartDate},</if>
-            <if test="transEndDate != null and transEndDate != ''">TransEndDate = #{transEndDate},</if>
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+            ResultType = #{resultType},
+            ResultMessag = #{resultMessag},
+            ShoplinkerURL = #{shoplinkerUrl}
+            <if test="transStartDate != null and transStartDate != ''">, TransStartDate = #{transStartDate}</if>
+            <if test="transEndDate != null and transEndDate != ''">, TransEndDate = #{transEndDate}</if>
+            , ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE TransId = #{transId}
     </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tOrdSlnkTrans WHERE TransId = #{transId}
-    </delete>
 
 </mapper>

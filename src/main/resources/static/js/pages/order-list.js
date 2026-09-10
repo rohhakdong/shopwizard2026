@@ -260,6 +260,9 @@ const PageOrderList = (() => {
       pShopCode:      v('olShopCode'),
       pMngrMd:        v('olMngrMd'),
       pSvcCode:       (typeof info !== 'undefined' && info?.svcCode) || 'SHP001',
+      // 존재하는 주문은 상품 매칭 여부와 무관하게 목록에 나와야 한다(샵링커/엑셀 수집분 포함).
+      // OrderProdMapper 가 tPrdProd/tCmpShop 를 LEFT JOIN 하도록 지시.
+      pProdJoin:      'LEFT',
     };
     const val = v('olSearchValue').trim();
     if (val) {
@@ -422,7 +425,7 @@ const PageOrderList = (() => {
       const svcCode = (typeof info !== 'undefined' && info?.svcCode) || 'SHP001';
       const [order, prods] = await Promise.all([
         Api.get('/order/order', { orderNo }),
-        Api.get('/order/orderprod/list', { pOrderNo: orderNo, pSvcCode: svcCode }),
+        Api.get('/order/orderprod/list', { pOrderNo: orderNo, pSvcCode: svcCode, pProdJoin: 'LEFT' }),
       ]);
 
       const row = (label, value) => `
