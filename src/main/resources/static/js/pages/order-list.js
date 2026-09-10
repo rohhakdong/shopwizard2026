@@ -27,16 +27,20 @@ const PageOrderList = (() => {
   }
   function won(n) { return (n == null || n === '') ? '' : Number(n).toLocaleString(); }
   function fmtDt(s) { return s ? String(s).replace('T', ' ').substring(0, 16) : ''; }
-  // 마진율/순마진율/채널수수료율 — 저장 컬럼이 없어 (판매가 × 수량) 대비 비율로 계산한다.
-  function rate(part, o) {
-    const base = (Number(o.salePrice) || 0) * (Number(o.prodQty) || 0);
-    if (!base || part == null) return '';
-    return (Number(part) / base * 100).toFixed(1) + '%';
+  function num(n) { return Number(n) || 0; }
+  // 실판매가 = SalePrice + NvPrice(옵션가). 판매가 컬럼과 마진율/채널수수료율 분모에 쓴다.
+  function realSalePrice(o) { return num(o.salePrice) + num(o.nvPrice); }
+  // 비율 컬럼 — 저장된 율 컬럼이 없어 금액끼리 나눠서 계산한다. 분모는 컬럼별로 다르다
+  // (마진율·채널수수료율: 실판매가 / 순마진율: 공급가).
+  function pct(part, base) {
+    const b = Number(base);
+    if (!b || part == null) return '';
+    return (Number(part) / b * 100).toFixed(1) + '%';
   }
 
   // ── 컬럼 정의 ──────────────────────────────────────────────────────
   // 사용자 요청 순서 그대로. get(o, i) → 셀 값. align:'right'는 우측정렬, badge는 상태배지,
-  // img는 썸네일. "옵션가"는 tOrdOrderProd에 대응 컬럼이 없어 표시만 하고 값은 비운다.
+  // img는 썸네일. 옵션가 = NvPrice, 판매가 = SalePrice + NvPrice(실판매가).
   const COLS = [
     { h: '번호',        w: 46,  get: (o, i) => (currentPage - 1) * PAGE_SIZE + i + 1, align: 'right' },
     { h: '주문번호',    w: 78,  get: o => o.orderNo },
@@ -57,8 +61,8 @@ const PageOrderList = (() => {
     { h: '업체',        w: 88,  get: o => o.shopName },
     { h: '상품담당',    w: 66,  get: o => o.shopChrgName },
     { h: '수량',        w: 44,  get: o => o.prodQty, align: 'right' },
-    { h: '판매가',      w: 84,  get: o => won(o.salePrice), align: 'right' },
-    { h: '옵션가',      w: 70,  get: () => '', align: 'right' },
+    { h: '판매가',      w: 84,  get: o => won(realSalePrice(o)), align: 'right' },
+    { h: '옵션가',      w: 70,  get: o => won(o.nvPrice), align: 'right' },
     { h: '채널공급가',  w: 84,  get: o => won(o.supplyPrice), align: 'right' },
     { h: '원가',        w: 78,  get: o => won(o.buyPrice), align: 'right' },
     { h: '등록원가',    w: 78,  get: o => won(o.registBuyPrice), align: 'right' },
@@ -66,11 +70,11 @@ const PageOrderList = (() => {
     { h: '배송비',      w: 70,  get: o => won(o.deliFeeAmt), align: 'right' },
     { h: '판촉비',      w: 70,  get: o => won(o.promotFeeAmt), align: 'right' },
     { h: '마진',        w: 80,  get: o => won(o.prodMargin), align: 'right' },
-    { h: '마진율',      w: 58,  get: o => rate(o.prodMargin, o), align: 'right' },
+    { h: '마진율',      w: 58,  get: o => pct(o.prodMargin, realSalePrice(o)), align: 'right' },
     { h: '순마진',      w: 80,  get: o => won(o.netMargin), align: 'right' },
-    { h: '순마진율',    w: 60,  get: o => rate(o.netMargin, o), align: 'right' },
+    { h: '순마진율',    w: 60,  get: o => pct(o.netMargin, o.supplyPrice), align: 'right' },
     { h: '채널수수료',  w: 80,  get: o => won(o.chnlMargin), align: 'right' },
-    { h: '채널수수료율', w: 66,  get: o => rate(o.chnlMargin, o), align: 'right' },
+    { h: '채널수수료율', w: 66,  get: o => pct(o.chnlMargin, realSalePrice(o)), align: 'right' },
     { h: '채널담당',    w: 66,  get: o => o.chnlChrgName },
     { h: '채널',        w: 130, get: o => o.chnlName },
     { h: '전화번호1',   w: 106, get: o => o.orderPhoneNo },
