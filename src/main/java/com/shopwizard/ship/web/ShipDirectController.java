@@ -1,6 +1,8 @@
 package com.shopwizard.ship.web;
 
 import com.shopwizard.ship.model.ShipDirect;
+import com.shopwizard.ship.model.ShipDirectIssueRequest;
+import com.shopwizard.ship.model.ShipDirectIssueResult;
 import com.shopwizard.ship.service.ShipDirectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,8 @@ public class ShipDirectController {
     @GetMapping("/print2-count") public int selectCountPrint2(@RequestParam Map<String, Object> params) { return shipDirectService.selectCountPrint2(params); }
     @PostMapping public int insert(@RequestBody ShipDirect shipDirect) { return shipDirectService.insert(shipDirect); }
     @PostMapping("/ship-direct") public int insertShipDirect(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirect(params); }
+    /** 출고지시 화면(ship-direct-issue.js) — 선택한 지불완료 주문라인들을 일괄 출고지시 처리. */
+    @PostMapping("/issue-batch") public ShipDirectIssueResult issueBatch(@RequestBody ShipDirectIssueRequest req) { return shipDirectService.issueBatch(req); }
     @PostMapping("/ship-direct-print") public int insertShipDirectPrint(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrint(params); }
     @PostMapping("/ship-direct-print-by-matching") public int insertShipDirectPrintByMatching(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrintByMatching(params); }
     @GetMapping("/social-check") public int checkShipDirectPrintByMatchingSocial(@RequestParam Map<String, Object> params) { return shipDirectService.checkShipDirectPrintByMatchingSocial(params); }

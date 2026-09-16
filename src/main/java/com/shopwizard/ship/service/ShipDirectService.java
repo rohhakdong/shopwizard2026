@@ -2,6 +2,8 @@ package com.shopwizard.ship.service;
 
 import com.shopwizard.ship.mapper.ShipDirectMapper;
 import com.shopwizard.ship.model.ShipDirect;
+import com.shopwizard.ship.model.ShipDirectIssueRequest;
+import com.shopwizard.ship.model.ShipDirectIssueResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,33 @@ import java.util.Map;
 @Transactional
 public class ShipDirectService {
     private final ShipDirectMapper shipDirectMapper;
+    private final ShipDirectIssueService shipDirectIssueService;
+
+    /**
+     * 선택한 지불완료 주문라인들을 건별로 출고지시 전환한다 (출고지시 화면, ship-direct-issue.js).
+     * 건별로 {@link ShipDirectIssueService#issueOne} 이 REQUIRES_NEW 로 독립 커밋되므로,
+     * 한 건이 실패해도 나머지 건 처리에는 영향이 없다.
+     */
+    public ShipDirectIssueResult issueBatch(ShipDirectIssueRequest req) {
+        ShipDirectIssueResult result = new ShipDirectIssueResult();
+        if (req.getLines() == null) return result;
+        for (ShipDirectIssueRequest.Line line : req.getLines()) {
+            try {
+                String err = shipDirectIssueService.issueOne(
+                        line.getOrderNo(), line.getOrderProdNo(), req.getRegistId(), req.getRegistName());
+                if (err != null) {
+                    result.setFailed(result.getFailed() + 1);
+                    result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + err);
+                } else {
+                    result.setSuccess(result.getSuccess() + 1);
+                }
+            } catch (Exception e) {
+                result.setFailed(result.getFailed() + 1);
+                result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + e.getMessage());
+            }
+        }
+        return result;
+    }
     public List<ShipDirect> selectList(Map<String, Object> params) { return shipDirectMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return shipDirectMapper.selectCount(params); }
     public ShipDirect select(Map<String, Object> params) { return shipDirectMapper.select(params); }

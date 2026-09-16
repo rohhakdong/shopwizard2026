@@ -136,6 +136,7 @@
   <script src="/js/pages/company-chnl.js"></script>
   <script src="/js/pages/company-deli.js"></script>
   <script src="/js/pages/company-warehs.js"></script>
+  <script src="/js/pages/ship-direct-issue.js"></script>
   <script src="/js/pages/ship-direct.js"></script>
   <script src="/js/pages/ship-return.js"></script>
   <script src="/js/pages/adjust-list.js"></script>
@@ -165,6 +166,7 @@
       {
         section: '배송',
         items: [
+          { key: 'ship-direct-issue', label: '출고지시',    icon: '📤', page: 'ship/direct-issue' },
           { key: 'ship-direct',    label: '직배송 관리',    icon: '🚚', page: 'ship/direct' },
           { key: 'ship-return',    label: '반품 관리',      icon: '↩️',  page: 'ship/return' },
         ]
@@ -323,6 +325,8 @@
         PageCompanyDeli.render(content);
       } else if (key === 'company-warehs') {
         PageCompanyWarehs.render(content);
+      } else if (key === 'ship-direct-issue') {
+        PageShipDirectIssue.render(content);
       } else if (key === 'ship-direct') {
         PageShipDirect.render(content);
       } else if (key === 'ship-return') {

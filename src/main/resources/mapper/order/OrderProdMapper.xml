@@ -109,13 +109,17 @@
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
                 AND
                 <choose>
-                    <when test="pOrderDateType == 'P'">
+                    <!-- 'P'/'S'/'R' 처럼 한 글자짜리 작은따옴표 문자열 리터럴은 OGNL 이 char 로
+                         해석해 String 과 비교 시 숫자 변환을 시도하다 NumberFormatException 을
+                         던진다(pOrderDateType='P' 로 호출한 적이 실제로 없어 여태 안 드러났던 버그).
+                         큰따옴표 리터럴은 항상 String 이라 이 문제가 없다. -->
+                    <when test='pOrderDateType == "P"'>
                         <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
-                    <when test="pOrderDateType == 'S'">
+                    <when test='pOrderDateType == "S"'>
                         <![CDATA[(OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
-                    <when test="pOrderDateType == 'R'">
+                    <when test='pOrderDateType == "R"'>
                         <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
                     <otherwise>
