@@ -14,10 +14,10 @@
             <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
             <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
             <if test="pChnlName != null and pChnlName != ''">AND ChnlName = #{pChnlName}</if>
-            <if test="pSocialYn == 'Y' or pSocialYn == 'V'">
+            <if test='pSocialYn == "Y" or pSocialYn == "V"'>
                 AND ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
             </if>
-            <if test="pSocialYn == 'N'">
+            <if test='pSocialYn == "N"'>
                 AND ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
             </if>
             <if test="pType == 'updateItemCode'">
@@ -44,10 +44,10 @@
             <if test="pShopProdCode != null and pShopProdCode != ''">AND ShopProdCode = #{pShopProdCode}</if>
             <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
             <if test="pChnlName != null and pChnlName != ''">AND ChnlName = #{pChnlName}</if>
-            <if test="pSocialYn == 'Y' or pSocialYn == 'V'">
+            <if test='pSocialYn == "Y" or pSocialYn == "V"'>
                 AND ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
             </if>
-            <if test="pSocialYn == 'N'">
+            <if test='pSocialYn == "N"'>
                 AND ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
             </if>
             <if test="pType == 'updateItemCode'">

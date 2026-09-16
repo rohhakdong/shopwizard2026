@@ -11,7 +11,7 @@
         <where>
             <if test="pMallCode != null and pMallCode != ''">
                 <choose>
-                    <when test="pMallCode == 'M'">AND MallCode = ''</when>
+                    <when test='pMallCode == "M"'>AND MallCode = ''</when>
                     <otherwise>AND MallCode = #{pMallCode}</otherwise>
                 </choose>
             </if>

@@ -140,10 +140,10 @@
                 <![CDATA[AND (OP.ShipCmpletDate >= DATE_FORMAT(#{pCompareDate}, '%Y%m%d') OR OP.ShipCmpletDate IS NULL)]]>
             </if>
             <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
-            <if test="pSocialYn != null and (pSocialYn == 'V' or pSocialYn == 'Y')">
+            <if test='pSocialYn != null and (pSocialYn == "V" or pSocialYn == "Y")'>
                 AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
             </if>
-            <if test="pSocialYn != null and pSocialYn == 'N'">
+            <if test='pSocialYn != null and pSocialYn == "N"'>
                 AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')
             </if>
             <if test="p2BoxSearchValue == null or p2BoxSearchValue == ''">
@@ -154,7 +154,7 @@
             </if>
             <if test="pShopCode != null and pShopCode == '3018508386A1' and pSocialYn != null and pSocialYn != ''">
                 <choose>
-                    <when test="pSocialYn == 'H'">AND Ch.ChnlName IN ('홈앤쇼핑')</when>
+                    <when test='pSocialYn == "H"'>AND Ch.ChnlName IN ('홈앤쇼핑')</when>
                     <otherwise>AND Ch.ChnlName NOT IN ('홈앤쇼핑')</otherwise>
                 </choose>
             </if>
@@ -594,13 +594,13 @@
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
                 AND
                 <choose>
-                    <when test="pOrderDateType == 'P'">
+                    <when test='pOrderDateType == "P"'>
                         <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
-                    <when test="pOrderDateType == 'S'">
+                    <when test='pOrderDateType == "S"'>
                         <![CDATA[(OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
-                    <when test="pOrderDateType == 'R'">
+                    <when test='pOrderDateType == "R"'>
                         <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
                     <otherwise>
@@ -729,13 +729,13 @@
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
                 AND
                 <choose>
-                    <when test="pOrderDateType == 'P'">
+                    <when test='pOrderDateType == "P"'>
                         <![CDATA[(O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
-                    <when test="pOrderDateType == 'S'">
+                    <when test='pOrderDateType == "S"'>
                         <![CDATA[(OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
-                    <when test="pOrderDateType == 'R'">
+                    <when test='pOrderDateType == "R"'>
                         <![CDATA[(O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY))]]>
                     </when>
                     <otherwise>
@@ -754,9 +754,9 @@
 
     <sql id="statsReferDate">
         <choose>
-            <when test="pOrderDateType == 'P'">O.PayCmpletDate AS ReferDate,</when>
-            <when test="pOrderDateType == 'S'">OP.ShipCmpletDate AS ReferDate,</when>
-            <when test="pOrderDateType == 'R'">O.RefundCmpletDate AS ReferDate,</when>
+            <when test='pOrderDateType == "P"'>O.PayCmpletDate AS ReferDate,</when>
+            <when test='pOrderDateType == "S"'>OP.ShipCmpletDate AS ReferDate,</when>
+            <when test='pOrderDateType == "R"'>O.RefundCmpletDate AS ReferDate,</when>
             <otherwise>O.OrderReciptDate AS ReferDate,</otherwise>
         </choose>
     </sql>
