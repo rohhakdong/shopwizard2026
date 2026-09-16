@@ -66,11 +66,11 @@
         <if test="pShopMDCode != null and pShopMDCode != ''">AND S.MngrMd = #{pShopMDCode}</if>
         <if test="pOrderName != null and pOrderName != ''">AND SD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
         <if test="pChnlCode != null and pChnlCode != ''">AND SD.ChnlCode = #{pChnlCode}</if>
-        <if test="pSocialYn == 'V' or pSocialYn == 'Y'">AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
-        <if test="pSocialYn == 'N'">AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "V" or pSocialYn == "Y"'>AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "N"'>AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
         <if test="pShopCode == '3018508386A1' and pSocialYn != null and pSocialYn != ''">
-            <if test="pSocialYn != 'H'">AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
-            <if test="pSocialYn == 'H'">AND Ch.ChnlName IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn != "H"'>AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn == "H"'>AND Ch.ChnlName IN ('홈앤쇼핑')</if>
         </if>
         <if test="pShipCheckDate != null and pShipCheckDate != ''">AND SD.ShipCheckDate = #{pShipCheckDate}</if>
         <choose>
@@ -131,11 +131,11 @@
         <if test="pShopMDCode != null and pShopMDCode != ''">AND S.MngrMd = #{pShopMDCode}</if>
         <if test="pOrderName != null and pOrderName != ''">AND SD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
         <if test="pChnlCode != null and pChnlCode != ''">AND SD.ChnlCode = #{pChnlCode}</if>
-        <if test="pSocialYn == 'V' or pSocialYn == 'Y'">AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
-        <if test="pSocialYn == 'N'">AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "V" or pSocialYn == "Y"'>AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "N"'>AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
         <if test="pShopCode == '3018508386A1' and pSocialYn != null and pSocialYn != ''">
-            <if test="pSocialYn != 'H'">AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
-            <if test="pSocialYn == 'H'">AND Ch.ChnlName IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn != "H"'>AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn == "H"'>AND Ch.ChnlName IN ('홈앤쇼핑')</if>
         </if>
         <if test="pShipCheckDate != null and pShipCheckDate != ''">AND SD.ShipCheckDate = #{pShipCheckDate}</if>
     </select>
@@ -194,11 +194,11 @@
         <if test="pShopCode != null and pShopCode != ''">AND SD.ShopCode = #{pShopCode}</if>
         <if test="pOrderName != null and pOrderName != ''">AND SD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
         <if test="pChnlCode != null and pChnlCode != ''">AND SD.ChnlCode = #{pChnlCode}</if>
-        <if test="pSocialYn == 'V' or pSocialYn == 'Y'">AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
-        <if test="pSocialYn == 'N'">AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "V" or pSocialYn == "Y"'>AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "N"'>AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
         <if test="pShopCode == '3018508386A1' and pSocialYn != null and pSocialYn != ''">
-            <if test="pSocialYn != 'H'">AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
-            <if test="pSocialYn == 'H'">AND Ch.ChnlName IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn != "H"'>AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn == "H"'>AND Ch.ChnlName IN ('홈앤쇼핑')</if>
         </if>
         <if test="pShipCheckDate != null and pShipCheckDate != ''">AND SD.ShipCheckDate = #{pShipCheckDate}</if>
         ORDER BY 1
@@ -225,7 +225,7 @@
         <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
             AND
             <choose>
-                <when test="cOrderDate2Type == 'S'">
+                <when test='cOrderDate2Type == "S"'>
                     <![CDATA[ ( SD.ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND SD.ShipCheckDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY) ) ]]>
                 </when>
                 <otherwise>
@@ -255,7 +255,7 @@
         <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
             AND
             <choose>
-                <when test="cOrderDate2Type == 'S'">
+                <when test='cOrderDate2Type == "S"'>
                     <![CDATA[ ( SD.ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND SD.ShipCheckDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY) ) ]]>
                 </when>
                 <otherwise>
@@ -519,11 +519,11 @@
         AND SDP.RecverAddr = #{pRecverAddr}
         AND SDP.RecverName = #{pRecverName}
         AND SDP.OrderState = '출고지시'
-        <if test="pSocialYn == 'V' or pSocialYn == 'Y'">AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
-        <if test="pSocialYn == 'N'">AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "V" or pSocialYn == "Y"'>AND Ch.ChnlName IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
+        <if test='pSocialYn == "N"'>AND Ch.ChnlName NOT IN ('쿠팡','위메프','위메프D','위메프 파트너2.0','티몬','티몬(shopion)')</if>
         <if test="pShopCode == '3018508386A1' and pSocialYn != null and pSocialYn != ''">
-            <if test="pSocialYn != 'H'">AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
-            <if test="pSocialYn == 'H'">AND Ch.ChnlName IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn != "H"'>AND Ch.ChnlName NOT IN ('홈앤쇼핑')</if>
+            <if test='pSocialYn == "H"'>AND Ch.ChnlName IN ('홈앤쇼핑')</if>
         </if>
     </update>
 

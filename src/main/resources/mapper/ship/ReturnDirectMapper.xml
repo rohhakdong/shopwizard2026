@@ -37,13 +37,13 @@
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
                 AND
                 <choose>
-                    <when test="pOrderDateType == 'P'">
+                    <when test='pOrderDateType == "P"'>
                         <![CDATA[ ( O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
                     </when>
-                    <when test="pOrderDateType == 'S'">
+                    <when test='pOrderDateType == "S"'>
                         <![CDATA[ ( OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
                     </when>
-                    <when test="pOrderDateType == 'R'">
+                    <when test='pOrderDateType == "R"'>
                         <![CDATA[ ( O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
                     </when>
                     <otherwise>
@@ -91,13 +91,13 @@
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
                 AND
                 <choose>
-                    <when test="pOrderDateType == 'P'">
+                    <when test='pOrderDateType == "P"'>
                         <![CDATA[ ( O.PayCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.PayCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
                     </when>
-                    <when test="pOrderDateType == 'S'">
+                    <when test='pOrderDateType == "S"'>
                         <![CDATA[ ( OP.ShipCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND OP.ShipCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
                     </when>
-                    <when test="pOrderDateType == 'R'">
+                    <when test='pOrderDateType == "R"'>
                         <![CDATA[ ( O.RefundCmpletDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND O.RefundCmpletDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ) ]]>
                     </when>
                     <otherwise>
