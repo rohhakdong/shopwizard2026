@@ -13,7 +13,11 @@
             <if test="pCapa != null and pCapa != ''">AND Capa = #{pCapa}</if>
             <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시
+             MySQL 이 LIMIT '0','20' 로 거부하므로, 숫자 검증 후 ${} 치환한다(반복 등장하는 패턴). -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">

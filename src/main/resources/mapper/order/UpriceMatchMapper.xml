@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.UpriceMatchMapper">
+
+    <!-- 지불완료 주문 중 shopwizard.tOrdUpriceMatch 에 규칙이 없는 (상품명,옵션) 그룹.
+         OrderProdMapper.xml 의 selectListUnmatched(상품매칭)와 같은 모양 — NOT EXISTS 대상만 다르다. -->
+    <sql id="upriceUnmatchedWhere">
+        <where>
+            AND OP.OrderState = '지불완료'
+            AND Ch.SvcCode = #{pSvcCode}
+            AND NOT EXISTS (
+                SELECT 1 FROM shopwizard.tOrdUpriceMatch UM
+                WHERE UM.ProdName = IFNULL(OP.ProdName, '') AND UM.ItemName = IFNULL(OP.ItemName, '')
+            )
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND OP.ProdName LIKE CONCAT('%', #{pProdName}, '%')</if>
+            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+                <![CDATA[ AND (O.OrderReciptDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d')
+                          AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)) ]]>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectListUnmatched" parameterType="map" resultType="map">
+        SELECT
+            IFNULL(OP.ProdName, '') AS prodName,
+            IFNULL(OP.ItemName, '') AS itemName,
+            COUNT(*)                AS cnt,
+            MIN(OP.OrderNo)         AS sampleOrderNo,
+            GROUP_CONCAT(DISTINCT Ch.ChnlName ORDER BY Ch.ChnlName SEPARATOR ', ') AS chnlNames,
+            MAX(OP.RegistDate)      AS lastRegistDate
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        <include refid="upriceUnmatchedWhere"/>
+        GROUP BY IFNULL(OP.ProdName, ''), IFNULL(OP.ItemName, '')
+        ORDER BY cnt DESC, lastRegistDate DESC
+        <if test="topCnt != null and topCnt.toString().matches('^[0-9]+$') and countPerPage != null and countPerPage.toString().matches('^[0-9]+$')">
+            LIMIT ${topCnt}, ${countPerPage}
+        </if>
+    </select>
+
+    <select id="selectListUnmatchedCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT 1
+            FROM shopion.tOrdOrderProd OP
+            INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+            INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+            <include refid="upriceUnmatchedWhere"/>
+            GROUP BY IFNULL(OP.ProdName, ''), IFNULL(OP.ItemName, '')
+        ) g
+    </select>
+
+    <select id="selectPriced" resultType="com.shopwizard.order.model.UpriceMatchDetail">
+        SELECT UM.ProdName, UM.ItemName, UM.MatchSeq, UM.MatchUpriceCode, UM.Qty,
+               U.Keywrd, U.Capa, U.Uprice, U.UnitName
+        FROM shopwizard.tOrdUpriceMatch UM
+        INNER JOIN shopwizard.tOrdOrderUprice U ON U.MatchUpriceCode = UM.MatchUpriceCode AND U.UseYn = 1
+        WHERE UM.ProdName = #{prodName} AND UM.ItemName = #{itemName}
+        ORDER BY UM.MatchSeq
+    </select>
+
+    <delete id="deleteByProdItem">
+        DELETE FROM shopwizard.tOrdUpriceMatch WHERE ProdName = #{prodName} AND ItemName = #{itemName}
+    </delete>
+
+    <insert id="insertDetail" parameterType="com.shopwizard.order.model.UpriceMatchDetail">
+        INSERT INTO shopwizard.tOrdUpriceMatch
+            (ProdName, ItemName, MatchSeq, MatchUpriceCode, Qty, State, Remark, RegistId, RegistName, RegistDate)
+        VALUES
+            (#{prodName}, #{itemName}, #{matchSeq}, #{matchUpriceCode}, #{qty}, 1, #{remark}, #{registId}, #{registName}, NOW())
+    </insert>
+
+</mapper>

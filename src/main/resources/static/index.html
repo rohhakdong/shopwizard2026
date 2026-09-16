@@ -128,6 +128,7 @@
   <script src="/js/pages/order-list.js"></script>
   <script src="/js/pages/shoplinker-collect.js"></script>
   <script src="/js/pages/order-prod-match.js"></script>
+  <script src="/js/pages/order-uprice-match.js"></script>
   <script src="/js/pages/store-store.js"></script>
   <script src="/js/pages/company-comp.js"></script>
   <script src="/js/pages/company-supply.js"></script>
@@ -150,6 +151,7 @@
           { key: 'order-list',        label: '주문관리',      icon: '📋', page: 'order/list' },
           { key: 'shoplinker-collect', label: '샵링커 수집',   icon: '🔻', page: 'order/shoplinker' },
           { key: 'order-prod-match',  label: '상품 매칭',      icon: '🔗', page: 'order/prodmatch' },
+          { key: 'order-uprice-match', label: '발주단가매칭',  icon: '🧮', page: 'order/upricematch' },
         ]
       },
       {
@@ -307,6 +309,8 @@
         PageShoplinkerCollect.render(content);
       } else if (key === 'order-prod-match') {
         PageOrderProdMatch.render(content);
+      } else if (key === 'order-uprice-match') {
+        PageOrderUpriceMatch.render(content);
       } else if (key === 'profile-cust') {
         PageProfileCust.render(content);
       } else if (key === 'store') {
