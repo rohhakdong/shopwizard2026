@@ -1,8 +1,12 @@
 /**
- * 직배송 관리
+ * 송장입력 (구 "직배송 관리")
+ * - 발주확인 완료된 건(pOrderState=발주확인 고정)만 조회 — 출고지시 단계 건은 여기 안 보인다
+ *   (발주확인 화면 ship-direct-check.js 에서 먼저 처리해야 함).
  * - 기간/조건 검색, 페이지네이션
  * - 상세 모달 (읽기 전용)
- * - 송장번호 수정
+ * - 송장번호 수정: 택배사+송장번호 저장 시 tShpShipDirect.OrderState 가 '배송시작' 으로 바뀌고
+ *   (ShipDirectMapper.updateInvoice, WHERE OrderState='발주확인' 가드), tOrdOrderProd 도 동기화된다
+ *   (ShipDirectService.updateInvoice). 영향행수가 0이면(이미 처리됐거나 상태가 어긋난 경우) 에러로 표시한다.
  */
 const PageShipDirect = (() => {
 
@@ -10,6 +14,7 @@ const PageShipDirect = (() => {
   let currentPage = 1;
   let totalCount  = 0;
   let shopList    = [];
+  let deliCompList = [];
 
   function toDateStr(date) { return date.toISOString().slice(0,10); }
   function defaultStart()  { const d = new Date(); d.setDate(d.getDate()-30); return toDateStr(d); }
@@ -19,7 +24,7 @@ const PageShipDirect = (() => {
   function render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="card-header">직배송 관리</div>
+        <div class="card-header">송장입력</div>
         <div class="card-body" style="padding:12px 16px">
 
           <div class="search-bar" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
@@ -61,7 +66,7 @@ const PageShipDirect = (() => {
     document.getElementById('sdBtnSearch').addEventListener('click', () => { currentPage=1; loadList(); });
     document.getElementById('sdOrderNo').addEventListener('keydown', e => { if(e.key==='Enter'){currentPage=1;loadList();} });
 
-    loadShopList().then(() => loadList());
+    Promise.all([loadShopList(), loadDeliCompList()]).then(() => loadList());
   }
 
   async function loadShopList() {
@@ -77,8 +82,15 @@ const PageShipDirect = (() => {
     } catch(_) {}
   }
 
+  async function loadDeliCompList() {
+    try {
+      deliCompList = await Api.get('/company/deli-comp', {});
+    } catch(_) {}
+  }
+
   function getParams() {
     return {
+      pOrderState:         '발주확인',
       pShipCheckStartDate: document.getElementById('sdStartDate').value,
       pShipCheckEndDate:   document.getElementById('sdEndDate').value,
       pOrderNo:            document.getElementById('sdOrderNo').value.trim(),
@@ -146,7 +158,7 @@ const PageShipDirect = (() => {
             data-ono="${d.orderNo}" data-opno="${d.orderProdNo}" data-ocno="${d.orderChangeNo||0}">상세</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)" data-action="inv"
             data-ono="${d.orderNo}" data-opno="${d.orderProdNo}" data-ocno="${d.orderChangeNo||0}"
-            data-inv="${(d.invNo||'').replace(/"/g,'&quot;')}" data-deli="${d.deliCompCode||''}">송장</button>
+            data-inv="${(d.invNo||'').replace(/"/g,'&quot;')}" data-deli-name="${(d.deliCompName||'').replace(/"/g,'&quot;')}">송장</button>
         </td>
       </tr>`).join('');
 
@@ -243,29 +255,48 @@ const PageShipDirect = (() => {
 
   function openInvoiceModal(btn) {
     const body = document.createElement('div');
+    const deliOptions = deliCompList.map(d =>
+      `<option value="${(d.deliCompName||'').replace(/"/g,'&quot;')}" ${d.deliCompName===btn.dataset.deliName ? 'selected' : ''}>${d.deliCompName||''}</option>`
+    ).join('');
     body.innerHTML = `
       <div class="form-grid">
+        <div class="form-group full">
+          <label>택배사</label>
+          <select class="input" id="sdDeliCompName">
+            <option value="">선택</option>
+            ${deliOptions}
+          </select>
+        </div>
         <div class="form-group full">
           <label>송장번호</label>
           <input class="input" id="sdInvNo" value="${btn.dataset.inv}" placeholder="송장번호 입력">
         </div>
       </div>`;
     UI.modal({
-      title: `송장번호 수정 – #${btn.dataset.ono}`,
+      title: `송장번호 입력 – #${btn.dataset.ono}`,
       body,
       confirmText: '저장',
       onConfirm: async close => {
+        const deliCompName = document.getElementById('sdDeliCompName').value;
         const invNo = document.getElementById('sdInvNo').value.trim();
+        if (!deliCompName) { UI.toast('택배사를 선택하세요', 'error'); return; }
+        if (!invNo) { UI.toast('송장번호를 입력하세요', 'error'); return; }
         try {
-          await Api.put('/ship/ship-direct/invoice', {
+          const updated = await Api.put('/ship/ship-direct/invoice', {
             orderNo: parseInt(btn.dataset.ono),
             orderProdNo: parseInt(btn.dataset.opno),
             orderChangeNo: parseInt(btn.dataset.ocno),
+            deliCompName,
             invNo,
+            orderState: '배송시작',
             changeId:   (typeof info !== 'undefined' && info?.loginId) || '',
             changeName: (typeof info !== 'undefined' && info?.name) || '',
           });
-          UI.toast('송장번호가 수정되었습니다', 'success');
+          if (!updated) {
+            UI.toast('발주확인 상태가 아니거나 이미 송장이 입력된 건입니다', 'error');
+            return;
+          }
+          UI.toast('송장번호가 입력되었습니다', 'success');
           loadList();
           close();
         } catch(e) { UI.toast(e.message, 'error'); }

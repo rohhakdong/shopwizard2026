@@ -62,6 +62,7 @@
         <if test="pOrderProdNo != null and pOrderProdNo != ''">AND SD.OrderProdNo = #{pOrderProdNo}</if>
         <if test="pOrderChangeNo != null and pOrderChangeNo != ''">AND SD.OrderChangeNo = #{pOrderChangeNo}</if>
         <if test="pOrderType != null and pOrderType != ''">AND OrderType = #{pOrderType}</if>
+        <if test="pOrderState != null and pOrderState != ''">AND SD.OrderState = #{pOrderState}</if>
         <if test="pShopCode != null and pShopCode != ''">AND SD.ShopCode = #{pShopCode}</if>
         <if test="pShopMDCode != null and pShopMDCode != ''">AND S.MngrMd = #{pShopMDCode}</if>
         <if test="pOrderName != null and pOrderName != ''">AND SD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
@@ -127,6 +128,7 @@
         <if test="pOrderProdNo != null and pOrderProdNo != ''">AND SD.OrderProdNo = #{pOrderProdNo}</if>
         <if test="pOrderChangeNo != null and pOrderChangeNo != ''">AND SD.OrderChangeNo = #{pOrderChangeNo}</if>
         <if test="pOrderType != null and pOrderType != ''">AND OrderType = #{pOrderType}</if>
+        <if test="pOrderState != null and pOrderState != ''">AND SD.OrderState = #{pOrderState}</if>
         <if test="pShopCode != null and pShopCode != ''">AND SD.ShopCode = #{pShopCode}</if>
         <if test="pShopMDCode != null and pShopMDCode != ''">AND S.MngrMd = #{pShopMDCode}</if>
         <if test="pOrderName != null and pOrderName != ''">AND SD.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>

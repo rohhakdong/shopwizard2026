@@ -1,6 +1,7 @@
 package com.shopwizard.ship.web;
 
 import com.shopwizard.ship.model.ShipDirect;
+import com.shopwizard.ship.model.ShipDirectCheckRequest;
 import com.shopwizard.ship.model.ShipDirectIssueRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
 import com.shopwizard.ship.service.ShipDirectService;
@@ -25,6 +26,8 @@ public class ShipDirectController {
     @PostMapping("/ship-direct") public int insertShipDirect(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirect(params); }
     /** 출고지시 화면(ship-direct-issue.js) — 선택한 지불완료 주문라인들을 일괄 출고지시 처리. */
     @PostMapping("/issue-batch") public ShipDirectIssueResult issueBatch(@RequestBody ShipDirectIssueRequest req) { return shipDirectService.issueBatch(req); }
+    /** 발주확인 화면(ship-direct-check.js) — 선택한 출고지시 건들을 일괄 발주확인 처리. */
+    @PostMapping("/check-batch") public ShipDirectIssueResult checkBatch(@RequestBody ShipDirectCheckRequest req) { return shipDirectService.checkBatch(req); }
     @PostMapping("/ship-direct-print") public int insertShipDirectPrint(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrint(params); }
     @PostMapping("/ship-direct-print-by-matching") public int insertShipDirectPrintByMatching(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrintByMatching(params); }
     @GetMapping("/social-check") public int checkShipDirectPrintByMatchingSocial(@RequestParam Map<String, Object> params) { return shipDirectService.checkShipDirectPrintByMatchingSocial(params); }
