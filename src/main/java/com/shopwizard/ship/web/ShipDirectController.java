@@ -28,6 +28,8 @@ public class ShipDirectController {
     @PostMapping("/issue-batch") public ShipDirectIssueResult issueBatch(@RequestBody ShipDirectIssueRequest req) { return shipDirectService.issueBatch(req); }
     /** 발주확인 화면(ship-direct-check.js) — 선택한 출고지시 건들을 일괄 발주확인 처리. */
     @PostMapping("/check-batch") public ShipDirectIssueResult checkBatch(@RequestBody ShipDirectCheckRequest req) { return shipDirectService.checkBatch(req); }
+    /** 배송완료 화면(ship-direct-complete.js) — 선택한 배송시작 건들을 일괄 배송완료 처리. */
+    @PostMapping("/complete-batch") public ShipDirectIssueResult completeBatch(@RequestBody ShipDirectCheckRequest req) { return shipDirectService.completeBatch(req); }
     @PostMapping("/ship-direct-print") public int insertShipDirectPrint(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrint(params); }
     @PostMapping("/ship-direct-print-by-matching") public int insertShipDirectPrintByMatching(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrintByMatching(params); }
     @GetMapping("/social-check") public int checkShipDirectPrintByMatchingSocial(@RequestParam Map<String, Object> params) { return shipDirectService.checkShipDirectPrintByMatchingSocial(params); }

@@ -140,6 +140,7 @@
   <script src="/js/pages/ship-direct-issue.js"></script>
   <script src="/js/pages/ship-direct-check.js"></script>
   <script src="/js/pages/ship-direct.js"></script>
+  <script src="/js/pages/ship-direct-complete.js"></script>
   <script src="/js/pages/ship-return.js"></script>
   <script src="/js/pages/adjust-list.js"></script>
   <script src="/js/pages/profile-cust.js"></script>
@@ -172,6 +173,7 @@
           { key: 'ship-direct-issue', label: '출고지시',    icon: '📤', page: 'ship/direct-issue' },
           { key: 'ship-direct-check', label: '발주확인',    icon: '✅', page: 'ship/direct-check' },
           { key: 'ship-direct',    label: '송장입력',    icon: '🚚', page: 'ship/direct' },
+          { key: 'ship-direct-complete', label: '배송완료', icon: '🏁', page: 'ship/direct-complete' },
           { key: 'ship-return',    label: '반품 관리',      icon: '↩️',  page: 'ship/return' },
         ]
       },
@@ -337,6 +339,8 @@
         PageShipDirectCheck.render(content);
       } else if (key === 'ship-direct') {
         PageShipDirect.render(content);
+      } else if (key === 'ship-direct-complete') {
+        PageShipDirectComplete.render(content);
       } else if (key === 'ship-return') {
         PageShipReturn.render(content);
       } else if (key === 'adjust') {

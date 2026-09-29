@@ -21,6 +21,7 @@ public class ShipDirectService {
     private final OrderProdMapper orderProdMapper;
     private final ShipDirectIssueService shipDirectIssueService;
     private final ShipDirectCheckService shipDirectCheckService;
+    private final ShipDirectCompleteService shipDirectCompleteService;
 
     /**
      * 선택한 지불완료 주문라인들을 건별로 출고지시 전환한다 (출고지시 화면, ship-direct-issue.js).
@@ -59,6 +60,32 @@ public class ShipDirectService {
         for (ShipDirectCheckRequest.Line line : req.getLines()) {
             try {
                 String err = shipDirectCheckService.checkOne(
+                        line.getOrderNo(), line.getOrderProdNo(), line.getOrderChangeNo(), req.getRegistId(), req.getRegistName());
+                if (err != null) {
+                    result.setFailed(result.getFailed() + 1);
+                    result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + err);
+                } else {
+                    result.setSuccess(result.getSuccess() + 1);
+                }
+            } catch (Exception e) {
+                result.setFailed(result.getFailed() + 1);
+                result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + e.getMessage());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 선택한 배송시작 건들을 건별로 배송완료 전환한다 (배송완료 화면, ship-direct-complete.js).
+     * 건별로 {@link ShipDirectCompleteService#completeOne} 이 REQUIRES_NEW 로 독립 커밋되므로,
+     * 한 건이 실패해도 나머지 건 처리에는 영향이 없다.
+     */
+    public ShipDirectIssueResult completeBatch(ShipDirectCheckRequest req) {
+        ShipDirectIssueResult result = new ShipDirectIssueResult();
+        if (req.getLines() == null) return result;
+        for (ShipDirectCheckRequest.Line line : req.getLines()) {
+            try {
+                String err = shipDirectCompleteService.completeOne(
                         line.getOrderNo(), line.getOrderProdNo(), line.getOrderChangeNo(), req.getRegistId(), req.getRegistName());
                 if (err != null) {
                     result.setFailed(result.getFailed() + 1);
