@@ -173,6 +173,7 @@
         INNER JOIN shopion.tOrdOrderProd OP ON O.OrderNo = OP.OrderNo
         WHERE OP.OrderNo = #{orderNo}
         AND OP.OrderProdNo = #{orderProdNo}
+        AND OP.OrderState = '배송완료'
     </insert>
 
     <update id="update" parameterType="map">

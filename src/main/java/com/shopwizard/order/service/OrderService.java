@@ -3,7 +3,10 @@ package com.shopwizard.order.service;
 import com.shopwizard.order.mapper.OrderMapper;
 import com.shopwizard.order.mapper.OrderNoSeqMapper;
 import com.shopwizard.order.model.Order;
+import com.shopwizard.order.model.OrderCancelRequest;
 import com.shopwizard.order.model.OrderNoSeq;
+import com.shopwizard.ship.model.ShipDirectCheckRequest;
+import com.shopwizard.ship.model.ShipDirectIssueResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,8 @@ import java.util.Map;
 public class OrderService {
     private final OrderMapper orderMapper;
     private final OrderNoSeqMapper orderNoSeqMapper;
+    private final OrderCancelService orderCancelService;
+    private final RefundConfirmService refundConfirmService;
 
     public List<Order> selectList(Map<String, Object> params) { return orderMapper.selectList(params); }
     public List<Order> selectListOrderList(Map<String, Object> params) { return orderMapper.selectListOrderList(params); }
@@ -41,4 +46,57 @@ public class OrderService {
     public void updateOrderCancel(Order order) { orderMapper.updateOrderCancel(order); }
     public void updateOrderState(Map<String, Object> params) { orderMapper.updateOrderState(params); }
     public void updateRefundCancel(Map<String, Object> params) { orderMapper.updateRefundCancel(params); }
+
+    /**
+     * 주문취소접수 화면 — 선택한 주문라인들을 건별로 주문취소 전환한다.
+     * 건별로 {@link OrderCancelService#cancelOne}이 REQUIRES_NEW로 독립 커밋되므로,
+     * 한 건이 실패해도 나머지 건 처리에는 영향이 없다.
+     */
+    public ShipDirectIssueResult cancelBatch(OrderCancelRequest req) {
+        ShipDirectIssueResult result = new ShipDirectIssueResult();
+        if (req.getLines() == null) return result;
+        for (OrderCancelRequest.Line line : req.getLines()) {
+            try {
+                String err = orderCancelService.cancelOne(
+                        line.getOrderNo(), line.getOrderProdNo(), req.getReason(), req.getReasonDetail(),
+                        req.getRegistId(), req.getRegistName());
+                if (err != null) {
+                    result.setFailed(result.getFailed() + 1);
+                    result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + err);
+                } else {
+                    result.setSuccess(result.getSuccess() + 1);
+                }
+            } catch (Exception e) {
+                result.setFailed(result.getFailed() + 1);
+                result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + e.getMessage());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 환불확정 화면 — 선택한 주문라인들(주문취소 또는 반품완료)을 건별로 환불완료 전환한다.
+     * 건별로 {@link RefundConfirmService#confirmOne}이 REQUIRES_NEW로 독립 커밋되므로,
+     * 한 건이 실패해도 나머지 건 처리에는 영향이 없다.
+     */
+    public ShipDirectIssueResult confirmRefundBatch(ShipDirectCheckRequest req) {
+        ShipDirectIssueResult result = new ShipDirectIssueResult();
+        if (req.getLines() == null) return result;
+        for (ShipDirectCheckRequest.Line line : req.getLines()) {
+            try {
+                String err = refundConfirmService.confirmOne(
+                        line.getOrderNo(), line.getOrderProdNo(), req.getRegistId(), req.getRegistName());
+                if (err != null) {
+                    result.setFailed(result.getFailed() + 1);
+                    result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + err);
+                } else {
+                    result.setSuccess(result.getSuccess() + 1);
+                }
+            } catch (Exception e) {
+                result.setFailed(result.getFailed() + 1);
+                result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + e.getMessage());
+            }
+        }
+        return result;
+    }
 }

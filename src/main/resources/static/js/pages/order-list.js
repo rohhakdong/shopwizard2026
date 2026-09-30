@@ -16,6 +16,7 @@ const PageOrderList = (() => {
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
+  let cancelReasonOptions = []; // [취소] 모달의 취소사유 select (공통코드 cCustConsltReasonType)
   let chnlList = [];   // { chnlCode, chnlName } — 관리자 svcCode의 채널
   let shopList = [];   // { shopCode, shopName, mngrMd }
   let mdList   = [];   // distinct S.MngrMd (담당MD 필터, pMngrMd 는 정확일치)
@@ -221,7 +222,59 @@ const PageOrderList = (() => {
     document.getElementById('olSearchValue').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
 
     loadFilterOptions();
+    loadCancelReasonOptions();
     loadList();
+  }
+
+  async function loadCancelReasonOptions() {
+    try {
+      cancelReasonOptions = await Api.get('/code/constr-val', { pConstrCode: 'cCustConsltReasonType', sidx: 'ConstrValSeq', sord: 'ASC' });
+    } catch (_) { cancelReasonOptions = []; }
+  }
+
+  // [취소] 버튼 — 주문취소접수 화면(order-cancel.js)과 같은 백엔드(OrderService.cancelBatch)를 쓴다.
+  function openCancelReasonModal(orderNo, orderProdNo) {
+    const body = document.createElement('div');
+    const reasonOpts = cancelReasonOptions.map(r => `<option value="${esc(r.constrValDesc)}">${esc(r.constrValDesc)}</option>`).join('');
+    body.innerHTML = `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>취소사유</label>
+          <select class="input" id="olCancelReason">
+            <option value="">선택</option>
+            ${reasonOpts}
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>상세사유</label>
+          <input class="input" id="olCancelReasonDetail" placeholder="상세 사유(선택)">
+        </div>
+      </div>`;
+    UI.modal({
+      title: `주문취소 – #${orderNo}`,
+      body,
+      confirmText: '취소 처리',
+      onConfirm: async close => {
+        const reason = document.getElementById('olCancelReason').value;
+        const reasonDetail = document.getElementById('olCancelReasonDetail').value.trim();
+        if (!reason) { UI.toast('취소사유를 선택하세요', 'error'); return; }
+        try {
+          const res = await Api.post('/order/order/cancel-batch', {
+            lines: [{ orderNo, orderProdNo }],
+            reason, reasonDetail,
+            registId: info?.loginId || '',
+            registName: info?.name || '',
+          });
+          if (res.failed > 0) {
+            UI.toast(res.failDetails[0] || '취소 처리에 실패했습니다', 'error');
+          } else {
+            UI.toast('주문이 취소되었습니다', 'success');
+            close();
+            loadList();
+          }
+        } catch (err) { UI.toast(err.message, 'error'); }
+      },
+    });
   }
 
   // ── 채널/상점/담당MD 옵션 로드 ─────────────────────────────────────
@@ -336,13 +389,14 @@ const PageOrderList = (() => {
         return `<td style="font-size:11px;${ell}${c.align === 'right' ? ';text-align:right' : ''}" title="${esc(txt)}">${esc(txt)}</td>`;
       }).join('');
 
-      const canCancel = o.orderState !== '주문취소' && o.orderState !== '환불완료';
+      // OrderCancelService.cancelOne 이 배송 시작 전(지불완료/출고지시/발주확인) 상태만 허용한다.
+      const canCancel = ['지불완료', '출고지시', '발주확인'].includes(o.orderState);
       return `
         <tr style="cursor:pointer" data-orderno="${o.orderNo}">
           ${tds}
           <td style="white-space:nowrap;text-align:center">
             <button class="btn btn-ghost" style="padding:2px 6px;font-size:11px" data-action="detail" data-orderno="${o.orderNo}">상세</button>
-            ${canCancel ? `<button class="btn btn-danger" style="padding:2px 6px;font-size:11px" data-action="cancel" data-orderno="${o.orderNo}">취소</button>` : ''}
+            ${canCancel ? `<button class="btn btn-danger" style="padding:2px 6px;font-size:11px" data-action="cancel" data-orderno="${o.orderNo}" data-orderprodno="${o.orderProdNo}">취소</button>` : ''}
           </td>
         </tr>`;
     }).join('');
@@ -372,14 +426,10 @@ const PageOrderList = (() => {
     wrap.querySelectorAll('[data-action=cancel]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
-        UI.confirm(`주문번호 [${btn.dataset.orderno}]를 취소하시겠습니까?`, async close => {
-          try {
-            await Api.put('/order/order/cancel', { orderNo: parseInt(btn.dataset.orderno) });
-            UI.toast('주문이 취소되었습니다', 'success');
-            loadList();
-          } catch (err) { UI.toast(err.message, 'error'); }
-          close();
-        });
+        // 주문취소접수 화면(order-cancel.js)과 같은 백엔드(OrderService.cancelBatch)를 쓴다 —
+        // 예전엔 orderState 없이 PUT /order/order/cancel 을 호출해 OrderState 가 NULL 로
+        // 덮어써지고 주문라인도 전혀 갱신 안 되는 버그가 있었다.
+        openCancelReasonModal(parseInt(btn.dataset.orderno), parseInt(btn.dataset.orderprodno));
       });
     });
 

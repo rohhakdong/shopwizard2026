@@ -1,8 +1,10 @@
 /**
- * 반품 관리
+ * 반품확정 (구 "반품 관리")
+ * - 반품요청 화면(ship-return-request.js)에서 접수된 건 중 미완료 건만 조회
  * - 기간/조건 검색, 페이지네이션
  * - 상세 모달 (읽기 전용)
- * - 반품 완료 처리
+ * - 완료처리: tShpReturnDirect 뿐 아니라 tOrdOrderProd/tOrdOrder 도 '반품완료'로 동기화된다
+ *   (ReturnDirectService.update 가 캐스케이드를 담당 — 예전엔 tShpReturnDirect만 갱신했음)
  */
 const PageShipReturn = (() => {
 
@@ -19,7 +21,7 @@ const PageShipReturn = (() => {
   function render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="card-header">반품 관리</div>
+        <div class="card-header">반품확정</div>
         <div class="card-body" style="padding:12px 16px">
 
           <div class="search-bar" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
@@ -189,7 +191,7 @@ const PageShipReturn = (() => {
               orderNo: parseInt(btn.dataset.ono),
               orderProdNo: parseInt(btn.dataset.opno),
               orderChangeNo: parseInt(btn.dataset.ocno),
-              returnCmpletDate: new Date().toISOString().slice(0,10).replace(/-/g,''),
+              orderState: '반품완료',
               changeId:   (typeof info !== 'undefined' && info?.loginId) || '',
               changeName: (typeof info !== 'undefined' && info?.name) || '',
             });
