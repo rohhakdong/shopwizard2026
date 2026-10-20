@@ -26,6 +26,13 @@ server:
       charset: UTF-8
       enabled: true
       force: true
+    # 로그인 상태는 서버 세션(AuthSession)에 보관한다. 쿠키는 세션 ID 하나뿐이고 값 자체엔 계정 정보가 없다.
+    session:
+      timeout: 8h
+      cookie:
+        http-only: true
+        same-site: lax   # 크로스사이트 POST/PUT/DELETE 에 쿠키가 안 실려 CSRF 완화
+        secure: ${SESSION_COOKIE_SECURE:false}   # HTTPS 로 서비스하는 운영환경에서는 true
 
 # 상품이미지 업로드 저장 경로. 상대경로면 애플리케이션 실행 위치(working directory) 기준이다.
 upload:

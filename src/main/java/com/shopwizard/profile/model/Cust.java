@@ -1,5 +1,6 @@
 package com.shopwizard.profile.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -14,6 +15,8 @@ public class Cust {
     private String addr1;
     private String addr2;
     private String loginId;
+    /** 입력(요청 바디)으로만 받고 응답 JSON에는 절대 싣지 않는다. */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passwd;
     private String custCode;
     private String custGroupCode;

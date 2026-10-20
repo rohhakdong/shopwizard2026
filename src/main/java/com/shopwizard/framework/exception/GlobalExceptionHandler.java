@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +37,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException e) {
         log.warn("잘못된 요청: {}", e.getMessage());
         return error(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    /**
+     * 컨트롤러가 의도해서 던진 상태코드(400 잘못된 요청, 401 로그인 필요 등)는 그대로 돌려준다.
+     * 아래 Exception 핸들러가 이것까지 삼켜서 모두 500으로 바꿔버리는 문제가 있었다.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException e) {
+        HttpStatus status = HttpStatus.resolve(e.getStatusCode().value());
+        if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
+        return error(status, e.getReason() != null ? e.getReason() : status.getReasonPhrase());
     }
 
     /** 그 외 모든 예외 */

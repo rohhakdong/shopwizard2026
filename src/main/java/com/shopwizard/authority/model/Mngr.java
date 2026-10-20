@@ -1,5 +1,6 @@
 package com.shopwizard.authority.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -14,6 +15,8 @@ public class Mngr {
     private String deptCode;
     private String empNo;
     private String loginId;
+    /** 입력(요청 바디)으로만 받고 응답 JSON에는 절대 싣지 않는다. */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passwd;
     private String email;
     private String mobileNo;

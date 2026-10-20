@@ -1,10 +1,10 @@
 package com.shopwizard.order.web;
 
+import com.shopwizard.framework.auth.AuthSession;
 import com.shopwizard.order.model.OrderDashBoard;
 import com.shopwizard.order.model.OrderDetlStats;
 import com.shopwizard.order.model.OrderProd;
 import com.shopwizard.order.service.OrderProdService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -34,18 +34,18 @@ public class OrderProdController {
      * 분리한 이유: AuthInterceptor("cust_id")가 이 경로에 걸리는데, 관리자 세션은 cust_id
      * 쿠키가 없어 /list 에 같이 걸어두면 관리자의 주문상세 조회가 401로 막히기 때문.
      *
-     * 클라이언트가 보낸 pCustId는 신뢰하지 않고 cust_id 쿠키 값으로 강제 덮어써서, 다른 고객의
-     * 주문내역을 조회하는 것(IDOR)을 막는다.
+     * 클라이언트가 보낸 pCustId는 신뢰하지 않고 서버 세션의 로그인 고객 custId로 강제 덮어써서,
+     * 다른 고객의 주문내역을 조회하는 것(IDOR)을 막는다.
      */
     @GetMapping("/my/list")
     public List<OrderProd> selectMyList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        forceCustIdFromCookie(params, request);
+        forceCustIdFromSession(params, request);
         return orderProdService.selectList(params);
     }
 
     @GetMapping("/my/list/count")
     public int selectMyListCount(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        forceCustIdFromCookie(params, request);
+        forceCustIdFromSession(params, request);
         return orderProdService.selectListCount(params);
     }
 
@@ -64,55 +64,46 @@ public class OrderProdController {
         return orderProdService.selectGuestOrderList(params);
     }
 
-    private void forceCustIdFromCookie(Map<String, Object> params, HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return;
-        for (Cookie c : cookies) {
-            if ("cust_id".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
-                params.put("pCustId", c.getValue());
-                return;
-            }
-        }
+    private void forceCustIdFromSession(Map<String, Object> params, HttpServletRequest request) {
+        Integer custId = AuthSession.custId(request);
+        // 로그인 고객이 아니면(인터셉터가 이미 막지만 이중 방어) 절대 매칭될 수 없는 값을 넣어
+        // 클라이언트가 보낸 pCustId로 남의 주문이 조회되지 않게 한다.
+        params.put("pCustId", custId != null ? custId.toString() : "-1");
     }
 
     /**
-     * 상점(거래처) 계정 전용 (shop_code 인증, WebMvcConfig 참고). 로그인한 상점 자신에게
+     * 상점(거래처) 계정 전용 (SHOP 로그인 필요, WebMvcConfig 참고). 로그인한 상점 자신에게
      * 배정된 주문 라인만 조회한다 — 관리자용 /list, 회원용 /my/list 와 마찬가지로 클라이언트가
-     * 보낸 pShopCode는 신뢰하지 않고 shop_code 쿠키 값으로 강제 덮어써서 다른 상점의 주문을
+     * 보낸 pShopCode는 신뢰하지 않고 서버 세션의 상점코드로 강제 덮어써서 다른 상점의 주문을
      * 조회하는 것(IDOR)을 막는다.
      */
     @GetMapping("/shop/list")
     public List<OrderProd> selectShopList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        forceShopCodeFromCookie(params, request);
+        forceShopCodeFromSession(params, request);
         return orderProdService.selectList(params);
     }
 
     @GetMapping("/shop/list/count")
     public int selectShopListCount(@RequestParam Map<String, Object> params, HttpServletRequest request) {
-        forceShopCodeFromCookie(params, request);
+        forceShopCodeFromSession(params, request);
         return orderProdService.selectListCount(params);
     }
 
-    private void forceShopCodeFromCookie(Map<String, Object> params, HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) { params.put("pShopCode", "__NONE__"); return; }
-        boolean foundShopCode = false;
-        for (Cookie c : cookies) {
-            if ("shop_code".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
-                params.put("pShopCode", c.getValue());
-                foundShopCode = true;
-            }
-            // selectList/selectListCount는 pSvcCode 유무로 결제(OPay)/상품(P)/상점(S) 조인을
-            // 붙일지 결정하는 공용 쿼리라(관리자용 order-list.js는 항상 svcCode를 실어 보냄),
-            // 여기서도 실어주지 않으면 SELECT 절이 참조하는 컬럼이 없어 SQL 오류가 난다.
-            if ("shop_svcCode".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
-                params.put("pSvcCode", c.getValue());
-            }
-        }
-        if (!foundShopCode) {
-            // 쿠키가 없으면 절대 매칭될 수 없는 값을 넣어 전체 목록이 새어나가지 않게 한다
-            // (AuthInterceptor가 이미 shop_code 존재를 검사하지만, 이중 방어 차원).
+    private void forceShopCodeFromSession(Map<String, Object> params, HttpServletRequest request) {
+        Map<String, String> claims = AuthSession.get(request, AuthSession.Type.SHOP);
+        if (claims == null || claims.get("shopCode") == null || claims.get("shopCode").isEmpty()) {
+            // 로그인 상점이 아니면 절대 매칭될 수 없는 값을 넣어 전체 목록이 새어나가지 않게 한다
+            // (AuthInterceptor가 이미 로그인 여부를 검사하지만, 이중 방어 차원).
             params.put("pShopCode", "__NONE__");
+            return;
+        }
+        params.put("pShopCode", claims.get("shopCode"));
+        // selectList/selectListCount는 pSvcCode 유무로 결제(OPay)/상품(P)/상점(S) 조인을
+        // 붙일지 결정하는 공용 쿼리라(관리자용 order-list.js는 항상 svcCode를 실어 보냄),
+        // 여기서도 실어주지 않으면 SELECT 절이 참조하는 컬럼이 없어 SQL 오류가 난다.
+        String svcCode = claims.get("svcCode");
+        if (svcCode != null && !svcCode.isEmpty()) {
+            params.put("pSvcCode", svcCode);
         }
     }
 

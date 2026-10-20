@@ -67,13 +67,25 @@
                     <if test="pChnlCode != null and pChnlCode != ''">
                         AND R.SvcCode = (SELECT SvcCode FROM shopwizard.tCmpChnl WHERE ChnlCode = #{pChnlCode})
                     </if>
-                    <if test="pPasswd != null and pPasswd != ''">AND M.Passwd = #{pPasswd}</if>
                 </when>
                 <otherwise>
                     AND M.ShopCode = #{pShopCode}
                 </otherwise>
             </choose>
         </where>
+    </select>
+
+    <!-- 로그인용: 아이디(+채널의 서비스코드)로만 조회하고 비밀번호 검증은 서비스(MngrService.login)에서
+         한다. 예전엔 pPasswd 가 비어 있으면 비밀번호 조건이 SQL에서 통째로 빠져 빈 비밀번호로 로그인될
+         수 있었고, 저장값이 평문이라 SQL 비교 자체가 불가능한 해시 전환도 막혀 있었다. -->
+    <select id="selectForLogin" parameterType="map" resultMap="MngrResult">
+        SELECT M.*, R.RoleName, R.SvcCode
+        FROM wizardn.tAthMngr M
+        INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
+        WHERE M.LoginId = #{pLoginId}
+        <if test="pChnlCode != null and pChnlCode != ''">
+            AND R.SvcCode = (SELECT SvcCode FROM shopwizard.tCmpChnl WHERE ChnlCode = #{pChnlCode})
+        </if>
     </select>
 
     <select id="selectInfo" parameterType="string" resultMap="MngrResult">
@@ -107,10 +119,19 @@
         UPDATE wizardn.tAthMngr SET
             MngrName = #{mngrName}, RoleUid = #{roleUid}, CompCode = #{compCode},
             DeptCode = #{deptCode}, EmpNo = #{empNo}, LoginId = #{loginId},
-            Passwd = #{passwd}, Email = #{email}, MobileNo = #{mobileNo},
+            <!-- 비밀번호를 보냈을 때만 바꾼다. 예전엔 무조건 Passwd = #{passwd} 라서 화면에서
+                 비밀번호를 비워두고 저장하면(변경 안 함) NULL 로 덮어써져 계정이 잠겼다. -->
+            <if test="passwd != null and passwd != ''">Passwd = #{passwd},</if>
+            Email = #{email}, MobileNo = #{mobileNo},
             PhoneNo = #{phoneNo}, ProdApprovYn = #{prodApprovYn},
             State = #{state}, Remark = #{remark},
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE MngrUid = #{mngrUid}
+    </update>
+
+    <!-- 로그인 시 평문 → BCrypt 자동 전환 전용. 사용자가 직접 바꾼 것이 아니라서 변경 이력 컬럼은 건드리지 않는다. -->
+    <update id="updatePasswd">
+        UPDATE wizardn.tAthMngr SET Passwd = #{passwd}
         WHERE MngrUid = #{mngrUid}
     </update>
 

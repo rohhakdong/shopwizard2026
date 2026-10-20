@@ -2,7 +2,7 @@ package com.shopwizard.profile.web;
 
 import com.shopwizard.profile.model.Cust;
 import com.shopwizard.profile.service.CustService;
-import jakarta.servlet.http.Cookie;
+import com.shopwizard.framework.auth.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -38,7 +38,7 @@ public class CustController {
      */
     @GetMapping("/me")
     public Cust selectMe(HttpServletRequest request) {
-        Integer custId = readCustIdFromCookie(request);
+        Integer custId = AuthSession.custId(request);
         if (custId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
@@ -75,7 +75,7 @@ public class CustController {
      */
     @PutMapping("/me")
     public int updateMe(@RequestBody Cust cust, HttpServletRequest request) {
-        Integer custId = readCustIdFromCookie(request);
+        Integer custId = AuthSession.custId(request);
         if (custId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
@@ -85,21 +85,6 @@ public class CustController {
             if (existing != null) cust.setState(existing.getState());
         }
         return custService.update(cust);
-    }
-
-    private Integer readCustIdFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
-        for (Cookie c : cookies) {
-            if ("cust_id".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
-                try {
-                    return Integer.parseInt(c.getValue());
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-        return null;
     }
 
     @PutMapping("/passwd")

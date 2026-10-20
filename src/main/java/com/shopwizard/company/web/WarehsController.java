@@ -2,7 +2,7 @@ package com.shopwizard.company.web;
 
 import com.shopwizard.company.model.Warehs;
 import com.shopwizard.company.service.WarehsService;
-import jakarta.servlet.http.Cookie;
+import com.shopwizard.framework.auth.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -48,7 +48,7 @@ public class WarehsController {
      */
     @GetMapping("/me")
     public Warehs selectMe(HttpServletRequest request) {
-        String warehsCode = readWarehsCodeFromCookie(request);
+        String warehsCode = readWarehsCodeFromSession(request);
         if (warehsCode == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
@@ -59,15 +59,9 @@ public class WarehsController {
         return warehs;
     }
 
-    private String readWarehsCodeFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
-        for (Cookie c : cookies) {
-            if ("warehs_code".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
-                return c.getValue();
-            }
-        }
-        return null;
+    private String readWarehsCodeFromSession(HttpServletRequest request) {
+        Map<String, String> claims = AuthSession.get(request, AuthSession.Type.WAREHS);
+        return claims == null ? null : claims.get("warehsCode");
     }
 
     /** 창고코드 = 소속회사코드 + "W" + 순번(1부터) 관례 — 신규 등록 화면에서 소속 회사를

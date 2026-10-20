@@ -3,7 +3,7 @@ package com.shopwizard.company.web;
 import com.shopwizard.company.model.Shop;
 import com.shopwizard.company.model.ShopPublicView;
 import com.shopwizard.company.service.ShopService;
-import jakarta.servlet.http.Cookie;
+import com.shopwizard.framework.auth.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -55,7 +55,7 @@ public class ShopController {
      */
     @GetMapping("/me")
     public Shop selectMe(HttpServletRequest request) {
-        String shopCode = readShopCodeFromCookie(request);
+        String shopCode = readShopCodeFromSession(request);
         if (shopCode == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
@@ -64,15 +64,9 @@ public class ShopController {
         return shop;
     }
 
-    private String readShopCodeFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
-        for (Cookie c : cookies) {
-            if ("shop_code".equals(c.getName()) && c.getValue() != null && !c.getValue().isEmpty()) {
-                return c.getValue();
-            }
-        }
-        return null;
+    private String readShopCodeFromSession(HttpServletRequest request) {
+        Map<String, String> claims = AuthSession.get(request, AuthSession.Type.SHOP);
+        return claims == null ? null : claims.get("shopCode");
     }
 
     /** 관리자 전용 비밀번호 재설정 (mngr_loginId 인증 필요 — WebMvcConfig 참고). 일반 수정(PUT
