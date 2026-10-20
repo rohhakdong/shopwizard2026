@@ -16,6 +16,8 @@ const PageShipDirect = (() => {
   let shopList    = [];
   let deliCompList = [];
 
+  const esc = UI.esc;
+
   function toDateStr(date) { return date.toISOString().slice(0,10); }
   function defaultStart()  { const d = new Date(); d.setDate(d.getDate()-30); return toDateStr(d); }
   function defaultEnd()    { return toDateStr(new Date()); }
@@ -123,12 +125,13 @@ const PageShipDirect = (() => {
       renderTable(list);
       renderPagination();
     } catch(e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
   function stateColor(state) {
-    const map = {'발주시작':'badge-orange','배송완료':'badge-green','주문취소':'badge-red','환불완료':'badge-red'};
+    // 이 화면의 주 대상은 발주확인(송장 입력 전) 건이고, 입력 후에는 배송시작이 된다.
+    const map = {'발주확인':'badge-orange','배송시작':'badge-blue','배송완료':'badge-green','주문취소':'badge-red','환불완료':'badge-red'};
     return map[state] || 'badge-gray';
   }
 
@@ -138,27 +141,28 @@ const PageShipDirect = (() => {
     // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
     const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
+    // 상품명/수취인/쇼핑몰/송장 등은 외부 채널에서 들어온 값이라 모두 esc() 를 거쳐 innerHTML 에 넣는다.
     const rows = list.map(d => `
       <tr>
-        <td style="font-size:11px;${ell}">${d.orderNo || ''}<br><span style="color:var(--text-muted)">${d.orderProdNo || ''}</span></td>
-        <td style="font-size:11px;${ell}">${d.shipCheckDate ? d.shipCheckDate.substring(0,10) : '-'}</td>
+        <td style="font-size:11px;${ell}">${esc(d.orderNo)}<br><span style="color:var(--text-muted)">${esc(d.orderProdNo)}</span></td>
+        <td style="font-size:11px;${ell}">${d.shipCheckDate ? esc(d.shipCheckDate.substring(0,10)) : '-'}</td>
         <td style="${ell}">
-          <div style="font-size:13px;font-weight:500;${ell}" title="${d.prodName || ''}">${d.prodName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${d.itemName || ''}">${d.itemName || ''}</div>
+          <div style="font-size:13px;font-weight:500;${ell}" title="${esc(d.prodName)}">${esc(d.prodName)}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${esc(d.itemName)}">${esc(d.itemName)}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${d.recverName || ''}">${d.recverName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${d.shopName || ''}">${d.shopName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${d.deliCompName || ''}">${d.deliCompName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${d.invNo || ''}">${d.invNo || '-'}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.recverName)}">${esc(d.recverName)}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.shopName)}">${esc(d.shopName)}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.deliCompName)}">${esc(d.deliCompName)}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.invNo)}">${esc(d.invNo) || '-'}</td>
         <td style="text-align:center">
-          <span class="badge ${stateColor(d.orderState)}">${d.orderState || ''}</span>
+          <span class="badge ${stateColor(d.orderState)}">${esc(d.orderState)}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="detail"
-            data-ono="${d.orderNo}" data-opno="${d.orderProdNo}" data-ocno="${d.orderChangeNo||0}">상세</button>
+            data-ono="${esc(d.orderNo)}" data-opno="${esc(d.orderProdNo)}" data-ocno="${esc(d.orderChangeNo||0)}">상세</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)" data-action="inv"
-            data-ono="${d.orderNo}" data-opno="${d.orderProdNo}" data-ocno="${d.orderChangeNo||0}"
-            data-inv="${(d.invNo||'').replace(/"/g,'&quot;')}" data-deli-name="${(d.deliCompName||'').replace(/"/g,'&quot;')}">송장</button>
+            data-ono="${esc(d.orderNo)}" data-opno="${esc(d.orderProdNo)}" data-ocno="${esc(d.orderChangeNo||0)}"
+            data-inv="${esc(d.invNo)}" data-deli-name="${esc(d.deliCompName)}">송장</button>
         </td>
       </tr>`).join('');
 
@@ -215,7 +219,7 @@ const PageShipDirect = (() => {
   async function openDetailModal(btn) {
     const body = document.createElement('div');
     body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">불러오는 중...</div>';
-    UI.modal({ title: `직배송 상세 – 주문 #${btn.dataset.ono}`, body, confirmText: null, cancelText: '닫기' });
+    UI.modal({ title: `직배송 상세 – 주문 #${esc(btn.dataset.ono)}`, body, confirmText: null, cancelText: '닫기' });
 
     try {
       const d = await Api.get('/ship/ship-direct', {
@@ -224,7 +228,7 @@ const PageShipDirect = (() => {
       const row = (label, value) => `
         <div class="form-group">
           <label>${label}</label>
-          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${value ?? '-'}</div>
+          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${value == null ? '-' : esc(value)}</div>
         </div>`;
       body.innerHTML = `
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">주문 정보</div>
@@ -249,14 +253,14 @@ const PageShipDirect = (() => {
           ${row('출고지', d.shipPlace)} ${row('주문상태', d.orderState)}
         </div>`;
     } catch(e) {
-      body.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      body.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
   function openInvoiceModal(btn) {
     const body = document.createElement('div');
     const deliOptions = deliCompList.map(d =>
-      `<option value="${(d.deliCompName||'').replace(/"/g,'&quot;')}" ${d.deliCompName===btn.dataset.deliName ? 'selected' : ''}>${d.deliCompName||''}</option>`
+      `<option value="${esc(d.deliCompName)}" ${d.deliCompName===btn.dataset.deliName ? 'selected' : ''}>${esc(d.deliCompName)}</option>`
     ).join('');
     body.innerHTML = `
       <div class="form-grid">
@@ -269,11 +273,11 @@ const PageShipDirect = (() => {
         </div>
         <div class="form-group full">
           <label>송장번호</label>
-          <input class="input" id="sdInvNo" value="${btn.dataset.inv}" placeholder="송장번호 입력">
+          <input class="input" id="sdInvNo" value="${esc(btn.dataset.inv)}" placeholder="송장번호 입력">
         </div>
       </div>`;
     UI.modal({
-      title: `송장번호 입력 – #${btn.dataset.ono}`,
+      title: `송장번호 입력 – #${esc(btn.dataset.ono)}`,
       body,
       confirmText: '저장',
       onConfirm: async close => {
@@ -288,8 +292,7 @@ const PageShipDirect = (() => {
             orderChangeNo: parseInt(btn.dataset.ocno),
             deliCompName,
             invNo,
-            orderState: '배송시작',
-            changeId:   (typeof info !== 'undefined' && info?.loginId) || '',
+            changeId:  (typeof info !== 'undefined' && info?.loginId) || '',
             changeName: (typeof info !== 'undefined' && info?.name) || '',
           });
           if (!updated) {

@@ -115,5 +115,13 @@ const UI = (() => {
     }
   }
 
-  return { toast, modal, confirm, pagination, loading };
+  // ── HTML 이스케이프 ─────────────────────────────────────────────────
+  // 외부 채널(샵링커 등)에서 온 상품명·수취인·메모 같은 값을 innerHTML 템플릿에 넣을 때 사용한다.
+  // 속성값("...")에도 안전하도록 따옴표까지 치환한다. null/undefined 는 빈 문자열.
+  function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  return { toast, modal, confirm, pagination, loading, esc };
 })();

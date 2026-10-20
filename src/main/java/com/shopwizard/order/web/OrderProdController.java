@@ -110,11 +110,9 @@ public class OrderProdController {
     @GetMapping
     public OrderProd select(@RequestParam Map<String, Object> params) { return orderProdService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody OrderProd orderProd) { orderProdService.insert(orderProd); }
-
-    @PutMapping
-    public void update(@RequestBody OrderProd orderProd) { orderProdService.update(orderProd); }
+    // 주문라인의 생성·삭제·상태 변경(POST/PUT/DELETE, /state, /state/error, /returnreason, /refundcancel,
+    // /shopinfo, /invoice)은 HTTP 로 열어두지 않는다 — 상태는 order/ship 의 배치 게이트 서비스만 바꾼다.
+    // (화면은 이 엔드포인트들을 호출하지 않는다. 서버 내부는 OrderProdService/Mapper 를 직접 호출한다.)
 
     @PutMapping("/price")
     public void updatePrice(@RequestBody OrderProd orderProd) { orderProdService.updatePrice(orderProd); }
@@ -127,9 +125,6 @@ public class OrderProdController {
 
     @PutMapping("/price/adjustdetail")
     public void updatePriceAdjustDetail(@RequestBody OrderProd orderProd) { orderProdService.updatePriceAdjustDetail(orderProd); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { orderProdService.delete(params); }
 
     @GetMapping("/mypage/list")
     public List<OrderProd> mypageSelectList(@RequestParam Map<String, Object> params) { return orderProdService.mypageSelectList(params); }
@@ -148,24 +143,6 @@ public class OrderProdController {
 
     @GetMapping("/dashboard")
     public List<OrderDashBoard> selectListDashboardAnyb(@RequestParam Map<String, Object> params) { return orderProdService.selectListDashboardAnyb(params); }
-
-    @PutMapping("/returnreason")
-    public void updateReturnReason(@RequestBody OrderProd orderProd) { orderProdService.updateReturnReason(orderProd); }
-
-    @PutMapping("/state")
-    public void updateOrderState(@RequestBody Map<String, Object> params) { orderProdService.updateOrderState(params); }
-
-    @PutMapping("/state/error")
-    public void updateOrderStateError(@RequestBody Map<String, Object> params) { orderProdService.updateOrderStateError(params); }
-
-    @PutMapping("/refundcancel")
-    public void updateRefundCancel(@RequestBody Map<String, Object> params) { orderProdService.updateRefundCancel(params); }
-
-    @PutMapping("/shopinfo")
-    public void updateShopInfo(@RequestBody Map<String, Object> params) { orderProdService.updateShopInfo(params); }
-
-    @PutMapping("/invoice")
-    public void updateInvoice(@RequestBody Map<String, Object> params) { orderProdService.updateInvoice(params); }
 
     @PutMapping("/custconsltyn")
     public void updateCustConsltYn(@RequestBody Map<String, Object> params) { orderProdService.updateCustConsltYn(params); }

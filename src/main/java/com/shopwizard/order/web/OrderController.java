@@ -32,17 +32,10 @@ public class OrderController {
     @GetMapping
     public Order select(@RequestParam Map<String, Object> params) { return orderService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Order order) { orderService.insert(order); }
-
-    @PutMapping("/cancel")
-    public void updateOrderCancel(@RequestBody Order order) { orderService.updateOrderCancel(order); }
-
-    @PutMapping("/state")
-    public void updateOrderState(@RequestBody Map<String, Object> params) { orderService.updateOrderState(params); }
-
-    @PutMapping("/refundcancel")
-    public void updateRefundCancel(@RequestBody Map<String, Object> params) { orderService.updateRefundCancel(params); }
+    // 주문 상태를 바꾸는 쓰기 엔드포인트는 아래 배치 게이트(cancel-batch, refund-confirm-batch)뿐이다.
+    // 예전에 있던 PUT /state, /cancel, /refundcancel 과 POST(주문 임의 생성)는 상태 검증·재고 복원·
+    // 토스 환불을 전부 건너뛸 수 있어(/cancel 은 orderState 를 빼면 NULL 을 기록) 제거했다.
+    // 서버 내부(결제 웹훅 등)는 OrderService 를 직접 호출한다.
 
     /** 주문취소접수 화면(order-cancel.js) — 선택한 주문라인들을 일괄 주문취소 처리. */
     @PostMapping("/cancel-batch")

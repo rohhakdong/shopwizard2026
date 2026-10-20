@@ -178,10 +178,11 @@
 
     <update id="update" parameterType="map">
         UPDATE shopwizard.tShpReturnDirect SET
-            OrderState = #{orderState}, ReturnCmpletDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+            OrderState = '반품완료', ReturnCmpletDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE OrderNo = #{orderNo}
         AND OrderProdNo = #{orderProdNo}
         AND OrderChangeNo = #{orderChangeNo}
+        AND OrderState = '반품요청'
     </update>
 
     <update id="updateAdjustSelectDate" parameterType="map">

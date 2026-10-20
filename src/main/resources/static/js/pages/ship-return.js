@@ -13,6 +13,8 @@ const PageShipReturn = (() => {
   let totalCount  = 0;
   let shopList    = [];
 
+  const esc = UI.esc;
+
   function toDateStr(d) { return d.toISOString().slice(0,10); }
   function defaultStart() { const d=new Date(); d.setDate(d.getDate()-30); return toDateStr(d); }
   function defaultEnd()   { return toDateStr(new Date()); }
@@ -123,7 +125,7 @@ const PageShipReturn = (() => {
       renderTable(list);
       renderPagination();
     } catch(e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -133,27 +135,28 @@ const PageShipReturn = (() => {
     // 다음 칸 위로 그대로 삐져나와 겹쳐 보인다.
     const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
 
+    // 상품명/주문자/쇼핑몰/반품사유/송장 등은 외부 채널에서 들어온 값이라 모두 esc() 를 거쳐 innerHTML 에 넣는다.
     const rows = list.map(d => `
       <tr>
-        <td style="font-size:11px;${ell}">${d.orderNo || ''}<br><span style="color:var(--text-muted)">${d.orderProdNo || ''}</span></td>
-        <td style="font-size:11px;${ell}">${d.returnRqstDate ? d.returnRqstDate.substring(0,10) : '-'}</td>
+        <td style="font-size:11px;${ell}">${esc(d.orderNo)}<br><span style="color:var(--text-muted)">${esc(d.orderProdNo)}</span></td>
+        <td style="font-size:11px;${ell}">${d.returnRqstDate ? esc(d.returnRqstDate.substring(0,10)) : '-'}</td>
         <td style="${ell}">
-          <div style="font-size:13px;font-weight:500;${ell}" title="${d.prodName||''}">${d.prodName||''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${d.itemName||''}">${d.itemName||''}</div>
+          <div style="font-size:13px;font-weight:500;${ell}" title="${esc(d.prodName)}">${esc(d.prodName)}</div>
+          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${esc(d.itemName)}">${esc(d.itemName)}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${d.orderName||''}">${d.orderName||''}</td>
-        <td style="font-size:12px;${ell}" title="${d.shopName||''}">${d.shopName||''}</td>
-        <td style="font-size:12px;${ell}" title="${d.returnReason||''}">${d.returnReason||'-'}</td>
-        <td style="font-size:12px;${ell}" title="${d.invNo||''}">${d.invNo||'-'}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.orderName)}">${esc(d.orderName)}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.shopName)}">${esc(d.shopName)}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.returnReason)}">${esc(d.returnReason) || '-'}</td>
+        <td style="font-size:12px;${ell}" title="${esc(d.invNo)}">${esc(d.invNo) || '-'}</td>
         <td style="text-align:center">
           <span class="badge ${d.returnCmpletDate ? 'badge-green' : 'badge-orange'}">${d.returnCmpletDate ? '완료' : '처리중'}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="detail"
-            data-ono="${d.orderNo}" data-opno="${d.orderProdNo}" data-ocno="${d.orderChangeNo||0}">상세</button>
+            data-ono="${esc(d.orderNo)}" data-opno="${esc(d.orderProdNo)}" data-ocno="${esc(d.orderChangeNo||0)}">상세</button>
           ${!d.returnCmpletDate ? `
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--success)" data-action="cmplet"
-            data-ono="${d.orderNo}" data-opno="${d.orderProdNo}" data-ocno="${d.orderChangeNo||0}">완료처리</button>` : ''}
+            data-ono="${esc(d.orderNo)}" data-opno="${esc(d.orderProdNo)}" data-ocno="${esc(d.orderChangeNo||0)}">완료처리</button>` : ''}
         </td>
       </tr>`).join('');
 
@@ -185,17 +188,22 @@ const PageShipReturn = (() => {
 
     wrap.querySelectorAll('[data-action=cmplet]').forEach(btn => {
       btn.addEventListener('click', () => {
-        UI.confirm(`주문번호 [${btn.dataset.ono}] 반품을 완료 처리하시겠습니까?`, async close => {
+        UI.confirm(`주문번호 [${esc(btn.dataset.ono)}] 반품을 완료 처리하시겠습니까?`, async close => {
           try {
-            await Api.put('/ship/return-direct', {
+            // 반품요청 상태인 건만 성공한다(서버가 상태를 반품완료로 고정하고 반품요청 가드를 건다).
+            // 영향행수가 0이면 이미 처리됐거나 반품요청 상태가 아닌 건이다.
+            const updated = await Api.put('/ship/return-direct', {
               orderNo: parseInt(btn.dataset.ono),
               orderProdNo: parseInt(btn.dataset.opno),
               orderChangeNo: parseInt(btn.dataset.ocno),
-              orderState: '반품완료',
               changeId:   (typeof info !== 'undefined' && info?.loginId) || '',
               changeName: (typeof info !== 'undefined' && info?.name) || '',
             });
-            UI.toast('반품 완료 처리되었습니다', 'success');
+            if (!updated) {
+              UI.toast('반품요청 상태가 아니거나 이미 처리된 건입니다', 'error');
+            } else {
+              UI.toast('반품 완료 처리되었습니다', 'success');
+            }
             loadList();
           } catch(e) { UI.toast(e.message, 'error'); }
           close();
@@ -224,7 +232,7 @@ const PageShipReturn = (() => {
   async function openDetailModal(btn) {
     const body = document.createElement('div');
     body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">불러오는 중...</div>';
-    UI.modal({ title: `반품 상세 – 주문 #${btn.dataset.ono}`, body, confirmText: null, cancelText: '닫기' });
+    UI.modal({ title: `반품 상세 – 주문 #${esc(btn.dataset.ono)}`, body, confirmText: null, cancelText: '닫기' });
 
     try {
       const d = await Api.get('/ship/return-direct', {
@@ -233,7 +241,7 @@ const PageShipReturn = (() => {
       const row = (label, value) => `
         <div class="form-group">
           <label>${label}</label>
-          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${value ?? '-'}</div>
+          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${value == null ? '-' : esc(value)}</div>
         </div>`;
       body.innerHTML = `
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">주문 정보</div>
@@ -258,7 +266,7 @@ const PageShipReturn = (() => {
           ${row('송장번호', d.invNo)}
         </div>`;
     } catch(e) {
-      body.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      body.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 

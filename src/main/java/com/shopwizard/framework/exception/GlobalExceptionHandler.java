@@ -5,10 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +51,27 @@ public class GlobalExceptionHandler {
         HttpStatus status = HttpStatus.resolve(e.getStatusCode().value());
         if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
         return error(status, e.getReason() != null ? e.getReason() : status.getReasonPhrase());
+    }
+
+    /**
+     * 없는 경로/허용하지 않는 메서드는 클라이언트 오류다. 아래 Exception 핸들러가 이것까지 500으로 바꾸고
+     * 에러 로그를 남기던 것을, 405/404 로 정직하게 돌려준다(제거된 쓰기 엔드포인트 호출이 서버 오류처럼 보이지 않게).
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        return error(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 요청 방식입니다.");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResource(NoResourceFoundException e) {
+        return error(HttpStatus.NOT_FOUND, "요청한 경로를 찾을 수 없습니다.");
+    }
+
+    /** 요청 본문을 읽을 수 없는 경우(깨진 JSON, 잘못된 인코딩 등)도 클라이언트 오류다. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadableBody(HttpMessageNotReadableException e) {
+        log.warn("요청 본문 오류: {}", e.getMessage());
+        return error(HttpStatus.BAD_REQUEST, "요청 본문을 읽을 수 없습니다.");
     }
 
     /** 그 외 모든 예외 */

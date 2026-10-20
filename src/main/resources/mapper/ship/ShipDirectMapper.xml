@@ -542,7 +542,7 @@
         UPDATE shopwizard.tShpShipDirect SET
             DeliCompName = #{deliCompName},
             DeliCompCode = (SELECT DeliCompCode FROM shopwizard.tCmpDeliComp WHERE DeliCompName = #{deliCompName}),
-            InvNo = #{invNo}, InvIdNo = #{invNo}, OrderState = #{orderState},
+            InvNo = #{invNo}, InvIdNo = #{invNo}, OrderState = '배송시작',
             ShipCmpletDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE OrderNo = #{orderNo}
         AND OrderProdNo = #{orderProdNo}

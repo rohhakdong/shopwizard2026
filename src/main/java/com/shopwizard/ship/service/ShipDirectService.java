@@ -7,8 +7,10 @@ import com.shopwizard.ship.model.ShipDirectCheckRequest;
 import com.shopwizard.ship.model.ShipDirectIssueRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,12 +126,24 @@ public class ShipDirectService {
      * 동기화한다(출고지시/발주확인과 동일한 라인 단위 동기화 컨벤션).
      */
     public int updateInvoice(Map<String, Object> params) {
-        int updated = shipDirectMapper.updateInvoice(params);
+        String deliCompName = params.get("deliCompName") == null ? "" : String.valueOf(params.get("deliCompName")).trim();
+        String invNo = params.get("invNo") == null ? "" : String.valueOf(params.get("invNo")).trim();
+        if (deliCompName.isEmpty() || invNo.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "택배사와 송장번호를 입력하세요");
+        }
+
+        // 요청에 실려온 orderState 는 믿지 않는다 — 이 경로가 만드는 상태는 배송시작 하나뿐이다.
+        Map<String, Object> upd = new HashMap<>(params);
+        upd.put("deliCompName", deliCompName);
+        upd.put("invNo", invNo);
+        upd.put("orderState", "배송시작");
+
+        int updated = shipDirectMapper.updateInvoice(upd);
         if (updated > 0) {
             Map<String, Object> prodUpd = new HashMap<>();
             prodUpd.put("orderNo", params.get("orderNo"));
             prodUpd.put("orderProdNo", params.get("orderProdNo"));
-            prodUpd.put("orderState", params.get("orderState"));
+            prodUpd.put("orderState", "배송시작");
             prodUpd.put("changeId", params.get("changeId"));
             prodUpd.put("changeName", params.get("changeName"));
             orderProdMapper.updateOrderState(prodUpd);
