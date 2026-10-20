@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 토스페이먼츠 웹훅(비동기 통지) 처리.
@@ -31,6 +32,8 @@ public class TossWebhookService {
 
     private static final String SYSTEM_ID = "SYSTEM";
     private static final String SYSTEM_NAME = "토스웹훅";
+    /** 이미 취소/환불까지 끝난 주문 — CANCELED 웹훅을 다시 받아도 아무것도 바꾸지 않는다. */
+    private static final Set<String> TERMINAL_CANCEL_STATES = Set.of("주문취소", "환불완료");
 
     private final TossPaymentService tossPaymentService;
     private final OrderPayMapper orderPayMapper;
@@ -75,25 +78,38 @@ public class TossWebhookService {
         orderPayLogTossMapper.insert(logFor(orderNo, payment));
     }
 
-    /** 관리자가 토스 대시보드에서 직접 결제를 취소한 경우 — 멱등 처리 (이미 주문취소면 무시) */
+    /**
+     * 결제가 취소됐을 때(토스 대시보드 취소, 또는 환불확정이 호출한 토스 취소의 되돌림 통지) — 멱등 처리.
+     *
+     * <p>이미 주문취소/환불완료인 주문은 건너뛴다. 환불확정이 토스 취소를 호출하면 토스가 곧바로 이 웹훅을
+     * 보내는데, 예전처럼 헤더+모든 라인을 무조건 주문취소로 덮어쓰면 방금 환불완료(또는 반품완료)로 만든
+     * 건이 주문취소로 되돌아간다. 그래서 라인은 <b>배송 전 상태인 것만</b> 주문취소로 바꾸고(조건부 SQL),
+     * 반품/환불 단계의 라인은 건드리지 않으며, 헤더는 모든 라인이 주문취소가 됐을 때만 승격한다.
+     * 배송이 이미 시작된 주문을 대시보드에서 취소한 경우는 상태를 바꾸지 않고 결제 로그만 남긴다
+     * (반품/환불 워크플로우로 처리해야 하는 건).</p>
+     */
     private void handleCanceled(int orderNo, Order order, Map<String, Object> payment) {
-        if ("주문취소".equals(order.getOrderState())) return;
-
-        Order cancelOrder = new Order();
-        cancelOrder.setOrderNo(orderNo);
-        cancelOrder.setOrderState("주문취소");
-        cancelOrder.setChangeId(SYSTEM_ID);
-        cancelOrder.setChangeName(SYSTEM_NAME);
-        orderService.updateOrderCancel(cancelOrder);
+        if (TERMINAL_CANCEL_STATES.contains(order.getOrderState())) return;
 
         for (Integer orderProdNo : orderProdService.selectOrderProdNoList(orderNo)) {
             Map<String, Object> params = new HashMap<>();
             params.put("orderNo", orderNo);
             params.put("orderProdNo", orderProdNo);
-            params.put("orderState", "주문취소");
             params.put("changeId", SYSTEM_ID);
             params.put("changeName", SYSTEM_NAME);
-            orderProdService.updateOrderState(params);
+            orderProdService.cancelByWebhook(params);
+        }
+
+        Map<String, Object> diff = new HashMap<>();
+        diff.put("orderNo", orderNo);
+        diff.put("orderState", "주문취소");
+        if (orderProdService.countOrderStateDiffer(diff) == 0) {
+            Order cancelOrder = new Order();
+            cancelOrder.setOrderNo(orderNo);
+            cancelOrder.setOrderState("주문취소");
+            cancelOrder.setChangeId(SYSTEM_ID);
+            cancelOrder.setChangeName(SYSTEM_NAME);
+            orderService.updateOrderCancel(cancelOrder);
         }
 
         orderPayLogTossMapper.insert(logFor(orderNo, payment));

@@ -37,6 +37,14 @@
         LIMIT 1
     </select>
 
+    <!-- 환불확정에서 주문번호만으로 토스 결제건을 찾는다. 같은 OrderNo 에 여러 건이면 최신(PayNo 최대) 한 건. -->
+    <select id="selectTossByOrderNo" parameterType="int" resultType="com.shopwizard.order.model.OrderPay">
+        SELECT * FROM shopion.tOrdOrderPay
+        WHERE OrderNo = #{orderNo} AND PgCode = 'TOSS'
+        ORDER BY PayNo DESC
+        LIMIT 1
+    </select>
+
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderPay">
         INSERT INTO shopion.tOrdOrderPay (
             OrderNo, PayNo, PayType, PayDate, PayAmt, PayFee,

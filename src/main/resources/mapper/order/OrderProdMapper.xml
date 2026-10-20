@@ -190,10 +190,10 @@
             SELECT OP.*,
             <choose>
                 <when test="pSvcCode != null and pSvcCode == 'ANY001'">
-                    '' AS payType, '' AS payTypeName, '' AS cardComp, '' AS reciptBank, '' AS payCompName, '' AS approvNo, '' AS reciptName, 0 AS payFee, IFNULL(O.PayCmpletDate,'') AS payCmpletDate,
+                    '' AS payType, '' AS payTypeName, '' AS pgCode, '' AS cardComp, '' AS reciptBank, '' AS payCompName, '' AS approvNo, '' AS reciptName, 0 AS payFee, IFNULL(O.PayCmpletDate,'') AS payCmpletDate,
                 </when>
                 <otherwise>
-                    OPay.PayType AS payType, CV.ConstrValDesc AS payTypeName, OPay.CardComp AS cardComp, OPay.ReciptBank AS reciptBank,
+                    OPay.PayType AS payType, CV.ConstrValDesc AS payTypeName, OPay.PgCode AS pgCode, OPay.CardComp AS cardComp, OPay.ReciptBank AS reciptBank,
                     CASE WHEN OPay.CardComp IS NULL OR OPay.CardComp = '' THEN OPay.ReciptBank ELSE OPay.CardComp END AS payCompName,
                     OPay.ApprovNo AS approvNo, OPay.ReciptName AS reciptName, OPay.PayFee AS payFee, IFNULL(O.PayCmpletDate,OPay.PayDate) AS payCmpletDate,
                 </otherwise>
@@ -666,6 +666,16 @@
             <when test="orderState == '지불완료'">AND OrderState = '주문접수'</when>
             <otherwise>AND OrderProdNo = #{orderProdNo}</otherwise>
         </choose>
+    </update>
+
+    <!-- 토스 웹훅(결제취소 통지) 전용. 배송 전 상태의 라인만 주문취소로 바꾼다 — 반품요청/반품완료/주문취소/
+         환불완료/배송* 라인은 건드리지 않는다. 조건부 UPDATE 라서 환불확정(RefundConfirmService)이 잡은 행 잠금이
+         풀린 뒤에도 최신 상태를 보고 판단하므로, 방금 환불완료로 만든 라인을 주문취소로 되돌리지 않는다. -->
+    <update id="cancelByWebhook" parameterType="map">
+        UPDATE shopion.tOrdOrderProd
+        SET OrderState = '주문취소', ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo}
+        AND OrderState IN ('주문접수', '지불완료', '출고지시', '발주확인')
     </update>
 
     <update id="updateOrderStateError" parameterType="map">

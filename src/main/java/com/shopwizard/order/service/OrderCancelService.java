@@ -32,6 +32,7 @@ public class OrderCancelService {
 
     private final OrderMapper orderMapper;
     private final OrderProdMapper orderProdMapper;
+    private final StockLedgerService stockLedgerService;
 
     /** 성공하면 null, 실패하면 사유 문자열을 반환한다(호출자가 건별 결과를 집계). */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -70,6 +71,9 @@ public class OrderCancelService {
             order.setChangeName(registName);
             orderMapper.updateOrderCancel(order);
         }
+
+        // 배송 전 취소라 물건이 나가지 않았다 — 이 시스템이 차감한 이력이 있는 라인만 재고를 되돌린다.
+        stockLedgerService.restore(orderNo, orderProdNo, registId);
 
         return null;
     }

@@ -2,8 +2,8 @@ package com.shopwizard.order.web;
 
 import com.shopwizard.order.model.Order;
 import com.shopwizard.order.model.OrderCancelRequest;
+import com.shopwizard.order.model.RefundConfirmRequest;
 import com.shopwizard.order.service.OrderService;
-import com.shopwizard.ship.model.ShipDirectCheckRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -50,5 +50,5 @@ public class OrderController {
 
     /** 환불확정 화면(order-refund-confirm.js) — 선택한 주문라인들을 일괄 환불완료 처리. */
     @PostMapping("/refund-confirm-batch")
-    public ShipDirectIssueResult confirmRefundBatch(@RequestBody ShipDirectCheckRequest req) { return orderService.confirmRefundBatch(req); }
+    public ShipDirectIssueResult confirmRefundBatch(@RequestBody RefundConfirmRequest req) { return orderService.confirmRefundBatch(req); }
 }

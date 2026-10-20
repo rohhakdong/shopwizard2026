@@ -24,6 +24,7 @@ public interface ProdMapper {
     int selectSupplyQty(Map<String, Object> params);
     int selectSupplyQtyItem(Map<String, Object> params);
     void updateSupplyQty(Map<String, Object> params);
+    void increaseSupplyQty(Map<String, Object> params);
     void updateSupplyQtyItem(Map<String, Object> params);
     void updateCatSupplyQty(Map<String, Object> params);
     void updateCatSupplyQtyItem(Map<String, Object> params);

@@ -34,6 +34,7 @@ public class ProdMatchService {
     private final ProdCodeMatchMapper prodCodeMatchMapper;
     private final AdjustDetailMapper adjustDetailMapper;
     private final ProdService productProdService;   // com.shopwizard.product.service.ProdService (bean "prodService")
+    private final StockLedgerService stockLedgerService;
 
     public List<Map<String, Object>> selectUnmatched(Map<String, Object> params) {
         return orderProdMapper.selectListUnmatched(params);
@@ -89,7 +90,7 @@ public class ProdMatchService {
             op.setChangeName(nz(req.getRegistName()));
             orderProdMapper.updatePrice(op);
 
-            decreaseStock(prod.getProdCode(), op.getProdQty());
+            decreaseStock(op, prod.getProdCode(), nz(req.getRegistId()));
             result.setApplied(result.getApplied() + 1);
         }
 
@@ -172,13 +173,16 @@ public class ProdMatchService {
         return adjustDetailMapper.selectCount(p) > 0;
     }
 
-    private void decreaseStock(String prodCode, Integer qty) {
+    private void decreaseStock(OrderProd op, String prodCode, String registId) {
+        Integer qty = op.getProdQty();
         if (prodCode == null || prodCode.isBlank() || qty == null || qty <= 0) return;
         try {
             Map<String, Object> d = new HashMap<>();
             d.put("prodCode", prodCode);
             d.put("qty", qty);
             productProdService.updateSupplyQty(d);
+            // 차감 이력(주문취소/반품 시 이 이력이 있는 라인만 정확히 1회 복원한다)
+            stockLedgerService.recordDeduction(op.getOrderNo(), op.getOrderProdNo(), prodCode, qty, registId);
         } catch (Exception e) {
             log.warn("상품 매칭 재고차감 실패 prodCode={} : {}", prodCode, e.getMessage());
         }

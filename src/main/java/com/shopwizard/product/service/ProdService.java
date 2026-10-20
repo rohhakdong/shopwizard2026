@@ -31,6 +31,7 @@ public class ProdService {
     public int selectSupplyQty(Map<String, Object> params) { return prodMapper.selectSupplyQty(params); }
     public int selectSupplyQtyItem(Map<String, Object> params) { return prodMapper.selectSupplyQtyItem(params); }
     public void updateSupplyQty(Map<String, Object> params) { prodMapper.updateSupplyQty(params); }
+    public void increaseSupplyQty(Map<String, Object> params) { prodMapper.increaseSupplyQty(params); }
     public void updateSupplyQtyItem(Map<String, Object> params) { prodMapper.updateSupplyQtyItem(params); }
     public void updateCatSupplyQty(Map<String, Object> params) { prodMapper.updateCatSupplyQty(params); }
     public void updateCatSupplyQtyItem(Map<String, Object> params) { prodMapper.updateCatSupplyQtyItem(params); }

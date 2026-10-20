@@ -105,6 +105,8 @@ public class OrderProd {
     // join fields
     private String payType;
     private String payTypeName;
+    /** 결제 PG(tOrdOrderPay.PgCode). 스토어프론트 토스 결제는 "TOSS", 마켓 주문은 마켓명 등. 목록 조회 전용. */
+    private String pgCode;
     private String cardComp;
     private String reciptBank;
     private String payCompName;

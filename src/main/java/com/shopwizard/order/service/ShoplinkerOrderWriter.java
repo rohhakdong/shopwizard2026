@@ -54,6 +54,7 @@ public class ShoplinkerOrderWriter {
     private final ProdCodeMatchMapper prodCodeMatchMapper;
     private final ChnlService chnlService;
     private final ProdService prodService;
+    private final StockLedgerService stockLedgerService;
 
     public enum Outcome { SUCCESS, DUPLICATE, SKIP, ERROR }
 
@@ -242,6 +243,8 @@ public class ShoplinkerOrderWriter {
                 dec.put("prodCode", op.getProdCode());
                 dec.put("qty", qty);
                 prodService.updateSupplyQty(dec);
+                // 차감 이력(주문취소/반품 시 이 이력이 있는 라인만 정확히 1회 복원한다)
+                stockLedgerService.recordDeduction(orderNo, op.getOrderProdNo(), op.getProdCode(), qty, registId);
             } catch (Exception e) {
                 log.warn("샵링커 수집 재고차감 실패 prodCode={} : {}", op.getProdCode(), e.getMessage());
             }

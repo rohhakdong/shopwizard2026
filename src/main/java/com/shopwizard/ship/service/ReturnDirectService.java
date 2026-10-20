@@ -2,6 +2,7 @@ package com.shopwizard.ship.service;
 
 import com.shopwizard.order.mapper.OrderMapper;
 import com.shopwizard.order.mapper.OrderProdMapper;
+import com.shopwizard.order.service.StockLedgerService;
 import com.shopwizard.ship.mapper.ReturnDirectMapper;
 import com.shopwizard.ship.model.ReturnDirect;
 import com.shopwizard.ship.model.ReturnRequestBatchRequest;
@@ -21,6 +22,7 @@ public class ReturnDirectService {
     private final OrderProdMapper orderProdMapper;
     private final OrderMapper orderMapper;
     private final ReturnRequestService returnRequestService;
+    private final StockLedgerService stockLedgerService;
 
     public List<ReturnDirect> selectList(Map<String, Object> params) { return returnDirectMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return returnDirectMapper.selectCount(params); }
@@ -56,8 +58,16 @@ public class ReturnDirectService {
                 headerUpd.put("changeName", params.get("changeName"));
                 orderMapper.updateOrderState(headerUpd);
             }
+
+            // 반품 물건이 돌아왔다 — 이 시스템이 차감한 이력이 있는 라인만 재고를 되돌린다(재입고).
+            stockLedgerService.restore(toInt(params.get("orderNo")), toInt(params.get("orderProdNo")),
+                    params.get("changeId") == null ? null : String.valueOf(params.get("changeId")));
         }
         return updated;
+    }
+
+    private static Integer toInt(Object o) {
+        return o instanceof Number ? Integer.valueOf(((Number) o).intValue()) : null;
     }
 
     /**

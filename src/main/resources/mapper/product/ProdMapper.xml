@@ -458,6 +458,11 @@
         UPDATE shopion.tPrdProdItem SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
     </update>
 
+    <!-- updateSupplyQty 의 반대(복원). SupplyQty 가 NULL(재고 미관리 상품)이면 NULL 그대로 둔다 — 차감도 NULL 에는 영향이 없다. -->
+    <update id="increaseSupplyQty" parameterType="map">
+        UPDATE shopion.tPrdProd SET SupplyQty = SupplyQty + #{qty} WHERE ProdCode = #{prodCode}
+    </update>
+
     <update id="updateCatSupplyQty" parameterType="map">
         UPDATE shopwizard.tCatProd SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode}
     </update>

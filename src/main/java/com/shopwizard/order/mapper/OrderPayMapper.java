@@ -11,6 +11,7 @@ public interface OrderPayMapper {
     List<OrderPay> selectList(Map<String, Object> params);
     OrderPay select(Map<String, Object> params);
     OrderPay selectByPgTradeNo(String pgTradeNo);
+    OrderPay selectTossByOrderNo(int orderNo);
     void insert(OrderPay orderPay);
     void update(OrderPay orderPay);
     void updateOrderPayRecipt(Map<String, Object> params);

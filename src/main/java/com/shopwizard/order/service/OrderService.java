@@ -5,7 +5,7 @@ import com.shopwizard.order.mapper.OrderNoSeqMapper;
 import com.shopwizard.order.model.Order;
 import com.shopwizard.order.model.OrderCancelRequest;
 import com.shopwizard.order.model.OrderNoSeq;
-import com.shopwizard.ship.model.ShipDirectCheckRequest;
+import com.shopwizard.order.model.RefundConfirmRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -76,16 +76,17 @@ public class OrderService {
 
     /**
      * 환불확정 화면 — 선택한 주문라인들(주문취소 또는 반품완료)을 건별로 환불완료 전환한다.
+     * 토스 결제 주문은 건별로 토스 부분취소까지 호출한다(skipPg 이면 생략).
      * 건별로 {@link RefundConfirmService#confirmOne}이 REQUIRES_NEW로 독립 커밋되므로,
-     * 한 건이 실패해도 나머지 건 처리에는 영향이 없다.
+     * 한 건이 실패(토스 호출 실패 포함)해도 그 건만 롤백되고 나머지 건 처리에는 영향이 없다.
      */
-    public ShipDirectIssueResult confirmRefundBatch(ShipDirectCheckRequest req) {
+    public ShipDirectIssueResult confirmRefundBatch(RefundConfirmRequest req) {
         ShipDirectIssueResult result = new ShipDirectIssueResult();
         if (req.getLines() == null) return result;
-        for (ShipDirectCheckRequest.Line line : req.getLines()) {
+        for (RefundConfirmRequest.Line line : req.getLines()) {
             try {
                 String err = refundConfirmService.confirmOne(
-                        line.getOrderNo(), line.getOrderProdNo(), req.getRegistId(), req.getRegistName());
+                        line.getOrderNo(), line.getOrderProdNo(), req.isSkipPg(), req.getRegistId(), req.getRegistName());
                 if (err != null) {
                     result.setFailed(result.getFailed() + 1);
                     result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + err);

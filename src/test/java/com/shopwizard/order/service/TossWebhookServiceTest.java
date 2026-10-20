@@ -115,19 +115,38 @@ class TossWebhookServiceTest {
     }
 
     @Test
-    void CANCELED면_주문과_모든_상품라인을_주문취소로_갱신한다() throws Exception {
+    void CANCELED면_배송전_라인을_주문취소로_바꾸고_모두_취소되면_헤더도_승격한다() throws Exception {
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "CANCELED", "totalAmount", 26900L));
         when(orderPayMapper.selectByPgTradeNo(PAYMENT_KEY)).thenReturn(orderPay());
         when(orderService.select(any())).thenReturn(orderWithState("지불완료"));
         when(orderProdService.selectOrderProdNoList(ORDER_NO)).thenReturn(List.of(1, 2));
+        when(orderProdService.countOrderStateDiffer(any())).thenReturn(0);
 
         tossWebhookService.handlePaymentStatusChanged(PAYMENT_KEY);
+
+        // 라인은 조건부 SQL(배송 전 상태만)로 갱신 — 무조건 갱신하는 updateOrderState 는 쓰지 않는다
+        verify(orderProdService, times(2)).cancelByWebhook(any());
+        verify(orderProdService, never()).updateOrderState(any());
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderService).updateOrderCancel(orderCaptor.capture());
         assertThat(orderCaptor.getValue().getOrderState()).isEqualTo("주문취소");
+        verify(orderPayLogTossMapper, times(1)).insert(any());
+    }
 
-        verify(orderProdService, times(2)).updateOrderState(any());
+    @Test
+    void CANCELED여도_반품_환불_단계_라인이_남아있으면_헤더는_승격하지_않는다() throws Exception {
+        when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "CANCELED", "totalAmount", 26900L));
+        when(orderPayMapper.selectByPgTradeNo(PAYMENT_KEY)).thenReturn(orderPay());
+        when(orderService.select(any())).thenReturn(orderWithState("지불완료"));
+        when(orderProdService.selectOrderProdNoList(ORDER_NO)).thenReturn(List.of(1, 2));
+        // 한 라인은 이미 반품완료/환불완료라 cancelByWebhook 이 건드리지 못했다 → 주문취소가 아닌 라인이 남음
+        when(orderProdService.countOrderStateDiffer(any())).thenReturn(1);
+
+        tossWebhookService.handlePaymentStatusChanged(PAYMENT_KEY);
+
+        verify(orderProdService, times(2)).cancelByWebhook(any());
+        verify(orderService, never()).updateOrderCancel(any());
         verify(orderPayLogTossMapper, times(1)).insert(any());
     }
 
@@ -136,6 +155,20 @@ class TossWebhookServiceTest {
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "CANCELED", "totalAmount", 26900L));
         when(orderPayMapper.selectByPgTradeNo(PAYMENT_KEY)).thenReturn(orderPay());
         when(orderService.select(any())).thenReturn(orderWithState("주문취소"));
+
+        tossWebhookService.handlePaymentStatusChanged(PAYMENT_KEY);
+
+        verify(orderService, never()).updateOrderCancel(any());
+        verifyNoInteractions(orderProdService);
+        verify(orderPayLogTossMapper, never()).insert(any());
+    }
+
+    @Test
+    void 환불확정이_이미_환불완료로_바꾼_주문은_취소_웹훅이_덮어쓰지_않는다() throws Exception {
+        // 환불확정이 토스 취소를 호출하면 토스가 곧바로 CANCELED 웹훅을 보낸다 — 이때 상태가 되돌아가면 안 된다.
+        when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "CANCELED", "totalAmount", 26900L));
+        when(orderPayMapper.selectByPgTradeNo(PAYMENT_KEY)).thenReturn(orderPay());
+        when(orderService.select(any())).thenReturn(orderWithState("환불완료"));
 
         tossWebhookService.handlePaymentStatusChanged(PAYMENT_KEY);
 

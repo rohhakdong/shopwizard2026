@@ -39,6 +39,7 @@ public interface OrderProdMapper {
     List<OrderDashBoard> selectListDashboardAnyb(Map<String, Object> params);
     void updateReturnReason(OrderProd orderProd);
     void updateOrderState(Map<String, Object> params);
+    void cancelByWebhook(Map<String, Object> params);
     void updateOrderStateError(Map<String, Object> params);
     void updateRefundCancel(Map<String, Object> params);
     void updateShopInfo(Map<String, Object> params);

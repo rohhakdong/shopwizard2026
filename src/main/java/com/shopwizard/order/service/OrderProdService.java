@@ -43,6 +43,7 @@ public class OrderProdService {
     public void updateInvoice(Map<String, Object> params) { orderProdMapper.updateInvoice(params); }
     public void updateCustConsltYn(Map<String, Object> params) { orderProdMapper.updateCustConsltYn(params); }
     public int countOrderStateDiffer(Map<String, Object> params) { return orderProdMapper.countOrderStateDiffer(params); }
+    public void cancelByWebhook(Map<String, Object> params) { orderProdMapper.cancelByWebhook(params); }
     public List<OrderDetlStats> selectListStatisticsProd(Map<String, Object> params) { return orderProdMapper.selectListStatisticsProd(params); }
     public List<OrderDetlStats> selectListStatisticsShop(Map<String, Object> params) { return orderProdMapper.selectListStatisticsShop(params); }
     public List<OrderDetlStats> selectListStatisticsChnl(Map<String, Object> params) { return orderProdMapper.selectListStatisticsChnl(params); }

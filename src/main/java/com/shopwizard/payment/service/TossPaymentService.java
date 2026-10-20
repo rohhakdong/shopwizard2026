@@ -51,6 +51,17 @@ public class TossPaymentService {
     }
 
     /**
+     * 환불확정에서 쓰는 라인 단위 <b>부분취소</b>. 같은 Idempotency-Key 로 다시 호출하면 토스가 첫 호출의
+     * 응답을 그대로 돌려줘서(15일 이내) 재시도 때 이중 환불이 되지 않는다.
+     */
+    public Map<String, Object> cancelPartial(String paymentKey, String cancelReason, long cancelAmount,
+                                             String idempotencyKey) throws Exception {
+        return call(String.format(TOSS_CANCEL_URL, paymentKey), "POST",
+                Map.of("cancelReason", cancelReason, "cancelAmount", cancelAmount),
+                Map.of("Idempotency-Key", idempotencyKey));
+    }
+
+    /**
      * paymentKey로 토스 서버에 결제 상태를 직접 조회한다 (결제 조회 API).
      * 웹훅은 트리거로만 사용하고, 실제 상태 반영은 이 API의 응답을 신뢰해서 처리한다
      * (웹훅 바디 자체는 위변조될 수 있으므로 그대로 믿지 않는다).
@@ -60,6 +71,11 @@ public class TossPaymentService {
     }
 
     private Map<String, Object> call(String urlStr, String method, Map<String, Object> body) throws Exception {
+        return call(urlStr, method, body, Map.of());
+    }
+
+    private Map<String, Object> call(String urlStr, String method, Map<String, Object> body,
+                                     Map<String, String> extraHeaders) throws Exception {
         String auth = "Basic " + Base64.getEncoder()
                 .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
 
@@ -68,6 +84,7 @@ public class TossPaymentService {
             conn.setRequestMethod(method);
             conn.setRequestProperty("Authorization", auth);
             conn.setRequestProperty("Content-Type", "application/json");
+            extraHeaders.forEach(conn::setRequestProperty);
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
             conn.setReadTimeout(READ_TIMEOUT_MS);
 
