@@ -825,7 +825,8 @@ createApp({
     const loadCart = async () => {
       if (!custInfo.value) return;
       try {
-        cartList.value = await api('GET', '/order/basket/list', { custId: custInfo.value.custId }) || [];
+        // 누구의 장바구니인지는 서버 세션이 결정한다(요청에 custId를 싣지 않는다).
+        cartList.value = await api('GET', '/order/basket/list') || [];
       } catch(_) {}
     };
 
@@ -834,22 +835,11 @@ createApp({
       if (prodItems.value.length > 1 && !selectedItemCode.value) { toast('옵션을 선택해주세요', 'info'); return; }
       try {
         const item = prodItems.value.find(i => String(i.itemCode) === String(selectedItemCode.value)) || prodItems.value[0];
+        // 장바구니에는 "어떤 상품·옵션을 몇 개"만 보낸다. 상품명/가격은 서버가 상품 테이블에서 채운다.
         await api('POST', '/order/basket', {
-          custId:    custInfo.value.custId,
           prodCode:  prodDetail.value.prodCode,
-          prodName:  prodDetail.value.prodName,
-          prodImg:   prodDetail.value.imgUrl || '',
           itemCode:  item ? item.itemCode : null,
-          itemName:  item ? itemLabel(item) : '',
           prodQty:   qty.value,
-          salePrice: prodDetail.value.salePrice,
-          listPrice: prodDetail.value.listPrice,
-          supplyPrice: prodDetail.value.supplyPrice,
-          deliFeeAmt:  prodDetail.value.deliFeeAmt || 0,
-          chnlCode:  '',
-          shopCode:  prodDetail.value.shopCode || '',
-          registId:  custInfo.value.loginId,
-          registName: custInfo.value.name,
         });
         await loadCart();
         toast('장바구니에 담았습니다 🛒', 'success');
@@ -881,8 +871,7 @@ createApp({
     const changeCartQty = async (item, newQty) => {
       if (newQty < 1) return;
       try {
-        await api('PUT', '/order/basket', { basketNo: item.basketNo, prodQty: newQty,
-          changeId: custInfo.value.loginId, changeName: custInfo.value.name });
+        await api('PUT', '/order/basket', { basketNo: item.basketNo, prodQty: newQty });
         item.prodQty = newQty;
       } catch(e) { toast('수량 변경 실패', 'error'); }
     };
@@ -999,7 +988,7 @@ createApp({
 
         /* 3. 장바구니 정리 */
         if (pending.fromCart && custInfo.value) {
-          try { await api('DELETE', '/order/basket/clean', { custId: custInfo.value.custId }); } catch(_) {}
+          try { await api('DELETE', '/order/basket/clean'); } catch(_) {}
           await loadCart();
         }
 

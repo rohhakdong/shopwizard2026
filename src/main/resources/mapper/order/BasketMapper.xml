@@ -3,90 +3,58 @@
 
 <mapper namespace="com.shopwizard.order.mapper.BasketMapper">
 
-    <select id="selectListFull" parameterType="map" resultType="com.shopwizard.order.model.Basket">
-        SELECT B.*, PI.ItemDesc, CC.CustCpnId, CC.CustCpnDiscntAmt, PC.ProdCpnId, PC.ProdCpnDiscntAmt, PT.PointSaveAmt
+    <!--
+        shopion.tOrdBasket 은 "무엇을 몇 개 담았는지"만 가진 참조 테이블이다(ProdCode/ItemCode/ProdQty/CustId 등).
+        상품명·이미지·가격은 컬럼이 없으므로 조회할 때 tPrdProd/tPrdProdItem 에서 가져온다 — 담은 뒤에 가격이
+        바뀌어도 장바구니에는 항상 현재 판매가가 보이고, 클라이언트가 보낸 가격을 저장·신뢰하지도 않는다.
+    -->
+    <sql id="basketSelect">
+        SELECT B.BasketNo, B.CustId, B.SessonId, B.ProdCode, B.ItemCode, B.ProdQty,
+               B.DirectOrderYn, B.ChnlCode, B.StoreCode, B.Remark, B.State,
+               B.RegistId, B.RegistName, B.RegistDate, B.ChangeId, B.ChangeName, B.ChangeDate,
+               P.ProdName, P.ImgUrl AS prodImg, P.ShopCode, P.ListPrice, P.SalePrice, P.SupplyPrice,
+               P.DeliFeeAmt,
+               NULLIF(CONCAT_WS(' / ', NULLIF(PI.AttrVal1, ''), NULLIF(PI.AttrVal2, ''),
+                                       NULLIF(PI.AttrVal3, ''), NULLIF(PI.AttrVal4, '')), '') AS itemName
         FROM shopion.tOrdBasket B
         LEFT OUTER JOIN shopion.tPrdProd P ON B.ProdCode = P.ProdCode
         LEFT OUTER JOIN shopion.tPrdProdItem PI ON B.ProdCode = PI.ProdCode AND B.ItemCode = PI.ItemCode
-        LEFT OUTER JOIN shopion.tStrCustCpn CC ON B.CustCpnId = CC.CustCpnId
-        LEFT OUTER JOIN shopion.tStrPoint PT ON B.ProdCode = PT.ProdCode
-        LEFT OUTER JOIN shopion.tPrdProdDeliFee ODF ON B.DeliFeeId = ODF.DeliFeeId
-        <where>
-            <choose>
-                <when test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
-                    AND CustId = #{pCustId}
-                </when>
-                <otherwise>
-                    AND SessonId = #{pSessonId}
-                </otherwise>
-            </choose>
-            <if test="pDirectOrderYn == null or pDirectOrderYn == ''">AND B.DirectOrderYn = '0'</if>
-            <if test="pAll != null and pAll == 'false'">
-                <if test="pBasketNoArr != null">
-                    AND B.BasketNo IN
-                    <foreach collection="pBasketNoArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
-                </if>
-                <if test="pBasketNo != null and pBasketNo != ''">AND B.BasketNo = #{pBasketNo}</if>
-            </if>
-        </where>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.Basket">
+        <include refid="basketSelect"/>
+        WHERE B.CustId = #{custId}
+        <if test="directOrderYn == null or directOrderYn == ''">AND B.DirectOrderYn = '0'</if>
         ORDER BY B.BasketNo DESC
     </select>
 
-    <select id="selectDirect" parameterType="map" resultType="com.shopwizard.order.model.Basket">
-        SELECT B.*
-        FROM shopion.tPrdProd P
-        WHERE P.ProdCode = #{prodCode}
-    </select>
-
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.Basket">
-        SELECT *
-        FROM shopion.tOrdBasket
-        <where>
-            <choose>
-                <when test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
-                    AND CustId = #{pCustId}
-                </when>
-                <otherwise>
-                    AND SessonId = #{pSessonId}
-                </otherwise>
-            </choose>
-            <if test="pDirectOrderYn == null or pDirectOrderYn == ''">AND DirectOrderYn = '0'</if>
-        </where>
-        ORDER BY BasketNo DESC
-    </select>
-
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.Basket">
-        SELECT *
-        FROM shopion.tOrdBasket
-        WHERE BasketNo = #{basketNo}
+        <include refid="basketSelect"/>
+        WHERE B.BasketNo = #{basketNo} AND B.CustId = #{custId}
     </select>
 
+    <!-- 같은 상품·옵션이 이미 담겨 있는지(담을 때 수량을 합산하기 위해). ItemCode 는 NULL 일 수 있어 null-safe 비교(<=>). -->
     <select id="selectByItem" parameterType="map" resultType="com.shopwizard.order.model.Basket">
-        SELECT *
-        FROM shopion.tOrdBasket
-        WHERE ProdCode = #{prodCode}
-        AND ItemCode = #{itemCode}
-        <choose>
-            <when test="pCustId != null and pCustId != '' and pCustId.toString() != '0'">
-                AND CustId = #{pCustId}
-            </when>
-            <otherwise>
-                AND SessonId = #{pSessonId}
-            </otherwise>
-        </choose>
+        <include refid="basketSelect"/>
+        WHERE B.CustId = #{custId}
+          AND B.ProdCode = #{prodCode}
+          AND B.ItemCode &lt;=&gt; #{itemCode}
+          AND B.DirectOrderYn = '0'
+        ORDER BY B.BasketNo
+        LIMIT 1
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.order.model.Basket">
+    <select id="countProd" parameterType="string" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrdProd WHERE ProdCode = #{prodCode}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.Basket" useGeneratedKeys="true" keyProperty="basketNo">
         INSERT INTO shopion.tOrdBasket (
-            CustId, SessonId, ProdCode, ShopProdCode, ProdName, ProdImg, ItemCode, ItemName,
-            ProdQty, ListPrice, SalePrice, SupplyPrice, BuyPrice, VatRate, VatAmt,
-            DeliFeeId, DeliFeeType, DeliFeeAmt, DirectOrderYn, ChnlCode, ShopCode, MroYn,
-            State, Remark, RegistId, RegistName, RegistDate
+            ProdCode, ItemCode, ProdQty, DirectOrderYn, ChnlCode, CustId,
+            State, RegistId, RegistName, RegistDate
         ) VALUES (
-            #{custId}, #{sessonId}, #{prodCode}, #{shopProdCode}, #{prodName}, #{prodImg}, #{itemCode}, #{itemName},
-            #{prodQty}, #{listPrice}, #{salePrice}, #{supplyPrice}, #{buyPrice}, #{vatRate}, #{vatAmt},
-            #{deliFeeId}, #{deliFeeType}, #{deliFeeAmt}, #{directOrderYn}, #{chnlCode}, #{shopCode}, #{mroYn},
-            1, #{remark}, #{registId}, #{registName}, NOW()
+            #{prodCode}, #{itemCode}, #{prodQty}, '0', #{chnlCode}, #{custId},
+            1, #{registId}, #{registName}, NOW()
         )
     </insert>
 
@@ -94,37 +62,25 @@
         UPDATE shopion.tOrdBasket SET
             ProdQty = #{prodQty},
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE BasketNo = #{basketNo}
-    </update>
-
-    <update id="updateCustId" parameterType="map">
-        UPDATE shopion.tOrdBasket SET
-            CustId = #{custId},
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE SessonId = #{sessonId}
-    </update>
-
-    <update id="updateMro" parameterType="map">
-        UPDATE shopion.tOrdBasket SET
-            MroYn = #{mroYn},
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE BasketNo = #{basketNo}
+        WHERE BasketNo = #{basketNo} AND CustId = #{custId}
     </update>
 
     <delete id="delete" parameterType="map">
         DELETE FROM shopion.tOrdBasket
-        WHERE BasketNo = #{basketNo}
+        WHERE BasketNo = #{basketNo} AND CustId = #{custId}
     </delete>
 
     <delete id="deleteMulti" parameterType="map">
         DELETE FROM shopion.tOrdBasket
-        WHERE BasketNo IN
+        WHERE CustId = #{custId}
+          AND BasketNo IN
         <foreach collection="pBasketNoArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
     </delete>
 
+    <!-- 결제 완료 후 장바구니 비우기 -->
     <delete id="clean" parameterType="map">
         DELETE FROM shopion.tOrdBasket
-        WHERE OrderNo = #{orderNo}
+        WHERE CustId = #{custId} AND DirectOrderYn = '0'
     </delete>
 
 </mapper>
