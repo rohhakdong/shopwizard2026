@@ -18,6 +18,8 @@ import java.util.Map;
 public class ProdController {
     private final ProdService prodService;
     private final ProdImgUploadService prodImgUploadService;
+    // 상점 제한 관리자는 자기 상점 상품만 다루고, 등록/수정 body 의 shopCode 는 세션 상점으로 고정된다(DataScopeGuard).
+    private final com.shopwizard.framework.auth.DataScopeGuard scopeGuard;
 
     /**
      * 상품 대표이미지 업로드. 원본 1장을 받아 50/80/100/160/220/280px 썸네일 6장을 자동 생성하고,
@@ -27,19 +29,38 @@ public class ProdController {
     @PostMapping("/img/upload")
     public Map<String, String> uploadImg(@RequestParam("file") MultipartFile file,
                                           @RequestParam String shopCode,
-                                          @RequestParam String prodCode) throws IOException {
-        return prodImgUploadService.upload(file, shopCode, prodCode);
+                                          @RequestParam String prodCode,
+                                          jakarta.servlet.http.HttpServletRequest request) throws IOException {
+        return prodImgUploadService.upload(file, scopeGuard.shopFor(request, shopCode), prodCode);
     }
 
     @GetMapping("/list") public List<Prod> selectList(@RequestParam Map<String, Object> params) { return prodService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return prodService.selectCount(params); }
-    @GetMapping("/{prodCode}") public Prod select(@PathVariable String prodCode) { return prodService.select(prodCode); }
-    @GetMapping("/desc/{prodCode}") public String selectProdDesc(@PathVariable String prodCode) { return prodService.selectProdDesc(prodCode); }
+    @GetMapping("/{prodCode}") public Prod select(@PathVariable String prodCode, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prodCode);
+        return prodService.select(prodCode);
+    }
+    @GetMapping("/desc/{prodCode}") public String selectProdDesc(@PathVariable String prodCode, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prodCode);
+        return prodService.selectProdDesc(prodCode);
+    }
     @GetMapping("/code/{shopProdCode}") public String selectProdCode(@PathVariable String shopProdCode) { return prodService.selectProdCode(shopProdCode); }
     @GetMapping("/dashboard") public List<ProdDashBoard> selectListDashboard(@RequestParam Map<String, Object> params) { return prodService.selectListDashboard(params); }
-    @PostMapping public int insert(@RequestBody Prod prod) { return prodService.insert(prod); }
-    @PutMapping public int update(@RequestBody Prod prod) { return prodService.update(prod); }
-    @PutMapping("/approv") public int approv(@RequestBody Map<String, Object> params) { return prodService.approv(params); }
+    @PostMapping public int insert(@RequestBody Prod prod, jakarta.servlet.http.HttpServletRequest request) {
+        prod.setShopCode(scopeGuard.shopFor(request, prod.getShopCode()));
+        return prodService.insert(prod);
+    }
+    @PutMapping public int update(@RequestBody Prod prod, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prod.getProdCode());
+        prod.setShopCode(scopeGuard.shopFor(request, prod.getShopCode()));
+        return prodService.update(prod);
+    }
+    @PutMapping("/approv") public int approv(@RequestBody Map<String, Object> params, jakarta.servlet.http.HttpServletRequest request) {
+        if (params.get("prodCodes") instanceof java.util.Collection<?> codes) {
+            for (Object c : codes) scopeGuard.requireCatProd(request, c == null ? null : String.valueOf(c));
+        }
+        return prodService.approv(params);
+    }
 
     /**
      * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
@@ -48,10 +69,14 @@ public class ProdController {
      * 이번에 신규 등록 기능을 만들며 처음 눌러보고 나서야 500이 나는 걸 발견했다.)
      */
     @DeleteMapping
-    public int delete(@RequestParam String prodCode) {
+    public int delete(@RequestParam String prodCode, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prodCode);
         Prod prod = new Prod();
         prod.setProdCode(prodCode);
         return prodService.delete(prod);
     }
-    @PostMapping("/copy2shopion") public int copy2Shopion(@RequestBody Map<String, Object> params) { return prodService.copy2Shopion(params); }
+    @PostMapping("/copy2shopion") public int copy2Shopion(@RequestBody Map<String, Object> params, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, params.get("prodCode") == null ? null : String.valueOf(params.get("prodCode")));
+        return prodService.copy2Shopion(params);
+    }
 }

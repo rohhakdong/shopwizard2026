@@ -55,6 +55,11 @@ public class OrderProdService {
      * (해당 라인이 없으면 0), 세 상태 외의 값은 쿼리에서 걸러진다. svcCode 가 비어 있으면 조회하지 않고 모두 0.
      */
     public Map<String, Integer> selectPendingShipCounts(String svcCode) {
+        return selectPendingShipCounts(svcCode, com.shopwizard.framework.auth.DataScope.UNRESTRICTED);
+    }
+
+    /** 상점/채널로 제한된 관리자는 자기 상점·채널 라인만 센다(대시보드가 다른 업체의 물량을 보여주지 않도록). */
+    public Map<String, Integer> selectPendingShipCounts(String svcCode, com.shopwizard.framework.auth.DataScope scope) {
         Map<String, Integer> result = new LinkedHashMap<>();
         PENDING_SHIP_STATES.forEach(s -> result.put(s, 0));
         if (svcCode == null || svcCode.isBlank()) return result;
@@ -62,6 +67,10 @@ public class OrderProdService {
         Map<String, Object> params = new HashMap<>();
         params.put("svcCode", svcCode);
         params.put("states", PENDING_SHIP_STATES);
+        if (scope != null) {
+            params.put("shopCode", scope.shopCode());
+            params.put("chnlCode", scope.chnlCode());
+        }
         for (Map<String, Object> row : orderProdMapper.countByStates(params)) {
             String state = row.get("state") == null ? null : String.valueOf(row.get("state"));
             if (state != null && result.containsKey(state) && row.get("cnt") instanceof Number n) {

@@ -14,6 +14,7 @@ import java.util.Map;
 public class AdjustController {
 
     private final AdjustService adjustService;
+    private final com.shopwizard.framework.auth.DataScopeGuard scopeGuard;   // 상점/채널 제한 관리자는 자기 정산만(목록은 DataScopeFilter+매퍼 조건)
 
     @GetMapping("/list")
     public List<Adjust> selectList(@RequestParam Map<String, Object> params) { return adjustService.selectList(params); }
@@ -34,9 +35,19 @@ public class AdjustController {
     public int selectCountShopBuy(@RequestParam Map<String, Object> params) { return adjustService.selectCountShopBuy(params); }
 
     @GetMapping
-    public Adjust select(@RequestParam Map<String, Object> params) { return adjustService.select(params); }
+    public Adjust select(@RequestParam Map<String, Object> params, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireAdjust(request, toInt(params.get("adjustNo")));
+        return adjustService.select(params);
+    }
 
     @PutMapping
-    public void update(@RequestBody Adjust adjust) { adjustService.update(adjust); }
+    public void update(@RequestBody Adjust adjust, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireAdjust(request, adjust.getAdjustNo());
+        adjustService.update(adjust);
+    }
+
+    private static Integer toInt(Object v) {
+        try { return v == null ? null : Integer.valueOf(String.valueOf(v).trim()); } catch (NumberFormatException e) { return null; }
+    }
 
 }

@@ -1,6 +1,7 @@
 package com.shopwizard.order.web;
 
 import com.shopwizard.framework.auth.AuthSession;
+import com.shopwizard.framework.auth.DataScopeGuard;
 import com.shopwizard.order.model.OrderDashBoard;
 import com.shopwizard.order.model.OrderDetlStats;
 import com.shopwizard.order.model.OrderProd;
@@ -17,6 +18,7 @@ import java.util.Map;
 @RequestMapping("/order/orderprod")
 public class OrderProdController {
     private final OrderProdService orderProdService;
+    private final DataScopeGuard scopeGuard;   // 상점/채널 제한 관리자는 자기 라인만
 
     /** 관리자 전용 (mngr_loginId 인증). 예: 주문상세 모달에서 pOrderNo로 라인 조회 (order-list.js). */
     @GetMapping("/list")
@@ -36,7 +38,7 @@ public class OrderProdController {
     @GetMapping("/state-count")
     public Map<String, Integer> selectStateCount(HttpServletRequest request) {
         Map<String, String> me = AuthSession.get(request, AuthSession.Type.MNGR);
-        return orderProdService.selectPendingShipCounts(me == null ? null : me.get("svcCode"));
+        return orderProdService.selectPendingShipCounts(me == null ? null : me.get("svcCode"), scopeGuard.scope(request));
     }
 
     /**
@@ -118,7 +120,14 @@ public class OrderProdController {
     }
 
     @GetMapping
-    public OrderProd select(@RequestParam Map<String, Object> params) { return orderProdService.select(params); }
+    public OrderProd select(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        scopeGuard.requireLine(request, toInt(params.get("orderNo")), toInt(params.get("orderProdNo")));
+        return orderProdService.select(params);
+    }
+
+    private static Integer toInt(Object v) {
+        try { return v == null ? null : Integer.valueOf(String.valueOf(v).trim()); } catch (NumberFormatException e) { return null; }
+    }
 
     // 주문라인의 생성·삭제·상태 변경(POST/PUT/DELETE, /state, /state/error, /returnreason, /refundcancel,
     // /shopinfo, /invoice)은 HTTP 로 열어두지 않는다 — 상태는 order/ship 의 배치 게이트 서비스만 바꾼다.

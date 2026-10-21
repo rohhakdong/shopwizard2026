@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.framework.auth.mapper.DataScopeMapper">
+
+    <!-- 주문라인: 상점은 라인(OP.ShopCode), 채널은 주문 헤더(O.ChnlCode) 기준 -->
+    <select id="countLines" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo
+        WHERE OP.OrderNo = #{orderNo} AND OP.OrderProdNo = #{orderProdNo}
+        <if test="shopCode != null">AND OP.ShopCode = #{shopCode}</if>
+        <if test="chnlCode != null">AND O.ChnlCode = #{chnlCode}</if>
+    </select>
+
+    <!-- 주문 헤더: 내 상점 라인이 하나라도 있는 주문 / 내 채널 주문 -->
+    <select id="countOrder" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrder O
+        WHERE O.OrderNo = #{orderNo}
+        <if test="chnlCode != null">AND O.ChnlCode = #{chnlCode}</if>
+        <if test="shopCode != null">
+            AND EXISTS (SELECT 1 FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.ShopCode = #{shopCode})
+        </if>
+    </select>
+
+    <select id="countCatProd" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatProd WHERE ProdCode = #{prodCode} AND ShopCode = #{shopCode}
+    </select>
+
+    <select id="countPrdProd" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrdProd WHERE ProdCode = #{prodCode} AND ShopCode = #{shopCode}
+    </select>
+
+    <select id="countAdjust" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjust WHERE AdjustNo = #{adjustNo}
+        <if test="shopCode != null">AND ShopCode = #{shopCode}</if>
+        <if test="chnlCode != null">AND ChnlCode = #{chnlCode}</if>
+    </select>
+
+</mapper>

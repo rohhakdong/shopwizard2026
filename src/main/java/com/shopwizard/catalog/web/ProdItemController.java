@@ -13,13 +13,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ProdItemController {
     private final ProdItemService prodItemService;
+    private final com.shopwizard.framework.auth.DataScopeGuard scopeGuard;   // 상점 제한 관리자는 자기 상품의 옵션만
 
     @GetMapping("/list") public List<ProdItem> selectList(@RequestParam Map<String, Object> params) { return prodItemService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return prodItemService.selectCount(params); }
-    @GetMapping public ProdItem select(@RequestParam Map<String, Object> params) { return prodItemService.select(params); }
+    @GetMapping public ProdItem select(@RequestParam Map<String, Object> params, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, params.get("prodCode") == null ? null : String.valueOf(params.get("prodCode")));
+        return prodItemService.select(params);
+    }
     @GetMapping("/item-code-by-attr") public String selectItemCodeByAttrVal(@RequestParam Map<String, Object> params) { return prodItemService.selectItemCodeByAttrVal(params); }
-    @PostMapping public int insert(@RequestBody ProdItem prodItem) { return prodItemService.insert(prodItem); }
-    @PutMapping public int update(@RequestBody ProdItem prodItem) { return prodItemService.update(prodItem); }
+    @PostMapping public int insert(@RequestBody ProdItem prodItem, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prodItem.getProdCode());
+        return prodItemService.insert(prodItem);
+    }
+    @PutMapping public int update(@RequestBody ProdItem prodItem, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prodItem.getProdCode());
+        return prodItemService.update(prodItem);
+    }
 
     /**
      * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
@@ -27,7 +37,8 @@ public class ProdItemController {
      * PK가 (ProdCode, ItemCode) 복합키라 @PathVariable 한 칸으로는 못 받고 @RequestParam으로 받는다.
      */
     @DeleteMapping
-    public int delete(@RequestParam String prodCode, @RequestParam Integer itemCode) {
+    public int delete(@RequestParam String prodCode, @RequestParam Integer itemCode, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, prodCode);
         ProdItem prodItem = new ProdItem();
         prodItem.setProdCode(prodCode);
         prodItem.setItemCode(itemCode);
@@ -37,5 +48,8 @@ public class ProdItemController {
     // 서비스(ProdItemService.copy2Shopion/delete2Shopion)는 이미 있었지만 REST로 호출할 방법이
     // 없어서 catalog.ProdController.copy2Shopion(상품 자체만 복사)과 짝을 이루지 못하고 있었다 —
     // 상품 승인 시 옵션까지 함께 shopion으로 복사되도록 여기서 엔드포인트로 노출한다.
-    @PostMapping("/copy2shopion") public int copy2Shopion(@RequestBody Map<String, Object> params) { return prodItemService.copy2Shopion(params); }
+    @PostMapping("/copy2shopion") public int copy2Shopion(@RequestBody Map<String, Object> params, jakarta.servlet.http.HttpServletRequest request) {
+        scopeGuard.requireCatProd(request, params.get("prodCode") == null ? null : String.valueOf(params.get("prodCode")));
+        return prodItemService.copy2Shopion(params);
+    }
 }

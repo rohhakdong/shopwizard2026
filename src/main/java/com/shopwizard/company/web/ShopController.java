@@ -4,6 +4,8 @@ import com.shopwizard.company.model.Shop;
 import com.shopwizard.company.model.ShopPublicView;
 import com.shopwizard.company.service.ShopService;
 import com.shopwizard.framework.auth.AuthSession;
+import com.shopwizard.framework.auth.DataScope;
+import com.shopwizard.framework.auth.DataScopeGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ShopController {
     private final ShopService shopService;
+    private final DataScopeGuard scopeGuard;
 
     /**
      * 비회원도 보는 shop.html "전체 쇼핑몰" 드롭다운용 (인증 불필요 — WebMvcConfig 참고).
@@ -31,19 +34,47 @@ public class ShopController {
     /** 관리자 전용 전체 필드 조회 (mngr_loginId 인증 필요 — WebMvcConfig 참고). 비밀번호(해시값이라도)는
      *  응답에 실을 이유가 없으므로 항상 비운다. */
     @GetMapping
-    public List<Shop> getList(@RequestParam Map<String, Object> params) {
+    public List<Shop> getList(@RequestParam Map<String, Object> params, HttpServletRequest request) {
         List<Shop> list = shopService.getList(params);
         list.forEach(s -> s.setPasswd(null));
+        return scoped(list, scopeGuard.scope(request));
+    }
+
+    /**
+     * 상점 제한 계정은 자기 상점만 보고(전체 필드), 채널 제한 계정은 다른 상점의 담당자·연락처·계좌 같은 세부 정보 없이
+     * 코드/이름만 본다(주문 필터 드롭다운용). 제한 없는 계정은 그대로.
+     */
+    private static List<Shop> scoped(List<Shop> list, DataScope scope) {
+        if (scope.shopCode() != null) {
+            return list.stream().filter(s -> scope.shopCode().equals(s.getShopCode())).toList();
+        }
+        if (scope.chnlCode() != null) {
+            return list.stream().map(s -> {
+                Shop t = new Shop();
+                t.setShopCode(s.getShopCode());
+                t.setShopName(s.getShopName());
+                t.setSupplyCode(s.getSupplyCode());
+                t.setSupplyName(s.getSupplyName());
+                t.setSvcCode(s.getSvcCode());
+                return t;
+            }).toList();
+        }
         return list;
     }
 
     @GetMapping("/count")
-    public int getCount(@RequestParam Map<String, Object> params) {
+    public int getCount(@RequestParam Map<String, Object> params, HttpServletRequest request) {
+        DataScope scope = scopeGuard.scope(request);
+        if (scope.shopCode() != null) return scoped(shopService.getList(params), scope).size();
         return shopService.getCount(params);
     }
 
     @GetMapping("/{shopCode}")
-    public Shop get(@PathVariable String shopCode) {
+    public Shop get(@PathVariable String shopCode, HttpServletRequest request) {
+        DataScope scope = scopeGuard.scope(request);
+        if (scope.shopCode() != null && !scope.shopCode().equals(shopCode)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "다른 업체의 정보는 조회할 수 없습니다.");
+        }
         Shop shop = shopService.get(shopCode);
         if (shop != null) shop.setPasswd(null);
         return shop;

@@ -1,6 +1,7 @@
 package com.shopwizard.config;
 
 import com.shopwizard.framework.auth.AuthSession;
+import com.shopwizard.framework.auth.MngrPaths;
 import com.shopwizard.framework.auth.RolePermissionService;
 import com.shopwizard.framework.interceptor.AuthInterceptor;
 import com.shopwizard.framework.interceptor.RoleAccessInterceptor;
@@ -27,55 +28,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RolePermissionService rolePermissionService;
 
-    // 로그인 없이 GET/HEAD 로만 여는 스토어프론트 공개 조회. 인증 인터셉터와 역할 인터셉터가 같은 목록을 쓴다.
-    private static final String[] MNGR_PUBLIC_READ = {
-            "/product/prod",
-            "/product/prod/list",
-            "/product/prod/count",
-            "/product/proditem/list",
-            "/catalog/prod-item/list",
-            "/company/shop/public"
-    };
-
-    private static final String[] MNGR_PATHS = {
-            "/authority/**",
-            "/catalog/**",
-            "/code/**",
-            "/company/**",
-            "/order/**",
-            "/ship/**",
-            "/stock/**",
-            "/adjust/**",
-            "/log/**",
-            "/message/**",
-            "/operate/**",
-            "/product/**",
-            "/statistics/**",
-            "/store/**",
-            "/profile/**"
-    };
-
-    private static final String[] MNGR_EXCLUDES = {
-            "/auth/**",
-            "/payment/**",             // 토스페이먼츠 결제 승인/웹훅
-            "/profile/cust/register",  // 비회원의 자기 회원가입 POST (관리자용 POST /profile/cust 와는 분리됨)
-            // 고객 인증 필요 API (아래 CUST 인터셉터로 보호)
-            "/order/basket/**",
-            "/order/checkout",         // 토스페이먼츠 결제완료 콜백(주문 저장) — 비회원도 허용
-            "/order/orderprod/my/list",
-            "/order/orderprod/my/list/count",
-            // 비회원 주문조회 (주문번호+연락처로 본인 확인, 로그인 불필요)
-            "/order/orderprod/guest/list",
-            // 로그인한 회원 본인의 내 정보 수정 (CUST 인터셉터로 보호)
-            "/profile/cust/me",
-            // 상점(거래처) 계정 전용 API (SHOP 인터셉터로 보호)
-            "/company/shop/me",
-            "/order/orderprod/shop/list",
-            "/order/orderprod/shop/list/count",
-            // 창고(거래처) 계정 전용 API (WAREHS 인터셉터로 보호)
-            "/company/warehs/me"
-    };
-
     /**
      * 업로드된 상품이미지(원본+대/중/소 등 6단계 썸네일)를 정적 리소스로 서빙한다.
      * 실제 데이터의 기존 URL 패턴(/images/product/{shopCode}/{yyyymmdd}/{prodCode}...)과
@@ -98,14 +50,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // (실제로 /product/prod 의 상품 등록·수정·삭제와 /company/shop 전체가 그렇게 열려 있었다).
         // /company/shop/public 은 shopCode/shopName만 반환하는 별도 경로라 전체 필드(loginId/passwd 포함)가
         // 새지 않는다.
-        registry.addInterceptor(new AuthInterceptor(AuthSession.Type.MNGR, MNGR_PUBLIC_READ))
-                .addPathPatterns(MNGR_PATHS)
-                .excludePathPatterns(MNGR_EXCLUDES);
+        registry.addInterceptor(new AuthInterceptor(AuthSession.Type.MNGR, MngrPaths.PUBLIC_READ))
+                .addPathPatterns(MngrPaths.PATHS)
+                .excludePathPatterns(MngrPaths.EXCLUDES);
 
         // 역할 권한 검사: 위 인증을 통과한 관리자의 역할이 이 API 를 쓸 수 있는지(403). 인증 인터셉터 바로 뒤에 같은 경로로 건다.
-        registry.addInterceptor(new RoleAccessInterceptor(rolePermissionService, authzMode, MNGR_PUBLIC_READ))
-                .addPathPatterns(MNGR_PATHS)
-                .excludePathPatterns(MNGR_EXCLUDES);
+        registry.addInterceptor(new RoleAccessInterceptor(rolePermissionService, authzMode, MngrPaths.PUBLIC_READ))
+                .addPathPatterns(MngrPaths.PATHS)
+                .excludePathPatterns(MngrPaths.EXCLUDES);
 
         // 고객 API 인증 체크: 고객(CUST)으로 로그인한 서버 세션 필요
         // 주의: /order/orderprod/list, /list/count 는 관리자(order-list.js)도 쓰는 공용

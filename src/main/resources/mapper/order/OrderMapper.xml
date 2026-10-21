@@ -8,6 +8,9 @@
         FROM shopion.tOrdOrder
         <where>
             <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">
+                AND EXISTS (SELECT 1 FROM shopion.tOrdOrderProd OPS WHERE OPS.OrderNo = shopion.tOrdOrder.OrderNo AND OPS.ShopCode = #{pShopCode})
+            </if>
             <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
             <if test="pOrderName != null and pOrderName != ''">AND OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
             <if test="pRecverName != null and pRecverName != ''">AND RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>
@@ -38,6 +41,9 @@
         <where>
             <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
             <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">
+                AND EXISTS (SELECT 1 FROM shopion.tOrdOrderProd OPS WHERE OPS.OrderNo = O.OrderNo AND OPS.ShopCode = #{pShopCode})
+            </if>
             <if test="pCompCode != null and pCompCode != ''">AND CI.CompCode = #{pCompCode}</if>
             <if test="pOrderSearchValue != null and pOrderSearchValue != ''">
                 <choose>
@@ -138,6 +144,10 @@
         INNER JOIN shopion.tOrdOrderPay OPay ON O.OrderNo = OPay.OrderNo
         INNER JOIN (SELECT * FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cPayType') CV ON OPay.PayType = CV.ConstrVal
         <where>
+            <if test="pChnlCode != null and pChnlCode != ''">AND O.ChnlCode = #{pChnlCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">
+                AND EXISTS (SELECT 1 FROM shopion.tOrdOrderProd OPS WHERE OPS.OrderNo = O.OrderNo AND OPS.ShopCode = #{pShopCode})
+            </if>
             <if test="pOrderNo != null and pOrderNo != ''">AND O.OrderNo = #{pOrderNo}</if>
             <if test="pOrderName != null and pOrderName != ''">AND O.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
             <if test="pRecverName != null and pRecverName != ''">AND O.RecverName LIKE CONCAT('%',#{pRecverName},'%')</if>

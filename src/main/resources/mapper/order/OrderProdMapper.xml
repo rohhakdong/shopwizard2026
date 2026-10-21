@@ -738,6 +738,8 @@
         INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
         INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
         WHERE Ch.SvcCode = #{svcCode}
+        <if test="shopCode != null">AND OP.ShopCode = #{shopCode}</if>
+        <if test="chnlCode != null">AND O.ChnlCode = #{chnlCode}</if>
         AND OP.OrderState IN
         <foreach collection="states" item="s" open="(" close=")" separator=",">#{s}</foreach>
         GROUP BY OP.OrderState

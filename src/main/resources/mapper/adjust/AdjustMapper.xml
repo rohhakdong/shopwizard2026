@@ -7,6 +7,8 @@
         WHERE <![CDATA[AdjustStartDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustStartDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         AND <![CDATA[AdjustEndDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustEndDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         <if test="pAdjustNo != null and pAdjustNo != ''">AND AdjustNo = #{pAdjustNo}</if>
+        <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
         <if test="pPageSize != null and pPageSize != ''">LIMIT ${pPageOffset}, ${pPageSize}</if>
     </select>
 
@@ -15,6 +17,8 @@
         WHERE <![CDATA[AdjustStartDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustStartDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         AND <![CDATA[AdjustEndDate >= DATE_FORMAT(#{pAdjustStartDate}, '%Y%m%d') AND AdjustEndDate < ADDDATE(DATE_FORMAT(#{pAdjustEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         <if test="pAdjustNo != null and pAdjustNo != ''">AND AdjustNo = #{pAdjustNo}</if>
+        <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
     </select>
 
     <select id="selectListBranchSale" parameterType="map" resultType="com.shopwizard.adjust.model.Adjust">
@@ -27,6 +31,8 @@
         INNER JOIN shopion.tPrfComp C ON A.CompCode = C.CompCode
         <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         AND A.CompCode = #{pCompCode}
+        <if test="pShopCode != null and pShopCode != ''">AND A.ShopCode = #{pShopCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND A.ChnlCode = #{pChnlCode}</if>
         GROUP BY A.AdjustNo, B.BranchId, B.BranchCode, B.BranchName, D.VatRate
     </select>
 
@@ -36,6 +42,8 @@
         INNER JOIN shopion.tPrfComp C ON A.CompCode = C.CompCode
         <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         AND A.CompCode = #{pCompCode}
+        <if test="pShopCode != null and pShopCode != ''">AND A.ShopCode = #{pShopCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND A.ChnlCode = #{pChnlCode}</if>
     </select>
 
     <select id="selectListShopBuy" parameterType="map" resultType="com.shopwizard.adjust.model.Adjust">
@@ -47,6 +55,7 @@
         INNER JOIN shopwizard.tCmpShop S ON A.ShopCode = S.ShopCode
         <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         <if test="pShopCode != null and pShopCode != ''">AND A.ShopCode = #{pShopCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND A.ChnlCode = #{pChnlCode}</if>
         <if test="pAdjustPeriodType != null and pAdjustPeriodType != ''">AND S.adjustPeriodCode = #{pAdjustPeriodType}</if>
         GROUP BY A.AdjustNo, S.ShopCode, S.ShopName, D.VatRate
     </select>
@@ -56,6 +65,7 @@
         INNER JOIN shopwizard.tCmpShop S ON A.ShopCode = S.ShopCode
         <![CDATA[WHERE A.AdjustStartDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND A.AdjustEndDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
         <if test="pShopCode != null and pShopCode != ''">AND A.ShopCode = #{pShopCode}</if>
+        <if test="pChnlCode != null and pChnlCode != ''">AND A.ChnlCode = #{pChnlCode}</if>
         <if test="pAdjustPeriodType != null and pAdjustPeriodType != ''">AND S.adjustPeriodCode = #{pAdjustPeriodType}</if>
     </select>
 
