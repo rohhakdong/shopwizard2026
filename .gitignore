@@ -5,6 +5,14 @@ build/
 # 상품이미지 등 업로드 파일 저장소 (application.yml의 upload.dir) — 런타임 데이터라 커밋하지 않는다
 uploads/
 
+# 로컬 실행 설정/비밀 — DB_HOST, DB_PASSWORD 가 들어 있다(저장소는 공개). 절대 커밋하지 않는다.
+run-server.bat
+.env
+.env.*
+*.secret
+# Claude Code 로컬 설정/메모리
+.claude/
+
 # Logs
 logs/
 *.log
