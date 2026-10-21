@@ -57,7 +57,19 @@ public class ProdController {
     @PutMapping("/supplyqty")
     public void updateSupplyQty(@RequestBody Map<String, Object> params, jakarta.servlet.http.HttpServletRequest request) {
         scopeGuard.requirePrdProd(request, params.get("prodCode") == null ? null : String.valueOf(params.get("prodCode")));
-        prodService.updateSupplyQty(params);
+        // 화면은 절대값(supplyQty)과 자기가 보던 값(expectedQty)을 보낸다. 예전에는 차감용 쿼리(SupplyQty - qty)를 불러서
+        // qty 가 없는 이 요청이 재고를 NULL(무제한)로 만들었다.
+        Object qty = params.get("supplyQty");
+        if (!(qty instanceof Number) || ((Number) qty).intValue() < 0) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "재고수량은 0 이상의 숫자여야 합니다.");
+        }
+        if (!params.containsKey("expectedQty")) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "현재 재고 값(expectedQty)이 필요합니다.");
+        }
+        if (!prodService.setSupplyQty(params)) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                    "그 사이 재고가 변경되었습니다. 새로고침 후 다시 시도하세요.");
+        }
     }
 
     @PutMapping("/saleyn")

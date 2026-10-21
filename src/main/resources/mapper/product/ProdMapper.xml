@@ -450,6 +450,13 @@
         SELECT SupplyQty FROM shopion.tPrdProdItem WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
     </select>
 
+    <!-- 관리자 화면의 "재고 수정" — 절대값으로 설정한다. expectedQty(화면이 보고 있던 값)와 현재 값이 다르면(그 사이 주문 차감 등)
+         0행이 갱신돼 호출자가 충돌로 알린다(NULL = 재고 미관리 도 같은 값끼리만 일치: <=>). -->
+    <update id="setSupplyQty" parameterType="map">
+        UPDATE shopion.tPrdProd SET SupplyQty = #{supplyQty}
+        WHERE ProdCode = #{prodCode} AND SupplyQty &lt;=&gt; #{expectedQty}
+    </update>
+
     <update id="updateSupplyQty" parameterType="map">
         UPDATE shopion.tPrdProd SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode}
     </update>

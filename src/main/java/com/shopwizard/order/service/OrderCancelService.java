@@ -33,15 +33,14 @@ public class OrderCancelService {
     private final OrderMapper orderMapper;
     private final OrderProdMapper orderProdMapper;
     private final StockLedgerService stockLedgerService;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 실패하면 사유 문자열을 반환한다(호출자가 건별 결과를 집계). */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public String cancelOne(Integer orderNo, Integer orderProdNo, String reason, String reasonDetail,
                              String registId, String registName) {
-        Map<String, Object> raw = new HashMap<>();
-        raw.put("orderNo", orderNo);
-        raw.put("orderProdNo", orderProdNo);
-        OrderProd op = orderProdMapper.selectLineRaw(raw);
+        // 헤더 → 라인 순으로 잠근다(같은 주문의 라인을 동시에 취소해도 헤더 승격 판단이 서로의 결과를 본다).
+        OrderProd op = lineLock.lockHeaderAndLine(orderNo, orderProdNo);
         if (op == null) {
             return "주문라인을 찾을 수 없습니다.";
         }

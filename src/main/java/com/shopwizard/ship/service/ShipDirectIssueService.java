@@ -4,6 +4,7 @@ import com.shopwizard.order.mapper.OrderProdMapper;
 import com.shopwizard.order.mapper.UpriceMatchMapper;
 import com.shopwizard.order.model.OrderProd;
 import com.shopwizard.order.model.UpriceMatchDetail;
+import com.shopwizard.order.service.OrderLineLock;
 import com.shopwizard.ship.mapper.ShipDirectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,16 +36,19 @@ public class ShipDirectIssueService {
     private final ShipDirectMapper shipDirectMapper;
     private final OrderProdMapper orderProdMapper;
     private final UpriceMatchMapper upriceMatchMapper;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 실패하면 사유 문자열을 반환한다(호출자가 건별 결과를 집계). */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public String issueOne(Integer orderNo, Integer orderProdNo, String registId, String registName) {
-        Map<String, Object> raw = new HashMap<>();
-        raw.put("orderNo", orderNo);
-        raw.put("orderProdNo", orderProdNo);
-        OrderProd op = orderProdMapper.selectLineRaw(raw);
+        // 라인을 잠그고 상태를 확인한다. 상태 확인 전에 가격(updatePrice)을 먼저 갱신하면, 이미 발주확인·배송된 라인을
+        // 다시 출고지시해도 BuyPrice/마진이 덮여 버린다(실패 메시지를 돌려줘도 이 트랜잭션은 커밋됨).
+        OrderProd op = lineLock.lockLine(orderNo, orderProdNo);
         if (op == null) {
             return "주문라인을 찾을 수 없습니다.";
+        }
+        if (!"지불완료".equals(op.getOrderState())) {
+            return "지불완료 상태가 아니거나 이미 출고지시 처리된 주문입니다. (현재 상태: " + op.getOrderState() + ")";
         }
 
         List<UpriceMatchDetail> priced = upriceMatchMapper.selectPriced(nz(op.getProdName()), nz(op.getItemName()));

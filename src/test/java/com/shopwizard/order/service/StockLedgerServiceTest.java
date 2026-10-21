@@ -29,19 +29,29 @@ class StockLedgerServiceTest {
     @InjectMocks private StockLedgerService ledger;
 
     @Test
-    void 차감하면_이력을_남긴다() {
-        ledger.recordDeduction(100, 1, "G000000001", 3, "admin");
+    void 이력을_처음_선점하면_true_차감해도_된다() {
+        when(stockLogMapper.insertDeduct(100, 1, "G000000001", 3, "admin")).thenReturn(1);
+
+        assertThat(ledger.claimDeduction(100, 1, "G000000001", 3, "admin")).isTrue();
 
         verify(stockLogMapper).insertDeduct(100, 1, "G000000001", 3, "admin");
     }
 
     @Test
-    void 상품코드나_수량이_없으면_이력을_남기지_않는다() {
-        ledger.recordDeduction(100, 1, null, 3, "admin");
-        ledger.recordDeduction(100, 1, " ", 3, "admin");
-        ledger.recordDeduction(100, 1, "G000000001", 0, "admin");
-        ledger.recordDeduction(100, 1, "G000000001", null, "admin");
-        ledger.recordDeduction(null, 1, "G000000001", 3, "admin");
+    void 이미_선점된_라인은_false_재고를_또_차감하면_안_된다() {
+        // 같은 라인을 동시에 처리한 다른 요청이 먼저 이력을 만들었다(INSERT IGNORE 0행)
+        when(stockLogMapper.insertDeduct(100, 1, "G000000001", 3, "admin")).thenReturn(0);
+
+        assertThat(ledger.claimDeduction(100, 1, "G000000001", 3, "admin")).isFalse();
+    }
+
+    @Test
+    void 상품코드나_수량이_없으면_이력도_남기지_않고_false() {
+        assertThat(ledger.claimDeduction(100, 1, null, 3, "admin")).isFalse();
+        assertThat(ledger.claimDeduction(100, 1, " ", 3, "admin")).isFalse();
+        assertThat(ledger.claimDeduction(100, 1, "G000000001", 0, "admin")).isFalse();
+        assertThat(ledger.claimDeduction(100, 1, "G000000001", null, "admin")).isFalse();
+        assertThat(ledger.claimDeduction(null, 1, "G000000001", 3, "admin")).isFalse();
 
         verifyNoInteractions(stockLogMapper);
     }

@@ -51,15 +51,14 @@ public class RefundConfirmService {
     private final OrderPayMapper orderPayMapper;
     private final OrderPayLogTossMapper orderPayLogTossMapper;
     private final TossPaymentService tossPaymentService;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 업무상 실패는 사유 문자열 반환. 토스 호출 실패 등은 예외 → 이 건만 롤백된다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public String confirmOne(Integer orderNo, Integer orderProdNo, boolean skipPg,
                              String registId, String registName) throws Exception {
-        Map<String, Object> raw = new HashMap<>();
-        raw.put("orderNo", orderNo);
-        raw.put("orderProdNo", orderProdNo);
-        OrderProd op = orderProdMapper.selectLineRaw(raw);
+        // 헤더 → 라인 순으로 잠근다. 같은 라인의 중복 환불확정은 여기서 대기했다가 상태가 이미 바뀐 것을 보고 끝난다.
+        OrderProd op = lineLock.lockHeaderAndLine(orderNo, orderProdNo);
         if (op == null) {
             return "주문라인을 찾을 수 없습니다.";
         }

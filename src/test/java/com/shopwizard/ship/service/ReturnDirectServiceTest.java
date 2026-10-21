@@ -6,6 +6,8 @@ import com.shopwizard.order.service.StockLedgerService;
 import com.shopwizard.ship.mapper.ReturnDirectMapper;
 import com.shopwizard.ship.model.ReturnRequestBatchRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
+import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -31,11 +33,18 @@ import static org.mockito.Mockito.when;
 class ReturnDirectServiceTest {
 
     @Mock private ReturnDirectMapper returnDirectMapper;
+    @Mock private OrderLineLock lineLock;
     @Mock private OrderProdMapper orderProdMapper;
     @Mock private OrderMapper orderMapper;
     @Mock private ReturnRequestService returnRequestService;
     @Mock private StockLedgerService stockLedgerService;
     @InjectMocks private ReturnDirectService service;
+
+    private static OrderProd lineIn(String state) {
+        OrderProd op = new OrderProd();
+        op.setOrderState(state);
+        return op;
+    }
 
     private static Map<String, Object> params() {
         Map<String, Object> p = new HashMap<>();
@@ -50,6 +59,7 @@ class ReturnDirectServiceTest {
 
     @Test
     void 반품요청_건이_아니라서_0행이면_라인과_헤더와_재고를_건드리지_않는다() {
+        when(lineLock.lockHeaderAndLine(7, 2)).thenReturn(lineIn("반품요청"));
         when(returnDirectMapper.update(any())).thenReturn(0);
 
         assertThat(service.update(params())).isZero();
@@ -60,6 +70,7 @@ class ReturnDirectServiceTest {
 
     @Test
     void 성공하면_라인을_반품완료로_바꾸고_재고를_복원한다_클라이언트_상태는_쓰지_않는다() {
+        when(lineLock.lockHeaderAndLine(7, 2)).thenReturn(lineIn("반품요청"));
         when(returnDirectMapper.update(any())).thenReturn(1);
         when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(1);
 
@@ -75,6 +86,7 @@ class ReturnDirectServiceTest {
 
     @Test
     void 모든_라인이_반품완료가_되면_주문_헤더도_승격한다() {
+        when(lineLock.lockHeaderAndLine(7, 2)).thenReturn(lineIn("반품요청"));
         when(returnDirectMapper.update(any())).thenReturn(1);
         when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(0);
 
@@ -84,6 +96,32 @@ class ReturnDirectServiceTest {
         ArgumentCaptor<Map<String, Object>> header = ArgumentCaptor.forClass(Map.class);
         verify(orderMapper).updateOrderState(header.capture());
         assertThat(header.getValue()).containsEntry("orderState", "반품완료").containsEntry("orderNo", 7);
+    }
+
+    @Test
+    void 반품요청_상태가_아닌_라인은_잠금_뒤_상태_확인에서_걸러져_아무것도_쓰지_않는다() {
+        // 같은 시점에 환불확정/취소가 먼저 커밋됐다 — 반품확정이 라인을 반품완료로 되돌려 쓰면 안 된다
+        when(lineLock.lockHeaderAndLine(7, 2)).thenReturn(lineIn("환불완료"));
+
+        assertThat(service.update(params())).isZero();
+
+        verifyNoInteractions(returnDirectMapper, orderMapper, stockLedgerService);
+        verify(orderProdMapper, never()).updateOrderState(any());
+    }
+
+    @Test
+    void 헤더_라인_잠금이_먼저_그_다음에_갱신한다() {
+        when(lineLock.lockHeaderAndLine(7, 2)).thenReturn(lineIn("반품요청"));
+        when(returnDirectMapper.update(any())).thenReturn(1);
+        when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(1);
+
+        service.update(params());
+
+        org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(lineLock, returnDirectMapper, orderProdMapper);
+        inOrder.verify(lineLock).lockHeaderAndLine(7, 2);
+        inOrder.verify(returnDirectMapper).update(any());
+        inOrder.verify(orderProdMapper).updateOrderState(any());
+        inOrder.verify(orderProdMapper).countOrderStateDiffer(any());
     }
 
     @Test

@@ -237,17 +237,14 @@ public class ShoplinkerOrderWriter {
         orderProdService.insert(op);
 
         // 재고 차감 (매칭된 경우만). updateSupplyQty 는 SupplyQty - #{qty} 이므로 양수 전달.
-        if (op.getProdCode() != null && !op.getProdCode().isEmpty()) {
-            try {
-                Map<String, Object> dec = new HashMap<>();
-                dec.put("prodCode", op.getProdCode());
-                dec.put("qty", qty);
-                prodService.updateSupplyQty(dec);
-                // 차감 이력(주문취소/반품 시 이 이력이 있는 라인만 정확히 1회 복원한다)
-                stockLedgerService.recordDeduction(orderNo, op.getOrderProdNo(), op.getProdCode(), qty, registId);
-            } catch (Exception e) {
-                log.warn("샵링커 수집 재고차감 실패 prodCode={} : {}", op.getProdCode(), e.getMessage());
-            }
+        // 차감 이력(주문취소/반품 시 이 이력이 있는 라인만 정확히 1회 복원한다)을 먼저 선점하고, 선점했을 때만 차감한다.
+        // 실패는 삼키지 않는다 — 이 주문 생성(REQUIRES_NEW)이 통째로 롤백돼 "이력만 있고 차감은 없는" 상태가 남지 않는다.
+        if (op.getProdCode() != null && !op.getProdCode().isEmpty()
+                && stockLedgerService.claimDeduction(orderNo, op.getOrderProdNo(), op.getProdCode(), qty, registId)) {
+            Map<String, Object> dec = new HashMap<>();
+            dec.put("prodCode", op.getProdCode());
+            dec.put("qty", qty);
+            prodService.updateSupplyQty(dec);
         }
 
         // --- 원본 스테이징 (tOrdOrderShoplinker) ---

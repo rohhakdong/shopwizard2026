@@ -40,6 +40,7 @@ public class TossWebhookService {
     private final OrderPayLogTossMapper orderPayLogTossMapper;
     private final OrderService orderService;
     private final OrderProdService orderProdService;
+    private final OrderLineLock lineLock;   // 헤더 → 라인 순서의 행 잠금(취소/환불확정과 같은 규칙)
 
     public void handlePaymentStatusChanged(String paymentKey) throws Exception {
         if (paymentKey == null || paymentKey.isBlank()) return;
@@ -53,6 +54,8 @@ public class TossWebhookService {
         }
         int orderNo = pay.getOrderNo();
 
+        // 헤더를 먼저 잠근 뒤 주문 상태를 읽는다 — 같은 주문의 취소/환불확정과 직렬화되고, 잠금 순서(헤더→라인)도 같다.
+        lineLock.lockHeader(orderNo);
         Order order = orderService.select(Map.of("orderNo", orderNo));
         if (order == null) return;
 

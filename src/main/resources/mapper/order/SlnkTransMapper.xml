@@ -51,6 +51,8 @@
 
     <select id="selectCountByResultType" parameterType="string" resultType="int">
         SELECT COUNT(*) FROM shopion.tOrdSlnkTrans WHERE ResultType = #{value}
+        <!-- 30분 넘게 "진행"으로 남은 행은 서버가 도중에 죽은 흔적으로 보고 세지 않는다(수집이 영구 차단되지 않게) -->
+        AND (ResultType != '진행' OR TransStartDate IS NULL OR TransStartDate >= DATE_SUB(NOW(), INTERVAL 30 MINUTE))
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.order.model.SlnkTrans"

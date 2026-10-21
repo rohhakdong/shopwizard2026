@@ -1,6 +1,8 @@
 package com.shopwizard.ship.service;
 
 import com.shopwizard.order.mapper.OrderProdMapper;
+import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import com.shopwizard.ship.mapper.ShipDirectMapper;
 import com.shopwizard.ship.model.ShipDirect;
 import com.shopwizard.ship.model.ShipDirectCheckRequest;
@@ -21,6 +23,7 @@ import java.util.Map;
 public class ShipDirectService {
     private final ShipDirectMapper shipDirectMapper;
     private final OrderProdMapper orderProdMapper;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
     private final ShipDirectIssueService shipDirectIssueService;
     private final ShipDirectCheckService shipDirectCheckService;
     private final ShipDirectCompleteService shipDirectCompleteService;
@@ -132,6 +135,10 @@ public class ShipDirectService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "택배사와 송장번호를 입력하세요");
         }
 
+        // 원본 라인을 잠그고 발주확인 상태인지 확인한다(취소/환불과 동시에 들어와도 한쪽만 이긴다). 0 = 처리 안 됨.
+        OrderProd line = lineLock.lockLine(toInt(params.get("orderNo")), toInt(params.get("orderProdNo")));
+        if (line == null || !"발주확인".equals(line.getOrderState())) return 0;
+
         // 요청에 실려온 orderState 는 믿지 않는다 — 이 경로가 만드는 상태는 배송시작 하나뿐이다.
         Map<String, Object> upd = new HashMap<>(params);
         upd.put("deliCompName", deliCompName);
@@ -149,6 +156,9 @@ public class ShipDirectService {
             orderProdMapper.updateOrderState(prodUpd);
         }
         return updated;
+    }
+    private static Integer toInt(Object v) {
+        try { return v == null ? null : Integer.valueOf(String.valueOf(v).trim()); } catch (NumberFormatException e) { return null; }
     }
     public int updateAdjustSelectDate(Map<String, Object> params) { return shipDirectMapper.updateAdjustSelectDate(params); }
     public int updateAdjustSelectDateSchedule(Map<String, Object> params) { return shipDirectMapper.updateAdjustSelectDateSchedule(params); }

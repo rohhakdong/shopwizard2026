@@ -2,6 +2,8 @@ package com.shopwizard.ship.service;
 
 import com.shopwizard.order.mapper.OrderMapper;
 import com.shopwizard.order.mapper.OrderProdMapper;
+import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import com.shopwizard.order.service.StockLedgerService;
 import com.shopwizard.ship.mapper.ReturnDirectMapper;
 import com.shopwizard.ship.model.ReturnDirect;
@@ -23,6 +25,7 @@ public class ReturnDirectService {
     private final OrderMapper orderMapper;
     private final ReturnRequestService returnRequestService;
     private final StockLedgerService stockLedgerService;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     public List<ReturnDirect> selectList(Map<String, Object> params) { return returnDirectMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return returnDirectMapper.selectCount(params); }
@@ -37,6 +40,9 @@ public class ReturnDirectService {
      * 헤더도 승격한다(countOrderStateDiffer).
      */
     public int update(Map<String, Object> params) {
+        // 헤더 → 라인 순으로 잠그고 라인이 반품요청 상태인지 확인한다. 0 = 처리 안 됨(이미 처리됐거나 상태가 바뀜).
+        OrderProd line = lineLock.lockHeaderAndLine(toInt(params.get("orderNo")), toInt(params.get("orderProdNo")));
+        if (line == null || !"반품요청".equals(line.getOrderState())) return 0;
         int updated = returnDirectMapper.update(params);
         if (updated > 0) {
             Map<String, Object> prodUpd = new HashMap<>();

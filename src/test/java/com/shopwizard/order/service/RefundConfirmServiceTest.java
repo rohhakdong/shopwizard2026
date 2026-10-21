@@ -40,6 +40,7 @@ class RefundConfirmServiceTest {
     private static final String PAYMENT_KEY = "pay-key-1";
 
     @Mock private OrderMapper orderMapper;
+    @Mock private OrderLineLock lineLock;
     @Mock private OrderProdMapper orderProdMapper;
     @Mock private OrderPayMapper orderPayMapper;
     @Mock private OrderPayLogTossMapper orderPayLogTossMapper;
@@ -67,7 +68,7 @@ class RefundConfirmServiceTest {
     }
 
     private void givenLine(OrderProd op) {
-        when(orderProdMapper.selectLineRaw(any())).thenReturn(op);
+        when(lineLock.lockHeaderAndLine(any(), any())).thenReturn(op);
     }
 
     @Test
@@ -83,7 +84,7 @@ class RefundConfirmServiceTest {
 
     @Test
     void 주문라인이_없으면_실패() throws Exception {
-        when(orderProdMapper.selectLineRaw(any())).thenReturn(null);
+        when(lineLock.lockHeaderAndLine(any(), any())).thenReturn(null);
 
         assertThat(service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자")).contains("찾을 수 없습니다");
     }

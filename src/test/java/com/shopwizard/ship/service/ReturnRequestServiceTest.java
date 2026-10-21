@@ -4,6 +4,7 @@ import com.shopwizard.order.mapper.OrderMapper;
 import com.shopwizard.order.mapper.OrderProdMapper;
 import com.shopwizard.order.model.OrderProd;
 import com.shopwizard.ship.mapper.ReturnDirectMapper;
+import com.shopwizard.order.service.OrderLineLock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 class ReturnRequestServiceTest {
 
     @Mock private ReturnDirectMapper returnDirectMapper;
+    @Mock private OrderLineLock lineLock;
     @Mock private OrderProdMapper orderProdMapper;
     @Mock private OrderMapper orderMapper;
     @InjectMocks private ReturnRequestService service;
@@ -34,12 +36,12 @@ class ReturnRequestServiceTest {
     private void givenLine(String state) {
         OrderProd op = new OrderProd();
         op.setOrderState(state);
-        when(orderProdMapper.selectLineRaw(any())).thenReturn(op);
+        when(lineLock.lockHeaderAndLine(any(), any())).thenReturn(op);
     }
 
     @Test
     void 주문라인이_없으면_아무것도_바꾸지_않는다() {
-        when(orderProdMapper.selectLineRaw(any())).thenReturn(null);
+        when(lineLock.lockHeaderAndLine(any(), any())).thenReturn(null);
 
         assertThat(service.requestOne(1, 1, "단순변심", "", "admin", "관리자")).contains("찾을 수 없습니다");
 

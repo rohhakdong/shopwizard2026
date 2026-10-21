@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 class OrderCancelServiceTest {
 
     @Mock private OrderMapper orderMapper;
+    @Mock private OrderLineLock lineLock;
     @Mock private OrderProdMapper orderProdMapper;
     @Mock private StockLedgerService stockLedgerService;
     @InjectMocks private OrderCancelService service;
@@ -30,12 +31,12 @@ class OrderCancelServiceTest {
     private void givenLine(String state) {
         OrderProd op = new OrderProd();
         op.setOrderState(state);
-        when(orderProdMapper.selectLineRaw(any())).thenReturn(op);
+        when(lineLock.lockHeaderAndLine(any(), any())).thenReturn(op);
     }
 
     @Test
     void 주문라인이_없으면_아무것도_바꾸지_않는다() {
-        when(orderProdMapper.selectLineRaw(any())).thenReturn(null);
+        when(lineLock.lockHeaderAndLine(any(), any())).thenReturn(null);
 
         assertThat(service.cancelOne(1, 1, "단순변심", "", "admin", "관리자")).contains("찾을 수 없습니다");
 

@@ -35,6 +35,7 @@ public class ProdMatchService {
     private final AdjustDetailMapper adjustDetailMapper;
     private final ProdService productProdService;   // com.shopwizard.product.service.ProdService (bean "prodService")
     private final StockLedgerService stockLedgerService;
+    private final OrderLineLock lineLock;   // 같은 묶음을 두 사람이 동시에 연결해도 라인마다 한 번만 처리되게 행 잠금
 
     public List<Map<String, Object>> selectUnmatched(Map<String, Object> params) {
         return orderProdMapper.selectListUnmatched(params);
@@ -79,11 +80,15 @@ public class ProdMatchService {
                 result.getSkipDetails().add("주문 " + line.getOrderNo() + "-" + line.getOrderProdNo() + " : 정산마감되어 수정 불가");
                 continue;
             }
-            Map<String, Object> raw = new HashMap<>();
-            raw.put("orderNo", line.getOrderNo());
-            raw.put("orderProdNo", line.getOrderProdNo());
-            OrderProd op = orderProdMapper.selectLineRaw(raw);
+            // 라인을 잠그고 아직 미매칭인지 다시 확인한다. 위 목록 조회 이후 다른 요청이 이미 연결했다면 건너뛴다 —
+            // 안 그러면 마지막 요청이 상품을 덮어쓰는데 재고 이력은 먼저 연결한 상품 기준으로 남아 어긋난다.
+            OrderProd op = lineLock.lockLine(line.getOrderNo(), line.getOrderProdNo());
             if (op == null) continue;
+            if (op.getProdCode() != null && !op.getProdCode().isBlank()) {
+                result.setSkipped(result.getSkipped() + 1);
+                result.getSkipDetails().add("주문 " + line.getOrderNo() + "-" + line.getOrderProdNo() + " : 이미 다른 상품에 연결됨");
+                continue;
+            }
 
             backfillLine(op, prod);
             op.setChangeId(nz(req.getRegistId()));
@@ -175,17 +180,13 @@ public class ProdMatchService {
 
     private void decreaseStock(OrderProd op, String prodCode, String registId) {
         Integer qty = op.getProdQty();
-        if (prodCode == null || prodCode.isBlank() || qty == null || qty <= 0) return;
-        try {
-            Map<String, Object> d = new HashMap<>();
-            d.put("prodCode", prodCode);
-            d.put("qty", qty);
-            productProdService.updateSupplyQty(d);
-            // 차감 이력(주문취소/반품 시 이 이력이 있는 라인만 정확히 1회 복원한다)
-            stockLedgerService.recordDeduction(op.getOrderNo(), op.getOrderProdNo(), prodCode, qty, registId);
-        } catch (Exception e) {
-            log.warn("상품 매칭 재고차감 실패 prodCode={} : {}", prodCode, e.getMessage());
-        }
+        // 차감 이력을 먼저 선점하고 선점했을 때만 차감한다(동시 처리로 재고만 두 번 줄어드는 것 방지). 실패는 삼키지 않아
+        // 이 묶음(한 트랜잭션)이 통째로 롤백된다 — "이력만 있고 차감은 없는" 상태를 남기지 않는다.
+        if (!stockLedgerService.claimDeduction(op.getOrderNo(), op.getOrderProdNo(), prodCode, qty, registId)) return;
+        Map<String, Object> d = new HashMap<>();
+        d.put("prodCode", prodCode);
+        d.put("qty", qty);
+        productProdService.updateSupplyQty(d);
     }
 
     private static String nz(String s) { return s == null ? "" : s.trim(); }

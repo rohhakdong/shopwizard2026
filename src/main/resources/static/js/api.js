@@ -28,6 +28,11 @@ const Api = (() => {
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       if (res.status === 403) throw new Error('이 기능을 사용할 권한이 없습니다.');   // 역할 권한 없음(서버 RoleAccessInterceptor)
+      if (res.status === 409) {   // 동시 수정 충돌 — 서버가 사유를 메시지로 준다
+        let msg = '';
+        try { msg = JSON.parse(text).message; } catch (_) {}
+        throw new Error(msg || '다른 사용자가 먼저 변경했습니다. 새로고침 후 다시 시도하세요.');
+      }
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
 
@@ -45,6 +50,11 @@ const Api = (() => {
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       if (res.status === 403) throw new Error('이 기능을 사용할 권한이 없습니다.');   // 역할 권한 없음(서버 RoleAccessInterceptor)
+      if (res.status === 409) {   // 동시 수정 충돌 — 서버가 사유를 메시지로 준다
+        let msg = '';
+        try { msg = JSON.parse(text).message; } catch (_) {}
+        throw new Error(msg || '다른 사용자가 먼저 변경했습니다. 새로고침 후 다시 시도하세요.');
+      }
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
     return res.json();

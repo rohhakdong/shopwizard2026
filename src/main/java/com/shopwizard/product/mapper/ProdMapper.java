@@ -24,6 +24,8 @@ public interface ProdMapper {
     int selectSupplyQty(Map<String, Object> params);
     int selectSupplyQtyItem(Map<String, Object> params);
     void updateSupplyQty(Map<String, Object> params);
+    /** 재고를 절대값으로 설정(낙관적 검사: SupplyQty <=> expectedQty). 영향 행수 반환. */
+    int setSupplyQty(Map<String, Object> params);
     void increaseSupplyQty(Map<String, Object> params);
     void updateSupplyQtyItem(Map<String, Object> params);
     void updateCatSupplyQty(Map<String, Object> params);

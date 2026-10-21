@@ -5,6 +5,8 @@ import com.shopwizard.ship.mapper.ShipDirectMapper;
 import com.shopwizard.ship.model.ShipDirectCheckRequest;
 import com.shopwizard.ship.model.ShipDirectIssueRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
+import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,11 +35,18 @@ import static org.mockito.Mockito.when;
 class ShipDirectServiceTest {
 
     @Mock private ShipDirectMapper shipDirectMapper;
+    @Mock private OrderLineLock lineLock;
     @Mock private OrderProdMapper orderProdMapper;
     @Mock private ShipDirectIssueService issueService;
     @Mock private ShipDirectCheckService checkService;
     @Mock private ShipDirectCompleteService completeService;
     @InjectMocks private ShipDirectService service;
+
+    private static OrderProd lineIn(String state) {
+        OrderProd op = new OrderProd();
+        op.setOrderState(state);
+        return op;
+    }
 
     private static Map<String, Object> invoice(String deliCompName, String invNo) {
         Map<String, Object> p = new HashMap<>();
@@ -54,6 +63,7 @@ class ShipDirectServiceTest {
 
     @Test
     void 송장입력은_클라이언트가_보낸_상태와_무관하게_배송시작으로_기록한다() {
+        when(lineLock.lockLine(7, 2)).thenReturn(lineIn("발주확인"));
         when(shipDirectMapper.updateInvoice(any())).thenReturn(1);
 
         assertThat(service.updateInvoice(invoice("대한통운", "  12345  "))).isEqualTo(1);
@@ -72,11 +82,22 @@ class ShipDirectServiceTest {
 
     @Test
     void 송장입력_0행이면_주문라인_상태를_바꾸지_않는다() {
+        when(lineLock.lockLine(7, 2)).thenReturn(lineIn("발주확인"));
         when(shipDirectMapper.updateInvoice(any())).thenReturn(0);
 
         assertThat(service.updateInvoice(invoice("대한통운", "12345"))).isZero();
 
         verify(orderProdMapper, never()).updateOrderState(any());
+    }
+
+    @Test
+    void 송장입력은_발주확인이_아닌_라인이면_배송_테이블과_라인을_건드리지_않고_0을_돌려준다() {
+        // 취소/환불이 먼저 커밋돼 라인이 주문취소가 됐다 — 송장입력이 그 라인을 배송시작으로 되돌리면 안 된다
+        when(lineLock.lockLine(7, 2)).thenReturn(lineIn("주문취소"));
+
+        assertThat(service.updateInvoice(invoice("대한통운", "12345"))).isZero();
+
+        verifyNoInteractions(shipDirectMapper, orderProdMapper);
     }
 
     @Test
@@ -86,7 +107,7 @@ class ShipDirectServiceTest {
                     .isInstanceOfSatisfying(ResponseStatusException.class,
                             e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
         }
-        verifyNoInteractions(shipDirectMapper, orderProdMapper);
+        verifyNoInteractions(shipDirectMapper, orderProdMapper, lineLock);
     }
 
     @Test

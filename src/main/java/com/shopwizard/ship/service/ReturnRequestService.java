@@ -3,6 +3,7 @@ package com.shopwizard.ship.service;
 import com.shopwizard.order.mapper.OrderMapper;
 import com.shopwizard.order.mapper.OrderProdMapper;
 import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import com.shopwizard.ship.mapper.ReturnDirectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,15 +31,14 @@ public class ReturnRequestService {
     private final ReturnDirectMapper returnDirectMapper;
     private final OrderProdMapper orderProdMapper;
     private final OrderMapper orderMapper;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 실패하면 사유 문자열을 반환한다(호출자가 건별 결과를 집계). */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public String requestOne(Integer orderNo, Integer orderProdNo, String returnReason, String returnReasonDetail,
                               String registId, String registName) {
-        Map<String, Object> raw = new HashMap<>();
-        raw.put("orderNo", orderNo);
-        raw.put("orderProdNo", orderProdNo);
-        OrderProd op = orderProdMapper.selectLineRaw(raw);
+        // 헤더 → 라인 순으로 잠근다: 같은 주문의 다른 라인 전이와 직렬화돼 헤더 승격 판단이 최신 상태를 본다.
+        OrderProd op = lineLock.lockHeaderAndLine(orderNo, orderProdNo);
         if (op == null) {
             return "주문라인을 찾을 수 없습니다.";
         }

@@ -1,6 +1,8 @@
 package com.shopwizard.ship.service;
 
 import com.shopwizard.order.mapper.OrderProdMapper;
+import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import com.shopwizard.ship.mapper.ShipDirectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,10 +30,16 @@ public class ShipDirectCompleteService {
 
     private final ShipDirectMapper shipDirectMapper;
     private final OrderProdMapper orderProdMapper;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 실패하면 사유 문자열을 반환한다(호출자가 건별 결과를 집계). */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public String completeOne(Integer orderNo, Integer orderProdNo, Integer orderChangeNo, String registId, String registName) {
+        OrderProd line = lineLock.lockLine(orderNo, orderProdNo);
+        if (line == null) return "주문라인을 찾을 수 없습니다.";
+        if (!"배송시작".equals(line.getOrderState())) {
+            return "배송시작 상태가 아니거나 이미 배송완료 처리된 건입니다. (현재 상태: " + line.getOrderState() + ")";
+        }
         String now = LocalDateTime.now().format(DT);
 
         Map<String, Object> upd = new HashMap<>();

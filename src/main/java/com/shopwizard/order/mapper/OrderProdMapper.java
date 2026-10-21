@@ -21,6 +21,8 @@ public interface OrderProdMapper {
     List<OrderProd> selectUnmatchedLinesByName(Map<String, Object> params);
     /** 조인 없이 주문상품 라인 1건 원본 조회. */
     OrderProd selectLineRaw(Map<String, Object> params);
+    /** selectLineRaw 의 잠금 변형(FOR UPDATE) — 상태 전이 서비스가 확인과 갱신 사이에 다른 요청이 끼어들지 못하게 쓴다. */
+    OrderProd selectLineForUpdate(Map<String, Object> params);
 
     List<Integer> selectOrderProdNoList(Integer orderNo);
     List<OrderProd> selectGuestOrderList(Map<String, Object> params);

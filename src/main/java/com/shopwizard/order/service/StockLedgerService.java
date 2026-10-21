@@ -25,13 +25,23 @@ public class StockLedgerService {
     private final OrderProdStockLogMapper stockLogMapper;
     private final ProdService productProdService;   // com.shopwizard.product.service.ProdService
 
-    /** 재고를 실제로 차감한 직후에 호출해 이력을 남긴다. 값이 부족하거나 이미 기록돼 있으면 아무것도 안 한다. */
-    public void recordDeduction(Integer orderNo, Integer orderProdNo, String prodCode, Integer qty, String registId) {
+    /**
+     * 차감 이력을 <b>먼저</b> 선점한다(ledger-first). 이 라인의 차감 이력을 이번 호출이 처음 만들었을 때만 true — true 일 때만
+     * 실제 재고({@code updateSupplyQty})를 차감하면 같은 라인을 두 요청이 동시에 처리해도 재고는 정확히 1번만 줄고
+     * 장부와 어긋나지 않는다(이력 PK 가 중복 선점을 막는다). 예전에는 재고를 먼저 줄이고 이력을 나중에(결과 무시) 남겨서,
+     * 동시 처리 시 재고만 두 번 줄고 장부는 1건만 남아 이후 취소 복원이 어긋났다.
+     *
+     * <p>호출자의 트랜잭션 안에서 선점과 차감을 함께 하고 예외는 삼키지 않는다 — "장부는 있는데 차감은 없는" 상태가
+     * 건 하나가 실패하는 것보다 나쁘다(나중에 차감한 적 없는 재고를 복원하게 된다).</p>
+     *
+     * @return 이번 호출이 이력을 선점했으면 true(→ 재고를 차감할 것). 값이 부족하거나 이미 선점돼 있으면 false(차감하지 않음).
+     */
+    public boolean claimDeduction(Integer orderNo, Integer orderProdNo, String prodCode, Integer qty, String registId) {
         if (orderNo == null || orderProdNo == null || prodCode == null || prodCode.isBlank()
                 || qty == null || qty <= 0) {
-            return;
+            return false;
         }
-        stockLogMapper.insertDeduct(orderNo, orderProdNo, prodCode, qty, registId);
+        return stockLogMapper.insertDeduct(orderNo, orderProdNo, prodCode, qty, registId) == 1;
     }
 
     /**

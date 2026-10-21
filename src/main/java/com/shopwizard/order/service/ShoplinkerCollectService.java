@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 샵링커 협력사 API에서 주문을 긁어와 샵피온 주문으로 생성한다.
@@ -51,7 +52,28 @@ public class ShoplinkerCollectService {
     private final SlnkTransService slnkTransService;
     private final ShoplinkerOrderWriter orderWriter;
 
+    /**
+     * 수집은 한 번에 하나만 돈다. DB 의 "진행" 행 검사만으로는 COUNT 와 INSERT 사이로 두 요청이 같이 통과하고, 서버가
+     * 도중에 죽으면 "진행" 행이 남아 이후 수집이 영구 차단됐다. 단일 인스턴스 배포를 전제로 JVM 락을 쓴다(다중 인스턴스가
+     * 되면 DB 락(GET_LOCK 등)으로 바꿀 것).
+     */
+    private final ReentrantLock collectLock = new ReentrantLock();
+
     public ShoplinkerCollectResult collect(ShoplinkerCollectRequest req) {
+        if (!collectLock.tryLock()) {
+            ShoplinkerCollectResult busy = new ShoplinkerCollectResult();
+            busy.setOk(false);
+            busy.setMessage("이미 진행 중인 수집이 있습니다. 완료 후 다시 시도하세요.");
+            return busy;
+        }
+        try {
+            return doCollect(req);
+        } finally {
+            collectLock.unlock();
+        }
+    }
+
+    private ShoplinkerCollectResult doCollect(ShoplinkerCollectRequest req) {
         ShoplinkerCollectResult result = new ShoplinkerCollectResult();
 
         if (req.getMalls() == null || req.getMalls().isEmpty()) {
@@ -159,6 +181,10 @@ public class ShoplinkerCollectService {
             }
             orderWriter.writeDetail(transId, no, code, "성공", "처리에 성공하였습니다.", registId, registName);
             return ShoplinkerOrderWriter.Outcome.SUCCESS;
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 같은 샵링커 주문코드를 다른 요청이 먼저 저장했다(스테이징 PK 충돌 → 이 주문 생성은 통째로 롤백됨).
+            orderWriter.writeDetail(transId, no, code, "중복", "이미 처리된 건과 중복입니다.", registId, registName);
+            return ShoplinkerOrderWriter.Outcome.DUPLICATE;
         } catch (Exception e) {
             log.error("샵링커 주문 생성 실패 code={}", code, e);
             orderWriter.writeDetail(transId, no, code, "오류", safeMsg(e), registId, registName);

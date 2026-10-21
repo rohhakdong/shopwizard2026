@@ -346,11 +346,19 @@
                           AND O.OrderReciptDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)) ]]>
             </if>
         </where>
+        ORDER BY OP.OrderNo, OP.OrderProdNo
     </select>
 
     <select id="selectLineRaw" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
         SELECT * FROM shopion.tOrdOrderProd
         WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo}
+    </select>
+
+    <!-- 상태 전이용 잠금 조회: 커밋될 때까지 같은 라인의 다른 전이/수정이 대기하고, 대기가 풀리면 최신 상태를 읽는다 -->
+    <select id="selectLineForUpdate" parameterType="map" resultType="com.shopwizard.order.model.OrderProd">
+        SELECT * FROM shopion.tOrdOrderProd
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo}
+        FOR UPDATE
     </select>
 
     <!-- 토스 웹훅 등에서 주문 전체 취소 시, 라인별로 상태를 갱신하기 위해 OrderProdNo 목록만 조회 -->

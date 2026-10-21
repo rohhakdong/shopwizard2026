@@ -178,7 +178,7 @@ const PageProductProd = (() => {
             ${esc(p.saleYn === 1 ? '판매중지' : '판매시작')}
           </button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="qty" data-code="${esc(p.prodCode)}" data-qty="${esc(p.supplyQty ?? 0)}">재고</button>
+            data-action="qty" data-code="${esc(p.prodCode)}" data-qty="${esc(p.supplyQty ?? 0)}" data-rawqty="${esc(p.supplyQty ?? '')}">재고</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
             data-action="del" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">삭제</button>
         </td>
@@ -251,7 +251,9 @@ const PageProductProd = (() => {
             const qty = parseInt(document.getElementById('qtyInput').value);
             if (isNaN(qty) || qty < 0) { UI.toast('올바른 수량을 입력하세요', 'error'); return; }
             try {
-              await Api.put('/product/prod/supplyqty', { prodCode: btn.dataset.code, supplyQty: qty });
+              // expectedQty: 화면이 보고 있던 값(재고 미관리=null). 그 사이 주문 차감 등으로 값이 바뀌었으면 서버가 409 로 막는다.
+              const expectedQty = btn.dataset.rawqty === '' ? null : parseInt(btn.dataset.rawqty);
+              await Api.put('/product/prod/supplyqty', { prodCode: btn.dataset.code, supplyQty: qty, expectedQty });
               UI.toast('재고수량이 변경되었습니다', 'success');
               loadList();
             } catch (e) { UI.toast(e.message, 'error'); }

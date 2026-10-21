@@ -34,6 +34,7 @@ class TossWebhookServiceTest {
     private static final int ORDER_NO = 2414999;
 
     @Mock private TossPaymentService tossPaymentService;
+    @Mock private OrderLineLock lineLock;
     @Mock private OrderPayMapper orderPayMapper;
     @Mock private OrderPayLogTossMapper orderPayLogTossMapper;
     @Mock private OrderService orderService;

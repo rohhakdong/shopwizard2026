@@ -31,6 +31,8 @@ public class ProdService {
     public int selectSupplyQty(Map<String, Object> params) { return prodMapper.selectSupplyQty(params); }
     public int selectSupplyQtyItem(Map<String, Object> params) { return prodMapper.selectSupplyQtyItem(params); }
     public void updateSupplyQty(Map<String, Object> params) { prodMapper.updateSupplyQty(params); }
+    /** 재고 절대값 설정 — 화면이 보던 값(expectedQty)이 그 사이 바뀌었으면 false. */
+    public boolean setSupplyQty(Map<String, Object> params) { return prodMapper.setSupplyQty(params) == 1; }
     public void increaseSupplyQty(Map<String, Object> params) { prodMapper.increaseSupplyQty(params); }
     public void updateSupplyQtyItem(Map<String, Object> params) { prodMapper.updateSupplyQtyItem(params); }
     public void updateCatSupplyQty(Map<String, Object> params) { prodMapper.updateCatSupplyQty(params); }

@@ -1,6 +1,8 @@
 package com.shopwizard.ship.service;
 
 import com.shopwizard.order.mapper.OrderProdMapper;
+import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.order.service.OrderLineLock;
 import com.shopwizard.ship.mapper.ShipDirectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,10 +30,18 @@ public class ShipDirectCheckService {
 
     private final ShipDirectMapper shipDirectMapper;
     private final OrderProdMapper orderProdMapper;
+    private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 실패하면 사유 문자열을 반환한다(호출자가 건별 결과를 집계). */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public String checkOne(Integer orderNo, Integer orderProdNo, Integer orderChangeNo, String registId, String registName) {
+        // 원본 라인을 잠그고 출고지시 상태인지 확인한다. 배송 테이블(tShpShipDirect)만 보면 이미 주문취소·환불된 라인도
+        // 계속 진행시키고, 뒤따르는 무조건 UPDATE 가 주문취소 라인을 발주확인으로 되살린다.
+        OrderProd line = lineLock.lockLine(orderNo, orderProdNo);
+        if (line == null) return "주문라인을 찾을 수 없습니다.";
+        if (!"출고지시".equals(line.getOrderState())) {
+            return "출고지시 상태가 아니거나 이미 발주확인 처리된 건입니다. (현재 상태: " + line.getOrderState() + ")";
+        }
         String now = LocalDateTime.now().format(DT);
 
         Map<String, Object> upd = new HashMap<>();
