@@ -40,12 +40,48 @@ const PageShipReturnRequest = (() => {
 
           <div class="search-bar" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
             <div class="form-group">
-              <label>주문번호</label>
-              <input class="input" id="rrOrderNo" placeholder="주문번호" style="width:100px">
+              <label>기간 유형</label>
+              <select class="input" id="rrDateType" style="width:100px">
+                <option value="S" selected>배송일자</option>
+                <option value="P">지불일자</option>
+                <option value="">주문일자</option>
+              </select>
             </div>
             <div class="form-group">
-              <label>주문자명</label>
-              <input class="input" id="rrOrderName" placeholder="주문자명" style="width:100px">
+              <label>시작일</label>
+              <input class="input" id="rrStartDate" type="date" style="width:140px">
+            </div>
+            <div class="form-group">
+              <label>종료일</label>
+              <input class="input" id="rrEndDate" type="date" style="width:140px">
+            </div>
+            <div class="form-group">
+              <label>채널</label>
+              <select class="input" id="rrChnlCode" style="width:150px"><option value="">전체</option></select>
+            </div>
+            <div class="form-group">
+              <label>상점</label>
+              <select class="input" id="rrShopCode" style="width:150px"><option value="">전체</option></select>
+            </div>
+            <div class="form-group">
+              <label>담당MD</label>
+              <select class="input" id="rrMngrMd" style="width:100px"><option value="">전체</option></select>
+            </div>
+            <div class="form-group">
+              <label>검색조건</label>
+              <select class="input" id="rrSearchCond" style="width:110px">
+                <option value="주문번호">주문번호</option>
+                <option value="주문자명">주문자명</option>
+                <option value="수취인명">수취인명</option>
+                <option value="상품명">상품명</option>
+                <option value="상품코드">상품코드</option>
+                <option value="전화번호">전화번호</option>
+                <option value="채널주문번호">채널주문번호</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>검색어</label>
+              <input class="input" id="rrSearchValue" placeholder="검색어" style="width:180px">
             </div>
             <button class="btn btn-primary" id="rrBtnSearch">검색</button>
           </div>
@@ -63,11 +99,20 @@ const PageShipReturnRequest = (() => {
       </div>`;
 
     document.getElementById('rrBtnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
-    document.getElementById('rrOrderNo').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
+    document.getElementById('rrSearchValue').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
     document.getElementById('rrBtnRequest').addEventListener('click', openRequestModal);
 
+    loadFilterOptions();
     loadReasonOptions();
     loadList();
+  }
+
+  // 채널/상점/담당MD 드롭다운. 로드가 늦거나 실패해도 목록은 동작한다.
+  async function loadFilterOptions() {
+    const { chnls, shops, mds } = await UI.loadFilterOptions(svcCode());
+    UI.fillOptions('rrChnlCode', chnls.map(c => ({ v: c.chnlCode, t: c.chnlName })));
+    UI.fillOptions('rrShopCode', shops.map(s => ({ v: s.shopCode, t: s.shopName })));
+    UI.fillOptions('rrMngrMd', mds.map(m => ({ v: m, t: m })));
   }
 
   async function loadReasonOptions() {
@@ -76,14 +121,37 @@ const PageShipReturnRequest = (() => {
     } catch (_) { reasonOptions = []; }
   }
 
+  // 검색조건 선택값 → 서버 파라미터(주문관리·출고지시 화면과 같은 매핑)
+  const SEARCH_PARAM = {
+    '주문번호':     'pOrderNo',
+    '주문자명':     'pOrderName',
+    '수취인명':     'pRecverName',
+    '상품명':       'pProdName',
+    '상품코드':     'pProdCode',
+    '전화번호':     'pPhoneNo',
+    '채널주문번호': 'pChnlOrderNo',
+  };
+
   function getParams() {
-    return {
-      pOrderState: '배송완료',
-      pOrderNo:    document.getElementById('rrOrderNo').value.trim(),
-      pOrderName:  document.getElementById('rrOrderName').value.trim(),
-      pSvcCode:    svcCode(),
-      pProdJoin:   'LEFT', // 존재하는 주문은 항상 목록에 나와야 함(order-list.js 와 동일 컨벤션)
+    const v = id => document.getElementById(id).value;
+    const params = {
+      pOrderState:    '배송완료',
+      // 기간은 선택 사항(빈 값이면 조건 없음 = 배송완료 주문 전체). 서버는 시작·종료가 둘 다 있을 때만 적용한다.
+      pOrderDateType: v('rrDateType'),
+      pStartDate:     v('rrStartDate'),
+      pEndDate:       v('rrEndDate'),
+      pChnlCode:      v('rrChnlCode'),
+      pShopCode:      v('rrShopCode'),
+      pMngrMd:        v('rrMngrMd'),
+      pSvcCode:       svcCode(),
+      pProdJoin:      'LEFT', // 존재하는 주문은 항상 목록에 나와야 함(order-list.js 와 동일 컨벤션)
     };
+    const val = v('rrSearchValue').trim();
+    if (val) {
+      const k = SEARCH_PARAM[v('rrSearchCond')];
+      if (k) params[k] = val;
+    }
+    return params;
   }
 
   async function loadList() {

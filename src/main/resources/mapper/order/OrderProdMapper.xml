@@ -730,6 +730,19 @@
         AND OrderState != #{orderState}
     </select>
 
+    <!-- 대시보드 "배송 대기": 서비스(svcCode) 범위의 배송 전 단계 라인 수를 상태별로 한 번에 센다.
+         목록 쿼리(orderProdWhere)와 같은 범위 조인(tOrdOrder → tCmpChnl.SvcCode)을 쓴다. -->
+    <select id="countByStates" parameterType="map" resultType="map">
+        SELECT OP.OrderState AS state, COUNT(*) AS cnt
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON OP.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON O.ChnlCode = Ch.ChnlCode
+        WHERE Ch.SvcCode = #{svcCode}
+        AND OP.OrderState IN
+        <foreach collection="states" item="s" open="(" close=")" separator=",">#{s}</foreach>
+        GROUP BY OP.OrderState
+    </select>
+
     <sql id="statsDateWhere">
         <where>
             <if test="orderState != null">

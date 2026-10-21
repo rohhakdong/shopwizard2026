@@ -375,7 +375,7 @@
         <div class="stat-grid">
           <div class="stat-card"><div class="icon-wrap">📋</div><div class="label">금일 주문</div><div class="value" id="stat-order">-</div><div class="sub">건</div></div>
           <div class="stat-card"><div class="icon-wrap">📦</div><div class="label">등록 상품</div><div class="value" id="stat-prod">-</div><div class="sub">개</div></div>
-          <div class="stat-card"><div class="icon-wrap">🚚</div><div class="label">배송 대기</div><div class="value" id="stat-ship">-</div><div class="sub">건</div></div>
+          <div class="stat-card"><div class="icon-wrap">🚚</div><div class="label">배송 대기</div><div class="value" id="stat-ship">-</div><div class="sub" id="stat-ship-sub">건</div></div>
           <div class="stat-card"><div class="icon-wrap">👤</div><div class="label">관리자</div><div class="value" id="stat-mngr">-</div><div class="sub">명</div></div>
         </div>
         <div class="card">
@@ -394,16 +394,27 @@
 
       // 통계 비동기 로드
       try {
-        const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const [orderCnt, prodCnt, mngrCnt] = await Promise.allSettled([
-          Api.get('/order/order/orderlist/count', { startDt: today, endDt: today }),
+        // 오늘 날짜는 로컬(KST) 기준으로 만든다 — toISOString() 은 UTC 라 새벽에는 어제 날짜가 된다.
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const [orderCnt, prodCnt, mngrCnt, shipCnt] = await Promise.allSettled([
+          // 금일 주문: 목록 쿼리가 읽는 파라미터(pOrderDateType/pStartDate/pEndDate)로 호출해야 날짜 조건이 걸린다.
+          Api.get('/order/order/orderlist/count', { pOrderDateType: '', pStartDate: today, pEndDate: today, pSvcCode: info.svcCode || '' }),
           Api.get('/product/prod/count', {}),
           Api.get('/authority/mngr/count', {}),
+          Api.get('/order/orderprod/state-count'),   // 배송 대기: 서버가 로그인 세션의 svcCode 로 집계
         ]);
         if (orderCnt.status === 'fulfilled') document.getElementById('stat-order').textContent = (orderCnt.value ?? 0).toLocaleString();
         if (prodCnt.status === 'fulfilled')  document.getElementById('stat-prod').textContent  = (prodCnt.value  ?? 0).toLocaleString();
         if (mngrCnt.status === 'fulfilled')  document.getElementById('stat-mngr').textContent  = (mngrCnt.value  ?? 0).toLocaleString();
-        document.getElementById('stat-ship').textContent = '-';
+        if (shipCnt.status === 'fulfilled' && shipCnt.value) {
+          const c = shipCnt.value;
+          const total = (c['지불완료'] || 0) + (c['출고지시'] || 0) + (c['발주확인'] || 0);
+          document.getElementById('stat-ship').textContent = total.toLocaleString();
+          document.getElementById('stat-ship-sub').textContent =
+            `지불 ${(c['지불완료'] || 0).toLocaleString()} · 출고지시 ${(c['출고지시'] || 0).toLocaleString()} · 발주확인 ${(c['발주확인'] || 0).toLocaleString()}`;
+        }
       } catch (_) {}
     }
 

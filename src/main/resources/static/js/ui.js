@@ -123,5 +123,30 @@ const UI = (() => {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
-  return { toast, modal, confirm, pagination, loading, esc };
+  // ── 목록 화면 공통 필터(채널/상점/담당MD) 옵션 ───────────────────────────
+  // 배송·반품 화면들이 같은 드롭다운을 쓴다. 옵션 로드가 실패해도 목록 자체는 동작해야 하므로
+  // 실패 시 빈 목록을 돌려준다.
+  async function loadFilterOptions(svcCode) {
+    let chnls = [], shops = [];
+    try {
+      const [c, s] = await Promise.all([
+        Api.get('/company/chnl', { pSvcCode: svcCode, pPageOffset: 0, pPageSize: 2000 }),
+        Api.get('/company/shop', {}),
+      ]);
+      chnls = (c || []).slice().sort((a, b) => (a.chnlName || '').localeCompare(b.chnlName || '', 'ko'));
+      shops = (s || []).filter(x => x.svcCode === svcCode)
+        .sort((a, b) => (a.shopName || '').localeCompare(b.shopName || '', 'ko'));
+    } catch (_) { /* 옵션 없이도 동작 */ }
+    const mds = [...new Set(shops.map(x => x.mngrMd).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+    return { chnls, shops, mds };
+  }
+
+  /** select 요소에 [{v, t}] 옵션을 추가한다(기존 "전체" 옵션 뒤에). 값/표시는 이스케이프된다. */
+  function fillOptions(selectId, opts) {
+    const el = document.getElementById(selectId);
+    if (!el) return;
+    el.insertAdjacentHTML('beforeend', opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join(''));
+  }
+
+  return { toast, modal, confirm, pagination, loading, esc, loadFilterOptions, fillOptions };
 })();

@@ -24,6 +24,7 @@ const PageShipDirectCheck = (() => {
   function won(n) { return (n == null || n === '') ? '' : Number(n).toLocaleString(); }
   function fmtDt(s) { return s ? String(s).replace('T', ' ').substring(0, 16) : ''; }
   function key(o) { return `${o.orderNo}:${o.orderProdNo}:${o.orderChangeNo || 0}`; }
+  function svcCode() { return (typeof info !== 'undefined' && info?.svcCode) || 'SHP001'; }
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
@@ -36,6 +37,26 @@ const PageShipDirectCheck = (() => {
         <div class="card-body" style="padding:12px 16px">
 
           <div class="search-bar" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
+            <div class="form-group">
+              <label>출고지시 시작일</label>
+              <input class="input" id="scStartDate" type="date" style="width:140px">
+            </div>
+            <div class="form-group">
+              <label>출고지시 종료일</label>
+              <input class="input" id="scEndDate" type="date" style="width:140px">
+            </div>
+            <div class="form-group">
+              <label>채널</label>
+              <select class="input" id="scChnlCode" style="width:150px"><option value="">전체</option></select>
+            </div>
+            <div class="form-group">
+              <label>상점</label>
+              <select class="input" id="scShopCode" style="width:150px"><option value="">전체</option></select>
+            </div>
+            <div class="form-group">
+              <label>담당MD</label>
+              <select class="input" id="scMngrMd" style="width:100px"><option value="">전체</option></select>
+            </div>
             <div class="form-group">
               <label>주문번호</label>
               <input class="input" id="scOrderNo" placeholder="주문번호" style="width:100px">
@@ -63,15 +84,31 @@ const PageShipDirectCheck = (() => {
     document.getElementById('scOrderNo').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
     document.getElementById('scBtnCheck').addEventListener('click', checkSelected);
 
+    loadFilterOptions();
     loadList();
   }
 
+  // 채널/상점/담당MD 드롭다운. 로드가 늦거나 실패해도 목록은 동작한다.
+  async function loadFilterOptions() {
+    const { chnls, shops, mds } = await UI.loadFilterOptions(svcCode());
+    UI.fillOptions('scChnlCode', chnls.map(c => ({ v: c.chnlCode, t: c.chnlName })));
+    UI.fillOptions('scShopCode', shops.map(s => ({ v: s.shopCode, t: s.shopName })));
+    UI.fillOptions('scMngrMd', mds.map(m => ({ v: m, t: m })));
+  }
+
   function getParams() {
+    const v = id => document.getElementById(id).value;
     return {
       pOrderState: '출고지시',
       pNotDependOnDate: 'Y',
-      pOrderNo: document.getElementById('scOrderNo').value.trim(),
-      pOrderName: document.getElementById('scOrderName').value.trim(),
+      // 기간은 선택 사항(빈 값이면 조건 없음 = 출고지시 대기 건 전체). 서버는 시작·종료가 둘 다 있을 때만 적용한다.
+      pShipDirectStartDate: v('scStartDate'),
+      pShipDirectEndDate:   v('scEndDate'),
+      pChnlCode:    v('scChnlCode'),
+      pShopCode:    v('scShopCode'),
+      pShopMDCode:  v('scMngrMd'),
+      pOrderNo:     v('scOrderNo').trim(),
+      pOrderName:   v('scOrderName').trim(),
     };
   }
 

@@ -58,6 +58,23 @@
             )
             ]]>
         </if>
+        <!-- 발주확인 화면: 출고지시일 기간 / 배송완료 화면: 배송시작(송장입력)일 기간. 둘 다 선택 사항(빈 값이면 조건 없음). -->
+        <if test="pShipDirectStartDate != null and pShipDirectStartDate != '' and pShipDirectEndDate != null and pShipDirectEndDate != ''">
+            <![CDATA[
+            AND (
+                SD.ShipDirectDate >= DATE_FORMAT(#{pShipDirectStartDate}, '%Y-%m-%d') AND
+                SD.ShipDirectDate <  ADDDATE(DATE_FORMAT(#{pShipDirectEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            )
+            ]]>
+        </if>
+        <if test="pShipCmpletStartDate != null and pShipCmpletStartDate != '' and pShipCmpletEndDate != null and pShipCmpletEndDate != ''">
+            <![CDATA[
+            AND (
+                SD.ShipCmpletDate >= DATE_FORMAT(#{pShipCmpletStartDate}, '%Y-%m-%d') AND
+                SD.ShipCmpletDate <  ADDDATE(DATE_FORMAT(#{pShipCmpletEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            )
+            ]]>
+        </if>
         <if test="pOrderNo != null and pOrderNo != ''">AND SD.OrderNo = #{pOrderNo}</if>
         <if test="pOrderProdNo != null and pOrderProdNo != ''">AND SD.OrderProdNo = #{pOrderProdNo}</if>
         <if test="pOrderChangeNo != null and pOrderChangeNo != ''">AND SD.OrderChangeNo = #{pOrderChangeNo}</if>
@@ -121,6 +138,23 @@
             AND (
                 SD.ShipCheckDate >= DATE_FORMAT(#{pShipCheckStartDate}, '%Y-%m-%d') AND
                 SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pShipCheckEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            )
+            ]]>
+        </if>
+        <!-- 발주확인 화면: 출고지시일 기간 / 배송완료 화면: 배송시작(송장입력)일 기간. 둘 다 선택 사항(빈 값이면 조건 없음). -->
+        <if test="pShipDirectStartDate != null and pShipDirectStartDate != '' and pShipDirectEndDate != null and pShipDirectEndDate != ''">
+            <![CDATA[
+            AND (
+                SD.ShipDirectDate >= DATE_FORMAT(#{pShipDirectStartDate}, '%Y-%m-%d') AND
+                SD.ShipDirectDate <  ADDDATE(DATE_FORMAT(#{pShipDirectEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            )
+            ]]>
+        </if>
+        <if test="pShipCmpletStartDate != null and pShipCmpletStartDate != '' and pShipCmpletEndDate != null and pShipCmpletEndDate != ''">
+            <![CDATA[
+            AND (
+                SD.ShipCmpletDate >= DATE_FORMAT(#{pShipCmpletStartDate}, '%Y-%m-%d') AND
+                SD.ShipCmpletDate <  ADDDATE(DATE_FORMAT(#{pShipCmpletEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
             )
             ]]>
         </if>

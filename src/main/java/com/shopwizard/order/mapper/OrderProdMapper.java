@@ -46,6 +46,8 @@ public interface OrderProdMapper {
     void updateInvoice(Map<String, Object> params);
     void updateCustConsltYn(Map<String, Object> params);
     int countOrderStateDiffer(Map<String, Object> params);
+    /** 서비스 범위의 라인 수를 상태별로 센 결과 — 각 행은 {state, cnt}. 대시보드 "배송 대기"용. */
+    List<Map<String, Object>> countByStates(Map<String, Object> params);
     List<OrderDetlStats> selectListStatisticsProd(Map<String, Object> params);
     List<OrderDetlStats> selectListStatisticsShop(Map<String, Object> params);
     List<OrderDetlStats> selectListStatisticsChnl(Map<String, Object> params);

@@ -30,6 +30,16 @@ public class OrderProdController {
     }
 
     /**
+     * 대시보드 "배송 대기" — 지불완료/출고지시/발주확인 라인 수. 어느 서비스의 건수인지는 요청 파라미터가 아니라
+     * 로그인한 관리자 세션의 svcCode 로만 정한다(클라이언트가 보낸 값은 쓰지 않는다).
+     */
+    @GetMapping("/state-count")
+    public Map<String, Integer> selectStateCount(HttpServletRequest request) {
+        Map<String, String> me = AuthSession.get(request, AuthSession.Type.MNGR);
+        return orderProdService.selectPendingShipCounts(me == null ? null : me.get("svcCode"));
+    }
+
+    /**
      * 고객 전용 (cust_id 인증, shop.html 마이페이지 "내 주문내역"). 관리자용 /list 와 경로를
      * 분리한 이유: AuthInterceptor("cust_id")가 이 경로에 걸리는데, 관리자 세션은 cust_id
      * 쿠키가 없어 /list 에 같이 걸어두면 관리자의 주문상세 조회가 401로 막히기 때문.
