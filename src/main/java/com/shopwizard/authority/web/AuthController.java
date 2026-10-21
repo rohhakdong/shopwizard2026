@@ -13,12 +13,16 @@ import com.shopwizard.company.service.WarehsService;
 import com.shopwizard.framework.auth.AuthSession;
 import com.shopwizard.framework.auth.AuthSession.Type;
 import com.shopwizard.framework.auth.LoginAttemptLimiter;
+import com.shopwizard.framework.auth.RolePermissionService;
+import com.shopwizard.framework.auth.RolePermissions;
+import com.shopwizard.framework.auth.ScreenRegistry;
 import com.shopwizard.profile.model.Cust;
 import com.shopwizard.profile.service.CustService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +48,11 @@ public class AuthController {
     private final ShopService shopService;
     private final WarehsService warehsService;
     private final LoginAttemptLimiter loginAttemptLimiter;
+    private final RolePermissionService rolePermissionService;
+
+    // off 이면 권한 검사를 하지 않으므로 사이드바도 전부 보여준다(screens 를 내려주지 않음).
+    @Value("${app.authz.mode:enforce}")
+    private String authzMode;
 
     // ─── 관리자 로그인 ──────────────────────────────────────────────
     @PostMapping("/mngr/login")
@@ -76,7 +85,20 @@ public class AuthController {
     // ─── 관리자 세션 확인 ────────────────────────────────────────────
     @GetMapping("/mngr/me")
     public ResponseEntity<Map<String, Object>> mngrMe(HttpServletRequest request) {
-        return me(Type.MNGR, request, "loginId", "name", "roleUid", "svcCode", "chnlCode", "compCode", "shopCode", "warehsCode");
+        ResponseEntity<Map<String, Object>> res =
+                me(Type.MNGR, request, "loginId", "name", "roleUid", "svcCode", "chnlCode", "compCode", "shopCode", "warehsCode");
+        Map<String, Object> body = res.getBody();
+        if (body != null && Boolean.TRUE.equals(body.get("authenticated")) && !"off".equalsIgnoreCase(authzMode.trim())) {
+            // 화면 key → "view"(조회만) | "write"(쓰기 가능). 사이드바 표시와 버튼 제어에 쓰며, 실제 차단은 RoleAccessInterceptor 가 한다.
+            RolePermissions perms = rolePermissionService.get(String.valueOf(body.get("roleUid")));
+            Map<String, String> screens = new HashMap<>();
+            for (ScreenRegistry.Screen sc : ScreenRegistry.SCREENS) {
+                if (perms.write().contains(sc.key())) screens.put(sc.key(), "write");
+                else if (perms.view().contains(sc.key())) screens.put(sc.key(), "view");
+            }
+            body.put("screens", screens);
+        }
+        return res;
     }
 
     // ─── 고객 로그인 ─────────────────────────────────────────────────

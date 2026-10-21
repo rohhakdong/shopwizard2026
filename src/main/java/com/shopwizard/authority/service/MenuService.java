@@ -2,6 +2,7 @@ package com.shopwizard.authority.service;
 
 import com.shopwizard.authority.mapper.MenuMapper;
 import com.shopwizard.authority.model.Menu;
+import com.shopwizard.framework.auth.RolePermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import java.util.Map;
 public class MenuService {
 
     private final MenuMapper menuMapper;
+    private final RolePermissionService rolePermissionService;   // 메뉴/기능이 바뀌면 역할 권한 캐시를 비운다
 
     public List<Menu> selectList(Map<String, Object> params) {
         return menuMapper.selectList(params);
@@ -29,16 +31,22 @@ public class MenuService {
 
     @Transactional
     public int insert(Menu menu) {
-        return menuMapper.insert(menu);
+        int n = menuMapper.insert(menu);
+        rolePermissionService.invalidate();
+        return n;
     }
 
     @Transactional
     public int update(Menu menu) {
-        return menuMapper.update(menu);
+        int n = menuMapper.update(menu);
+        rolePermissionService.invalidate();
+        return n;
     }
 
     @Transactional
     public int delete(Map<String, Object> params) {
-        return menuMapper.delete(params);
+        int n = menuMapper.delete(params);
+        rolePermissionService.invalidate();
+        return n;
     }
 }

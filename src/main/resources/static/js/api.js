@@ -27,6 +27,7 @@ const Api = (() => {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
+      if (res.status === 403) throw new Error('이 기능을 사용할 권한이 없습니다.');   // 역할 권한 없음(서버 RoleAccessInterceptor)
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
 
@@ -43,6 +44,7 @@ const Api = (() => {
     const res = await fetch(url, { method: 'POST', body: formData, credentials: 'same-origin' });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
+      if (res.status === 403) throw new Error('이 기능을 사용할 권한이 없습니다.');   // 역할 권한 없음(서버 RoleAccessInterceptor)
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
     return res.json();

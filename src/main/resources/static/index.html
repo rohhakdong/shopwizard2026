@@ -259,12 +259,15 @@
       nav.appendChild(dash);
 
       MENU.forEach(group => {
+        // 역할에 허용된 화면만 보인다(서버가 같은 규칙으로 API 를 막는다). 허용 화면이 없는 섹션은 통째로 숨긴다.
+        const items = group.items.filter(canView);
+        if (!items.length) return;
         const sec = document.createElement('div');
         sec.className = 'nav-section';
         sec.textContent = group.section;
         nav.appendChild(sec);
 
-        group.items.forEach(item => {
+        items.forEach(item => {
           const el = document.createElement('div');
           el.className = 'nav-item';
           el.dataset.key = item.key;
@@ -273,6 +276,11 @@
           nav.appendChild(el);
         });
       });
+    }
+
+    // 화면 접근 가능 여부 — 서버가 screens 를 내려주지 않으면(권한 검사 off) 전부 허용.
+    function canView(item) {
+      return !info || !info.screens || !!info.screens[item.key];
     }
 
     // ── 페이지 이동 ───────────────────────────────────────────────────
@@ -288,7 +296,9 @@
 
       const content = document.getElementById('page-content');
 
-      if (key === 'dashboard') {
+      if (key !== 'dashboard' && info && info.screens && !info.screens[key]) {
+        content.innerHTML = '<div class="card"><div class="card-body" style="padding:40px;text-align:center;color:var(--text-muted,#888)">이 화면을 볼 권한이 없습니다.</div></div>';
+      } else if (key === 'dashboard') {
         renderDashboard(content);
       } else if (key === 'code-constr') {
         PageCodeConstr.render(content);

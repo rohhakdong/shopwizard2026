@@ -29,6 +29,8 @@ const Auth = (() => {
       compCode:   me.compCode   || '',
       shopCode:   me.shopCode   || '',
       warehsCode: me.warehsCode || '',
+      // 화면 key → 'view' | 'write'. 서버가 내려주지 않으면(권한 검사 off) null — 전부 보여준다.
+      screens:    me.screens    || null,
     };
     return _info;
   }

@@ -19,6 +19,10 @@ const PageCatalogProd = (() => {
   // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
   const esc = UI.esc;
 
+  // 승인 권한(역할에 "상품승인" 메뉴가 있는지) — 서버가 승인/쇼핑몰 반영 API 를 403 으로 막고, 여기선 버튼만 숨긴다.
+  // index.html 의 전역 info.screens 를 쓰며, 서버가 screens 를 내려주지 않으면(권한 검사 off) 모두 허용.
+  const canApprove = () => typeof info === 'undefined' || !info || !info.screens || !!info.screens['catalog-prod-approve'];
+
   const PAGE_SIZE = 20;
   // 상품 등록 시 서버(ProdService.insert)가 항상 자동으로 만들어두는 "선택사항없음" 기본
   // 옵션(tCatProdItem)의 ItemCode. 이 프로젝트의 기존 데이터 전체에서 확립된 관례라 백엔드
@@ -82,7 +86,7 @@ const PageCatalogProd = (() => {
             <div style="font-size:12px;color:var(--text-muted)">
               총 <strong id="totalCountLabel">0</strong>건
             </div>
-            <button class="btn btn-primary" id="btnBulkApprov" style="padding:4px 10px;font-size:12px">선택 일괄승인</button>
+            <button class="btn btn-primary" id="btnBulkApprov" style="padding:4px 10px;font-size:12px;${canApprove() ? '' : 'display:none'}">선택 일괄승인</button>
           </div>
 
           <!-- 목록 -->
@@ -186,7 +190,7 @@ const PageCatalogProd = (() => {
     const rows = list.map(p => `
       <tr>
         <td style="text-align:center">
-          ${!p.approvDate ? `<input type="checkbox" class="row-check" data-code="${esc(p.prodCode)}">` : ''}
+          ${!p.approvDate && canApprove() ? `<input type="checkbox" class="row-check" data-code="${esc(p.prodCode)}">` : ''}
         </td>
         <td style="font-size:11px;${esc(ell)}">
           <code>${esc(p.prodCode || '')}</code><br>
@@ -217,7 +221,7 @@ const PageCatalogProd = (() => {
             data-action="edit" data-code="${esc(p.prodCode)}">수정</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
             data-action="option" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">옵션</button>
-          ${!p.approvDate ? `<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)"
+          ${!p.approvDate && canApprove() ? `<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)"
             data-action="approv" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">승인</button>` : ''}
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
             data-action="del" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">삭제</button>
