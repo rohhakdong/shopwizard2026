@@ -6,6 +6,9 @@
  */
 const PageCatalogOrigin = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -87,7 +90,7 @@ const PageCatalogOrigin = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -98,21 +101,21 @@ const PageCatalogOrigin = (() => {
 
     const rows = list.map(o => `
       <tr>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${o.originId}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${o.originKorName || ''}">${o.originKorName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${o.originEngName || ''}">${o.originEngName || ''}</div>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(o.originId)}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(o.originKorName || '')}">${esc(o.originKorName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(o.originEngName || '')}">${esc(o.originEngName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${o.nationName || ''}">${o.nationName || o.nationCode || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${o.originDesc || ''}">${o.originDesc || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(o.nationName || '')}">${esc(o.nationName || o.nationCode || '')}</td>
+        <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(o.originDesc || '')}">${esc(o.originDesc || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${o.state === 1 ? 'badge-green' : 'badge-gray'}">${o.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(o.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(o.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-id="${o.originId}">수정</button>
+            data-action="edit" data-id="${esc(o.originId)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-id="${o.originId}" data-name="${(o.originKorName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-id="${esc(o.originId)}" data-name="${esc(o.originKorName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -125,8 +128,8 @@ const PageCatalogOrigin = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">ID</th><th style="${thEll}">원산지명(한/영)</th><th style="${thEll}">국가</th>
-            <th style="${thEll}">설명</th><th style="${thEll};text-align:center">상태</th><th></th>
+            <th style="${esc(thEll)}">ID</th><th style="${esc(thEll)}">원산지명(한/영)</th><th style="${esc(thEll)}">국가</th>
+            <th style="${esc(thEll)}">설명</th><th style="${esc(thEll)};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -166,10 +169,10 @@ const PageCatalogOrigin = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -184,7 +187,7 @@ const PageCatalogOrigin = (() => {
     const v = origin || {};
 
     const nationOpts = nationOptions.map(n =>
-      `<option value="${n.constrVal}" ${v.nationCode === n.constrVal ? 'selected' : ''}>${n.constrValDesc || n.constrVal}</option>`
+      `<option value="${esc(n.constrVal)}" ${esc(v.nationCode === n.constrVal ? 'selected' : '')}>${esc(n.constrValDesc || n.constrVal)}</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -192,11 +195,11 @@ const PageCatalogOrigin = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>원산지명(한글) <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="orFOriginKorName" value="${v.originKorName || ''}">
+          <input class="input" id="orFOriginKorName" value="${esc(v.originKorName || '')}">
         </div>
         <div class="form-group">
           <label>원산지명(영문)</label>
-          <input class="input" id="orFOriginEngName" value="${v.originEngName || ''}">
+          <input class="input" id="orFOriginEngName" value="${esc(v.originEngName || '')}">
         </div>
         <div class="form-group">
           <label>국가</label>
@@ -208,17 +211,17 @@ const PageCatalogOrigin = (() => {
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="orFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="orFOriginDesc" value="${v.originDesc || ''}">
+          <input class="input" id="orFOriginDesc" value="${esc(v.originDesc || '')}">
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="orFRemark" value="${v.remark || ''}">
+          <input class="input" id="orFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

@@ -3,6 +3,9 @@
  */
 const PageAuthMngr = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   let roleList = [];   // 역할 목록 캐시
 
   // ── 진입점 ─────────────────────────────────────────────────────────
@@ -77,7 +80,7 @@ const PageAuthMngr = (() => {
       });
       renderTable(list);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -90,21 +93,21 @@ const PageAuthMngr = (() => {
 
     const rows = list.map(m => `
       <tr>
-        <td>${m.loginId || ''}</td>
-        <td>${m.mngrName || ''}</td>
-        <td>${m.roleName || ''}</td>
-        <td>${m.svcCode || ''}</td>
-        <td>${m.email || ''}</td>
-        <td>${m.mobileNo || ''}</td>
+        <td>${esc(m.loginId || '')}</td>
+        <td>${esc(m.mngrName || '')}</td>
+        <td>${esc(m.roleName || '')}</td>
+        <td>${esc(m.svcCode || '')}</td>
+        <td>${esc(m.email || '')}</td>
+        <td>${esc(m.mobileNo || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${m.state === 1 ? 'badge-green' : 'badge-gray'}">${m.state === 1 ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(m.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(m.state === 1 ? '사용' : '미사용')}</span>
         </td>
-        <td>${m.registDate ? m.registDate.substring(0, 10) : ''}</td>
+        <td>${esc(m.registDate ? m.registDate.substring(0, 10) : '')}</td>
         <td>
           <button class="btn btn-ghost" style="padding:3px 8px;font-size:12px"
-            data-action="edit" data-uid="${m.mngrUid}">수정</button>
+            data-action="edit" data-uid="${esc(m.mngrUid)}">수정</button>
           <button class="btn btn-danger" style="padding:3px 8px;font-size:12px"
-            data-action="del" data-uid="${m.mngrUid}" data-name="${m.mngrName}">삭제</button>
+            data-action="del" data-uid="${esc(m.mngrUid)}" data-name="${esc(m.mngrName)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -147,7 +150,7 @@ const PageAuthMngr = (() => {
   function openModal(m) {
     const isEdit = !!m;
     const roleOpts = roleList.map(r =>
-      `<option value="${r.roleUid}" ${m?.roleUid === r.roleUid ? 'selected' : ''}>${r.roleName}</option>`
+      `<option value="${esc(r.roleUid)}" ${esc(m?.roleUid === r.roleUid ? 'selected' : '')}>${esc(r.roleName)}</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -155,16 +158,16 @@ const PageAuthMngr = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>아이디 *</label>
-          <input class="input" id="mLoginId" value="${m?.loginId || ''}"
-            ${isEdit ? 'readonly style="background:#f8fafc"' : ''} placeholder="로그인 아이디">
+          <input class="input" id="mLoginId" value="${esc(m?.loginId || '')}"
+            ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')} placeholder="로그인 아이디">
         </div>
         <div class="form-group">
           <label>이름 *</label>
-          <input class="input" id="mMngrName" value="${m?.mngrName || ''}" placeholder="관리자 이름">
+          <input class="input" id="mMngrName" value="${esc(m?.mngrName || '')}" placeholder="관리자 이름">
         </div>
         <div class="form-group">
-          <label>비밀번호 ${isEdit ? '(변경 시 입력)' : '*'}</label>
-          <input class="input" type="password" id="mPasswd" placeholder="${isEdit ? '변경 시 입력' : '비밀번호'}">
+          <label>비밀번호 ${esc(isEdit ? '(변경 시 입력)' : '*')}</label>
+          <input class="input" type="password" id="mPasswd" placeholder="${esc(isEdit ? '변경 시 입력' : '비밀번호')}">
         </div>
         <div class="form-group">
           <label>역할 *</label>
@@ -175,26 +178,26 @@ const PageAuthMngr = (() => {
         </div>
         <div class="form-group">
           <label>이메일</label>
-          <input class="input" id="mEmail" value="${m?.email || ''}" placeholder="이메일">
+          <input class="input" id="mEmail" value="${esc(m?.email || '')}" placeholder="이메일">
         </div>
         <div class="form-group">
           <label>휴대폰</label>
-          <input class="input" id="mMobileNo" value="${m?.mobileNo || ''}" placeholder="010-0000-0000">
+          <input class="input" id="mMobileNo" value="${esc(m?.mobileNo || '')}" placeholder="010-0000-0000">
         </div>
         <div class="form-group">
           <label>직통번호</label>
-          <input class="input" id="mPhoneNo" value="${m?.phoneNo || ''}" placeholder="02-0000-0000">
+          <input class="input" id="mPhoneNo" value="${esc(m?.phoneNo || '')}" placeholder="02-0000-0000">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="1" ${m?.state === 1 || !m ? 'selected' : ''}>사용</option>
-            <option value="0" ${m?.state === 0 ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(m?.state === 1 || !m ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(m?.state === 0 ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${m?.remark || ''}">
+          <input class="input" id="mRemark" value="${esc(m?.remark || '')}">
         </div>
       </div>`;
 

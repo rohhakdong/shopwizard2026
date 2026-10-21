@@ -111,6 +111,7 @@
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/safe-html.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/pages/code-constr.js"></script>
   <script src="/js/pages/auth-mngr.js"></script>
@@ -382,12 +383,12 @@
           <div class="card-header">시스템 정보</div>
           <div class="card-body">
             <table><tbody>
-              <tr><th style="width:140px">로그인 계정</th><td>${info.loginId}</td></tr>
-              <tr><th>역할 UID</th><td>${info.roleUid || '-'}</td></tr>
-              <tr><th>서비스 코드</th><td>${info.svcCode || '-'}</td></tr>
-              <tr><th>채널 코드</th><td>${info.chnlCode || '-'}</td></tr>
-              <tr><th>회사 코드</th><td>${info.compCode || '-'}</td></tr>
-              <tr><th>쇼핑몰 코드</th><td>${info.shopCode || '-'}</td></tr>
+              <tr><th style="width:140px">로그인 계정</th><td>${UI.esc(info.loginId)}</td></tr>
+              <tr><th>역할 UID</th><td>${UI.esc(info.roleUid || '-')}</td></tr>
+              <tr><th>서비스 코드</th><td>${UI.esc(info.svcCode || '-')}</td></tr>
+              <tr><th>채널 코드</th><td>${UI.esc(info.chnlCode || '-')}</td></tr>
+              <tr><th>회사 코드</th><td>${UI.esc(info.compCode || '-')}</td></tr>
+              <tr><th>쇼핑몰 코드</th><td>${UI.esc(info.shopCode || '-')}</td></tr>
             </tbody></table>
           </div>
         </div>`;

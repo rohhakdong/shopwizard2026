@@ -6,6 +6,9 @@
  */
 const PageAdjustList = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -39,11 +42,11 @@ const PageAdjustList = (() => {
           <div class="search-bar" style="flex-wrap:wrap;gap:8px;align-items:flex-end">
             <div class="form-group">
               <label>정산 시작월</label>
-              <input class="input" id="ajStartDate" type="month" value="${prevMonth}" style="width:140px">
+              <input class="input" id="ajStartDate" type="month" value="${esc(prevMonth)}" style="width:140px">
             </div>
             <div class="form-group">
               <label>정산 종료월</label>
-              <input class="input" id="ajEndDate" type="month" value="${thisMonth}" style="width:140px">
+              <input class="input" id="ajEndDate" type="month" value="${esc(thisMonth)}" style="width:140px">
             </div>
             <div class="form-group">
               <label>정산번호</label>
@@ -106,7 +109,7 @@ const PageAdjustList = (() => {
       renderTable(list);
       renderPagination();
     } catch(e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -118,7 +121,7 @@ const PageAdjustList = (() => {
   function stateBadge(state) {
     const map = {1:'badge-blue', 2:'badge-green', 9:'badge-red'};
     const label = {1:'정산중', 2:'정산완료', 9:'취소'};
-    return `<span class="badge ${map[state]||'badge-gray'}">${label[state]||state||'-'}</span>`;
+    return `<span class="badge ${esc(map[state]||'badge-gray')}">${esc(label[state]||state||'-')}</span>`;
   }
 
   function renderTable(list) {
@@ -129,31 +132,31 @@ const PageAdjustList = (() => {
 
     const rows = list.map(a => `
       <tr>
-        <td style="font-size:12px;font-weight:600;${ell}">${a.adjustNo || ''}</td>
-        <td style="font-size:12px;${ell}">${fmtDate(a.adjustStartDate)} ~ ${fmtDate(a.adjustEndDate)}</td>
-        <td style="${ell}">
-          <div style="font-size:13px;font-weight:500;${ell}" title="${a.shopName || ''}">${a.shopName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${a.supplyName || ''}">${a.supplyName || ''}</div>
+        <td style="font-size:12px;font-weight:600;${esc(ell)}">${esc(a.adjustNo || '')}</td>
+        <td style="font-size:12px;${esc(ell)}">${esc(fmtDate(a.adjustStartDate))} ~ ${esc(fmtDate(a.adjustEndDate))}</td>
+        <td style="${esc(ell)}">
+          <div style="font-size:13px;font-weight:500;${esc(ell)}" title="${esc(a.shopName || '')}">${esc(a.shopName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(a.supplyName || '')}">${esc(a.supplyName || '')}</div>
         </td>
-        <td style="text-align:right;font-size:13px;font-weight:500;${ell}">
-          ${a.saleAmt != null ? a.saleAmt.toLocaleString()+'원' : '-'}
+        <td style="text-align:right;font-size:13px;font-weight:500;${esc(ell)}">
+          ${esc(a.saleAmt != null ? a.saleAmt.toLocaleString()+'원' : '-')}
         </td>
-        <td style="text-align:right;font-size:13px;${ell}">
-          ${a.buyAmt != null ? a.buyAmt.toLocaleString()+'원' : '-'}
+        <td style="text-align:right;font-size:13px;${esc(ell)}">
+          ${esc(a.buyAmt != null ? a.buyAmt.toLocaleString()+'원' : '-')}
         </td>
-        <td style="text-align:right;font-size:13px;${ell}">
-          ${a.prodMargin != null ? a.prodMargin.toLocaleString()+'원' : '-'}
+        <td style="text-align:right;font-size:13px;${esc(ell)}">
+          ${esc(a.prodMargin != null ? a.prodMargin.toLocaleString()+'원' : '-')}
         </td>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${fmtDate(a.payDate)}</td>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(fmtDate(a.payDate))}</td>
         <td style="text-align:center">${stateBadge(a.state)}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="detail"
-            data-no="${a.adjustNo}">상세</button>
+            data-no="${esc(a.adjustNo)}">상세</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)" data-action="taxinv"
-            data-no="${a.adjustNo}"
-            data-sect="${(a.taxinvSect||'').replace(/"/g,'&quot;')}"
-            data-memo="${(a.taxinvMemo||'').replace(/"/g,'&quot;')}"
-            data-state="${a.state||1}">세금계산서</button>
+            data-no="${esc(a.adjustNo)}"
+            data-sect="${esc(a.taxinvSect||'')}"
+            data-memo="${esc(a.taxinvMemo||'')}"
+            data-state="${esc(a.state||1)}">세금계산서</button>
         </td>
       </tr>`).join('');
 
@@ -171,12 +174,12 @@ const PageAdjustList = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">정산번호</th><th style="${thEll}">정산기간</th><th style="${thEll}">쇼핑몰 / 협력사</th>
-            <th style="${thEll};text-align:right">판매금액</th>
-            <th style="${thEll};text-align:right">매입금액</th>
-            <th style="${thEll};text-align:right">마진</th>
-            <th style="${thEll}">지급예정일</th>
-            <th style="${thEll};text-align:center">상태</th><th></th>
+            <th style="${esc(thEll)}">정산번호</th><th style="${esc(thEll)}">정산기간</th><th style="${esc(thEll)}">쇼핑몰 / 협력사</th>
+            <th style="${esc(thEll)};text-align:right">판매금액</th>
+            <th style="${esc(thEll)};text-align:right">매입금액</th>
+            <th style="${esc(thEll)};text-align:right">마진</th>
+            <th style="${esc(thEll)}">지급예정일</th>
+            <th style="${esc(thEll)};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -198,9 +201,9 @@ const PageAdjustList = (() => {
     const block = Math.floor((currentPage-1)/10);
     const start = block*10+1, end = Math.min(start+9, totalPages);
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
-    for (let p=start; p<=end; p++) html += `<button class="page-btn ${p===currentPage?'active':''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
+    for (let p=start; p<=end; p++) html += `<button class="page-btn ${esc(p===currentPage?'active':'')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
     el.innerHTML = html;
     el.querySelectorAll('.page-btn').forEach(btn => {
@@ -217,8 +220,8 @@ const PageAdjustList = (() => {
       const a = await Api.get('/adjust/adjust', { adjustNo });
       const row = (label, value) => `
         <div class="form-group">
-          <label>${label}</label>
-          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${value ?? '-'}</div>
+          <label>${esc(label)}</label>
+          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${esc(value ?? '-')}</div>
         </div>`;
       const amt = v => v != null ? v.toLocaleString()+'원' : null;
       body.innerHTML = `
@@ -243,7 +246,7 @@ const PageAdjustList = (() => {
           ${row('메모', a.taxinvMemo)}
         </div>`;
     } catch(e) {
-      body.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      body.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -254,23 +257,23 @@ const PageAdjustList = (() => {
         <div class="form-group">
           <label>세금계산서 구분</label>
           <select class="input" id="ajTaxinvSect">
-            <option value="" ${!btn.dataset.sect ? 'selected' : ''}>선택</option>
-            <option value="발행" ${btn.dataset.sect==='발행' ? 'selected' : ''}>발행</option>
-            <option value="미발행" ${btn.dataset.sect==='미발행' ? 'selected' : ''}>미발행</option>
-            <option value="면세" ${btn.dataset.sect==='면세' ? 'selected' : ''}>면세</option>
+            <option value="" ${esc(!btn.dataset.sect ? 'selected' : '')}>선택</option>
+            <option value="발행" ${esc(btn.dataset.sect==='발행' ? 'selected' : '')}>발행</option>
+            <option value="미발행" ${esc(btn.dataset.sect==='미발행' ? 'selected' : '')}>미발행</option>
+            <option value="면세" ${esc(btn.dataset.sect==='면세' ? 'selected' : '')}>면세</option>
           </select>
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="ajTaxinvState">
-            <option value="1" ${btn.dataset.state==='1' ? 'selected' : ''}>정산중</option>
-            <option value="2" ${btn.dataset.state==='2' ? 'selected' : ''}>정산완료</option>
-            <option value="9" ${btn.dataset.state==='9' ? 'selected' : ''}>취소</option>
+            <option value="1" ${esc(btn.dataset.state==='1' ? 'selected' : '')}>정산중</option>
+            <option value="2" ${esc(btn.dataset.state==='2' ? 'selected' : '')}>정산완료</option>
+            <option value="9" ${esc(btn.dataset.state==='9' ? 'selected' : '')}>취소</option>
           </select>
         </div>
         <div class="form-group full">
           <label>메모</label>
-          <input class="input" id="ajTaxinvMemo" value="${btn.dataset.memo}">
+          <input class="input" id="ajTaxinvMemo" value="${esc(btn.dataset.memo)}">
         </div>
       </div>`;
 

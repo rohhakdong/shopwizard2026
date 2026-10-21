@@ -6,6 +6,9 @@
  */
 const PageCompanyChnl = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -71,7 +74,7 @@ const PageCompanyChnl = (() => {
     loadOptions().then(() => {
       const sel = document.getElementById('chSaleCompCode');
       sel.innerHTML = '<option value="">전체</option>' + saleCompOptions.map(s =>
-        `<option value="${s.saleCompCode}">${s.saleCompName || '(판매사명 미입력)'} (${s.saleCompCode})</option>`
+        `<option value="${esc(s.saleCompCode)}">${esc(s.saleCompName || '(판매사명 미입력)')} (${esc(s.saleCompCode)})</option>`
       ).join('');
     });
     loadList();
@@ -119,7 +122,7 @@ const PageCompanyChnl = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -132,22 +135,22 @@ const PageCompanyChnl = (() => {
 
     const rows = list.map(c => `
       <tr>
-        <td style="font-size:11px;font-family:monospace;${ell}" title="${c.chnlCode || ''}">${c.chnlCode || ''}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${c.chnlName || ''}">${c.chnlName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${c.saleCompName || ''}">${c.saleCompName || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${esc(ell)}" title="${esc(c.chnlCode || '')}">${esc(c.chnlCode || '')}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(c.chnlName || '')}">${esc(c.chnlName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(c.saleCompName || '')}">${esc(c.saleCompName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${c.chnlPolicyName || ''}">${c.chnlPolicyName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${c.mngrName || ''}">${c.mngrName || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${c.mngrEmail || ''}">${c.mngrEmail || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.chnlPolicyName || '')}">${esc(c.chnlPolicyName || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.mngrName || '')}">${esc(c.mngrName || '')}</td>
+        <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(c.mngrEmail || '')}">${esc(c.mngrEmail || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${c.state === 1 ? 'badge-green' : 'badge-gray'}">${c.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(c.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(c.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${c.chnlCode}">수정</button>
+            data-action="edit" data-code="${esc(c.chnlCode)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${c.chnlCode}" data-name="${(c.chnlName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-code="${esc(c.chnlCode)}" data-name="${esc(c.chnlName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -165,9 +168,9 @@ const PageCompanyChnl = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">채널코드</th><th style="${thEll}">채널명 / 판매회사</th><th style="${thEll}">채널정책</th>
-            <th style="${thEll}">담당자</th><th style="${thEll}">담당자 이메일</th>
-            <th style="${thEll};text-align:center">상태</th><th></th>
+            <th style="${esc(thEll)}">채널코드</th><th style="${esc(thEll)}">채널명 / 판매회사</th><th style="${esc(thEll)}">채널정책</th>
+            <th style="${esc(thEll)}">담당자</th><th style="${esc(thEll)}">담당자 이메일</th>
+            <th style="${esc(thEll)};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -207,10 +210,10 @@ const PageCompanyChnl = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -225,7 +228,7 @@ const PageCompanyChnl = (() => {
     const v = chnl || {};
 
     const saleCompOpts = saleCompOptions.map(s =>
-      `<option value="${s.saleCompCode}" data-comp-code="${s.compCode || ''}" data-comp-name="${(s.comp?.compName || '').replace(/"/g,'&quot;')}" ${v.saleCompCode === s.saleCompCode ? 'selected' : ''}>${s.saleCompName} (${s.saleCompCode})</option>`
+      `<option value="${esc(s.saleCompCode)}" data-comp-code="${esc(s.compCode || '')}" data-comp-name="${esc(s.comp?.compName || '')}" ${esc(v.saleCompCode === s.saleCompCode ? 'selected' : '')}>${esc(s.saleCompName)} (${esc(s.saleCompCode)})</option>`
     ).join('');
     const selectedSaleComp = saleCompOptions.find(s => s.saleCompCode === v.saleCompCode);
 
@@ -234,7 +237,7 @@ const PageCompanyChnl = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>채널코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="chFChnlCode" value="${v.chnlCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="판매회사를 고르면 자동으로 채워집니다">
+          <input class="input" id="chFChnlCode" value="${esc(v.chnlCode || '')}" ${esc(!isNew ? 'readonly style="background:#f8fafc"' : '')} placeholder="판매회사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>판매회사 <span style="color:var(--danger)">*</span></label>
@@ -246,55 +249,55 @@ const PageCompanyChnl = (() => {
                자동으로 정해지므로 참고용으로만 표시한다 (공급사 선택 시 상점의 소속이
                자동으로 정해지는 것과 동일한 관계: 판매회사 → 소속 회사). -->
           <div id="chSelectedCompName" style="font-size:12px;color:var(--text-muted);margin-top:4px">
-            ${selectedSaleComp ? `소속 회사: ${selectedSaleComp.comp?.compName || '(회사명 미입력)'} (${selectedSaleComp.compCode || ''})` : ''}
+            ${esc(selectedSaleComp ? `소속 회사: ${selectedSaleComp.comp?.compName || '(회사명 미입력)'} (${selectedSaleComp.compCode || ''})` : '')}
           </div>
         </div>
         <div class="form-group full">
           <label>채널명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="chFChnlName" value="${v.chnlName || ''}">
+          <input class="input" id="chFChnlName" value="${esc(v.chnlName || '')}">
         </div>
         <div class="form-group full">
           <label>채널 URL</label>
-          <input class="input" id="chFChnlUrl" value="${v.chnlUrl || ''}">
+          <input class="input" id="chFChnlUrl" value="${esc(v.chnlUrl || '')}">
         </div>
         <div class="form-group">
           <label>담당자명</label>
-          <input class="input" id="chFMngrName" value="${v.mngrName || ''}">
+          <input class="input" id="chFMngrName" value="${esc(v.mngrName || '')}">
         </div>
         <div class="form-group">
           <label>담당 MD</label>
-          <input class="input" id="chFMngrMd" value="${v.mngrMd || ''}">
+          <input class="input" id="chFMngrMd" value="${esc(v.mngrMd || '')}">
         </div>
         <div class="form-group">
           <label>담당자 휴대폰</label>
-          <input class="input" id="chFMngrMobileNo" value="${v.mngrMobileNo || ''}">
+          <input class="input" id="chFMngrMobileNo" value="${esc(v.mngrMobileNo || '')}">
         </div>
         <div class="form-group">
           <label>담당자 전화번호</label>
-          <input class="input" id="chFMngrPhoneNo" value="${v.mngrPhoneNo || ''}">
+          <input class="input" id="chFMngrPhoneNo" value="${esc(v.mngrPhoneNo || '')}">
         </div>
         <div class="form-group full">
           <label>담당자 이메일</label>
-          <input class="input" id="chFMngrEmail" value="${v.mngrEmail || ''}">
+          <input class="input" id="chFMngrEmail" value="${esc(v.mngrEmail || '')}">
         </div>
         <div class="form-group">
           <label>운영시작일</label>
-          <input class="input" id="chFMallStartDate" type="date" value="${v.mallStartDate ? v.mallStartDate.substring(0,10) : ''}">
+          <input class="input" id="chFMallStartDate" type="date" value="${esc(v.mallStartDate ? v.mallStartDate.substring(0,10) : '')}">
         </div>
         <div class="form-group">
           <label>운영종료일</label>
-          <input class="input" id="chFMallEndDate" type="date" value="${v.mallEndDate ? v.mallEndDate.substring(0,10) : ''}">
+          <input class="input" id="chFMallEndDate" type="date" value="${esc(v.mallEndDate ? v.mallEndDate.substring(0,10) : '')}">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="chFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="chFRemark" value="${v.remark || ''}">
+          <input class="input" id="chFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

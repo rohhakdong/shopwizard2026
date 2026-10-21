@@ -3,6 +3,9 @@
  */
 const PageAuthSvc = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
     container.innerHTML = `
@@ -54,7 +57,7 @@ const PageAuthSvc = (() => {
       });
       renderTable(list);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -67,18 +70,18 @@ const PageAuthSvc = (() => {
 
     const rows = list.map(s => `
       <tr>
-        <td><code style="font-size:12px">${s.svcCode || ''}</code></td>
-        <td>${s.svcName || ''}</td>
-        <td>${s.remark || ''}</td>
+        <td><code style="font-size:12px">${esc(s.svcCode || '')}</code></td>
+        <td>${esc(s.svcName || '')}</td>
+        <td>${esc(s.remark || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${s.state === 1 ? 'badge-green' : 'badge-gray'}">${s.state === 1 ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(s.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(s.state === 1 ? '사용' : '미사용')}</span>
         </td>
-        <td>${s.registDate ? s.registDate.substring(0, 10) : ''}</td>
+        <td>${esc(s.registDate ? s.registDate.substring(0, 10) : '')}</td>
         <td>
           <button class="btn btn-ghost" style="padding:3px 8px;font-size:12px"
-            data-action="edit" data-code="${s.svcCode}">수정</button>
+            data-action="edit" data-code="${esc(s.svcCode)}">수정</button>
           <button class="btn btn-danger" style="padding:3px 8px;font-size:12px"
-            data-action="del" data-code="${s.svcCode}" data-name="${s.svcName}">삭제</button>
+            data-action="del" data-code="${esc(s.svcCode)}" data-name="${esc(s.svcName)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -123,23 +126,23 @@ const PageAuthSvc = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>서비스 코드 *</label>
-          <input class="input" id="mSvcCode" value="${s?.svcCode || ''}"
-            ${isEdit ? 'readonly style="background:#f8fafc"' : ''} placeholder="예) ANYB">
+          <input class="input" id="mSvcCode" value="${esc(s?.svcCode || '')}"
+            ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')} placeholder="예) ANYB">
         </div>
         <div class="form-group">
           <label>서비스명 *</label>
-          <input class="input" id="mSvcName" value="${s?.svcName || ''}" placeholder="서비스명">
+          <input class="input" id="mSvcName" value="${esc(s?.svcName || '')}" placeholder="서비스명">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="1" ${!s || s.state === 1 ? 'selected' : ''}>사용</option>
-            <option value="0" ${s?.state === 0 ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(!s || s.state === 1 ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(s?.state === 0 ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${s?.remark || ''}">
+          <input class="input" id="mRemark" value="${esc(s?.remark || '')}">
         </div>
       </div>`;
 

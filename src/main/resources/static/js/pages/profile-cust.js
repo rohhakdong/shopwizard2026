@@ -3,6 +3,9 @@
  */
 const PageProfileCust = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -110,7 +113,7 @@ const PageProfileCust = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -123,23 +126,23 @@ const PageProfileCust = (() => {
 
     const rows = list.map(c => `
       <tr>
-        <td style="font-size:12px;${ell}" title="${c.loginId || ''}">${c.loginId || ''}</td>
-        <td style="${ell}" title="${c.custName || ''}">${c.custName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${c.custGroupName || ''}">${c.custGroupName || '-'}</td>
-        <td style="font-size:12px;${ell}" title="${c.mobilePhoneNo || c.homePhoneNo || ''}">${c.mobilePhoneNo || c.homePhoneNo || ''}</td>
-        <td style="font-size:12px;${ell}" title="${c.email || ''}">${c.email || ''}</td>
-        <td style="font-size:11px;color:var(--text-muted);${ell}" title="${c.chnlName || ''}">${c.chnlName || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.loginId || '')}">${esc(c.loginId || '')}</td>
+        <td style="${esc(ell)}" title="${esc(c.custName || '')}">${esc(c.custName || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.custGroupName || '')}">${esc(c.custGroupName || '-')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.mobilePhoneNo || c.homePhoneNo || '')}">${esc(c.mobilePhoneNo || c.homePhoneNo || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.email || '')}">${esc(c.email || '')}</td>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(c.chnlName || '')}">${esc(c.chnlName || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${c.state === 1 ? 'badge-green' : 'badge-gray'}">${c.state === 1 ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(c.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(c.state === 1 ? '사용' : '미사용')}</span>
         </td>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${c.registDate ? c.registDate.substring(0, 10) : ''}</td>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(c.registDate ? c.registDate.substring(0, 10) : '')}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-custid="${c.custId}">수정</button>
+            data-action="edit" data-custid="${esc(c.custId)}">수정</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="passwd" data-custid="${c.custId}" data-name="${c.custName}">비번재설정</button>
+            data-action="passwd" data-custid="${esc(c.custId)}" data-name="${esc(c.custName)}">비번재설정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-custid="${c.custId}" data-name="${c.custName}">삭제</button>
+            data-action="del" data-custid="${esc(c.custId)}" data-name="${esc(c.custName)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -157,9 +160,9 @@ const PageProfileCust = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">아이디</th><th style="${thEll}">이름</th><th style="${thEll}">등급</th><th style="${thEll}">연락처</th>
-            <th style="${thEll}">이메일</th><th style="${thEll}">가입채널</th><th style="${thEll};text-align:center">상태</th>
-            <th style="${thEll}">가입일</th><th></th>
+            <th style="${esc(thEll)}">아이디</th><th style="${esc(thEll)}">이름</th><th style="${esc(thEll)}">등급</th><th style="${esc(thEll)}">연락처</th>
+            <th style="${esc(thEll)}">이메일</th><th style="${esc(thEll)}">가입채널</th><th style="${esc(thEll)};text-align:center">상태</th>
+            <th style="${esc(thEll)}">가입일</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -203,10 +206,10 @@ const PageProfileCust = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start - 1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start - 1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end + 1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end + 1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -222,7 +225,7 @@ const PageProfileCust = (() => {
   function openModal(c) {
     const isEdit = !!c;
     const groupOpts = custGroupList.map(g =>
-      `<option value="${g.custGroupCode}" ${c?.custGroupCode === g.custGroupCode ? 'selected' : ''}>${g.custGroupName}</option>`
+      `<option value="${esc(g.custGroupCode)}" ${esc(c?.custGroupCode === g.custGroupCode ? 'selected' : '')}>${esc(g.custGroupName)}</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -230,12 +233,12 @@ const PageProfileCust = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>아이디 *</label>
-          <input class="input" id="mLoginId" value="${c?.loginId || ''}"
-            ${isEdit ? 'readonly style="background:#f8fafc"' : ''} placeholder="로그인 아이디">
+          <input class="input" id="mLoginId" value="${esc(c?.loginId || '')}"
+            ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')} placeholder="로그인 아이디">
         </div>
         <div class="form-group">
           <label>이름 *</label>
-          <input class="input" id="mCustName" value="${c?.custName || ''}" placeholder="회원 이름">
+          <input class="input" id="mCustName" value="${esc(c?.custName || '')}" placeholder="회원 이름">
         </div>
         ${!isEdit ? `
         <div class="form-group">
@@ -251,33 +254,33 @@ const PageProfileCust = (() => {
         </div>
         <div class="form-group">
           <label>이메일</label>
-          <input class="input" id="mEmail" value="${c?.email || ''}" placeholder="이메일">
+          <input class="input" id="mEmail" value="${esc(c?.email || '')}" placeholder="이메일">
         </div>
         <div class="form-group">
           <label>휴대전화</label>
-          <input class="input" id="mMobilePhoneNo" value="${c?.mobilePhoneNo || ''}" placeholder="010-0000-0000">
+          <input class="input" id="mMobilePhoneNo" value="${esc(c?.mobilePhoneNo || '')}" placeholder="010-0000-0000">
         </div>
         <div class="form-group">
           <label>자택전화</label>
-          <input class="input" id="mHomePhoneNo" value="${c?.homePhoneNo || ''}" placeholder="02-0000-0000">
+          <input class="input" id="mHomePhoneNo" value="${esc(c?.homePhoneNo || '')}" placeholder="02-0000-0000">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="1" ${c?.state === 1 || !c ? 'selected' : ''}>사용</option>
-            <option value="0" ${c?.state === 0 ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(c?.state === 1 || !c ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(c?.state === 0 ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group">
           <label>우편번호</label>
           <div style="display:flex;gap:8px">
-            <input class="input" id="mZipcode" value="${c?.zipcode || ''}" placeholder="우편번호" readonly style="background:#f8fafc">
+            <input class="input" id="mZipcode" value="${esc(c?.zipcode || '')}" placeholder="우편번호" readonly style="background:#f8fafc">
             <button type="button" class="btn" id="mAddrSearchBtn">주소 검색</button>
           </div>
         </div>
         <div class="form-group full">
           <label>주소</label>
-          <input class="input" id="mAddr1" value="${c?.addr1 || ''}" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
+          <input class="input" id="mAddr1" value="${esc(c?.addr1 || '')}" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
         </div>
         <div class="form-group full" id="mPostcodeWrap" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -288,11 +291,11 @@ const PageProfileCust = (() => {
         </div>
         <div class="form-group full">
           <label>상세주소</label>
-          <input class="input" id="mAddr2" value="${c?.addr2 || ''}" placeholder="상세 주소">
+          <input class="input" id="mAddr2" value="${esc(c?.addr2 || '')}" placeholder="상세 주소">
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${c?.remark || ''}">
+          <input class="input" id="mRemark" value="${esc(c?.remark || '')}">
         </div>
       </div>`;
 
@@ -364,7 +367,7 @@ const PageProfileCust = (() => {
     body.innerHTML = `
       <div class="form-grid">
         <div class="form-group full">
-          <label>${custName} 님의 새 비밀번호 *</label>
+          <label>${esc(custName)} 님의 새 비밀번호 *</label>
           <input class="input" type="password" id="mNewPasswd" placeholder="새 비밀번호">
         </div>
       </div>`;

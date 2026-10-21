@@ -6,6 +6,9 @@
  */
 const PageCompanyDeli = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -91,7 +94,7 @@ const PageCompanyDeli = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -104,21 +107,21 @@ const PageCompanyDeli = (() => {
 
     const rows = list.map(d => `
       <tr>
-        <td style="font-size:11px;font-family:monospace;${ell}" title="${d.deliCompCode ?? ''}">${d.deliCompCode ?? ''}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${d.deliCompName || ''}">${d.deliCompName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${d.deliCompDesc || ''}">${d.deliCompDesc || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${esc(ell)}" title="${esc(d.deliCompCode ?? '')}">${esc(d.deliCompCode ?? '')}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(d.deliCompName || '')}">${esc(d.deliCompName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(d.deliCompDesc || '')}">${esc(d.deliCompDesc || '')}</div>
         </td>
-        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${d.linkUrl || ''}">${d.linkUrl || ''}</td>
-        <td style="font-size:12px;${ell}" title="${d.invNoVar || ''}">${d.invNoVar || ''}</td>
+        <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(d.linkUrl || '')}">${esc(d.linkUrl || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(d.invNoVar || '')}">${esc(d.invNoVar || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${d.state === 1 ? 'badge-green' : 'badge-gray'}">${d.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(d.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(d.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${d.deliCompCode}">수정</button>
+            data-action="edit" data-code="${esc(d.deliCompCode)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${d.deliCompCode}" data-name="${(d.deliCompName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-code="${esc(d.deliCompCode)}" data-name="${esc(d.deliCompName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -135,8 +138,8 @@ const PageCompanyDeli = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">코드</th><th style="${thEll}">택배회사명 / 설명</th><th style="${thEll}">배송조회 URL</th>
-            <th style="${thEll}">운송장번호 형식</th><th style="${thEll};text-align:center">상태</th><th></th>
+            <th style="${esc(thEll)}">코드</th><th style="${esc(thEll)}">택배회사명 / 설명</th><th style="${esc(thEll)}">배송조회 URL</th>
+            <th style="${esc(thEll)}">운송장번호 형식</th><th style="${esc(thEll)};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -176,10 +179,10 @@ const PageCompanyDeli = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -199,34 +202,34 @@ const PageCompanyDeli = (() => {
         ${!isNew ? `
         <div class="form-group">
           <label>택배회사코드</label>
-          <input class="input" value="${v.deliCompCode ?? ''}" readonly style="background:#f8fafc">
+          <input class="input" value="${esc(v.deliCompCode ?? '')}" readonly style="background:#f8fafc">
         </div>` : ''}
         <div class="form-group full">
           <label>택배회사명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="dlFDeliCompName" value="${v.deliCompName || ''}">
+          <input class="input" id="dlFDeliCompName" value="${esc(v.deliCompName || '')}">
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="dlFDeliCompDesc" value="${v.deliCompDesc || ''}">
+          <input class="input" id="dlFDeliCompDesc" value="${esc(v.deliCompDesc || '')}">
         </div>
         <div class="form-group full">
           <label>배송조회 URL</label>
-          <input class="input" id="dlFLinkUrl" value="${v.linkUrl || ''}" placeholder="운송장번호를 붙여 조회하는 URL">
+          <input class="input" id="dlFLinkUrl" value="${esc(v.linkUrl || '')}" placeholder="운송장번호를 붙여 조회하는 URL">
         </div>
         <div class="form-group full">
           <label>운송장번호 형식</label>
-          <input class="input" id="dlFInvNoVar" value="${v.invNoVar || ''}">
+          <input class="input" id="dlFInvNoVar" value="${esc(v.invNoVar || '')}">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="dlFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="dlFRemark" value="${v.remark || ''}">
+          <input class="input" id="dlFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

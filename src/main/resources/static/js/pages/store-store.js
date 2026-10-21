@@ -5,6 +5,9 @@
  */
 const PageStoreStore = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   let chnlList = [];
   let selectedChnlCode = '';
 
@@ -84,7 +87,7 @@ const PageStoreStore = (() => {
 
       renderTable(list);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -109,34 +112,34 @@ const PageStoreStore = (() => {
 
       return `
         <tr>
-          <td style="font-size:12px;padding-left:${8 + indent}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.storeName || ''}">
-            ${'└'.repeat(s.storeLevel > 0 ? 1 : 0)}
-            <strong>${lastName || s.storeName}</strong>
-            ${path ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${path}">${path}</div>` : ''}
+          <td style="font-size:12px;padding-left:${esc(8 + indent)}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.storeName || '')}">
+            ${esc('└'.repeat(s.storeLevel > 0 ? 1 : 0))}
+            <strong>${esc(lastName || s.storeName)}</strong>
+            ${path ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(path)}">${esc(path)}</div>` : ''}
           </td>
-          <td style="font-size:11px;font-family:monospace;${ell}" title="${s.storeCode}">${s.storeCode}</td>
-          <td style="font-size:12px;color:var(--text-muted);${ell}" title="${s.storeDesc || ''}">${s.storeDesc || ''}</td>
-          <td style="text-align:center;font-size:12px">${s.storeLevel ?? ''}</td>
-          <td style="text-align:center;font-size:12px">${s.storeSeq ?? ''}</td>
+          <td style="font-size:11px;font-family:monospace;${esc(ell)}" title="${esc(s.storeCode)}">${esc(s.storeCode)}</td>
+          <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(s.storeDesc || '')}">${esc(s.storeDesc || '')}</td>
+          <td style="text-align:center;font-size:12px">${esc(s.storeLevel ?? '')}</td>
+          <td style="text-align:center;font-size:12px">${esc(s.storeSeq ?? '')}</td>
           <td style="text-align:center">
-            <span class="badge ${s.state === 1 ? 'badge-green' : 'badge-gray'}">${s.state === 1 ? '사용' : '미사용'}</span>
+            <span class="badge ${esc(s.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(s.state === 1 ? '사용' : '미사용')}</span>
           </td>
           <td style="white-space:nowrap">
             <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
               data-action="edit"
-              data-chnl="${s.chnlCode}"
-              data-code="${s.storeCode}"
-              data-name="${(s.storeName || '').replace(/"/g, '&quot;')}"
-              data-desc="${(s.storeDesc || '').replace(/"/g, '&quot;')}"
-              data-seq="${s.storeSeq ?? ''}"
-              data-adult="${s.adultYn ?? 0}"
-              data-state="${s.state ?? 1}"
+              data-chnl="${esc(s.chnlCode)}"
+              data-code="${esc(s.storeCode)}"
+              data-name="${esc(s.storeName || '')}"
+              data-desc="${esc(s.storeDesc || '')}"
+              data-seq="${esc(s.storeSeq ?? '')}"
+              data-adult="${esc(s.adultYn ?? 0)}"
+              data-state="${esc(s.state ?? 1)}"
               >수정</button>
             <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
               data-action="del"
-              data-chnl="${s.chnlCode}"
-              data-code="${s.storeCode}"
-              data-name="${(s.storeName || '').replace(/"/g, '&quot;')}"
+              data-chnl="${esc(s.chnlCode)}"
+              data-code="${esc(s.storeCode)}"
+              data-name="${esc(s.storeName || '')}"
               >삭제</button>
           </td>
         </tr>`;
@@ -156,10 +159,10 @@ const PageStoreStore = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">스토어명</th><th style="${thEll}">스토어코드</th><th style="${thEll}">설명</th>
-            <th style="${thEll};text-align:center">레벨</th>
-            <th style="${thEll};text-align:center">순서</th>
-            <th style="${thEll};text-align:center">상태</th>
+            <th style="${esc(thEll)}">스토어명</th><th style="${esc(thEll)}">스토어코드</th><th style="${esc(thEll)}">설명</th>
+            <th style="${esc(thEll)};text-align:center">레벨</th>
+            <th style="${esc(thEll)};text-align:center">순서</th>
+            <th style="${esc(thEll)};text-align:center">상태</th>
             <th></th>
           </tr>
         </thead>
@@ -196,28 +199,28 @@ const PageStoreStore = (() => {
       <div class="form-grid">
         <div class="form-group full">
           <label>스토어명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="stEditName" value="${btn.dataset.name}">
+          <input class="input" id="stEditName" value="${esc(btn.dataset.name)}">
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="stEditDesc" value="${btn.dataset.desc}">
+          <input class="input" id="stEditDesc" value="${esc(btn.dataset.desc)}">
         </div>
         <div class="form-group">
           <label>순서</label>
-          <input class="input" id="stEditSeq" type="number" value="${btn.dataset.seq}" style="width:80px">
+          <input class="input" id="stEditSeq" type="number" value="${esc(btn.dataset.seq)}" style="width:80px">
         </div>
         <div class="form-group">
           <label>성인여부</label>
           <select class="input" id="stEditAdult">
-            <option value="0" ${btn.dataset.adult === '0' ? 'selected' : ''}>아니오</option>
-            <option value="1" ${btn.dataset.adult === '1' ? 'selected' : ''}>예</option>
+            <option value="0" ${esc(btn.dataset.adult === '0' ? 'selected' : '')}>아니오</option>
+            <option value="1" ${esc(btn.dataset.adult === '1' ? 'selected' : '')}>예</option>
           </select>
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="stEditState">
-            <option value="1" ${btn.dataset.state === '1' ? 'selected' : ''}>사용</option>
-            <option value="0" ${btn.dataset.state === '0' ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(btn.dataset.state === '1' ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(btn.dataset.state === '0' ? 'selected' : '')}>미사용</option>
           </select>
         </div>
       </div>`;

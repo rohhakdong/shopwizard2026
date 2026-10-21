@@ -5,6 +5,9 @@
  */
 const PageCatalogBrand = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -56,7 +59,7 @@ const PageCatalogBrand = (() => {
     loadSvcOptions().then(() => {
       const sel = document.getElementById('brSvcCode');
       sel.innerHTML = '<option value="">전체</option>' + svcOptions.map(s =>
-        `<option value="${s.svcCode}">${s.svcName || s.svcCode} (${s.svcCode})</option>`
+        `<option value="${esc(s.svcCode)}">${esc(s.svcName || s.svcCode)} (${esc(s.svcCode)})</option>`
       ).join('');
     });
     loadList();
@@ -99,7 +102,7 @@ const PageCatalogBrand = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -110,21 +113,21 @@ const PageCatalogBrand = (() => {
 
     const rows = list.map(b => `
       <tr>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${b.brandId}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${b.brandKorName || ''}">${b.brandKorName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${b.brandEngName || ''}">${b.brandEngName || ''}</div>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(b.brandId)}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(b.brandKorName || '')}">${esc(b.brandKorName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(b.brandEngName || '')}">${esc(b.brandEngName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${b.compKorName || ''}">${b.compKorName || ''}</td>
-        <td style="font-size:12px;font-family:monospace;${ell}" title="${b.svcCode || ''}">${b.svcCode || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(b.compKorName || '')}">${esc(b.compKorName || '')}</td>
+        <td style="font-size:12px;font-family:monospace;${esc(ell)}" title="${esc(b.svcCode || '')}">${esc(b.svcCode || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${b.state === 1 ? 'badge-green' : 'badge-gray'}">${b.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(b.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(b.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-id="${b.brandId}">수정</button>
+            data-action="edit" data-id="${esc(b.brandId)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-id="${b.brandId}" data-name="${(b.brandKorName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-id="${esc(b.brandId)}" data-name="${esc(b.brandKorName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -141,8 +144,8 @@ const PageCatalogBrand = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">ID</th><th style="${thEll}">브랜드명(한/영)</th><th style="${thEll}">회사명</th>
-            <th style="${thEll}">서비스</th><th style="${thEll};text-align:center">상태</th><th></th>
+            <th style="${esc(thEll)}">ID</th><th style="${esc(thEll)}">브랜드명(한/영)</th><th style="${esc(thEll)}">회사명</th>
+            <th style="${esc(thEll)}">서비스</th><th style="${esc(thEll)};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -182,10 +185,10 @@ const PageCatalogBrand = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -200,7 +203,7 @@ const PageCatalogBrand = (() => {
     const v = brand || {};
 
     const svcOpts = svcOptions.map(s =>
-      `<option value="${s.svcCode}" ${v.svcCode === s.svcCode ? 'selected' : ''}>${s.svcName || s.svcCode} (${s.svcCode})</option>`
+      `<option value="${esc(s.svcCode)}" ${esc(v.svcCode === s.svcCode ? 'selected' : '')}>${esc(s.svcName || s.svcCode)} (${esc(s.svcCode)})</option>`
     ).join('');
     const defaultSvc = (typeof info !== 'undefined' && info?.svcCode) || '';
 
@@ -217,33 +220,33 @@ const PageCatalogBrand = (() => {
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="brFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group">
           <label>브랜드명(한글) <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="brFBrandKorName" value="${v.brandKorName || ''}">
+          <input class="input" id="brFBrandKorName" value="${esc(v.brandKorName || '')}">
         </div>
         <div class="form-group">
           <label>브랜드명(영문)</label>
-          <input class="input" id="brFBrandEngName" value="${v.brandEngName || ''}">
+          <input class="input" id="brFBrandEngName" value="${esc(v.brandEngName || '')}">
         </div>
         <div class="form-group">
           <label>회사명(한글)</label>
-          <input class="input" id="brFCompKorName" value="${v.compKorName || ''}">
+          <input class="input" id="brFCompKorName" value="${esc(v.compKorName || '')}">
         </div>
         <div class="form-group">
           <label>회사명(영문)</label>
-          <input class="input" id="brFCompEngName" value="${v.compEngName || ''}">
+          <input class="input" id="brFCompEngName" value="${esc(v.compEngName || '')}">
         </div>
         <div class="form-group full">
           <label>브랜드 약어</label>
-          <input class="input" id="brFBrandAbbrName" value="${v.brandAbbrName || ''}">
+          <input class="input" id="brFBrandAbbrName" value="${esc(v.brandAbbrName || '')}">
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="brFRemark" value="${v.remark || ''}">
+          <input class="input" id="brFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

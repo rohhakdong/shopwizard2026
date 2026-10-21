@@ -16,6 +16,9 @@
  */
 const PageCatalogProd = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   // 상품 등록 시 서버(ProdService.insert)가 항상 자동으로 만들어두는 "선택사항없음" 기본
   // 옵션(tCatProdItem)의 ItemCode. 이 프로젝트의 기존 데이터 전체에서 확립된 관례라 백엔드
@@ -169,7 +172,7 @@ const PageCatalogProd = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -183,41 +186,41 @@ const PageCatalogProd = (() => {
     const rows = list.map(p => `
       <tr>
         <td style="text-align:center">
-          ${!p.approvDate ? `<input type="checkbox" class="row-check" data-code="${p.prodCode}">` : ''}
+          ${!p.approvDate ? `<input type="checkbox" class="row-check" data-code="${esc(p.prodCode)}">` : ''}
         </td>
-        <td style="font-size:11px;${ell}">
-          <code>${p.prodCode || ''}</code><br>
-          <span style="color:var(--text-muted)">${p.shopProdCode || ''}</span>
+        <td style="font-size:11px;${esc(ell)}">
+          <code>${esc(p.prodCode || '')}</code><br>
+          <span style="color:var(--text-muted)">${esc(p.shopProdCode || '')}</span>
         </td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${p.prodName || ''}">${p.prodName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${p.brandName || ''}">${p.brandName || ''}</div>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(p.prodName || '')}">${esc(p.prodName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(p.brandName || '')}">${esc(p.brandName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${p.shopName || ''}">${p.shopName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${p.cateName || ''}">${p.cateName || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(p.shopName || '')}">${esc(p.shopName || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(p.cateName || '')}">${esc(p.cateName || '')}</td>
         <td style="text-align:right;font-size:13px;font-weight:500">
-          ${p.salePrice != null ? p.salePrice.toLocaleString() + '원' : '-'}
+          ${esc(p.salePrice != null ? p.salePrice.toLocaleString() + '원' : '-')}
         </td>
         <td style="text-align:center">
-          <span class="badge ${p.saleYn === 1 ? 'badge-green' : 'badge-gray'}">${p.saleYn === 1 ? '판매' : '미판매'}</span>
+          <span class="badge ${esc(p.saleYn === 1 ? 'badge-green' : 'badge-gray')}">${esc(p.saleYn === 1 ? '판매' : '미판매')}</span>
         </td>
         <td style="text-align:center">
           ${p.approvDate
-            ? `<span class="badge badge-blue" title="${p.approvDate}">승인</span>`
+            ? `<span class="badge badge-blue" title="${esc(p.approvDate)}">승인</span>`
             : `<span class="badge badge-gray">미승인</span>`}
         </td>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${p.registDate ? p.registDate.substring(0, 10) : ''}</td>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(p.registDate ? p.registDate.substring(0, 10) : '')}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="detail" data-code="${p.prodCode}">상세</button>
+            data-action="detail" data-code="${esc(p.prodCode)}">상세</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${p.prodCode}">수정</button>
+            data-action="edit" data-code="${esc(p.prodCode)}">수정</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="option" data-code="${p.prodCode}" data-name="${p.prodName}">옵션</button>
+            data-action="option" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">옵션</button>
           ${!p.approvDate ? `<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)"
-            data-action="approv" data-code="${p.prodCode}" data-name="${p.prodName}">승인</button>` : ''}
+            data-action="approv" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">승인</button>` : ''}
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${p.prodCode}" data-name="${p.prodName}">삭제</button>
+            data-action="del" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -237,9 +240,9 @@ const PageCatalogProd = (() => {
         <thead>
           <tr>
             <th style="text-align:center"><input type="checkbox" id="checkAll"></th>
-            <th style="${thEll}">상품코드</th><th style="${thEll}">상품명</th><th style="${thEll}">상점</th><th style="${thEll}">카테고리</th>
-            <th style="${thEll};text-align:right">판매가</th><th style="${thEll};text-align:center">판매</th>
-            <th style="${thEll};text-align:center">승인</th><th style="${thEll}">등록일</th><th></th>
+            <th style="${esc(thEll)}">상품코드</th><th style="${esc(thEll)}">상품명</th><th style="${esc(thEll)}">상점</th><th style="${esc(thEll)}">카테고리</th>
+            <th style="${esc(thEll)};text-align:right">판매가</th><th style="${esc(thEll)};text-align:center">판매</th>
+            <th style="${esc(thEll)};text-align:center">승인</th><th style="${esc(thEll)}">등록일</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -385,11 +388,11 @@ const PageCatalogProd = (() => {
 
     let html = `<div class="pagination">`;
     if (block > 0)
-      html += `<button class="page-btn" data-page="${start - 1}">‹</button>`;
+      html += `<button class="page-btn" data-page="${esc(start - 1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
     if (end < totalPages)
-      html += `<button class="page-btn" data-page="${end + 1}">›</button>`;
+      html += `<button class="page-btn" data-page="${esc(end + 1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -404,9 +407,9 @@ const PageCatalogProd = (() => {
   // ── 상세 모달 (읽기 전용) ──────────────────────────────────────────
   function openDetailModal(p) {
     const row = (label, value, full = false) => `
-      <div class="form-group ${full ? 'full' : ''}">
-        <label>${label}</label>
-        <div class="input" style="background:#f8fafc;color:var(--text);min-height:34px;line-height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border)">${value ?? '-'}</div>
+      <div class="form-group ${esc(full ? 'full' : '')}">
+        <label>${esc(label)}</label>
+        <div class="input" style="background:#f8fafc;color:var(--text);min-height:34px;line-height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border)">${esc(value ?? '-')}</div>
       </div>`;
 
     const body = document.createElement('div');
@@ -420,7 +423,7 @@ const PageCatalogProd = (() => {
         ${p.imgUrl ? `
         <div class="form-group full">
           <label>대표이미지</label>
-          <img src="${p.imgUrl100 || p.imgUrl}" style="width:100px;height:100px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius)">
+          <img src="${esc(p.imgUrl100 || p.imgUrl)}" style="width:100px;height:100px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius)">
         </div>` : ''}
         ${row('상점', p.shopName)}
         ${row('카테고리', p.cateName)}
@@ -451,7 +454,7 @@ const PageCatalogProd = (() => {
       </div>
       ${p.prodDesc ? `
       <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">상품설명</div>
-      <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:#fff">${p.prodDesc}</div>` : ''}`;
+      <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:#fff">${UI.sanitizeHtml(p.prodDesc)}</div>` : ''}`;  // 리치텍스트(Quill) HTML — 이스케이프하면 서식이 깨지므로 허용 목록 정화
 
     UI.modal({
       title: `상품 상세 – ${p.prodCode}`,
@@ -493,8 +496,8 @@ const PageCatalogProd = (() => {
         }
         resultEl.innerHTML = list.map(c => {
           const path = [c.cateName1, c.cateName2, c.cateName3, c.cateName4].filter(Boolean).join(' > ');
-          return `<div class="cate-pick" data-code="${c.cateCode}" data-path="${path.replace(/"/g,'&quot;')}"
-                    style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px">${path}</div>`;
+          return `<div class="cate-pick" data-code="${esc(c.cateCode)}" data-path="${esc(path)}"
+                    style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px">${esc(path)}</div>`;
         }).join('');
         resultEl.querySelectorAll('.cate-pick').forEach(el => {
           el.addEventListener('click', () => {
@@ -505,7 +508,7 @@ const PageCatalogProd = (() => {
           el.addEventListener('mouseleave', () => el.style.background = '');
         });
       } catch (e) {
-        resultEl.innerHTML = `<div style="padding:16px;color:var(--danger)">${e.message}</div>`;
+        resultEl.innerHTML = `<div style="padding:16px;color:var(--danger)">${esc(e.message)}</div>`;
       }
     }
 
@@ -543,7 +546,7 @@ const PageCatalogProd = (() => {
       wrap.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)">불러오는 중...</div>';
       let items = [];
       try { items = await Api.get('/catalog/prod-item/list', { pProdCode: prod.prodCode }); }
-      catch (e) { wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`; return; }
+      catch (e) { wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`; return; }
 
       // ItemCode 20000은 상품 등록 시 서버가 자동으로 만들어두는 "선택사항없음" 기본
       // 아이템이다(ProdService.insert 참고) — 관리자가 실제로 등록한 옵션이 아니므로
@@ -559,18 +562,18 @@ const PageCatalogProd = (() => {
       const attrLabel = (i) => attrNames[i] || `옵션값${i + 1}`;
       const rows = visibleItems.map(it => `
         <tr>
-          <td style="font-size:12px">${it.attrVal1 || '-'}</td>
-          <td style="font-size:12px">${it.attrVal2 || '-'}</td>
-          <td style="font-size:12px">${it.attrVal3 || '-'}</td>
-          <td style="font-size:12px">${it.attrVal4 || '-'}</td>
-          <td style="text-align:right;font-size:12px">${it.supplyQty ?? 0}</td>
-          <td style="text-align:right;font-size:12px">${it.salePrice != null ? it.salePrice.toLocaleString() : '-'}</td>
+          <td style="font-size:12px">${esc(it.attrVal1 || '-')}</td>
+          <td style="font-size:12px">${esc(it.attrVal2 || '-')}</td>
+          <td style="font-size:12px">${esc(it.attrVal3 || '-')}</td>
+          <td style="font-size:12px">${esc(it.attrVal4 || '-')}</td>
+          <td style="text-align:right;font-size:12px">${esc(it.supplyQty ?? 0)}</td>
+          <td style="text-align:right;font-size:12px">${esc(it.salePrice != null ? it.salePrice.toLocaleString() : '-')}</td>
           <td style="text-align:center">
-            <span class="badge ${it.saleYn === 1 ? 'badge-green' : 'badge-gray'}">${it.saleYn === 1 ? '판매' : '중지'}</span>
+            <span class="badge ${esc(it.saleYn === 1 ? 'badge-green' : 'badge-gray')}">${esc(it.saleYn === 1 ? '판매' : '중지')}</span>
           </td>
           <td style="white-space:nowrap">
-            <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="pi-edit" data-item="${it.itemCode}">수정</button>
-            <button class="btn btn-danger" style="padding:2px 7px;font-size:11px" data-action="pi-del" data-item="${it.itemCode}">삭제</button>
+            <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-action="pi-edit" data-item="${esc(it.itemCode)}">수정</button>
+            <button class="btn btn-danger" style="padding:2px 7px;font-size:11px" data-action="pi-del" data-item="${esc(it.itemCode)}">삭제</button>
           </td>
         </tr>`).join('');
 
@@ -581,8 +584,8 @@ const PageCatalogProd = (() => {
           </colgroup>
           <thead>
             <tr>
-              <th style="font-size:11px;text-align:left">${attrLabel(0)}</th><th style="font-size:11px;text-align:left">${attrLabel(1)}</th>
-              <th style="font-size:11px;text-align:left">${attrLabel(2)}</th><th style="font-size:11px;text-align:left">${attrLabel(3)}</th>
+              <th style="font-size:11px;text-align:left">${esc(attrLabel(0))}</th><th style="font-size:11px;text-align:left">${esc(attrLabel(1))}</th>
+              <th style="font-size:11px;text-align:left">${esc(attrLabel(2))}</th><th style="font-size:11px;text-align:left">${esc(attrLabel(3))}</th>
               <th style="font-size:11px;text-align:right">재고</th><th style="font-size:11px;text-align:right">판매가</th>
               <th style="font-size:11px;text-align:center">판매</th><th></th>
             </tr>
@@ -648,49 +651,49 @@ const PageCatalogProd = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>옵션코드</label>
-          <input class="input" value="${newItemCode}" readonly style="background:#f8fafc;font-family:monospace">
+          <input class="input" value="${esc(newItemCode)}" readonly style="background:#f8fafc;font-family:monospace">
         </div>
         <div class="form-group">
-          <label>${attrNames[0] || '옵션값1'}</label>
-          <input class="input" id="piAttrVal1" value="${v.attrVal1 || ''}">
+          <label>${esc(attrNames[0] || '옵션값1')}</label>
+          <input class="input" id="piAttrVal1" value="${esc(v.attrVal1 || '')}">
         </div>
         <div class="form-group">
-          <label>${attrNames[1] || '옵션값2'}</label>
-          <input class="input" id="piAttrVal2" value="${v.attrVal2 || ''}">
+          <label>${esc(attrNames[1] || '옵션값2')}</label>
+          <input class="input" id="piAttrVal2" value="${esc(v.attrVal2 || '')}">
         </div>
         <div class="form-group">
-          <label>${attrNames[2] || '옵션값3'}</label>
-          <input class="input" id="piAttrVal3" value="${v.attrVal3 || ''}">
+          <label>${esc(attrNames[2] || '옵션값3')}</label>
+          <input class="input" id="piAttrVal3" value="${esc(v.attrVal3 || '')}">
         </div>
         <div class="form-group">
-          <label>${attrNames[3] || '옵션값4'}</label>
-          <input class="input" id="piAttrVal4" value="${v.attrVal4 || ''}">
+          <label>${esc(attrNames[3] || '옵션값4')}</label>
+          <input class="input" id="piAttrVal4" value="${esc(v.attrVal4 || '')}">
         </div>
         <div class="form-group">
           <label>재고수량</label>
-          <input class="input" id="piSupplyQty" type="number" min="0" value="${v.supplyQty ?? 0}">
+          <input class="input" id="piSupplyQty" type="number" min="0" value="${esc(v.supplyQty ?? 0)}">
         </div>
         <div class="form-group">
           <label>판매가(옵션추가금 아님)</label>
-          <input class="input" id="piSalePrice" type="number" min="0" value="${v.salePrice ?? prod.salePrice ?? 0}">
+          <input class="input" id="piSalePrice" type="number" min="0" value="${esc(v.salePrice ?? prod.salePrice ?? 0)}">
         </div>
         <div class="form-group">
           <label>옵션추가금액</label>
-          <input class="input" id="piOptionPrice" type="number" min="0" value="${v.optionPrice ?? 0}">
+          <input class="input" id="piOptionPrice" type="number" min="0" value="${esc(v.optionPrice ?? 0)}">
         </div>
         <div class="form-group">
           <label>공급가</label>
-          <input class="input" id="piSupplyPrice" type="number" min="0" value="${v.supplyPrice ?? 0}">
+          <input class="input" id="piSupplyPrice" type="number" min="0" value="${esc(v.supplyPrice ?? 0)}">
         </div>
         <div class="form-group">
           <label>매입가</label>
-          <input class="input" id="piBuyPrice" type="number" min="0" value="${v.buyPrice ?? 0}">
+          <input class="input" id="piBuyPrice" type="number" min="0" value="${esc(v.buyPrice ?? 0)}">
         </div>
         <div class="form-group">
           <label>판매여부</label>
           <select class="input" id="piSaleYn">
-            <option value="1" ${(v.saleYn ?? 1) === 1 ? 'selected' : ''}>판매</option>
-            <option value="0" ${v.saleYn === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.saleYn ?? 1) === 1 ? 'selected' : '')}>판매</option>
+            <option value="0" ${esc(v.saleYn === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
       </div>`;
@@ -766,25 +769,25 @@ const PageCatalogProd = (() => {
     }
 
     const shopOpts = shopList.map(s =>
-      `<option value="${s.shopCode}" ${v.shopCode === s.shopCode ? 'selected' : ''}>${s.shopName || s.shopCode} (${s.shopCode})</option>`
+      `<option value="${esc(s.shopCode)}" ${esc(v.shopCode === s.shopCode ? 'selected' : '')}>${esc(s.shopName || s.shopCode)} (${esc(s.shopCode)})</option>`
     ).join('');
     const brandOpts  = brandOptions.map(b =>
-      `<option value="${b.brandKorName}" ${v.brandName === b.brandKorName ? 'selected' : ''}>${b.brandKorName}</option>`
+      `<option value="${esc(b.brandKorName)}" ${esc(v.brandName === b.brandKorName ? 'selected' : '')}>${esc(b.brandKorName)}</option>`
     ).join('');
     const makerOpts  = makerOptions.map(m =>
-      `<option value="${m.makerKorName}" ${v.makerName === m.makerKorName ? 'selected' : ''}>${m.makerKorName}</option>`
+      `<option value="${esc(m.makerKorName)}" ${esc(v.makerName === m.makerKorName ? 'selected' : '')}>${esc(m.makerKorName)}</option>`
     ).join('');
     const originOpts = originOptions.map(o =>
-      `<option value="${o.originKorName}" ${v.originName === o.originKorName ? 'selected' : ''}>${o.originKorName}</option>`
+      `<option value="${esc(o.originKorName)}" ${esc(v.originName === o.originKorName ? 'selected' : '')}>${esc(o.originKorName)}</option>`
     ).join('');
     const taxTypeOpts = taxTypeOptions.map(t =>
-      `<option value="${t.constrVal}" ${String(v.vatRate ?? 10) === t.constrVal ? 'selected' : ''}>${t.constrValDesc} (${t.constrVal}%)</option>`
+      `<option value="${esc(t.constrVal)}" ${esc(String(v.vatRate ?? 10) === t.constrVal ? 'selected' : '')}>${esc(t.constrValDesc)} (${esc(t.constrVal)}%)</option>`
     ).join('');
     const deliFeeTypeOpts = deliFeeTypeOptions.map(d =>
-      `<option value="${d.constrVal}" ${v.deliFeeType === d.constrVal ? 'selected' : ''}>${d.constrValDesc}</option>`
+      `<option value="${esc(d.constrVal)}" ${esc(v.deliFeeType === d.constrVal ? 'selected' : '')}>${esc(d.constrValDesc)}</option>`
     ).join('');
     const saleYnOpts = saleYnTypeOptions.map(s =>
-      `<option value="${s.constrVal}" ${String(v.saleYn ?? 1) === s.constrVal ? 'selected' : ''}>${s.constrValDesc}</option>`
+      `<option value="${esc(s.constrVal)}" ${esc(String(v.saleYn ?? 1) === s.constrVal ? 'selected' : '')}>${esc(s.constrValDesc)}</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -792,11 +795,11 @@ const PageCatalogProd = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>상품코드</label>
-          <input class="input" value="${isNew ? newProdCode : v.prodCode}" readonly style="background:#f8fafc;font-family:monospace">
+          <input class="input" value="${esc(isNew ? newProdCode : v.prodCode)}" readonly style="background:#f8fafc;font-family:monospace">
         </div>
         <div class="form-group">
           <label>상점 <span style="color:var(--danger)">*</span></label>
-          <select class="input" id="pFShopCode" ${!isNew ? 'disabled style="background:#f8fafc"' : ''}>
+          <select class="input" id="pFShopCode" ${esc(!isNew ? 'disabled style="background:#f8fafc"' : '')}>
             <option value="">-- 선택 --</option>
             ${shopOpts}
           </select>
@@ -804,25 +807,25 @@ const PageCatalogProd = (() => {
         <div class="form-group full">
           <label>분류(카테고리) <span style="color:var(--danger)">*</span></label>
           <div style="display:flex;gap:8px">
-            <input class="input" id="pFCatePath" value="${selectedCatePath}" readonly placeholder="분류를 선택하세요" style="background:#f8fafc;flex:1">
+            <input class="input" id="pFCatePath" value="${esc(selectedCatePath)}" readonly placeholder="분류를 선택하세요" style="background:#f8fafc;flex:1">
             <button type="button" class="btn btn-ghost" id="pFCateBtn">분류 선택</button>
           </div>
         </div>
         <div class="form-group full">
           <label>상품명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="pFProdName" value="${v.prodName || ''}">
+          <input class="input" id="pFProdName" value="${esc(v.prodName || '')}">
         </div>
         <div class="form-group full">
           <label>진열명</label>
-          <input class="input" id="pFProdDsplName" value="${v.prodDsplName || ''}">
+          <input class="input" id="pFProdDsplName" value="${esc(v.prodDsplName || '')}">
         </div>
         <div class="form-group">
           <label>쇼핑몰상품코드</label>
-          <input class="input" id="pFShopProdCode" value="${v.shopProdCode || ''}">
+          <input class="input" id="pFShopProdCode" value="${esc(v.shopProdCode || '')}">
         </div>
         <div class="form-group">
           <label>모델명</label>
-          <input class="input" id="pFModelName" value="${v.modelName || ''}">
+          <input class="input" id="pFModelName" value="${esc(v.modelName || '')}">
         </div>
         <div class="form-group">
           <label>브랜드명</label>
@@ -847,19 +850,19 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group">
           <label>정가</label>
-          <input class="input" id="pFListPrice" type="number" min="0" value="${v.listPrice ?? ''}">
+          <input class="input" id="pFListPrice" type="number" min="0" value="${esc(v.listPrice ?? '')}">
         </div>
         <div class="form-group">
           <label>판매가</label>
-          <input class="input" id="pFSalePrice" type="number" min="0" value="${v.salePrice ?? ''}">
+          <input class="input" id="pFSalePrice" type="number" min="0" value="${esc(v.salePrice ?? '')}">
         </div>
         <div class="form-group">
           <label>공급가</label>
-          <input class="input" id="pFSupplyPrice" type="number" min="0" value="${v.supplyPrice ?? ''}">
+          <input class="input" id="pFSupplyPrice" type="number" min="0" value="${esc(v.supplyPrice ?? '')}">
         </div>
         <div class="form-group">
           <label>매입가</label>
-          <input class="input" id="pFBuyPrice" type="number" min="0" value="${v.buyPrice ?? ''}">
+          <input class="input" id="pFBuyPrice" type="number" min="0" value="${esc(v.buyPrice ?? '')}">
         </div>
         <div class="form-group">
           <label>부가세율</label>
@@ -869,7 +872,7 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group">
           <label>재고수량</label>
-          <input class="input" id="pFSupplyQty" type="number" min="0" value="${v.supplyQty ?? 9999}">
+          <input class="input" id="pFSupplyQty" type="number" min="0" value="${esc(v.supplyQty ?? 9999)}">
         </div>
         <div class="form-group">
           <label>판매여부</label>
@@ -880,13 +883,13 @@ const PageCatalogProd = (() => {
         <div class="form-group">
           <label>성인상품</label>
           <select class="input" id="pFAdultYn">
-            <option value="0" ${(v.adultYn ?? 0) === 0 ? 'selected' : ''}>아니오</option>
-            <option value="1" ${v.adultYn === 1 ? 'selected' : ''}>예</option>
+            <option value="0" ${esc((v.adultYn ?? 0) === 0 ? 'selected' : '')}>아니오</option>
+            <option value="1" ${esc(v.adultYn === 1 ? 'selected' : '')}>예</option>
           </select>
         </div>
         <div class="form-group">
           <label>배송방법</label>
-          <input class="input" id="pFDeliMethod" value="${v.deliMethod || ''}">
+          <input class="input" id="pFDeliMethod" value="${esc(v.deliMethod || '')}">
         </div>
         <div class="form-group">
           <label>배송비유형</label>
@@ -897,19 +900,19 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group">
           <label>배송비</label>
-          <input class="input" id="pFDeliFeeAmt" type="number" min="0" value="${v.deliFeeAmt ?? 0}">
+          <input class="input" id="pFDeliFeeAmt" type="number" min="0" value="${esc(v.deliFeeAmt ?? 0)}">
         </div>
         <div class="form-group">
           <label>리드타임(일)</label>
-          <input class="input" id="pFLeadTime" type="number" min="0" value="${v.leadTime ?? ''}">
+          <input class="input" id="pFLeadTime" type="number" min="0" value="${esc(v.leadTime ?? '')}">
         </div>
         <div class="form-group full">
           <label>옵션명 (사이즈/색상 등, 최대 4개)</label>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-            <input class="input" id="pFAttrName1" placeholder="예: 사이즈" value="${v.attrName1 || ''}">
-            <input class="input" id="pFAttrName2" placeholder="예: 색상" value="${v.attrName2 || ''}">
-            <input class="input" id="pFAttrName3" placeholder="옵션3명" value="${v.attrName3 || ''}">
-            <input class="input" id="pFAttrName4" placeholder="옵션4명" value="${v.attrName4 || ''}">
+            <input class="input" id="pFAttrName1" placeholder="예: 사이즈" value="${esc(v.attrName1 || '')}">
+            <input class="input" id="pFAttrName2" placeholder="예: 색상" value="${esc(v.attrName2 || '')}">
+            <input class="input" id="pFAttrName3" placeholder="옵션3명" value="${esc(v.attrName3 || '')}">
+            <input class="input" id="pFAttrName4" placeholder="옵션4명" value="${esc(v.attrName4 || '')}">
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
             여기 입력한 이름이 아래 '옵션 관리'에서 사이즈/색상 등 실제 옵션값(재고·가격 포함)을
@@ -919,10 +922,10 @@ const PageCatalogProd = (() => {
         <div class="form-group full">
           <label>대표이미지</label>
           <div style="display:flex;align-items:center;gap:12px">
-            <img id="pFImgPreview" src="${imgUrls.imgUrl}" style="width:72px;height:72px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);background:#f8fafc;${imgUrls.imgUrl ? '' : 'display:none'}">
+            <img id="pFImgPreview" src="${esc(imgUrls.imgUrl)}" style="width:72px;height:72px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);background:#f8fafc;${esc(imgUrls.imgUrl ? '' : 'display:none')}">
             <div>
               <input type="file" id="pFImgFile" accept="image/*">
-              <div id="pFImgStatus" style="font-size:12px;color:var(--text-muted);margin-top:4px">${imgUrls.imgUrl ? '등록된 이미지가 있습니다. 변경하려면 새 파일을 선택하세요.' : '이미지를 선택하면 50/80/100/160/220/280px 썸네일이 자동 생성됩니다.'}</div>
+              <div id="pFImgStatus" style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(imgUrls.imgUrl ? '등록된 이미지가 있습니다. 변경하려면 새 파일을 선택하세요.' : '이미지를 선택하면 50/80/100/160/220/280px 썸네일이 자동 생성됩니다.')}</div>
             </div>
           </div>
         </div>
@@ -932,7 +935,7 @@ const PageCatalogProd = (() => {
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="pFRemark" value="${v.remark || ''}">
+          <input class="input" id="pFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 
@@ -1062,7 +1065,9 @@ const PageCatalogProd = (() => {
       theme: 'snow',
       placeholder: '상품 상세 설명을 입력하세요...',
     });
-    if (v.prodDesc) quill.clipboard.dangerouslyPasteHTML(v.prodDesc);
+    // Quill 의 dangerouslyPasteHTML 은 받은 HTML 을 먼저 DOM 에 넣어 변환하기 때문에 <img onerror> 같은 값이
+    // 그 순간 실행된다 — 반드시 정화한 HTML 을 넘긴다.
+    if (v.prodDesc) quill.clipboard.dangerouslyPasteHTML(UI.sanitizeHtml(v.prodDesc));
   }
 
   return { render };

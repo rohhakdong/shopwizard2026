@@ -6,6 +6,9 @@
  */
 const PageCompanyComp = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -99,7 +102,7 @@ const PageCompanyComp = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -112,21 +115,21 @@ const PageCompanyComp = (() => {
     const ell = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     const rows = list.map(c => `
       <tr>
-        <td style="font-size:11px;font-family:monospace;${ell}" title="${c.compCode || ''}">${c.compCode || ''}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${c.compName || ''}">${c.compName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${c.prsdntName || ''}">${c.prsdntName || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${esc(ell)}" title="${esc(c.compCode || '')}">${esc(c.compCode || '')}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(c.compName || '')}">${esc(c.compName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(c.prsdntName || '')}">${esc(c.prsdntName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${c.phoneNo || ''}">${c.phoneNo || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${c.email || ''}">${c.email || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(c.phoneNo || '')}">${esc(c.phoneNo || '')}</td>
+        <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(c.email || '')}">${esc(c.email || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${c.state === 1 ? 'badge-green' : 'badge-gray'}">${c.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(c.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(c.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${c.compCode}">수정</button>
+            data-action="edit" data-code="${esc(c.compCode)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${c.compCode}" data-name="${(c.compName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-code="${esc(c.compCode)}" data-name="${esc(c.compName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -144,10 +147,10 @@ const PageCompanyComp = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}" title="회사코드(사업자등록번호)">회사코드</th>
-            <th style="${thEll}">회사명 / 대표자</th>
-            <th style="${thEll}">전화번호</th>
-            <th style="${thEll}">이메일</th>
+            <th style="${esc(thEll)}" title="회사코드(사업자등록번호)">회사코드</th>
+            <th style="${esc(thEll)}">회사명 / 대표자</th>
+            <th style="${esc(thEll)}">전화번호</th>
+            <th style="${esc(thEll)}">이메일</th>
             <th style="text-align:center">상태</th><th></th>
           </tr>
         </thead>
@@ -188,10 +191,10 @@ const PageCompanyComp = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -233,71 +236,71 @@ const PageCompanyComp = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>회사코드 (사업자등록번호) <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="cpFCompCode" value="${isNew ? '' : formatBizNo(v.compCode || '')}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="000-00-00000" inputmode="numeric">
+          <input class="input" id="cpFCompCode" value="${esc(isNew ? '' : formatBizNo(v.compCode || ''))}" ${esc(!isNew ? 'readonly style="background:#f8fafc"' : '')} placeholder="000-00-00000" inputmode="numeric">
           ${isNew ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">사업자등록번호를 입력하면 회사코드로 그대로 사용됩니다.</div>' : ''}
         </div>
         <div class="form-group full">
           <label>회사명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="cpFCompName" value="${v.compName || ''}">
+          <input class="input" id="cpFCompName" value="${esc(v.compName || '')}">
         </div>
         <div class="form-group">
           <label>서비스코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="cpFSvcCode" value="${v.svcCode || (typeof info !== 'undefined' && info?.svcCode) || ''}" placeholder="예: SHP001">
+          <input class="input" id="cpFSvcCode" value="${esc(v.svcCode || (typeof info !== 'undefined' && info?.svcCode) || '')}" placeholder="예: SHP001">
         </div>
         <div class="form-group">
           <label>대표자명</label>
-          <input class="input" id="cpFPrsdntName" value="${v.prsdntName || ''}">
+          <input class="input" id="cpFPrsdntName" value="${esc(v.prsdntName || '')}">
         </div>
         <div class="form-group">
           <label>법인등록번호</label>
-          <input class="input" id="cpFCorpCode" value="${v.corpCode || ''}" placeholder="법인인 경우에만 입력 (개인사업자는 공란)">
+          <input class="input" id="cpFCorpCode" value="${esc(v.corpCode || '')}" placeholder="법인인 경우에만 입력 (개인사업자는 공란)">
         </div>
         <div class="form-group">
           <label>전화번호</label>
-          <input class="input" id="cpFPhoneNo" value="${v.phoneNo || ''}">
+          <input class="input" id="cpFPhoneNo" value="${esc(v.phoneNo || '')}">
         </div>
         <div class="form-group">
           <label>팩스번호</label>
-          <input class="input" id="cpFFaxNo" value="${v.faxNo || ''}">
+          <input class="input" id="cpFFaxNo" value="${esc(v.faxNo || '')}">
         </div>
         <div class="form-group">
           <label>이메일</label>
-          <input class="input" id="cpFEmail" value="${v.email || ''}">
+          <input class="input" id="cpFEmail" value="${esc(v.email || '')}">
         </div>
         <div class="form-group">
           <label>홈페이지</label>
-          <input class="input" id="cpFHomepg" value="${v.homepg || ''}">
+          <input class="input" id="cpFHomepg" value="${esc(v.homepg || '')}">
         </div>
         <div class="form-group full">
           <label>주소</label>
-          <input class="input" id="cpFAddr1" value="${v.addr1 || ''}" placeholder="기본 주소">
+          <input class="input" id="cpFAddr1" value="${esc(v.addr1 || '')}" placeholder="기본 주소">
         </div>
         <div class="form-group full">
           <label>상세주소</label>
-          <input class="input" id="cpFAddr2" value="${v.addr2 || ''}" placeholder="상세 주소">
+          <input class="input" id="cpFAddr2" value="${esc(v.addr2 || '')}" placeholder="상세 주소">
         </div>
         <div class="form-group">
           <label>정산은행</label>
-          <input class="input" id="cpFReciptBank" value="${v.reciptBank || ''}">
+          <input class="input" id="cpFReciptBank" value="${esc(v.reciptBank || '')}">
         </div>
         <div class="form-group">
           <label>정산계좌</label>
-          <input class="input" id="cpFReciptAccnt" value="${v.reciptAccnt || ''}">
+          <input class="input" id="cpFReciptAccnt" value="${esc(v.reciptAccnt || '')}">
         </div>
         <div class="form-group">
           <label>예금주</label>
-          <input class="input" id="cpFReciptDepost" value="${v.reciptDepost || ''}">
+          <input class="input" id="cpFReciptDepost" value="${esc(v.reciptDepost || '')}">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="cpFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="cpFRemark" value="${v.remark || ''}">
+          <input class="input" id="cpFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

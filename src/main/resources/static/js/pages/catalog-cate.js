@@ -8,6 +8,9 @@
  */
 const PageCatalogCate = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const LEVEL_LABEL = ['대분류', '중분류', '소분류', '세분류'];
   let svcOptions = [];
   let currentSvcCode = '';
@@ -61,7 +64,7 @@ const PageCatalogCate = (() => {
     // 로그인한 관리자 자신의 서비스코드를 기본 선택 — 다른 거래처 화면들의 관례와 동일.
     const defaultSvc = (typeof info !== 'undefined' && info?.svcCode) || svcOptions[0].svcCode;
     sel.innerHTML = svcOptions.map(s =>
-      `<option value="${s.svcCode}" ${s.svcCode === defaultSvc ? 'selected' : ''}>${s.svcName || s.svcCode} (${s.svcCode})</option>`
+      `<option value="${esc(s.svcCode)}" ${esc(s.svcCode === defaultSvc ? 'selected' : '')}>${esc(s.svcName || s.svcCode)} (${esc(s.svcCode)})</option>`
     ).join('');
     currentSvcCode = defaultSvc;
     loadLevel(0);
@@ -110,26 +113,26 @@ const PageCatalogCate = (() => {
         : (items.length === 0
             ? `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">하위 분류가 없습니다</div>`
             : items.map(c => `
-                <div class="cate-item" data-level="${level}" data-code="${c.cateCode}"
+                <div class="cate-item" data-level="${esc(level)}" data-code="${esc(c.cateCode)}"
                      style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;
                             border-radius:6px;cursor:pointer;font-size:13px;
-                            background:${selected[level]?.cateCode === c.cateCode ? '#eff6ff' : 'transparent'};
-                            color:${c.state === 0 ? 'var(--text-muted)' : 'var(--text)'}">
-                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0" title="${c.cateName || ''}">
-                    ${c.cateName || '(이름 없음)'} ${c.state === 0 ? '<span class="badge badge-gray" style="margin-left:4px">중지</span>' : ''}
-                    ${c.childCount > 0 ? `<span style="color:var(--text-muted);font-size:11px">(${c.childCount})</span>` : ''}
+                            background:${esc(selected[level]?.cateCode === c.cateCode ? '#eff6ff' : 'transparent')};
+                            color:${esc(c.state === 0 ? 'var(--text-muted)' : 'var(--text)')}">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0" title="${esc(c.cateName || '')}">
+                    ${esc(c.cateName || '(이름 없음)')} ${c.state === 0 ? '<span class="badge badge-gray" style="margin-left:4px">중지</span>' : ''}
+                    ${c.childCount > 0 ? `<span style="color:var(--text-muted);font-size:11px">(${esc(c.childCount)})</span>` : ''}
                   </span>
                   <span style="white-space:nowrap;flex-shrink:0;margin-left:6px">
-                    <button class="btn btn-ghost" style="padding:1px 5px;font-size:12px" data-action="edit" data-level="${level}" data-code="${c.cateCode}" title="수정">✏️</button>
-                    <button class="btn btn-ghost" style="padding:1px 5px;font-size:12px" data-action="del" data-level="${level}" data-code="${c.cateCode}" data-name="${(c.cateName||'').replace(/"/g,'&quot;')}" title="삭제">🗑️</button>
+                    <button class="btn btn-ghost" style="padding:1px 5px;font-size:12px" data-action="edit" data-level="${esc(level)}" data-code="${esc(c.cateCode)}" title="수정">✏️</button>
+                    <button class="btn btn-ghost" style="padding:1px 5px;font-size:12px" data-action="del" data-level="${esc(level)}" data-code="${esc(c.cateCode)}" data-name="${esc(c.cateName||'')}" title="삭제">🗑️</button>
                   </span>
                 </div>`).join(''));
 
       return `
         <div style="flex:0 0 260px;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:8px;overflow:hidden">
           <div style="padding:8px 10px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-            <strong style="font-size:13px">${label}</strong>
-            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px" data-action="new" data-level="${level}" ${disabled ? 'disabled' : ''}>+ 추가</button>
+            <strong style="font-size:13px">${esc(label)}</strong>
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px" data-action="new" data-level="${esc(level)}" ${esc(disabled ? 'disabled' : '')}>+ 추가</button>
           </div>
           <div style="flex:1;overflow-y:auto;padding:4px">${itemsHtml}</div>
         </div>`;
@@ -218,30 +221,30 @@ const PageCatalogCate = (() => {
       <div class="form-grid">
         <div class="form-group full">
           <label>분류코드</label>
-          <input class="input" value="${isNew ? newCateCode : v.cateCode}" readonly style="background:#f8fafc;font-family:monospace">
+          <input class="input" value="${esc(isNew ? newCateCode : v.cateCode)}" readonly style="background:#f8fafc;font-family:monospace">
         </div>
         <div class="form-group full">
           <label>분류명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="ctFCateName" value="${v.cateName || ''}">
+          <input class="input" id="ctFCateName" value="${esc(v.cateName || '')}">
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="ctFCateDesc" value="${v.cateDesc || ''}">
+          <input class="input" id="ctFCateDesc" value="${esc(v.cateDesc || '')}">
         </div>
         <div class="form-group">
           <label>정렬순서</label>
-          <input class="input" id="ctFCateSeq" type="number" value="${v.cateSeq ?? 999}">
+          <input class="input" id="ctFCateSeq" type="number" value="${esc(v.cateSeq ?? 999)}">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="ctFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="ctFRemark" value="${v.remark || ''}">
+          <input class="input" id="ctFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

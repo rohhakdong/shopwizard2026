@@ -6,6 +6,9 @@
  */
 const PageCatalogMaker = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -87,7 +90,7 @@ const PageCatalogMaker = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -98,21 +101,21 @@ const PageCatalogMaker = (() => {
 
     const rows = list.map(m => `
       <tr>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${m.makerId}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${m.makerKorName || ''}">${m.makerKorName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${m.makerEngName || ''}">${m.makerEngName || ''}</div>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(m.makerId)}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(m.makerKorName || '')}">${esc(m.makerKorName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(m.makerEngName || '')}">${esc(m.makerEngName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${m.prsdntName || ''}">${m.prsdntName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${m.nationName || ''}">${m.nationName || m.nationCode || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(m.prsdntName || '')}">${esc(m.prsdntName || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(m.nationName || '')}">${esc(m.nationName || m.nationCode || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${m.state === 1 ? 'badge-green' : 'badge-gray'}">${m.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(m.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(m.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-id="${m.makerId}">수정</button>
+            data-action="edit" data-id="${esc(m.makerId)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-id="${m.makerId}" data-name="${(m.makerKorName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-id="${esc(m.makerId)}" data-name="${esc(m.makerKorName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -125,8 +128,8 @@ const PageCatalogMaker = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">ID</th><th style="${thEll}">제조사명(한/영)</th><th style="${thEll}">대표자</th>
-            <th style="${thEll}">국가</th><th style="${thEll};text-align:center">상태</th><th></th>
+            <th style="${esc(thEll)}">ID</th><th style="${esc(thEll)}">제조사명(한/영)</th><th style="${esc(thEll)}">대표자</th>
+            <th style="${esc(thEll)}">국가</th><th style="${esc(thEll)};text-align:center">상태</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -166,10 +169,10 @@ const PageCatalogMaker = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -184,7 +187,7 @@ const PageCatalogMaker = (() => {
     const v = maker || {};
 
     const nationOpts = nationOptions.map(n =>
-      `<option value="${n.constrVal}" ${v.nationCode === n.constrVal ? 'selected' : ''}>${n.constrValDesc || n.constrVal}</option>`
+      `<option value="${esc(n.constrVal)}" ${esc(v.nationCode === n.constrVal ? 'selected' : '')}>${esc(n.constrValDesc || n.constrVal)}</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -192,15 +195,15 @@ const PageCatalogMaker = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>제조사명(한글) <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="mkFMakerKorName" value="${v.makerKorName || ''}">
+          <input class="input" id="mkFMakerKorName" value="${esc(v.makerKorName || '')}">
         </div>
         <div class="form-group">
           <label>제조사명(영문)</label>
-          <input class="input" id="mkFMakerEngName" value="${v.makerEngName || ''}">
+          <input class="input" id="mkFMakerEngName" value="${esc(v.makerEngName || '')}">
         </div>
         <div class="form-group">
           <label>대표자명</label>
-          <input class="input" id="mkFPrsdntName" value="${v.prsdntName || ''}">
+          <input class="input" id="mkFPrsdntName" value="${esc(v.prsdntName || '')}">
         </div>
         <div class="form-group">
           <label>국가</label>
@@ -212,13 +215,13 @@ const PageCatalogMaker = (() => {
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mkFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mkFRemark" value="${v.remark || ''}">
+          <input class="input" id="mkFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

@@ -5,6 +5,9 @@
  */
 const PageAuthFunctn = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   let roleList      = [];
   let currentRole   = null;   // { roleUid, roleName }
   let selectedMenu  = null;   // { menuCode, menuName }
@@ -96,7 +99,7 @@ const PageAuthFunctn = (() => {
       const list = await Api.get('/authority/menu/list', { pRoleUid: roleUid });
       renderMenuTree(treeEl, list, null, 0);
     } catch (e) {
-      treeEl.innerHTML = `<div style="color:var(--danger);padding:12px">${e.message}</div>`;
+      treeEl.innerHTML = `<div style="color:var(--danger);padding:12px">${esc(e.message)}</div>`;
     }
   }
 
@@ -133,16 +136,16 @@ const PageAuthFunctn = (() => {
 
       tr.innerHTML = `
         <td>
-          <span style="display:inline-block;width:${indent}px"></span>
-          <button class="tree-toggle" data-expanded="false" data-code="${item.menuCode}"
+          <span style="display:inline-block;width:${esc(indent)}px"></span>
+          <button class="tree-toggle" data-expanded="false" data-code="${esc(item.menuCode)}"
             style="background:none;border:none;cursor:pointer;width:16px;font-size:10px;color:var(--text-muted);padding:0;margin-right:2px">
             ${hasChild ? '▶' : '&nbsp;'}
           </button>
-          <span class="menu-label" style="font-size:${level === 0 ? '13px' : '12px'};font-weight:${level === 0 ? '600' : '400'}">
-            ${item.menuName || ''}
+          <span class="menu-label" style="font-size:${esc(level === 0 ? '13px' : '12px')};font-weight:${esc(level === 0 ? '600' : '400')}">
+            ${esc(item.menuName || '')}
           </span>
         </td>
-        <td style="text-align:center;font-size:12px;color:var(--text-muted)">${item.menuSeq ?? ''}</td>`;
+        <td style="text-align:center;font-size:12px;color:var(--text-muted)">${esc(item.menuSeq ?? '')}</td>`;
 
       tbody.appendChild(tr);
 
@@ -206,7 +209,7 @@ const PageAuthFunctn = (() => {
       });
       renderFunctnTable(list);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:12px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:12px">${esc(e.message)}</div>`;
     }
   }
 
@@ -221,17 +224,17 @@ const PageAuthFunctn = (() => {
       <tr>
         <td style="max-width:0;width:60%">
           <code style="font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
-            title="${f.functnUri || ''}">${f.functnUri || ''}</code>
+            title="${esc(f.functnUri || '')}">${esc(f.functnUri || '')}</code>
         </td>
-        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.functnDesc || ''}">${f.functnDesc || ''}</td>
+        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(f.functnDesc || '')}">${esc(f.functnDesc || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${f.state === 1 ? 'badge-green' : 'badge-gray'}">${f.state === 1 ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(f.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(f.state === 1 ? '사용' : '미사용')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-uri="${encodeURIComponent(f.functnUri)}">수정</button>
+            data-action="edit" data-uri="${esc(encodeURIComponent(f.functnUri))}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-uri="${encodeURIComponent(f.functnUri)}">삭제</button>
+            data-action="del" data-uri="${esc(encodeURIComponent(f.functnUri))}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -280,29 +283,29 @@ const PageAuthFunctn = (() => {
       <div class="form-grid">
         <div class="form-group full">
           <label>기능 URI *</label>
-          <input class="input" id="mFunctnUri" value="${f?.functnUri || ''}"
-            ${isEdit ? 'readonly style="background:#f8fafc"' : ''} placeholder="/authority/mngr/list">
+          <input class="input" id="mFunctnUri" value="${esc(f?.functnUri || '')}"
+            ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')} placeholder="/authority/mngr/list">
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="mFunctnDesc" value="${f?.functnDesc || ''}" placeholder="기능 설명">
+          <input class="input" id="mFunctnDesc" value="${esc(f?.functnDesc || '')}" placeholder="기능 설명">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="1" ${!f || f.state === 1 ? 'selected' : ''}>사용</option>
-            <option value="0" ${f?.state === 0 ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(!f || f.state === 1 ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(f?.state === 0 ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${f?.remark || ''}">
+          <input class="input" id="mRemark" value="${esc(f?.remark || '')}">
         </div>
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:8px">
-        역할: <strong>${currentRole?.roleName || ''}</strong>
-        &nbsp;|&nbsp; 메뉴: <strong>${selectedMenu?.menuName || ''}</strong>
-        <code style="font-size:11px;margin-left:4px">${selectedMenu?.menuCode || ''}</code>
+        역할: <strong>${esc(currentRole?.roleName || '')}</strong>
+        &nbsp;|&nbsp; 메뉴: <strong>${esc(selectedMenu?.menuName || '')}</strong>
+        <code style="font-size:11px;margin-left:4px">${esc(selectedMenu?.menuCode || '')}</code>
       </div>`;
 
     UI.modal({

@@ -6,6 +6,9 @@
  */
 const PageCompanySupply = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -107,7 +110,7 @@ const PageCompanySupply = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -123,26 +126,26 @@ const PageCompanySupply = (() => {
       // 비어있는데도 소속회사명만 표시하면 그게 공급사명인 것처럼 착각하기 쉬워, 미입력 상태를
       // 명시적으로 구분해서 보여준다.
       const nameHtml = s.supplyName
-        ? `<div style="font-weight:500;font-size:13px;${ell}" title="${s.supplyName}">${s.supplyName}</div>`
+        ? `<div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(s.supplyName)}">${esc(s.supplyName)}</div>`
         : `<div style="font-size:13px;color:var(--text-muted);font-style:italic">(공급사명 미입력)</div>`;
       return `
       <tr>
-        <td style="font-size:11px;font-family:monospace;${ell}" title="${s.supplyCode || ''}">${s.supplyCode || ''}</td>
-        <td style="${ell}">
+        <td style="font-size:11px;font-family:monospace;${esc(ell)}" title="${esc(s.supplyCode || '')}">${esc(s.supplyCode || '')}</td>
+        <td style="${esc(ell)}">
           ${nameHtml}
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${s.comp?.compName || ''}">소속: ${s.comp?.compName || ''}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(s.comp?.compName || '')}">소속: ${esc(s.comp?.compName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${s.mngrName || ''}">${s.mngrName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${s.mobileNo || s.phoneNo || ''}">${s.mobileNo || s.phoneNo || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${s.email || ''}">${s.email || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(s.mngrName || '')}">${esc(s.mngrName || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(s.mobileNo || s.phoneNo || '')}">${esc(s.mobileNo || s.phoneNo || '')}</td>
+        <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(s.email || '')}">${esc(s.email || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${s.state === 1 ? 'badge-green' : 'badge-gray'}">${s.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(s.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(s.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${s.supplyCode}">수정</button>
+            data-action="edit" data-code="${esc(s.supplyCode)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${s.supplyCode}" data-name="${(s.supplyName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-code="${esc(s.supplyCode)}" data-name="${esc(s.supplyName||'')}">삭제</button>
         </td>
       </tr>`;
     }).join('');
@@ -161,11 +164,11 @@ const PageCompanySupply = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">공급사코드</th>
-            <th style="${thEll}">공급사명 / 소속회사</th>
-            <th style="${thEll}">담당자</th>
-            <th style="${thEll}">연락처</th>
-            <th style="${thEll}">이메일</th>
+            <th style="${esc(thEll)}">공급사코드</th>
+            <th style="${esc(thEll)}">공급사명 / 소속회사</th>
+            <th style="${esc(thEll)}">담당자</th>
+            <th style="${esc(thEll)}">연락처</th>
+            <th style="${esc(thEll)}">이메일</th>
             <th style="text-align:center">상태</th><th></th>
           </tr>
         </thead>
@@ -206,10 +209,10 @@ const PageCompanySupply = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -224,7 +227,7 @@ const PageCompanySupply = (() => {
     const v = supply || {};
 
     const compOpts = compOptions.map(c =>
-      `<option value="${c.compCode}" ${v.compCode === c.compCode ? 'selected' : ''}>${c.compName || '(회사명 미입력)'} (${c.compCode})</option>`
+      `<option value="${esc(c.compCode)}" ${esc(v.compCode === c.compCode ? 'selected' : '')}>${esc(c.compName || '(회사명 미입력)')} (${esc(c.compCode)})</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -232,7 +235,7 @@ const PageCompanySupply = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>공급사코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="spFSupplyCode" value="${v.supplyCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="소속 회사를 고르면 자동으로 채워집니다">
+          <input class="input" id="spFSupplyCode" value="${esc(v.supplyCode || '')}" ${esc(!isNew ? 'readonly style="background:#f8fafc"' : '')} placeholder="소속 회사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>소속 회사 <span style="color:var(--danger)">*</span></label>
@@ -243,54 +246,54 @@ const PageCompanySupply = (() => {
         </div>
         <div class="form-group full">
           <label>공급사명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="spFSupplyName" value="${v.supplyName || ''}" placeholder="${!isNew && !v.supplyName ? '미입력 상태입니다 — 입력해주세요' : '공급사명'}">
+          <input class="input" id="spFSupplyName" value="${esc(v.supplyName || '')}" placeholder="${esc(!isNew && !v.supplyName ? '미입력 상태입니다 — 입력해주세요' : '공급사명')}">
         </div>
         <div class="form-group">
           <label>담당자명</label>
-          <input class="input" id="spFMngrName" value="${v.mngrName || ''}">
+          <input class="input" id="spFMngrName" value="${esc(v.mngrName || '')}">
         </div>
         <div class="form-group">
           <label>휴대폰</label>
-          <input class="input" id="spFMobileNo" value="${v.mobileNo || ''}">
+          <input class="input" id="spFMobileNo" value="${esc(v.mobileNo || '')}">
         </div>
         <div class="form-group">
           <label>전화번호</label>
-          <input class="input" id="spFPhoneNo" value="${v.phoneNo || ''}">
+          <input class="input" id="spFPhoneNo" value="${esc(v.phoneNo || '')}">
         </div>
         <div class="form-group">
           <label>팩스번호</label>
-          <input class="input" id="spFFaxNo" value="${v.faxNo || ''}">
+          <input class="input" id="spFFaxNo" value="${esc(v.faxNo || '')}">
         </div>
         <div class="form-group full">
           <label>이메일</label>
-          <input class="input" id="spFEmail" value="${v.email || ''}">
+          <input class="input" id="spFEmail" value="${esc(v.email || '')}">
         </div>
         <div class="form-group full">
           <label>주소</label>
-          <input class="input" id="spFAddr1" value="${v.addr1 || ''}" placeholder="기본 주소">
+          <input class="input" id="spFAddr1" value="${esc(v.addr1 || '')}" placeholder="기본 주소">
         </div>
         <div class="form-group full">
           <label>상세주소</label>
-          <input class="input" id="spFAddr2" value="${v.addr2 || ''}" placeholder="상세 주소">
+          <input class="input" id="spFAddr2" value="${esc(v.addr2 || '')}" placeholder="상세 주소">
         </div>
         <div class="form-group">
           <label>계약시작일</label>
-          <input class="input" id="spFStartDate" type="date" value="${v.applyStartDate ? v.applyStartDate.substring(0,10) : ''}">
+          <input class="input" id="spFStartDate" type="date" value="${esc(v.applyStartDate ? v.applyStartDate.substring(0,10) : '')}">
         </div>
         <div class="form-group">
           <label>계약종료일</label>
-          <input class="input" id="spFEndDate" type="date" value="${v.applyEndDate ? v.applyEndDate.substring(0,10) : ''}">
+          <input class="input" id="spFEndDate" type="date" value="${esc(v.applyEndDate ? v.applyEndDate.substring(0,10) : '')}">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="spFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="spFRemark" value="${v.remark || ''}">
+          <input class="input" id="spFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

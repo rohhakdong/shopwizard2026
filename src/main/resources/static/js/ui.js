@@ -34,7 +34,7 @@ const UI = (() => {
     backdrop.innerHTML = `
       <div class="modal">
         <div class="modal-header">
-          <span>${title}</span>
+          <span>${esc(title)}</span>
           <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">${typeof body === 'string' ? body : ''}</div>
@@ -61,8 +61,10 @@ const UI = (() => {
     return { close, el: backdrop };
   }
 
+  // title / message 는 텍스트로 취급해 이스케이프한다(호출부가 `[${이름}]` 처럼 데이터를 끼워 넣는 경우가 많다).
+  // 마크업이 필요하면 modal({ body: '<...>' }) 를 직접 쓰고 값은 UI.esc 로 감싼다.
   function confirm(message, onConfirm) {
-    return modal({ title: '확인', body: `<p style="margin:8px 0">${message}</p>`, onConfirm, confirmText: '확인', cancelText: '취소' });
+    return modal({ title: '확인', body: `<p style="margin:8px 0">${esc(message)}</p>`, onConfirm, confirmText: '확인', cancelText: '취소' });
   }
 
   // ── 페이지네이션 ─────────────────────────────────────────────────────
@@ -148,5 +150,8 @@ const UI = (() => {
     el.insertAdjacentHTML('beforeend', opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join(''));
   }
 
-  return { toast, modal, confirm, pagination, loading, esc, loadFilterOptions, fillOptions };
+  /** 리치텍스트 HTML(상품설명 등)을 허용 목록으로 정화한 문자열. 구현은 safe-html.js. */
+  function sanitizeHtml(html) { return SafeHtml.sanitize(html); }
+
+  return { toast, modal, confirm, pagination, loading, esc, sanitizeHtml, loadFilterOptions, fillOptions };
 })();

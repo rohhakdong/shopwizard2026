@@ -219,7 +219,7 @@ const PageShipDirect = (() => {
   async function openDetailModal(btn) {
     const body = document.createElement('div');
     body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">불러오는 중...</div>';
-    UI.modal({ title: `직배송 상세 – 주문 #${esc(btn.dataset.ono)}`, body, confirmText: null, cancelText: '닫기' });
+    UI.modal({ title: `직배송 상세 – 주문 #${btn.dataset.ono}`, body, confirmText: null, cancelText: '닫기' });
 
     try {
       const d = await Api.get('/ship/ship-direct', {
@@ -277,7 +277,7 @@ const PageShipDirect = (() => {
         </div>
       </div>`;
     UI.modal({
-      title: `송장번호 입력 – #${esc(btn.dataset.ono)}`,
+      title: `송장번호 입력 – #${btn.dataset.ono}`,
       body,
       confirmText: '저장',
       onConfirm: async close => {

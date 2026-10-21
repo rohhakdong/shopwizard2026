@@ -9,6 +9,9 @@
  */
 const PageCompanySaleComp = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -110,7 +113,7 @@ const PageCompanySaleComp = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -123,21 +126,21 @@ const PageCompanySaleComp = (() => {
 
     const rows = list.map(s => `
       <tr>
-        <td style="font-size:11px;font-family:monospace;${ell}" title="${s.saleCompCode || ''}">${s.saleCompCode || ''}</td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${s.saleCompName || ''}">${s.saleCompName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${s.comp?.compName || ''}">소속: ${s.comp?.compName || ''}</div>
+        <td style="font-size:11px;font-family:monospace;${esc(ell)}" title="${esc(s.saleCompCode || '')}">${esc(s.saleCompCode || '')}</td>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(s.saleCompName || '')}">${esc(s.saleCompName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(s.comp?.compName || '')}">소속: ${esc(s.comp?.compName || '')}</div>
         </td>
-        <td style="font-size:12px;font-family:monospace;${ell}" title="${s.svcCode || ''}">${s.svcCode || ''}</td>
-        <td style="font-size:12px;color:var(--text-muted);${ell}" title="${s.saleCompDesc || ''}">${s.saleCompDesc || ''}</td>
+        <td style="font-size:12px;font-family:monospace;${esc(ell)}" title="${esc(s.svcCode || '')}">${esc(s.svcCode || '')}</td>
+        <td style="font-size:12px;color:var(--text-muted);${esc(ell)}" title="${esc(s.saleCompDesc || '')}">${esc(s.saleCompDesc || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${s.state === 1 ? 'badge-green' : 'badge-gray'}">${s.state === 1 ? '정상' : '중지'}</span>
+          <span class="badge ${esc(s.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(s.state === 1 ? '정상' : '중지')}</span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${s.saleCompCode}">수정</button>
+            data-action="edit" data-code="${esc(s.saleCompCode)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${s.saleCompCode}" data-name="${(s.saleCompName||'').replace(/"/g,'&quot;')}">삭제</button>
+            data-action="del" data-code="${esc(s.saleCompCode)}" data-name="${esc(s.saleCompName||'')}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -154,10 +157,10 @@ const PageCompanySaleComp = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">판매사코드</th>
-            <th style="${thEll}">판매사명 / 소속회사</th>
-            <th style="${thEll}">서비스코드</th>
-            <th style="${thEll}">설명</th>
+            <th style="${esc(thEll)}">판매사코드</th>
+            <th style="${esc(thEll)}">판매사명 / 소속회사</th>
+            <th style="${esc(thEll)}">서비스코드</th>
+            <th style="${esc(thEll)}">설명</th>
             <th style="text-align:center">상태</th><th></th>
           </tr>
         </thead>
@@ -198,10 +201,10 @@ const PageCompanySaleComp = (() => {
     const end   = Math.min(start + 9, totalPages);
 
     let html = `<div class="pagination">`;
-    if (block > 0) html += `<button class="page-btn" data-page="${start-1}">‹</button>`;
+    if (block > 0) html += `<button class="page-btn" data-page="${esc(start-1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
-    if (end < totalPages) html += `<button class="page-btn" data-page="${end+1}">›</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
+    if (end < totalPages) html += `<button class="page-btn" data-page="${esc(end+1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -216,7 +219,7 @@ const PageCompanySaleComp = (() => {
     const v = saleComp || {};
 
     const compOpts = compOptions.map(c =>
-      `<option value="${c.compCode}" ${v.compCode === c.compCode ? 'selected' : ''}>${c.compName || '(회사명 미입력)'} (${c.compCode})</option>`
+      `<option value="${esc(c.compCode)}" ${esc(v.compCode === c.compCode ? 'selected' : '')}>${esc(c.compName || '(회사명 미입력)')} (${esc(c.compCode)})</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -224,7 +227,7 @@ const PageCompanySaleComp = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>판매사코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="scFSaleCompCode" value="${v.saleCompCode || ''}" ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="소속 회사를 고르면 자동으로 채워집니다">
+          <input class="input" id="scFSaleCompCode" value="${esc(v.saleCompCode || '')}" ${esc(!isNew ? 'readonly style="background:#f8fafc"' : '')} placeholder="소속 회사를 고르면 자동으로 채워집니다">
         </div>
         <div class="form-group">
           <label>소속 회사 <span style="color:var(--danger)">*</span></label>
@@ -235,31 +238,31 @@ const PageCompanySaleComp = (() => {
         </div>
         <div class="form-group full">
           <label>판매사명 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="scFSaleCompName" value="${v.saleCompName || ''}">
+          <input class="input" id="scFSaleCompName" value="${esc(v.saleCompName || '')}">
         </div>
         <div class="form-group">
           <label>서비스코드 <span style="color:var(--danger)">*</span></label>
-          <input class="input" id="scFSvcCode" value="${v.svcCode || (isNew ? ((typeof info !== 'undefined' && info?.svcCode) || 'SHP001') : '')}"
-            ${!isNew ? 'readonly style="background:#f8fafc"' : ''} placeholder="예: SHP001">
+          <input class="input" id="scFSvcCode" value="${esc(v.svcCode || (isNew ? ((typeof info !== 'undefined' && info?.svcCode) || 'SHP001') : ''))}"
+            ${esc(!isNew ? 'readonly style="background:#f8fafc"' : '')} placeholder="예: SHP001">
         </div>
         <div class="form-group">
           <label>승인일</label>
-          <input class="input" id="scFApprovDate" type="date" value="${v.approvDate ? v.approvDate.substring(0,10) : ''}">
+          <input class="input" id="scFApprovDate" type="date" value="${esc(v.approvDate ? v.approvDate.substring(0,10) : '')}">
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="scFSaleCompDesc" value="${v.saleCompDesc || ''}">
+          <input class="input" id="scFSaleCompDesc" value="${esc(v.saleCompDesc || '')}">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="scFState">
-            <option value="1" ${(v.state ?? 1) === 1 ? 'selected' : ''}>정상</option>
-            <option value="0" ${v.state === 0 ? 'selected' : ''}>중지</option>
+            <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
+            <option value="0" ${esc(v.state === 0 ? 'selected' : '')}>중지</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="scFRemark" value="${v.remark || ''}">
+          <input class="input" id="scFRemark" value="${esc(v.remark || '')}">
         </div>
       </div>`;
 

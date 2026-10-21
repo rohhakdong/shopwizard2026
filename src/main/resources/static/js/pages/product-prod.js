@@ -7,6 +7,9 @@
  */
 const PageProductProd = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   const PAGE_SIZE = 20;
   let currentPage = 1;
   let totalCount  = 0;
@@ -134,7 +137,7 @@ const PageProductProd = (() => {
       renderTable(list);
       renderPagination();
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -147,37 +150,37 @@ const PageProductProd = (() => {
 
     const rows = list.map(p => `
       <tr>
-        <td style="font-size:11px;${ell}">
-          <code>${p.prodCode || ''}</code><br>
-          <span style="color:var(--text-muted)">${p.shopProdCode || ''}</span>
+        <td style="font-size:11px;${esc(ell)}">
+          <code>${esc(p.prodCode || '')}</code><br>
+          <span style="color:var(--text-muted)">${esc(p.shopProdCode || '')}</span>
         </td>
-        <td style="${ell}">
-          <div style="font-weight:500;font-size:13px;${ell}" title="${p.prodName || ''}">${p.prodName || ''}</div>
-          <div style="font-size:11px;color:var(--text-muted);${ell}" title="${p.brandName || ''}">${p.brandName || ''}</div>
+        <td style="${esc(ell)}">
+          <div style="font-weight:500;font-size:13px;${esc(ell)}" title="${esc(p.prodName || '')}">${esc(p.prodName || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);${esc(ell)}" title="${esc(p.brandName || '')}">${esc(p.brandName || '')}</div>
         </td>
-        <td style="font-size:12px;${ell}" title="${p.shopName || ''}">${p.shopName || ''}</td>
-        <td style="font-size:12px;${ell}" title="${p.supplyName || ''}">${p.supplyName || ''}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(p.shopName || '')}">${esc(p.shopName || '')}</td>
+        <td style="font-size:12px;${esc(ell)}" title="${esc(p.supplyName || '')}">${esc(p.supplyName || '')}</td>
         <td style="text-align:right;font-size:13px;font-weight:500">
-          ${p.salePrice != null ? p.salePrice.toLocaleString() + '원' : '-'}
+          ${esc(p.salePrice != null ? p.salePrice.toLocaleString() + '원' : '-')}
         </td>
         <td style="text-align:right;font-size:13px">
-          ${p.supplyQty != null ? p.supplyQty.toLocaleString() : '-'}
+          ${esc(p.supplyQty != null ? p.supplyQty.toLocaleString() : '-')}
         </td>
         <td style="text-align:center">
-          <span class="badge ${p.saleYn === 1 ? 'badge-green' : 'badge-gray'}">${p.saleYn === 1 ? '판매' : '미판매'}</span>
+          <span class="badge ${esc(p.saleYn === 1 ? 'badge-green' : 'badge-gray')}">${esc(p.saleYn === 1 ? '판매' : '미판매')}</span>
         </td>
-        <td style="font-size:11px;color:var(--text-muted);${ell}">${p.registDate ? p.registDate.substring(0,10) : ''}</td>
+        <td style="font-size:11px;color:var(--text-muted);${esc(ell)}">${esc(p.registDate ? p.registDate.substring(0,10) : '')}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="detail" data-code="${p.prodCode}">상세</button>
-          <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:${p.saleYn === 1 ? 'var(--danger)' : 'var(--primary)'}"
-            data-action="saleyn" data-code="${p.prodCode}" data-yn="${p.saleYn}">
-            ${p.saleYn === 1 ? '판매중지' : '판매시작'}
+            data-action="detail" data-code="${esc(p.prodCode)}">상세</button>
+          <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:${esc(p.saleYn === 1 ? 'var(--danger)' : 'var(--primary)')}"
+            data-action="saleyn" data-code="${esc(p.prodCode)}" data-yn="${esc(p.saleYn)}">
+            ${esc(p.saleYn === 1 ? '판매중지' : '판매시작')}
           </button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="qty" data-code="${p.prodCode}" data-qty="${p.supplyQty ?? 0}">재고</button>
+            data-action="qty" data-code="${esc(p.prodCode)}" data-qty="${esc(p.supplyQty ?? 0)}">재고</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${p.prodCode}" data-name="${p.prodName}">삭제</button>
+            data-action="del" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -195,11 +198,11 @@ const PageProductProd = (() => {
         </colgroup>
         <thead>
           <tr>
-            <th style="${thEll}">상품코드</th><th style="${thEll}">상품명</th><th style="${thEll}">쇼핑몰</th><th style="${thEll}">협력사</th>
-            <th style="${thEll};text-align:right">판매가</th>
-            <th style="${thEll};text-align:right">재고</th>
-            <th style="${thEll};text-align:center">판매</th>
-            <th style="${thEll}">등록일</th><th></th>
+            <th style="${esc(thEll)}">상품코드</th><th style="${esc(thEll)}">상품명</th><th style="${esc(thEll)}">쇼핑몰</th><th style="${esc(thEll)}">협력사</th>
+            <th style="${esc(thEll)};text-align:right">판매가</th>
+            <th style="${esc(thEll)};text-align:right">재고</th>
+            <th style="${esc(thEll)};text-align:center">판매</th>
+            <th style="${esc(thEll)}">등록일</th><th></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -238,7 +241,7 @@ const PageProductProd = (() => {
         input.innerHTML = `
           <div class="form-group" style="margin:8px 0">
             <label>재고수량</label>
-            <input class="input" id="qtyInput" type="number" min="0" value="${btn.dataset.qty}" style="width:120px">
+            <input class="input" id="qtyInput" type="number" min="0" value="${esc(btn.dataset.qty)}" style="width:120px">
           </div>`;
         UI.modal({
           title: `재고 수량 변경 – ${btn.dataset.code}`,
@@ -285,11 +288,11 @@ const PageProductProd = (() => {
 
     let html = `<div class="pagination">`;
     if (block > 0)
-      html += `<button class="page-btn" data-page="${start - 1}">‹</button>`;
+      html += `<button class="page-btn" data-page="${esc(start - 1)}">‹</button>`;
     for (let p = start; p <= end; p++)
-      html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+      html += `<button class="page-btn ${esc(p === currentPage ? 'active' : '')}" data-page="${esc(p)}">${esc(p)}</button>`;
     if (end < totalPages)
-      html += `<button class="page-btn" data-page="${end + 1}">›</button>`;
+      html += `<button class="page-btn" data-page="${esc(end + 1)}">›</button>`;
     html += `</div>`;
 
     el.innerHTML = html;
@@ -306,9 +309,9 @@ const PageProductProd = (() => {
     if (!p) { UI.toast('상품 정보를 불러올 수 없습니다', 'error'); return; }
 
     const row = (label, value, full = false) => `
-      <div class="form-group ${full ? 'full' : ''}">
-        <label>${label}</label>
-        <div class="input" style="background:#f8fafc;color:var(--text);min-height:34px;line-height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border)">${value ?? '-'}</div>
+      <div class="form-group ${esc(full ? 'full' : '')}">
+        <label>${esc(label)}</label>
+        <div class="input" style="background:#f8fafc;color:var(--text);min-height:34px;line-height:34px;padding:0 10px;border-radius:var(--radius);border:1px solid var(--border)">${esc(value ?? '-')}</div>
       </div>`;
 
     const body = document.createElement('div');

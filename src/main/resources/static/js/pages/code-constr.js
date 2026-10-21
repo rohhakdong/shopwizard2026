@@ -3,6 +3,9 @@
  */
 const PageCodeConstr = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   let selectedConstrCode = null;
 
   // ── 렌더 진입점 ────────────────────────────────────────────────────
@@ -62,7 +65,7 @@ const PageCodeConstr = (() => {
       const list = await Api.get('/code/constr', { pConstrName: keyword });
       renderConstrTable(list);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -74,16 +77,16 @@ const PageCodeConstr = (() => {
     }
 
     const rows = list.map(r => `
-      <tr data-code="${r.constrCode}" class="constr-row" style="cursor:pointer">
-        <td><code style="font-size:12px">${r.constrCode}</code></td>
-        <td>${r.constrName || ''}</td>
-        <td>${r.constrDesc || ''}</td>
+      <tr data-code="${esc(r.constrCode)}" class="constr-row" style="cursor:pointer">
+        <td><code style="font-size:12px">${esc(r.constrCode)}</code></td>
+        <td>${esc(r.constrName || '')}</td>
+        <td>${esc(r.constrDesc || '')}</td>
         <td>
-          <span class="badge ${r.state === 'Y' ? 'badge-green' : 'badge-gray'}">${r.state === 'Y' ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(r.state === 'Y' ? 'badge-green' : 'badge-gray')}">${esc(r.state === 'Y' ? '사용' : '미사용')}</span>
         </td>
         <td>
-          <button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" data-action="edit" data-code="${r.constrCode}">수정</button>
-          <button class="btn btn-danger" style="padding:3px 8px;font-size:12px" data-action="del" data-code="${r.constrCode}">삭제</button>
+          <button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" data-action="edit" data-code="${esc(r.constrCode)}">수정</button>
+          <button class="btn btn-danger" style="padding:3px 8px;font-size:12px" data-action="del" data-code="${esc(r.constrCode)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -151,26 +154,26 @@ const PageCodeConstr = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>코드그룹 코드 *</label>
-          <input class="input" id="mConstrCode" value="${item?.constrCode || ''}" ${isEdit ? 'readonly style="background:#f8fafc"' : ''} placeholder="예) PROD001">
+          <input class="input" id="mConstrCode" value="${esc(item?.constrCode || '')}" ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')} placeholder="예) PROD001">
         </div>
         <div class="form-group">
           <label>코드그룹명 *</label>
-          <input class="input" id="mConstrName" value="${item?.constrName || ''}" placeholder="코드그룹명">
+          <input class="input" id="mConstrName" value="${esc(item?.constrName || '')}" placeholder="코드그룹명">
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="mConstrDesc" value="${item?.constrDesc || ''}" placeholder="설명">
+          <input class="input" id="mConstrDesc" value="${esc(item?.constrDesc || '')}" placeholder="설명">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="Y" ${item?.state === 'Y' || !item ? 'selected' : ''}>사용</option>
-            <option value="N" ${item?.state === 'N' ? 'selected' : ''}>미사용</option>
+            <option value="Y" ${esc(item?.state === 'Y' || !item ? 'selected' : '')}>사용</option>
+            <option value="N" ${esc(item?.state === 'N' ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${item?.remark || ''}">
+          <input class="input" id="mRemark" value="${esc(item?.remark || '')}">
         </div>
       </div>`;
 
@@ -211,7 +214,7 @@ const PageCodeConstr = (() => {
       const list = await Api.get('/code/constr-val', { pConstrCode: constrCode, sidx: 'ConstrValSeq', sord: 'ASC' });
       renderConstrValTable(list, constrCode);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -224,20 +227,20 @@ const PageCodeConstr = (() => {
 
     const rows = list.map(r => `
       <tr>
-        <td style="text-align:center">${r.constrValSeq ?? ''}</td>
-        <td><code style="font-size:12px">${r.constrVal}</code></td>
-        <td>${r.constrValDesc || ''}</td>
+        <td style="text-align:center">${esc(r.constrValSeq ?? '')}</td>
+        <td><code style="font-size:12px">${esc(r.constrVal)}</code></td>
+        <td>${esc(r.constrValDesc || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${r.defaltYn === 'Y' ? 'badge-blue' : 'badge-gray'}">${r.defaltYn === 'Y' ? '기본' : '-'}</span>
+          <span class="badge ${esc(r.defaltYn === 'Y' ? 'badge-blue' : 'badge-gray')}">${esc(r.defaltYn === 'Y' ? '기본' : '-')}</span>
         </td>
         <td>
-          <span class="badge ${r.state === 'Y' ? 'badge-green' : 'badge-gray'}">${r.state === 'Y' ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(r.state === 'Y' ? 'badge-green' : 'badge-gray')}">${esc(r.state === 'Y' ? '사용' : '미사용')}</span>
         </td>
         <td>
           <button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" data-action="edit"
-            data-code="${r.constrCode}" data-val="${r.constrVal}">수정</button>
+            data-code="${esc(r.constrCode)}" data-val="${esc(r.constrVal)}">수정</button>
           <button class="btn btn-danger" style="padding:3px 8px;font-size:12px" data-action="del"
-            data-code="${r.constrCode}" data-val="${r.constrVal}">삭제</button>
+            data-code="${esc(r.constrCode)}" data-val="${esc(r.constrVal)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -276,33 +279,33 @@ const PageCodeConstr = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>코드값 *</label>
-          <input class="input" id="mConstrVal" value="${item?.constrVal || ''}" ${isEdit ? 'readonly style="background:#f8fafc"' : ''} placeholder="예) 01">
+          <input class="input" id="mConstrVal" value="${esc(item?.constrVal || '')}" ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')} placeholder="예) 01">
         </div>
         <div class="form-group">
           <label>순서</label>
-          <input class="input" type="number" id="mConstrValSeq" value="${item?.constrValSeq ?? ''}">
+          <input class="input" type="number" id="mConstrValSeq" value="${esc(item?.constrValSeq ?? '')}">
         </div>
         <div class="form-group full">
           <label>설명 *</label>
-          <input class="input" id="mConstrValDesc" value="${item?.constrValDesc || ''}" placeholder="코드값 설명">
+          <input class="input" id="mConstrValDesc" value="${esc(item?.constrValDesc || '')}" placeholder="코드값 설명">
         </div>
         <div class="form-group">
           <label>기본값</label>
           <select class="input" id="mDefaltYn">
-            <option value="N" ${item?.defaltYn !== 'Y' ? 'selected' : ''}>아니오</option>
-            <option value="Y" ${item?.defaltYn === 'Y' ? 'selected' : ''}>예</option>
+            <option value="N" ${esc(item?.defaltYn !== 'Y' ? 'selected' : '')}>아니오</option>
+            <option value="Y" ${esc(item?.defaltYn === 'Y' ? 'selected' : '')}>예</option>
           </select>
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mValState">
-            <option value="Y" ${item?.state === 'Y' || !item ? 'selected' : ''}>사용</option>
-            <option value="N" ${item?.state === 'N' ? 'selected' : ''}>미사용</option>
+            <option value="Y" ${esc(item?.state === 'Y' || !item ? 'selected' : '')}>사용</option>
+            <option value="N" ${esc(item?.state === 'N' ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mValRemark" value="${item?.remark || ''}">
+          <input class="input" id="mValRemark" value="${esc(item?.remark || '')}">
         </div>
       </div>`;
 

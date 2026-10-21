@@ -6,6 +6,9 @@
  */
 const PageAuthMenu = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   let roleList    = [];
   let currentRole = null;   // { roleUid, roleName }
 
@@ -74,7 +77,7 @@ const PageAuthMenu = (() => {
       const list = await Api.get('/authority/menu/list', { pRoleUid: roleUid });
       renderTree(area, list, null, 0);
     } catch (e) {
-      area.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      area.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -139,30 +142,30 @@ const PageAuthMenu = (() => {
 
       tr.innerHTML = `
         <td>
-          <span style="display:inline-block;width:${indent}px"></span>
-          <button class="tree-toggle" id="${toggleId}" data-expanded="false" data-code="${item.menuCode}"
+          <span style="display:inline-block;width:${esc(indent)}px"></span>
+          <button class="tree-toggle" id="${esc(toggleId)}" data-expanded="false" data-code="${esc(item.menuCode)}"
             style="background:none;border:none;cursor:pointer;width:18px;font-size:11px;color:var(--text-muted);padding:0;margin-right:2px">
             ${hasChild ? '▶' : '&nbsp;'}
           </button>
-          <span style="font-size:${level === 0 ? '14px' : '13px'};font-weight:${level === 0 ? '600' : '400'}">
-            ${item.menuName || ''}
+          <span style="font-size:${esc(level === 0 ? '14px' : '13px')};font-weight:${esc(level === 0 ? '600' : '400')}">
+            ${esc(item.menuName || '')}
           </span>
-          <code style="font-size:10px;color:var(--text-muted);margin-left:6px">${item.menuCode}</code>
+          <code style="font-size:10px;color:var(--text-muted);margin-left:6px">${esc(item.menuCode)}</code>
         </td>
-        <td style="font-size:12px;color:var(--text-muted)">${item.menuUri || ''}</td>
-        <td style="text-align:center;font-size:12px">${item.menuSeq ?? ''}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${esc(item.menuUri || '')}</td>
+        <td style="text-align:center;font-size:12px">${esc(item.menuSeq ?? '')}</td>
         <td style="text-align:center">
-          <span class="badge ${item.state === 1 ? 'badge-green' : 'badge-gray'}" style="font-size:11px">
-            ${item.state === 1 ? '사용' : '미사용'}
+          <span class="badge ${esc(item.state === 1 ? 'badge-green' : 'badge-gray')}" style="font-size:11px">
+            ${esc(item.state === 1 ? '사용' : '미사용')}
           </span>
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="add-child" data-code="${item.menuCode}" data-level="${level}">+ 하위</button>
+            data-action="add-child" data-code="${esc(item.menuCode)}" data-level="${esc(level)}">+ 하위</button>
           <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
-            data-action="edit" data-code="${item.menuCode}" data-level="${level}">수정</button>
+            data-action="edit" data-code="${esc(item.menuCode)}" data-level="${esc(level)}">수정</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
-            data-action="del" data-code="${item.menuCode}" data-name="${item.menuName}">삭제</button>
+            data-action="del" data-code="${esc(item.menuCode)}" data-name="${esc(item.menuName)}">삭제</button>
         </td>`;
 
       tbody.appendChild(tr);
@@ -258,38 +261,38 @@ const PageAuthMenu = (() => {
     body.innerHTML = `
       <div class="form-grid">
         <div class="form-group">
-          <label>메뉴 코드 ${isEdit ? '' : '*'}</label>
-          <input class="input" id="mMenuCode" value="${isEdit ? item.menuCode : nextCode}"
-            ${isEdit ? 'readonly style="background:#f8fafc"' : ''}>
+          <label>메뉴 코드 ${esc(isEdit ? '' : '*')}</label>
+          <input class="input" id="mMenuCode" value="${esc(isEdit ? item.menuCode : nextCode)}"
+            ${esc(isEdit ? 'readonly style="background:#f8fafc"' : '')}>
         </div>
         <div class="form-group">
           <label>순서</label>
-          <input class="input" type="number" id="mMenuSeq" value="${isEdit ? (item.menuSeq ?? '') : ''}" placeholder="0">
+          <input class="input" type="number" id="mMenuSeq" value="${esc(isEdit ? (item.menuSeq ?? '') : '')}" placeholder="0">
         </div>
         <div class="form-group full">
           <label>메뉴명 *</label>
-          <input class="input" id="mMenuName" value="${isEdit ? (item.menuName || '') : ''}" placeholder="메뉴명">
+          <input class="input" id="mMenuName" value="${esc(isEdit ? (item.menuName || '') : '')}" placeholder="메뉴명">
         </div>
         <div class="form-group full">
           <label>URI</label>
-          <input class="input" id="mMenuUri" value="${isEdit ? (item.menuUri || '') : ''}" placeholder="/example/path">
+          <input class="input" id="mMenuUri" value="${esc(isEdit ? (item.menuUri || '') : '')}" placeholder="/example/path">
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="1" ${!item || item.state === 1 ? 'selected' : ''}>사용</option>
-            <option value="0" ${item?.state === 0 ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(!item || item.state === 1 ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(item?.state === 0 ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${isEdit ? (item.remark || '') : ''}">
+          <input class="input" id="mRemark" value="${esc(isEdit ? (item.remark || '') : '')}">
         </div>
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-top:8px">
-        역할: <strong>${currentRole?.roleName || ''}</strong>
-        ${parentMenuCode ? ` &nbsp;|&nbsp; 상위 메뉴 코드: <code>${parentMenuCode}</code>` : ' &nbsp;|&nbsp; 최상위 메뉴'}
-        &nbsp;|&nbsp; 레벨: ${level}
+        역할: <strong>${esc(currentRole?.roleName || '')}</strong>
+        ${parentMenuCode ? ` &nbsp;|&nbsp; 상위 메뉴 코드: <code>${esc(parentMenuCode)}</code>` : ' &nbsp;|&nbsp; 최상위 메뉴'}
+        &nbsp;|&nbsp; 레벨: ${esc(level)}
       </div>`;
 
     UI.modal({

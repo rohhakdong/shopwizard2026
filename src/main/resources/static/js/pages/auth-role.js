@@ -3,6 +3,9 @@
  */
 const PageAuthRole = (() => {
 
+  // 외부/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+  const esc = UI.esc;
+
   let svcList = [];   // 서비스 목록 캐시
 
   // ── 진입점 ─────────────────────────────────────────────────────────
@@ -86,7 +89,7 @@ const PageAuthRole = (() => {
       });
       renderTable(list);
     } catch (e) {
-      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${e.message}</div>`;
+      wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
     }
   }
 
@@ -99,21 +102,21 @@ const PageAuthRole = (() => {
 
     const rows = list.map(r => `
       <tr>
-        <td>${r.roleName || ''}</td>
-        <td>${r.roleDesc || ''}</td>
-        <td>${r.svcName || r.svcCode || ''}</td>
+        <td>${esc(r.roleName || '')}</td>
+        <td>${esc(r.roleDesc || '')}</td>
+        <td>${esc(r.svcName || r.svcCode || '')}</td>
         <td style="text-align:center">
-          <span class="badge ${r.supplyYn === 1 ? 'badge-blue' : 'badge-gray'}">${r.supplyYn === 1 ? '협력사' : '일반'}</span>
+          <span class="badge ${esc(r.supplyYn === 1 ? 'badge-blue' : 'badge-gray')}">${esc(r.supplyYn === 1 ? '협력사' : '일반')}</span>
         </td>
         <td style="text-align:center">
-          <span class="badge ${r.state === 1 ? 'badge-green' : 'badge-gray'}">${r.state === 1 ? '사용' : '미사용'}</span>
+          <span class="badge ${esc(r.state === 1 ? 'badge-green' : 'badge-gray')}">${esc(r.state === 1 ? '사용' : '미사용')}</span>
         </td>
-        <td>${r.registDate ? r.registDate.substring(0, 10) : ''}</td>
+        <td>${esc(r.registDate ? r.registDate.substring(0, 10) : '')}</td>
         <td>
           <button class="btn btn-ghost" style="padding:3px 8px;font-size:12px"
-            data-action="edit" data-uid="${r.roleUid}">수정</button>
+            data-action="edit" data-uid="${esc(r.roleUid)}">수정</button>
           <button class="btn btn-danger" style="padding:3px 8px;font-size:12px"
-            data-action="del" data-uid="${r.roleUid}" data-name="${r.roleName}">삭제</button>
+            data-action="del" data-uid="${esc(r.roleUid)}" data-name="${esc(r.roleName)}">삭제</button>
         </td>
       </tr>`).join('');
 
@@ -155,7 +158,7 @@ const PageAuthRole = (() => {
   function openModal(r) {
     const isEdit = !!r;
     const svcOpts = svcList.map(s =>
-      `<option value="${s.svcCode}" ${r?.svcCode === s.svcCode ? 'selected' : ''}>${s.svcName || s.svcCode}</option>`
+      `<option value="${esc(s.svcCode)}" ${esc(r?.svcCode === s.svcCode ? 'selected' : '')}>${esc(s.svcName || s.svcCode)}</option>`
     ).join('');
 
     const body = document.createElement('div');
@@ -163,7 +166,7 @@ const PageAuthRole = (() => {
       <div class="form-grid">
         <div class="form-group">
           <label>역할명 *</label>
-          <input class="input" id="mRoleName" value="${r?.roleName || ''}" placeholder="역할명">
+          <input class="input" id="mRoleName" value="${esc(r?.roleName || '')}" placeholder="역할명">
         </div>
         <div class="form-group">
           <label>서비스</label>
@@ -174,25 +177,25 @@ const PageAuthRole = (() => {
         </div>
         <div class="form-group full">
           <label>설명</label>
-          <input class="input" id="mRoleDesc" value="${r?.roleDesc || ''}" placeholder="역할 설명">
+          <input class="input" id="mRoleDesc" value="${esc(r?.roleDesc || '')}" placeholder="역할 설명">
         </div>
         <div class="form-group">
           <label>협력사 여부</label>
           <select class="input" id="mSupplyYn">
-            <option value="0" ${!r || r.supplyYn === 0 ? 'selected' : ''}>일반</option>
-            <option value="1" ${r?.supplyYn === 1 ? 'selected' : ''}>협력사</option>
+            <option value="0" ${esc(!r || r.supplyYn === 0 ? 'selected' : '')}>일반</option>
+            <option value="1" ${esc(r?.supplyYn === 1 ? 'selected' : '')}>협력사</option>
           </select>
         </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="mState">
-            <option value="1" ${!r || r.state === 1 ? 'selected' : ''}>사용</option>
-            <option value="0" ${r?.state === 0 ? 'selected' : ''}>미사용</option>
+            <option value="1" ${esc(!r || r.state === 1 ? 'selected' : '')}>사용</option>
+            <option value="0" ${esc(r?.state === 0 ? 'selected' : '')}>미사용</option>
           </select>
         </div>
         <div class="form-group full">
           <label>비고</label>
-          <input class="input" id="mRemark" value="${r?.remark || ''}">
+          <input class="input" id="mRemark" value="${esc(r?.remark || '')}">
         </div>
       </div>`;
 

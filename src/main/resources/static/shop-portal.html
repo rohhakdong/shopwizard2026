@@ -98,8 +98,13 @@
       '주문접수': 'badge-gray', '지불완료': 'badge-blue', '발주시작': 'badge-orange',
       '배송완료': 'badge-green', '주문취소': 'badge-red', '환불완료': 'badge-red',
     };
+    // 외부 채널/사용자 입력이 섞이는 값은 innerHTML 에 넣기 전에 반드시 esc() 를 거친다.
+    function esc(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
     function stateBadge(state) {
-      return `<span class="badge ${stateBadgeMap[state] || 'badge-gray'}">${state || '-'}</span>`;
+      return `<span class="badge ${stateBadgeMap[state] || 'badge-gray'}">${esc(state || '-')}</span>`;
     }
 
     async function init() {
@@ -121,10 +126,10 @@
 
     function renderInfo(info) {
       document.getElementById('infoGrid').innerHTML = `
-        <div class="info-row"><span class="label">상점코드</span><span class="value">${info.shopCode}</span></div>
-        <div class="info-row"><span class="label">상점명</span><span class="value">${info.name}</span></div>
-        <div class="info-row"><span class="label">로그인ID</span><span class="value">${info.loginId}</span></div>
-        <div class="info-row"><span class="label">공급사코드</span><span class="value">${info.supplyCode || '-'}</span></div>
+        <div class="info-row"><span class="label">상점코드</span><span class="value">${esc(info.shopCode)}</span></div>
+        <div class="info-row"><span class="label">상점명</span><span class="value">${esc(info.name)}</span></div>
+        <div class="info-row"><span class="label">로그인ID</span><span class="value">${esc(info.loginId)}</span></div>
+        <div class="info-row"><span class="label">공급사코드</span><span class="value">${esc(info.supplyCode || '-')}</span></div>
       `;
     }
 
@@ -154,13 +159,13 @@
         } else {
           body.innerHTML = list.map(o => `
             <tr>
-              <td>${o.orderNo}-${o.orderProdNo}</td>
-              <td style="${ell}" title="${o.prodName || ''}">${o.prodName || '-'}</td>
-              <td style="text-align:center">${o.prodQty ?? '-'}</td>
+              <td>${esc(o.orderNo)}-${esc(o.orderProdNo)}</td>
+              <td style="${ell}" title="${esc(o.prodName)}">${esc(o.prodName || '-')}</td>
+              <td style="text-align:center">${esc(o.prodQty ?? '-')}</td>
               <td style="text-align:right">${o.salePrice != null ? Number(o.salePrice).toLocaleString() + '원' : '-'}</td>
               <td style="text-align:center">${stateBadge(o.orderState)}</td>
-              <td style="${ell}" title="${o.recverName || ''}">${o.recverName || '-'}</td>
-              <td>${(o.orderReciptDate || o.registDate || '').substring(0, 16)}</td>
+              <td style="${ell}" title="${esc(o.recverName)}">${esc(o.recverName || '-')}</td>
+              <td>${esc((o.orderReciptDate || o.registDate || '').substring(0, 16))}</td>
             </tr>
           `).join('');
         }

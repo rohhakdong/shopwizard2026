@@ -188,7 +188,7 @@ const PageShipReturn = (() => {
 
     wrap.querySelectorAll('[data-action=cmplet]').forEach(btn => {
       btn.addEventListener('click', () => {
-        UI.confirm(`주문번호 [${esc(btn.dataset.ono)}] 반품을 완료 처리하시겠습니까?`, async close => {
+        UI.confirm(`주문번호 [${btn.dataset.ono}] 반품을 완료 처리하시겠습니까?`, async close => {
           try {
             // 반품요청 상태인 건만 성공한다(서버가 상태를 반품완료로 고정하고 반품요청 가드를 건다).
             // 영향행수가 0이면 이미 처리됐거나 반품요청 상태가 아닌 건이다.
@@ -232,7 +232,7 @@ const PageShipReturn = (() => {
   async function openDetailModal(btn) {
     const body = document.createElement('div');
     body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">불러오는 중...</div>';
-    UI.modal({ title: `반품 상세 – 주문 #${esc(btn.dataset.ono)}`, body, confirmText: null, cancelText: '닫기' });
+    UI.modal({ title: `반품 상세 – 주문 #${btn.dataset.ono}`, body, confirmText: null, cancelText: '닫기' });
 
     try {
       const d = await Api.get('/ship/return-direct', {
