@@ -1,8 +1,10 @@
 package com.shopwizard.order.web;
 
+import com.shopwizard.framework.auth.AuthSession;
 import com.shopwizard.order.model.ProdMatchRequest;
 import com.shopwizard.order.model.ProdMatchResult;
 import com.shopwizard.order.service.ProdMatchService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -76,8 +78,11 @@ public class ProdMatchController {
                                         @RequestParam(value = "pStartDate", required = false) String pStartDate,
                                         @RequestParam(value = "pEndDate", required = false) String pEndDate,
                                         @RequestParam(value = "pChnlCode", required = false) String pChnlCode,
-                                        @RequestParam(value = "registId", required = false) String registId,
-                                        @RequestParam(value = "registName", required = false) String registName) throws Exception {
+                                        HttpServletRequest request) throws Exception {
+        // 등록자/수정자는 요청 파라미터가 아니라 로그인한 관리자 세션에서만 가져온다(감사 이력 위조 방지).
+        Map<String, String> me = AuthSession.get(request, AuthSession.Type.MNGR);
+        String registId = me == null ? "" : me.getOrDefault("loginId", "");
+        String registName = me == null ? "" : me.getOrDefault("name", "");
         List<ProdMatchResult> results = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             String line;

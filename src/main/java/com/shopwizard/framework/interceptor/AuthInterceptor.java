@@ -33,7 +33,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
         if (isPublicRead(request)) return true;
-        if (AuthSession.isLoggedIn(request, type)) return true;
+        if (AuthSession.isLoggedIn(request, type)) {
+            // 이후 요청 바디의 감사 필드(registId/changeId …)를 이 로그인 정보로 강제하기 위해 행위자를 표시한다.
+            AuthSession.markActor(request, type);
+            return true;
+        }
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType("application/json;charset=UTF-8");

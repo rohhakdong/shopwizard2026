@@ -43,6 +43,19 @@ public class CheckoutController {
         Integer custId = AuthSession.custId(request);
         req.setCustId(custId != null ? custId : 0);
 
+        // 등록자(registId/registName)도 요청 바디가 아니라 세션에서 정한다. 로그인 고객은 본인 로그인ID/이름, 비회원은
+        // 클라이언트가 보낸 값을 버려서 CheckoutService 가 기존 규칙(GUEST / 주문자명)을 적용하게 한다.
+        Map<String, String> me = AuthSession.get(request, AuthSession.Type.CUST);
+        if (me != null && custId != null && custId != 0) {
+            String loginId = me.getOrDefault("loginId", "");
+            String name = me.get("name");
+            req.setRegistId(loginId);
+            req.setRegistName(name == null || name.isBlank() ? loginId : name);
+        } else {
+            req.setRegistId(null);
+            req.setRegistName(null);
+        }
+
         // 1. 토스 결제 승인 (DB 트랜잭션 밖에서 먼저 수행)
         Map<String, Object> tossResp = tossPaymentService.confirm(req.getPaymentKey(), req.getOrderId(), req.getAmount());
 

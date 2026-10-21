@@ -25,7 +25,28 @@ public final class AuthSession {
         Type(String attribute) { this.attribute = attribute; }
     }
 
+    /**
+     * 이 요청을 인증시킨 주체(관리자/고객/상점/창고)의 로그인 정보. 인터셉터가 세션 인증에 성공했을 때만 요청 속성에
+     * 실어두며, 요청 바디의 감사 필드(registId/changeId …)를 이 값으로 덮어쓰는 데 쓴다({@link AuditFields}).
+     */
+    public record Actor(String loginId, String name) {}
+
+    /** {@link #actor(HttpServletRequest)} 가 읽는 요청 속성 이름. */
+    public static final String ACTOR_ATTR = "auth.actor";
+
     private AuthSession() {}
+
+    /** 세션 인증을 통과한 요청에 행위자를 표시한다. 세션에 해당 주체가 없으면 아무것도 하지 않는다. */
+    public static void markActor(HttpServletRequest request, Type type) {
+        Map<String, String> claims = get(request, type);
+        if (claims == null) return;
+        request.setAttribute(ACTOR_ATTR, new Actor(claims.get("loginId"), claims.get("name")));
+    }
+
+    /** 이 요청을 세션으로 인증시킨 행위자. 공개/비인증 요청이면 null. */
+    public static Actor actor(HttpServletRequest request) {
+        return request.getAttribute(ACTOR_ATTR) instanceof Actor a ? a : null;
+    }
 
     /** 로그인 성공 처리. 세션 고정 공격을 막기 위해 기존 세션이 있으면 세션 ID를 새로 발급한다. */
     public static void login(HttpServletRequest request, Type type, Map<String, String> claims) {
