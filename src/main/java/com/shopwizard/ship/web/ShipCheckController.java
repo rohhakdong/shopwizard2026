@@ -15,7 +15,4 @@ public class ShipCheckController {
     @GetMapping("/list") public List<ShipCheck> selectList(@RequestParam Map<String, Object> params) { return shipCheckService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return shipCheckService.selectCount(params); }
     @GetMapping public ShipCheck select(@RequestParam Map<String, Object> params) { return shipCheckService.select(params); }
-    @PostMapping public int insert(@RequestBody ShipCheck shipCheck) { return shipCheckService.insert(shipCheck); }
-    @PutMapping("/print-count") public int updatePrintCount(@RequestBody ShipCheck shipCheck) { return shipCheckService.updatePrintCount(shipCheck); }
-    @DeleteMapping public int delete(@RequestBody ShipCheck shipCheck) { return shipCheckService.delete(shipCheck); }
 }

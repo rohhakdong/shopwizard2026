@@ -20,15 +20,6 @@ public class ProdReviewController {
     @GetMapping("/{reviewNo}")
     public ProdReview select(@PathVariable Integer reviewNo) { return prodReviewService.select(reviewNo); }
 
-    @PostMapping
-    public void insert(@RequestBody ProdReview prodReview) { prodReviewService.insert(prodReview); }
-
-    @PutMapping
-    public void update(@RequestBody ProdReview prodReview) { prodReviewService.update(prodReview); }
-
-    @DeleteMapping("/{reviewNo}")
-    public void delete(@PathVariable Integer reviewNo) { prodReviewService.delete(reviewNo); }
-
     @GetMapping("/best/list")
     public List<ProdReview> selectListBest(@RequestParam Map<String, Object> params) { return prodReviewService.selectListBest(params); }
 

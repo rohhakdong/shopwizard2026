@@ -20,12 +20,4 @@ public class OrderCashReciptController {
     @GetMapping
     public OrderCashRecipt select(@RequestParam Map<String, Object> params) { return orderCashReciptService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody OrderCashRecipt orderCashRecipt) { orderCashReciptService.insert(orderCashRecipt); }
-
-    @PutMapping
-    public void update(@RequestBody OrderCashRecipt orderCashRecipt) { orderCashReciptService.update(orderCashRecipt); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { orderCashReciptService.delete(params); }
 }

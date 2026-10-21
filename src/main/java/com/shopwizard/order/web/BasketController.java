@@ -56,13 +56,6 @@ public class BasketController {
         basketService.delete(custId(request), toInt(params.get("basketNo")));
     }
 
-    @DeleteMapping("/multi")
-    public void deleteMulti(@RequestBody Map<String, Object> params, HttpServletRequest request) {
-        Object arr = params.get("pBasketNoArr");
-        List<Integer> nos = arr instanceof List<?> l ? l.stream().map(BasketController::toInt).toList() : List.of();
-        basketService.deleteMulti(custId(request), nos);
-    }
-
     @DeleteMapping("/clean")
     public void clean(HttpServletRequest request) {
         basketService.clean(custId(request));

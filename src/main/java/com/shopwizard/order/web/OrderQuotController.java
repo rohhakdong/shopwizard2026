@@ -15,7 +15,4 @@ public class OrderQuotController {
     @GetMapping("/list") public List<OrderQuot> selectList(@RequestParam Map<String, Object> params) { return orderQuotService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return orderQuotService.selectCount(params); }
     @GetMapping public OrderQuot select(@RequestParam Map<String, Object> params) { return orderQuotService.select(params); }
-    @PostMapping public int insert(@RequestBody OrderQuot orderQuot) { return orderQuotService.insert(orderQuot); }
-    @PutMapping public int update(@RequestBody OrderQuot orderQuot) { return orderQuotService.update(orderQuot); }
-    @DeleteMapping public int delete(@RequestBody OrderQuot orderQuot) { return orderQuotService.delete(orderQuot); }
 }

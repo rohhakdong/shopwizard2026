@@ -15,7 +15,4 @@ public class OrderUpriceMatchController {
     @GetMapping("/list") public List<OrderUpriceMatch> selectList(@RequestParam Map<String, Object> params) { return orderUpriceMatchService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return orderUpriceMatchService.selectCount(params); }
     @GetMapping public OrderUpriceMatch select(@RequestParam Map<String, Object> params) { return orderUpriceMatchService.select(params); }
-    @PostMapping public int insert(@RequestBody OrderUpriceMatch orderUpriceMatch) { return orderUpriceMatchService.insert(orderUpriceMatch); }
-    @PutMapping public int update(@RequestBody OrderUpriceMatch orderUpriceMatch) { return orderUpriceMatchService.update(orderUpriceMatch); }
-    @DeleteMapping public int delete(@RequestBody OrderUpriceMatch orderUpriceMatch) { return orderUpriceMatchService.delete(orderUpriceMatch); }
 }

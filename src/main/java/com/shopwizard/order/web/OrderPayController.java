@@ -20,18 +20,4 @@ public class OrderPayController {
     @GetMapping
     public OrderPay select(@RequestParam Map<String, Object> params) { return orderPayService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody OrderPay orderPay) { orderPayService.insert(orderPay); }
-
-    @PutMapping
-    public void update(@RequestBody OrderPay orderPay) { orderPayService.update(orderPay); }
-
-    @PutMapping("/reciept")
-    public void updateOrderPayRecipt(@RequestBody Map<String, Object> params) { orderPayService.updateOrderPayRecipt(params); }
-
-    @PutMapping("/reciept/auto")
-    public void updateOrderPayReciptAuto(@RequestBody Map<String, Object> params) { orderPayService.updateOrderPayReciptAuto(params); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { orderPayService.delete(params); }
 }

@@ -24,12 +24,4 @@ public class AccntController {
     @GetMapping("/{accntId}")
     public Accnt select(@PathVariable Integer accntId) { return accntService.select(accntId); }
 
-    @PostMapping
-    public int insert(@RequestBody Accnt accnt) { return accntService.insert(accnt); }
-
-    @PutMapping
-    public int update(@RequestBody Accnt accnt) { return accntService.update(accnt); }
-
-    @DeleteMapping("/{accntId}")
-    public int delete(@PathVariable Integer accntId) { return accntService.delete(accntId); }
 }

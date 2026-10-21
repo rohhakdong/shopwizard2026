@@ -15,7 +15,4 @@ public class ProdCodeMatchController {
     @GetMapping("/list") public List<ProdCodeMatch> selectList(@RequestParam Map<String, Object> params) { return prodCodeMatchService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return prodCodeMatchService.selectCount(params); }
     @GetMapping public ProdCodeMatch select(@RequestParam Map<String, Object> params) { return prodCodeMatchService.select(params); }
-    @PostMapping public int insert(@RequestBody ProdCodeMatch prodCodeMatch) { return prodCodeMatchService.insert(prodCodeMatch); }
-    @PutMapping public int update(@RequestBody ProdCodeMatch prodCodeMatch) { return prodCodeMatchService.update(prodCodeMatch); }
-    @DeleteMapping public int delete(@RequestBody ProdCodeMatch prodCodeMatch) { return prodCodeMatchService.delete(prodCodeMatch); }
 }

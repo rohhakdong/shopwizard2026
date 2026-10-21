@@ -31,17 +31,9 @@ public class ShipDirectController {
     @PostMapping("/check-batch") public ShipDirectIssueResult checkBatch(@RequestBody ShipDirectCheckRequest req) { return shipDirectService.checkBatch(req); }
     /** 배송완료 화면(ship-direct-complete.js) — 선택한 배송시작 건들을 일괄 배송완료 처리. */
     @PostMapping("/complete-batch") public ShipDirectIssueResult completeBatch(@RequestBody ShipDirectCheckRequest req) { return shipDirectService.completeBatch(req); }
-    @PostMapping("/ship-direct-print") public int insertShipDirectPrint(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrint(params); }
-    @PostMapping("/ship-direct-print-by-matching") public int insertShipDirectPrintByMatching(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrintByMatching(params); }
     @GetMapping("/social-check") public int checkShipDirectPrintByMatchingSocial(@RequestParam Map<String, Object> params) { return shipDirectService.checkShipDirectPrintByMatchingSocial(params); }
-    @PostMapping("/ship-direct-print-by-matching-social") public int insertShipDirectPrintByMatchingSocial(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrintByMatchingSocial(params); }
-    @PostMapping("/ship-direct-print-with-gift") public int insertShipDirectPrintWithGift(@RequestBody Map<String, Object> params) { return shipDirectService.insertShipDirectPrintWithGift(params); }
-    @PutMapping("/print") public int updatePrint(@RequestBody Map<String, Object> params) { return shipDirectService.updatePrint(params); }
-    @PutMapping("/print-sort-name") public int updatePrintSortName(@RequestBody Map<String, Object> params) { return shipDirectService.updatePrintSortName(params); }
     /** 송장입력 화면(ship-direct.js) — 발주확인 건에 택배사/송장번호를 입력하고 배송시작으로 전환(상태는 서버가 고정). */
     @PutMapping("/invoice") public int updateInvoice(@RequestBody Map<String, Object> params) { return shipDirectService.updateInvoice(params); }
-    @PutMapping("/adjust-select-date") public int updateAdjustSelectDate(@RequestBody Map<String, Object> params) { return shipDirectService.updateAdjustSelectDate(params); }
-    @PutMapping("/adjust-select-date-schedule") public int updateAdjustSelectDateSchedule(@RequestBody Map<String, Object> params) { return shipDirectService.updateAdjustSelectDateSchedule(params); }
     @GetMapping("/invoice-count") public int countInvoice(@RequestParam Map<String, Object> params) { return shipDirectService.countInvoice(params); }
     @GetMapping("/cmplet-list") public List<ShipDirect> selectCmpletList(@RequestParam Map<String, Object> params) { return shipDirectService.selectCmpletList(params); }
     @GetMapping("/cmplet-count") public int selectCmpletCount(@RequestParam Map<String, Object> params) { return shipDirectService.selectCmpletCount(params); }

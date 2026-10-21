@@ -23,12 +23,4 @@ public class OrderDeliFeeController {
     @GetMapping
     public OrderDeliFee select(@RequestParam Map<String, Object> params) { return orderDeliFeeService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody OrderDeliFee orderDeliFee) { orderDeliFeeService.insert(orderDeliFee); }
-
-    @PutMapping
-    public void update(@RequestBody OrderDeliFee orderDeliFee) { orderDeliFeeService.update(orderDeliFee); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { orderDeliFeeService.delete(params); }
 }

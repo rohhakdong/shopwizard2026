@@ -29,15 +29,4 @@ public class OrderProdApprovLineController {
     @GetMapping("/count/reject")
     public int countReject(@RequestParam Map<String, Object> params) { return orderProdApprovLineService.countReject(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Map<String, Object> params) { orderProdApprovLineService.insert(params); }
-
-    @PutMapping("/approv")
-    public void updateApprov(@RequestBody Map<String, Object> params) { orderProdApprovLineService.updateApprov(params); }
-
-    @PutMapping("/reject")
-    public void updateReject(@RequestBody Map<String, Object> params) { orderProdApprovLineService.updateReject(params); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { orderProdApprovLineService.delete(params); }
 }

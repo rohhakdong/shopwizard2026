@@ -24,12 +24,4 @@ public class SlinkLogController {
     @GetMapping
     public SlinkLog select(@RequestParam Map<String, Object> params) { return slinkLogService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody SlinkLog slinkLog) { slinkLogService.insert(slinkLog); }
-
-    @PutMapping
-    public void update(@RequestBody SlinkLog slinkLog) { slinkLogService.update(slinkLog); }
-
-    @DeleteMapping
-    public void delete(@RequestBody SlinkLog slinkLog) { slinkLogService.delete(slinkLog); }
 }

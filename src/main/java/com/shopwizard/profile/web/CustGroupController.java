@@ -24,12 +24,4 @@ public class CustGroupController {
     @GetMapping("/{custGroupCode}")
     public CustGroup select(@PathVariable String custGroupCode) { return custGroupService.select(custGroupCode); }
 
-    @PostMapping
-    public int insert(@RequestBody CustGroup custGroup) { return custGroupService.insert(custGroup); }
-
-    @PutMapping
-    public int update(@RequestBody CustGroup custGroup) { return custGroupService.update(custGroup); }
-
-    @DeleteMapping("/{custGroupCode}")
-    public int delete(@PathVariable String custGroupCode) { return custGroupService.delete(custGroupCode); }
 }

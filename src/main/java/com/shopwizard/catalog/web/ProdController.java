@@ -39,7 +39,6 @@ public class ProdController {
     @GetMapping("/dashboard") public List<ProdDashBoard> selectListDashboard(@RequestParam Map<String, Object> params) { return prodService.selectListDashboard(params); }
     @PostMapping public int insert(@RequestBody Prod prod) { return prodService.insert(prod); }
     @PutMapping public int update(@RequestBody Prod prod) { return prodService.update(prod); }
-    @PutMapping("/price") public int updatePrice(@RequestBody Map<String, Object> params) { return prodService.updatePrice(params); }
     @PutMapping("/approv") public int approv(@RequestBody Map<String, Object> params) { return prodService.approv(params); }
 
     /**
@@ -55,5 +54,4 @@ public class ProdController {
         return prodService.delete(prod);
     }
     @PostMapping("/copy2shopion") public int copy2Shopion(@RequestBody Map<String, Object> params) { return prodService.copy2Shopion(params); }
-    @DeleteMapping("/shopion/{prodCode}") public int delete2Shopion(@PathVariable String prodCode) { return prodService.delete2Shopion(prodCode); }
 }

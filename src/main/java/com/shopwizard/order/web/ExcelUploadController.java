@@ -23,12 +23,4 @@ public class ExcelUploadController {
     @GetMapping
     public ExcelUpload select(@RequestParam Map<String, Object> params) { return excelUploadService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody ExcelUpload excelUpload) { excelUploadService.insert(excelUpload); }
-
-    @PutMapping
-    public void update(@RequestBody ExcelUpload excelUpload) { excelUploadService.update(excelUpload); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { excelUploadService.delete(params); }
 }

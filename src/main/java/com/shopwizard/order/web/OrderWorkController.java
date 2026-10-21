@@ -15,7 +15,4 @@ public class OrderWorkController {
     @GetMapping("/list") public List<OrderWork> selectList(@RequestParam Map<String, Object> params) { return orderWorkService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return orderWorkService.selectCount(params); }
     @GetMapping public OrderWork select(@RequestParam Map<String, Object> params) { return orderWorkService.select(params); }
-    @PostMapping public int insert(@RequestBody OrderWork orderWork) { return orderWorkService.insert(orderWork); }
-    @PutMapping public int update(@RequestBody OrderWork orderWork) { return orderWorkService.update(orderWork); }
-    @DeleteMapping public int delete(@RequestBody OrderWork orderWork) { return orderWorkService.delete(orderWork); }
 }

@@ -27,18 +27,4 @@ public class CustPointDetailController {
     @GetMapping("/sum")
     public Integer selectSum(@RequestParam Map<String, Object> params) { return custPointDetailService.selectSum(params); }
 
-    @PostMapping
-    public int insert(@RequestBody CustPointDetail custPointDetail) { return custPointDetailService.insert(custPointDetail); }
-
-    @PostMapping("/schedule")
-    public int insertSchedule(@RequestBody Map<String, Object> params) { return custPointDetailService.insertSchedule(params); }
-
-    @PostMapping("/refund")
-    public int insertRefund(@RequestBody Map<String, Object> params) { return custPointDetailService.insertRefund(params); }
-
-    @PutMapping
-    public int update(@RequestBody CustPointDetail custPointDetail) { return custPointDetailService.update(custPointDetail); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return custPointDetailService.delete(params); }
 }

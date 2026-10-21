@@ -15,7 +15,4 @@ public class OrderGiftRuleController {
     @GetMapping("/list") public List<OrderGiftRule> selectList(@RequestParam Map<String, Object> params) { return orderGiftRuleService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return orderGiftRuleService.selectCount(params); }
     @GetMapping public OrderGiftRule select(@RequestParam Map<String, Object> params) { return orderGiftRuleService.select(params); }
-    @PostMapping public int insert(@RequestBody OrderGiftRule orderGiftRule) { return orderGiftRuleService.insert(orderGiftRule); }
-    @PutMapping public int update(@RequestBody OrderGiftRule orderGiftRule) { return orderGiftRuleService.update(orderGiftRule); }
-    @DeleteMapping public int delete(@RequestBody OrderGiftRule orderGiftRule) { return orderGiftRuleService.delete(orderGiftRule); }
 }

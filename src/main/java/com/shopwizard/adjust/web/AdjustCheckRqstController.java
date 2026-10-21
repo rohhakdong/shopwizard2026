@@ -24,12 +24,4 @@ public class AdjustCheckRqstController {
     @GetMapping
     public AdjustCheckRqst select(@RequestParam Map<String, Object> params) { return adjustCheckRqstService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody AdjustCheckRqst adjustCheckRqst) { adjustCheckRqstService.insert(adjustCheckRqst); }
-
-    @PutMapping
-    public void update(@RequestBody AdjustCheckRqst adjustCheckRqst) { adjustCheckRqstService.update(adjustCheckRqst); }
-
-    @DeleteMapping
-    public void delete(@RequestBody AdjustCheckRqst adjustCheckRqst) { adjustCheckRqstService.delete(adjustCheckRqst); }
 }

@@ -20,12 +20,4 @@ public class ExcelUploadDetailController {
     @GetMapping
     public ExcelUploadDetail select(@RequestParam Map<String, Object> params) { return excelUploadDetailService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody ExcelUploadDetail excelUploadDetail) { excelUploadDetailService.insert(excelUploadDetail); }
-
-    @PutMapping
-    public void update(@RequestBody ExcelUploadDetail excelUploadDetail) { excelUploadDetailService.update(excelUploadDetail); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Map<String, Object> params) { excelUploadDetailService.delete(params); }
 }

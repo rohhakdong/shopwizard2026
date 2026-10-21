@@ -124,23 +124,8 @@ public class OrderProdController {
     // /shopinfo, /invoice)은 HTTP 로 열어두지 않는다 — 상태는 order/ship 의 배치 게이트 서비스만 바꾼다.
     // (화면은 이 엔드포인트들을 호출하지 않는다. 서버 내부는 OrderProdService/Mapper 를 직접 호출한다.)
 
-    @PutMapping("/price")
-    public void updatePrice(@RequestBody OrderProd orderProd) { orderProdService.updatePrice(orderProd); }
-
-    @PutMapping("/price/shipdirect")
-    public void updatePriceShipDirect(@RequestBody OrderProd orderProd) { orderProdService.updatePriceShipDirect(orderProd); }
-
-    @PutMapping("/price/shipdirectprint")
-    public void updatePriceShipDirectPrint(@RequestBody OrderProd orderProd) { orderProdService.updatePriceShipDirectPrint(orderProd); }
-
-    @PutMapping("/price/adjustdetail")
-    public void updatePriceAdjustDetail(@RequestBody OrderProd orderProd) { orderProdService.updatePriceAdjustDetail(orderProd); }
-
     @GetMapping("/mypage/list")
     public List<OrderProd> mypageSelectList(@RequestParam Map<String, Object> params) { return orderProdService.mypageSelectList(params); }
-
-    @PutMapping("/mypage")
-    public void mypageUpdate(@RequestBody Map<String, Object> params) { orderProdService.mypageUpdate(params); }
 
     @GetMapping("/count/cust/{custId}")
     public int countByCustId(@PathVariable Integer custId) { return orderProdService.countByCustId(custId); }
@@ -153,9 +138,6 @@ public class OrderProdController {
 
     @GetMapping("/dashboard")
     public List<OrderDashBoard> selectListDashboardAnyb(@RequestParam Map<String, Object> params) { return orderProdService.selectListDashboardAnyb(params); }
-
-    @PutMapping("/custconsltyn")
-    public void updateCustConsltYn(@RequestBody Map<String, Object> params) { orderProdService.updateCustConsltYn(params); }
 
     @GetMapping("/count/state")
     public int countOrderStateDiffer(@RequestParam Map<String, Object> params) { return orderProdService.countOrderStateDiffer(params); }

@@ -27,12 +27,4 @@ public class CustApprovLineController {
     @GetMapping("/approvLevelMax/{custId}")
     public Integer selectApprovLevelMax(@PathVariable Integer custId) { return custApprovLineService.selectApprovLevelMax(custId); }
 
-    @PostMapping
-    public int insert(@RequestBody CustApprovLine custApprovLine) { return custApprovLineService.insert(custApprovLine); }
-
-    @PutMapping
-    public int update(@RequestBody CustApprovLine custApprovLine) { return custApprovLineService.update(custApprovLine); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return custApprovLineService.delete(params); }
 }

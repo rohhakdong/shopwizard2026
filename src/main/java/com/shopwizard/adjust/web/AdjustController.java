@@ -36,12 +36,7 @@ public class AdjustController {
     @GetMapping
     public Adjust select(@RequestParam Map<String, Object> params) { return adjustService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Adjust adjust) { adjustService.insert(adjust); }
-
     @PutMapping
     public void update(@RequestBody Adjust adjust) { adjustService.update(adjust); }
 
-    @DeleteMapping
-    public void delete(@RequestBody Adjust adjust) { adjustService.delete(adjust); }
 }

@@ -21,6 +21,4 @@ public class OrderChangeNoController {
     @GetMapping
     public Integer selectChangeNo(@RequestParam Map<String, Object> params) { return orderChangeNoService.selectChangeNo(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Map<String, Object> params) { orderChangeNoService.insert(params); }
 }

@@ -20,12 +20,4 @@ public class ProdDeliFeeController {
     @GetMapping("/{deliFeeId}")
     public ProdDeliFee select(@PathVariable Integer deliFeeId) { return prodDeliFeeService.select(deliFeeId); }
 
-    @PostMapping
-    public void insert(@RequestBody ProdDeliFee prodDeliFee) { prodDeliFeeService.insert(prodDeliFee); }
-
-    @PutMapping
-    public void update(@RequestBody ProdDeliFee prodDeliFee) { prodDeliFeeService.update(prodDeliFee); }
-
-    @DeleteMapping("/{deliFeeId}")
-    public void delete(@PathVariable Integer deliFeeId) { prodDeliFeeService.delete(deliFeeId); }
 }

@@ -24,18 +24,4 @@ public class CustCpnDetailController {
     @GetMapping
     public CustCpnDetail select(@RequestParam Map<String, Object> params) { return custCpnDetailService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody CustCpnDetail custCpnDetail) { return custCpnDetailService.insert(custCpnDetail); }
-
-    @PutMapping
-    public int update(@RequestBody CustCpnDetail custCpnDetail) { return custCpnDetailService.update(custCpnDetail); }
-
-    @PutMapping("/disable")
-    public int disable(@RequestBody Map<String, Object> params) { return custCpnDetailService.disable(params); }
-
-    @PutMapping("/enable")
-    public int enable(@RequestBody Map<String, Object> params) { return custCpnDetailService.enable(params); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return custCpnDetailService.delete(params); }
 }

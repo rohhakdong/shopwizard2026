@@ -24,12 +24,4 @@ public class AdjustPeriodController {
     @GetMapping
     public AdjustPeriod select(@RequestParam Map<String, Object> params) { return adjustPeriodService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody AdjustPeriod adjustPeriod) { adjustPeriodService.insert(adjustPeriod); }
-
-    @PutMapping
-    public void update(@RequestBody AdjustPeriod adjustPeriod) { adjustPeriodService.update(adjustPeriod); }
-
-    @DeleteMapping
-    public void delete(@RequestBody AdjustPeriod adjustPeriod) { adjustPeriodService.delete(adjustPeriod); }
 }

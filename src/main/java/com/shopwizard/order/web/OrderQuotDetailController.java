@@ -16,7 +16,4 @@ public class OrderQuotDetailController {
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return orderQuotDetailService.selectCount(params); }
     @GetMapping public OrderQuotDetail select(@RequestParam Map<String, Object> params) { return orderQuotDetailService.select(params); }
     @GetMapping("/max") public int selectMax(@RequestParam Map<String, Object> params) { return orderQuotDetailService.selectMax(params); }
-    @PostMapping public int insert(@RequestBody OrderQuotDetail orderQuotDetail) { return orderQuotDetailService.insert(orderQuotDetail); }
-    @PutMapping public int update(@RequestBody OrderQuotDetail orderQuotDetail) { return orderQuotDetailService.update(orderQuotDetail); }
-    @DeleteMapping public int delete(@RequestBody OrderQuotDetail orderQuotDetail) { return orderQuotDetailService.delete(orderQuotDetail); }
 }

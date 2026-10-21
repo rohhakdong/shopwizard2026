@@ -31,30 +31,4 @@ public class AdjustDetailController {
     @GetMapping
     public AdjustDetail select(@RequestParam Map<String, Object> params) { return adjustDetailService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody AdjustDetail adjustDetail) { adjustDetailService.insert(adjustDetail); }
-
-    @PutMapping
-    public void update(@RequestBody AdjustDetail adjustDetail) { adjustDetailService.update(adjustDetail); }
-
-    @DeleteMapping
-    public void delete(@RequestBody AdjustDetail adjustDetail) { adjustDetailService.delete(adjustDetail); }
-
-    @PostMapping("/list")
-    public void insertList(@RequestBody Map<String, Object> params) { adjustDetailService.insertList(params); }
-
-    @PostMapping("/listbyorder")
-    public void insertListByOrder(@RequestBody Map<String, Object> params) { adjustDetailService.insertListByOrder(params); }
-
-    @PostMapping("/schedule")
-    public void insertSchedule(@RequestBody Map<String, Object> params) { adjustDetailService.insertSchedule(params); }
-
-    @PutMapping("/list")
-    public void updateList(@RequestBody Map<String, Object> params) { adjustDetailService.updateList(params); }
-
-    @PutMapping("/branchsale")
-    public void updateBranchSale(@RequestBody Map<String, Object> params) { adjustDetailService.updateBranchSale(params); }
-
-    @PutMapping("/shopbuy")
-    public void updateShopBuy(@RequestBody Map<String, Object> params) { adjustDetailService.updateShopBuy(params); }
 }

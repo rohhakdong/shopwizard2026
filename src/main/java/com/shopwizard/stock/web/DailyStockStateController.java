@@ -18,12 +18,4 @@ public class DailyStockStateController {
     @GetMapping("/check-count") public int selectCountCheck(@RequestParam Map<String, Object> params) { return dailyStockStateService.selectCountCheck(params); }
     @GetMapping("/ship-direct-list") public List<DailyStockState> selectListShipDirect(@RequestParam Map<String, Object> params) { return dailyStockStateService.selectListShipDirect(params); }
     @GetMapping public DailyStockState select(@RequestParam Map<String, Object> params) { return dailyStockStateService.select(params); }
-    @PostMapping public int insert(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.insert(dailyStockState); }
-    @PostMapping("/enter-qty") public int insertEnterQty(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.insertEnterQty(dailyStockState); }
-    @PostMapping("/ship-qty") public int insertShipQty(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.insertShipQty(dailyStockState); }
-    @PutMapping public int update(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.update(dailyStockState); }
-    @PutMapping("/enter-qty") public int updateEnterQty(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.updateEnterQty(dailyStockState); }
-    @PutMapping("/ship-qty") public int updateShipQty(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.updateShipQty(dailyStockState); }
-    @PutMapping("/enter-qty-after-diff") public int updateEnterQtyAfterDiff(@RequestBody Map<String, Object> params) { return dailyStockStateService.updateEnterQtyAfterDiff(params); }
-    @DeleteMapping public int delete(@RequestBody DailyStockState dailyStockState) { return dailyStockStateService.delete(dailyStockState); }
 }

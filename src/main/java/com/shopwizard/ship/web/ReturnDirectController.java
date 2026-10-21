@@ -23,6 +23,4 @@ public class ReturnDirectController {
     @PostMapping("/request-batch") public ShipDirectIssueResult requestBatch(@RequestBody ReturnRequestBatchRequest req) { return returnDirectService.requestBatch(req); }
     /** 반품확정 화면(ship-return.js) — 반품요청 건을 반품완료로 전환(상태는 서버가 고정, 반품요청 건만 성공). */
     @PutMapping public int update(@RequestBody Map<String, Object> params) { return returnDirectService.update(params); }
-    @PutMapping("/adjust-select-date") public int updateAdjustSelectDate(@RequestBody Map<String, Object> params) { return returnDirectService.updateAdjustSelectDate(params); }
-    @PutMapping("/adjust-select-date-schedule") public int updateAdjustSelectDateSchedule(@RequestBody Map<String, Object> params) { return returnDirectService.updateAdjustSelectDateSchedule(params); }
 }
