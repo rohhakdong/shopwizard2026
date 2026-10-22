@@ -665,6 +665,7 @@
         SET OrderState = #{orderState}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, Remark = #{remark}
             <if test="orderState == '출고지시'">, ShipDirectDate = NOW()</if>
             <if test="orderState == '발주확인'">, ShipCheckDate = NOW()</if>
+            <if test="orderState == '배송시작'">, ShipCmpletDate = NOW()</if>
             <if test="orderState == '반품요청'">, ReturnRqstDate = NOW()</if>
             <if test="orderState == '반품완료'">, ReturnCmpletDate = NOW()</if>
             <if test="orderState == '배송완료'">, DeliCmpletDate = NOW()</if>
