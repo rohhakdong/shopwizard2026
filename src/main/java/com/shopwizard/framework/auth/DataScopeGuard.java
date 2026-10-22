@@ -35,6 +35,13 @@ public class DataScopeGuard {
         return DataScope.of(request);
     }
 
+    /** 상점·채널로 제한된 계정이 할 수 없는 업무(정산 생성·마감처럼 여러 상점에 걸치는 쓰기)는 제한 없는 계정만. */
+    public void requireUnscoped(HttpServletRequest request) {
+        if (scope(request).scoped()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "상점·채널이 지정된 계정은 이 작업을 할 수 없습니다.");
+        }
+    }
+
     /** 주문라인(OrderNo, OrderProdNo)이 내 상점/채널 것인가. */
     public void requireLine(HttpServletRequest request, Integer orderNo, Integer orderProdNo) {
         DataScope s = scope(request);

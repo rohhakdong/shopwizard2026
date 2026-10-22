@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    정산 생성·마감 전용 쿼리. 배송/반품 테이블(tShpShipDirect 송장입력 건 (+), tShpReturnDirect 반품완료 건 (-))이 기준이다.
+    원본 행의 AdjustSelectDate 를 "조건부 UPDATE(영향 행 1)" 로 찍어야 정산자료로 한 번만 들어간다.
+-->
+<mapper namespace="com.shopwizard.adjust.mapper.AdjustProcessMapper">
+
+    <!-- ───────── 정산 대상(아직 정산자료로 만들지 않은 배송(+)/반품(-)) ─────────
+         ${a}=테이블 별칭, ${d}=완료일 컬럼. 배송과 반품이 같은 필터를 쓰도록 한 곳에 둔다. -->
+    <sql id="targetFilter">
+        AND (${a}.AdjustSelectDate IS NULL OR ${a}.AdjustSelectDate = '')
+        <if test="pSvcCode != null and pSvcCode != ''">AND Ch.SvcCode = #{pSvcCode}</if>
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            <![CDATA[
+            AND ${a}.${d} >= DATE_FORMAT(#{startDate}, '%Y%m%d')
+            AND ${a}.${d} <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY)
+            ]]>
+        </if>
+        <if test="pShopCode != null and pShopCode != ''">AND ${a}.ShopCode = #{pShopCode}</if>
+        <if test="pOrderName != null and pOrderName != ''">AND ${a}.OrderName LIKE CONCAT('%',#{pOrderName},'%')</if>
+        <if test="pAdjustPeriodType != null and pAdjustPeriodType != ''">
+            AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop PS WHERE PS.ShopCode = ${a}.ShopCode AND PS.adjustPeriodCode = #{pAdjustPeriodType})
+        </if>
+    </sql>
+
+    <sql id="targetUnion">
+        SELECT 'SHIP' AS kind, SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo, SD.OrderName, SD.ShopCode, SD.ShopName,
+               SD.ChnlCode, Ch.ChnlName, SD.ProdCode, SD.ProdName, SD.ItemName, SD.ProdQty,
+               SD.SalePrice, SD.SupplyPrice, SD.BuyPrice, SD.VatRate, SD.DeliFeeAmt, SD.InvNo, SD.OrderState,
+               SD.ShipCmpletDate AS cmpletDate
+        FROM shopwizard.tShpShipDirect SD
+        INNER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = SD.ChnlCode
+        WHERE (SD.ShipCmpletDate IS NOT NULL AND SD.ShipCmpletDate != '')
+        <include refid="targetFilter"><property name="a" value="SD"/><property name="d" value="ShipCmpletDate"/></include>
+        UNION ALL
+        SELECT 'RETURN' AS kind, RD.OrderNo, RD.OrderProdNo, RD.OrderChangeNo, RD.OrderName, RD.ShopCode, RD.ShopName,
+               RD.ChnlCode, Ch.ChnlName, RD.ProdCode, RD.ProdName, RD.ItemName, -1 * RD.ProdQty,
+               -1 * RD.SalePrice, -1 * RD.SupplyPrice, -1 * RD.BuyPrice, RD.VatRate, -1 * RD.DeliFeeAmt, RD.InvNo, RD.OrderState,
+               RD.ReturnCmpletDate AS cmpletDate
+        FROM shopwizard.tShpReturnDirect RD
+        INNER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = RD.ChnlCode
+        WHERE (RD.ReturnCmpletDate IS NOT NULL AND RD.ReturnCmpletDate != '')
+        <include refid="targetFilter"><property name="a" value="RD"/><property name="d" value="ReturnCmpletDate"/></include>
+    </sql>
+
+    <select id="selectTargetList" parameterType="map" resultType="com.shopwizard.adjust.model.AdjustTarget">
+        SELECT * FROM (<include refid="targetUnion"/>) T
+        ORDER BY T.cmpletDate DESC, T.OrderNo DESC, T.OrderProdNo, T.kind
+        <if test="pPageSize != null and pPageSize != ''">
+            <!-- 쿼리스트링 값은 문자열이라 #{} 로 바인딩하면 LIMIT '0', '20' 이 되어 SQL 오류 — 정수로 파싱한 값만 ${} 로 넣는다 -->
+            <bind name="pageOffsetNum" value="pPageOffset == null ? 0 : @java.lang.Integer@parseInt(pPageOffset.toString())"/>
+            <bind name="pageSizeNum" value="@java.lang.Integer@parseInt(pPageSize.toString())"/>
+            LIMIT ${pageOffsetNum}, ${pageSizeNum}
+        </if>
+    </select>
+
+    <select id="selectTargetCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM (<include refid="targetUnion"/>) T
+    </select>
+
+    <!-- 구분(배송/반품)별 건수·금액 합계 — 화면 상단 합계 표시용 -->
+    <select id="selectTargetSum" parameterType="map" resultType="map">
+        SELECT T.kind AS kind, COUNT(*) AS cnt, IFNULL(SUM(T.SalePrice),0) AS saleAmt,
+               IFNULL(SUM(T.SupplyPrice),0) AS supplyAmt, IFNULL(SUM(T.BuyPrice),0) AS buyAmt
+        FROM (<include refid="targetUnion"/>) T
+        GROUP BY T.kind
+    </select>
+
+    <!-- 마감 화면용: 기간 안에 아직 정산자료로 만들지 않은 대상 건수(상점별) -->
+    <select id="selectOpenTargetCountByShop" parameterType="map" resultType="map">
+        SELECT T.ShopCode AS shopCode, COUNT(*) AS cnt
+        FROM (<include refid="targetUnion"/>) T
+        GROUP BY T.ShopCode
+    </select>
+
+    <!-- ───────── 정산자료 생성/취소 ───────── -->
+    <update id="markShipSelected" parameterType="map">
+        UPDATE shopwizard.tShpShipDirect SET
+            AdjustSelectDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = #{orderChangeNo}
+        AND (ShipCmpletDate IS NOT NULL AND ShipCmpletDate != '')
+        AND (AdjustSelectDate IS NULL OR AdjustSelectDate = '')
+    </update>
+
+    <update id="markReturnSelected" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect SET
+            AdjustSelectDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = #{orderChangeNo}
+        AND (ReturnCmpletDate IS NOT NULL AND ReturnCmpletDate != '')
+        AND (AdjustSelectDate IS NULL OR AdjustSelectDate = '')
+    </update>
+
+    <update id="unmarkShipSelected" parameterType="map">
+        UPDATE shopwizard.tShpShipDirect SET
+            AdjustSelectDate = NULL, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = #{orderChangeNo}
+        AND AdjustSelectDate IS NOT NULL
+    </update>
+
+    <update id="unmarkReturnSelected" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect SET
+            AdjustSelectDate = NULL, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = #{orderChangeNo}
+        AND AdjustSelectDate IS NOT NULL
+    </update>
+
+    <!-- 한 건만 복사한다(레거시 insertList 의 배송/반품 두 SELECT 를 분리: 한 키로 둘 다 복사하면 이미 정산된 배송(+)이 다시 들어갈 수 있다) -->
+    <insert id="insertDetailFromShip" parameterType="map">
+        INSERT INTO shopwizard.tAdjAdjustDetail (OrderNo, OrderProdNo, OrderChangeNo, CustName, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn, CateCode, StoreCode, ProdCode, ShopProdCode, ItemCode, ProdName, ProdImg, ItemName, ProdQty, ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt, VatRate, VatAmt, CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode, PromotFeeAmt, PrevInvNo, InvNo, SaleConfrmDate, CmpletDate, OrderState, ChnlCode, State, Remark, RegistId, RegistName, RegistDate)
+        SELECT OrderNo, OrderProdNo, OrderChangeNo, OrderName, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn, CateCode, StoreCode, ProdCode, ShopProdCode, ItemCode, ProdName, ProdImg, ItemName, ProdQty, ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt, VatRate, VatAmt, CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode, PromotFeeAmt, PrevInvNo, InvNo, ShipCmpletDate, ShipCmpletDate, OrderState, ChnlCode, State, Remark, #{changeId}, #{changeName}, NOW()
+        FROM shopwizard.tShpShipDirect WHERE (ShipCmpletDate IS NOT NULL AND ShipCmpletDate != '') AND OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = #{orderChangeNo}
+    </insert>
+
+    <insert id="insertDetailFromReturn" parameterType="map">
+        INSERT INTO shopwizard.tAdjAdjustDetail (OrderNo, OrderProdNo, OrderChangeNo, CustName, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn, CateCode, StoreCode, ProdCode, ShopProdCode, ItemCode, ProdName, ProdImg, ItemName, ProdQty, ListPrice, PrevPrice, SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt, SupplyPrice, DiscntSupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt, VatRate, VatAmt, CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, DeliCompCode, PromotFeeAmt, PrevInvNo, InvNo, SaleConfrmDate, CmpletDate, OrderState, ChnlCode, State, Remark, RegistId, RegistName, RegistDate)
+        SELECT OrderNo, OrderProdNo, OrderChangeNo, OrderName, SupplyCode, SupplyName, ShopCode, ShopName, BundleYn, CateCode, StoreCode, ProdCode, ShopProdCode, ItemCode, ProdName, ProdImg, ItemName, -1*ProdQty, -1*ListPrice, -1*PrevPrice, -1*SalePrice, -1*SaleDiscntAmt, -1*CustCpnDiscntAmt, -1*ProdCpnDiscntAmt, -1*PointUseAmt, -1*SupplyPrice, -1*DiscntSupplyPrice, -1*BuyPrice, -1*NvPrice, -1*PvPrice, -1*PointSaveAmt, VatRate, -1*VatAmt, -1*CustChrgDeliFee, DeliFeeId, DeliFeeType, -1*DeliFeeAmt, DeliCompCode, PromotFeeAmt, PrevInvNo, InvNo, ReturnCmpletDate, ReturnCmpletDate, OrderState, ChnlCode, State, Remark, #{changeId}, #{changeName}, NOW()
+        FROM shopwizard.tShpReturnDirect WHERE (ReturnCmpletDate IS NOT NULL AND ReturnCmpletDate != '') AND OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = #{orderChangeNo}
+        
+    </insert>
+
+    <select id="selectDetailForUpdate" resultType="com.shopwizard.adjust.model.AdjustDetail">
+        SELECT * FROM shopwizard.tAdjAdjustDetail WHERE AdjustDetailNo = #{adjustDetailNo} FOR UPDATE
+    </select>
+
+    <delete id="deleteOpenDetail">
+        DELETE FROM shopwizard.tAdjAdjustDetail
+        WHERE AdjustDetailNo = #{adjustDetailNo} AND BuyAdjustCloseDate IS NULL AND AdjustNo IS NULL
+    </delete>
+
+    <!-- 마감 전 상세만 금액 보정(마감 후엔 0행) -->
+    <update id="updatePricesOpen" parameterType="map">
+        UPDATE shopwizard.tAdjAdjustDetail SET
+            SupplyPrice = #{supplyPrice}, DiscntSupplyPrice = #{discntSupplyPrice}, BuyPrice = #{buyPrice}, VatRate = #{vatRate},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE AdjustDetailNo = #{adjustDetailNo} AND BuyAdjustCloseDate IS NULL
+    </update>
+
+    <!-- ───────── 상점 마감 ───────── -->
+    <!-- 같은 상점의 동시 마감을 직렬화하기 위한 행 잠금 + 마감에 필요한 상점 정보 -->
+    <select id="selectShopForClose" resultType="map">
+        SELECT ShopCode AS shopCode, SupplyCode AS supplyCode, SvcCode AS svcCode, adjustPeriodCode AS adjustPeriodCode
+        FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode} FOR UPDATE
+    </select>
+
+    <!-- 마감할 상세가 있는지 먼저 센다(상점 잠금 안에서) — 없으면 정산번호(MyISAM 채번은 롤백돼도 되돌아가지 않는다)를 소모하지 않는다 -->
+    <select id="countClosableDetails" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjustDetail
+        WHERE ShopCode = #{shopCode} AND BuyAdjustCloseDate IS NULL
+        <![CDATA[AND CmpletDate >= DATE_FORMAT(#{startDate}, '%Y%m%d') AND CmpletDate < ADDDATE(DATE_FORMAT(#{endDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
+    </select>
+
+    <insert id="insertAdjustNo" parameterType="com.shopwizard.adjust.model.AdjustNoSeq"
+            useGeneratedKeys="true" keyProperty="seq" keyColumn="Seq">
+        INSERT INTO shopwizard.tAdjAdjustNoSeq () VALUES ()
+    </insert>
+
+</mapper>

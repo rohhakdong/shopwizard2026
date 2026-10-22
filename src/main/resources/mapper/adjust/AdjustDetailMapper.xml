@@ -26,7 +26,12 @@
     <select id="selectList" parameterType="map" resultType="com.shopwizard.adjust.model.AdjustDetail">
         SELECT * FROM shopwizard.tAdjAdjustDetail
         <where><include refid="whereClause"/></where>
-        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <if test="pPageSize != null and pPageSize != ''">
+            <!-- 쿼리스트링 값은 문자열이라 #{} 로 바인딩하면 LIMIT '0', '20' 이 되어 SQL 오류 — 정수로 파싱한 값만 ${} 로 넣는다 -->
+            <bind name="pageOffsetNum" value="pPageOffset == null ? 0 : @java.lang.Integer@parseInt(pPageOffset.toString())"/>
+            <bind name="pageSizeNum" value="@java.lang.Integer@parseInt(pPageSize.toString())"/>
+            LIMIT ${pageOffsetNum}, ${pageSizeNum}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">

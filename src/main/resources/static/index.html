@@ -146,6 +146,8 @@
   <script src="/js/pages/ship-direct-complete.js"></script>
   <script src="/js/pages/ship-return-request.js"></script>
   <script src="/js/pages/ship-return.js"></script>
+  <script src="/js/pages/adjust-target.js"></script>
+  <script src="/js/pages/adjust-close.js"></script>
   <script src="/js/pages/adjust-list.js"></script>
   <script src="/js/pages/profile-cust.js"></script>
   <script>
@@ -187,6 +189,8 @@
       {
         section: '정산',
         items: [
+          { key: 'adjust-target',  label: '정산 대상',      icon: '🧾', page: 'adjust/target' },
+          { key: 'adjust-close',   label: '정산 마감',      icon: '🔒', page: 'adjust/close' },
           { key: 'adjust',         label: '정산 관리',      icon: '💰', page: 'adjust/list' },
         ]
       },
@@ -366,6 +370,10 @@
         PageShipReturnRequest.render(content);
       } else if (key === 'ship-return') {
         PageShipReturn.render(content);
+      } else if (key === 'adjust-target') {
+        PageAdjustTarget.render(content);
+      } else if (key === 'adjust-close') {
+        PageAdjustClose.render(content);
       } else if (key === 'adjust') {
         PageAdjustList.render(content);
       } else {

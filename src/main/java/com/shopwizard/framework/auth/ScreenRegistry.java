@@ -57,7 +57,10 @@ public final class ScreenRegistry {
         new Screen("ship-direct-complete", List.of("wShpDeliCmpletList")),
         new Screen("ship-return-request", List.of("wShpReturnDirectList", "wOrdRecvDirectList")),
         new Screen("ship-return", List.of("wShpReturnDirectList")),
-        new Screen("adjust", List.of("wAdjAdjustShopBuyList", "wAdjAdjustDetailList", "wShpCmpletList", "wAdjAdjustDetailShopSumList"))
+        // 정산: 대상 조회·정산자료 생성 / 상점 마감 / 마감 결과 조회(정산 관리, 공급사 계정도 보는 화면)로 나뉜다.
+        new Screen("adjust-target", List.of("wShpCmpletList", "wAdjAdjustDetailTargetListByOrder")),
+        new Screen("adjust-close", List.of("wAdjAdjustDetailShopSumList")),
+        new Screen("adjust", List.of("wAdjAdjustShopBuyList", "wAdjAdjustDetailList"))
     );
 
     /** 모든 로그인 관리자에게 열린 조회(여러 화면 공용 드롭다운; ui.js 의 loadFilterOptions 등 화면 파일 밖에서 호출됨). */
@@ -70,6 +73,17 @@ public final class ScreenRegistry {
 
     /** {메서드, 경로 패턴, 소유 화면(쉼표 구분)} */
     static final String[][] OWNERSHIP = {
+        {"GET", "/adjust/process/target/list", "adjust-target"},
+        {"GET", "/adjust/process/target/count", "adjust-target"},
+        {"GET", "/adjust/process/target/sum", "adjust-target"},
+        {"GET", "/adjust/process/target/open-count", "adjust-close"},
+        {"POST", "/adjust/process/create", "adjust-target"},
+        {"PUT", "/adjust/process/prices", "adjust-close"},
+        {"DELETE", "/adjust/process/detail/*", "adjust-close"},
+        {"POST", "/adjust/process/close", "adjust-close"},
+        {"GET", "/adjust/detail/sumshop/list", "adjust-close"},
+        {"GET", "/adjust/detail/list", "adjust-close"},
+        {"GET", "/adjust/detail/count", "adjust-close"},
         {"GET", "/adjust/adjust", "adjust"},
         {"PUT", "/adjust/adjust", "adjust"},
         {"GET", "/adjust/adjust/count", "adjust"},
