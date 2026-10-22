@@ -7,6 +7,7 @@ const PageAuthMngr = (() => {
   const esc = UI.esc;
 
   let roleList = [];   // 역할 목록 캐시
+  let shopList = [];   // 상점 목록 캐시(업체 역할 계정의 상점 선택용)
 
   // ── 진입점 ─────────────────────────────────────────────────────────
   function render(container) {
@@ -51,6 +52,14 @@ const PageAuthMngr = (() => {
     document.getElementById('btnAddMngr').addEventListener('click', () => openModal(null));
 
     loadRoles().then(loadList);
+    loadShops();
+  }
+
+  // ── 상점 목록 로드 (업체 역할 계정의 상점 선택) ──────────────────────
+  async function loadShops() {
+    try {
+      shopList = await Api.get('/company/shop', {});
+    } catch (_) { shopList = []; }
   }
 
   // ── 역할 목록 로드 (select 옵션 채우기) ────────────────────────────
@@ -97,6 +106,7 @@ const PageAuthMngr = (() => {
         <td>${esc(m.mngrName || '')}</td>
         <td>${esc(m.roleName || '')}</td>
         <td>${esc(m.svcCode || '')}</td>
+        <td>${esc(m.shopCode || '')}</td>
         <td>${esc(m.email || '')}</td>
         <td>${esc(m.mobileNo || '')}</td>
         <td style="text-align:center">
@@ -115,7 +125,7 @@ const PageAuthMngr = (() => {
       <table>
         <thead>
           <tr>
-            <th>아이디</th><th>이름</th><th>역할</th><th>서비스</th>
+            <th>아이디</th><th>이름</th><th>역할</th><th>서비스</th><th>상점</th>
             <th>이메일</th><th>휴대폰</th><th style="width:60px">상태</th>
             <th style="width:90px">등록일</th><th style="width:110px"></th>
           </tr>
@@ -153,6 +163,13 @@ const PageAuthMngr = (() => {
       `<option value="${esc(r.roleUid)}" ${esc(m?.roleUid === r.roleUid ? 'selected' : '')}>${esc(r.roleName)}</option>`
     ).join('');
 
+    const shopOpts = shopList.map(s =>
+      `<option value="${esc(s.shopCode)}" ${esc(m?.shopCode === s.shopCode ? 'selected' : '')}>${esc(s.shopName || s.shopCode)} (${esc(s.shopCode)})</option>`
+    ).join('');
+    // 현재 상점이 목록에 없으면(삭제된 상점 등) 값을 잃지 않도록 그대로 보여준다.
+    const orphanShop = m?.shopCode && !shopList.some(s => s.shopCode === m.shopCode)
+      ? `<option value="${esc(m.shopCode)}" selected>${esc(m.shopCode)} (목록에 없음)</option>` : '';
+
     const body = document.createElement('div');
     body.innerHTML = `
       <div class="form-grid">
@@ -174,6 +191,13 @@ const PageAuthMngr = (() => {
           <select class="input" id="mRoleUid">
             <option value="">-- 선택 --</option>
             ${roleOpts}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>상점 <span id="mShopReq" style="color:var(--danger)"></span></label>
+          <select class="input" id="mShopCode">
+            <option value="">-- 선택 안 함 --</option>
+            ${orphanShop}${shopOpts}
           </select>
         </div>
         <div class="form-group">
@@ -201,6 +225,15 @@ const PageAuthMngr = (() => {
         </div>
       </div>`;
 
+    // 업체(협력사) 역할이면 상점이 필수다 — 서버도 같은 규칙으로 막고, 상점 없는 업체 계정은 로그인도 거부된다.
+    const isSupplyRole = uid => !!roleList.find(r => r.roleUid === uid && r.supplyYn === 1);
+    const syncShopRequired = () => {
+      const req = isSupplyRole(body.querySelector('#mRoleUid').value);
+      body.querySelector('#mShopReq').textContent = req ? '* (업체 역할은 필수)' : '';
+    };
+    body.querySelector('#mRoleUid').addEventListener('change', syncShopRequired);
+    syncShopRequired();
+
     UI.modal({
       title: isEdit ? '관리자 수정' : '관리자 등록',
       confirmText: isEdit ? '수정' : '등록',
@@ -214,12 +247,16 @@ const PageAuthMngr = (() => {
         if (!loginId || !mngrName) { UI.toast('아이디와 이름은 필수입니다', 'error'); return; }
         if (!isEdit && !passwd)    { UI.toast('비밀번호를 입력하세요', 'error'); return; }
         if (!roleUid)              { UI.toast('역할을 선택하세요', 'error'); return; }
+        const shopCode = document.getElementById('mShopCode').value;
+        const active   = parseInt(document.getElementById('mState').value) === 1;
+        if (isSupplyRole(roleUid) && active && !shopCode) { UI.toast('업체 역할 계정은 상점을 선택해야 합니다', 'error'); return; }
 
         const payload = {
           mngrUid:  m?.mngrUid,
           loginId,
           mngrName,
           roleUid,
+          shopCode,   // 빈 값 = 상점 없음(수정 시 해제)
           email:    document.getElementById('mEmail').value.trim(),
           mobileNo: document.getElementById('mMobileNo').value.trim(),
           phoneNo:  document.getElementById('mPhoneNo').value.trim(),

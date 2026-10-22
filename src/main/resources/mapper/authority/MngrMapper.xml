@@ -21,6 +21,7 @@
         <result property="shopCode" column="ShopCode"/>
         <result property="warehsCode" column="WarehsCode"/>
         <result property="prodApprovYn" column="ProdApprovYn"/>
+        <result property="supplyYn" column="SupplyYn"/>
         <result property="remark" column="Remark"/>
         <result property="state" column="State"/>
         <result property="registId" column="RegistId"/>
@@ -79,7 +80,7 @@
          한다. 예전엔 pPasswd 가 비어 있으면 비밀번호 조건이 SQL에서 통째로 빠져 빈 비밀번호로 로그인될
          수 있었고, 저장값이 평문이라 SQL 비교 자체가 불가능한 해시 전환도 막혀 있었다. -->
     <select id="selectForLogin" parameterType="map" resultMap="MngrResult">
-        SELECT M.*, R.RoleName, R.SvcCode
+        SELECT M.*, R.RoleName, R.SvcCode, R.SupplyYn
         FROM wizardn.tAthMngr M
         INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
         WHERE M.LoginId = #{pLoginId}
@@ -124,6 +125,9 @@
             <if test="passwd != null and passwd != ''">Passwd = #{passwd},</if>
             Email = #{email}, MobileNo = #{mobileNo},
             PhoneNo = #{phoneNo}, ProdApprovYn = #{prodApprovYn},
+            <!-- 상점코드: 요청에 shopCode 가 있을 때만 바꾼다(빈 문자열 = 해제). 이 화면이 상점을 안 보내던 시절의 요청이나
+                 다른 클라이언트가 상점을 지워버리지 않도록 "안 보냄 = 유지". -->
+            <if test="shopCode != null">ShopCode = NULLIF(#{shopCode}, ''),</if>
             State = #{state}, Remark = #{remark},
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
         WHERE MngrUid = #{mngrUid}

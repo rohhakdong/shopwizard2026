@@ -33,19 +33,24 @@
         <if test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</if>
     </select>
 
+    <select id="selectByUid" parameterType="string" resultMap="RoleResult">
+        SELECT * FROM wizardn.tAthRole WHERE RoleUid = #{value}
+    </select>
+
+    <!-- SupplyYn(협력사 여부): 화면의 "협력사 여부" 선택이 그동안 저장되지 않았다(INSERT/UPDATE 에 컬럼이 없었음). -->
     <insert id="insert" parameterType="com.shopwizard.authority.model.Role">
         INSERT INTO wizardn.tAthRole (
-            RoleUid, RoleName, RoleDesc, SvcCode,
+            RoleUid, RoleName, RoleDesc, SvcCode, SupplyYn,
             State, Remark, RegistDate, RegistId, RegistName
         ) VALUES (
-            #{roleUid}, #{roleName}, #{roleDesc}, #{svcCode},
+            #{roleUid}, #{roleName}, #{roleDesc}, #{svcCode}, #{supplyYn},
             #{state}, #{remark}, NOW(), #{registId}, #{registName}
         )
     </insert>
 
     <update id="update" parameterType="com.shopwizard.authority.model.Role">
         UPDATE wizardn.tAthRole SET
-            RoleName = #{roleName}, RoleDesc = #{roleDesc}, SvcCode = #{svcCode},
+            RoleName = #{roleName}, RoleDesc = #{roleDesc}, SvcCode = #{svcCode}, SupplyYn = #{supplyYn},
             State = #{state}, Remark = #{remark},
             ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
         WHERE RoleUid = #{roleUid}

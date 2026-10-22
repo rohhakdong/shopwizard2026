@@ -154,6 +154,15 @@ const PageAuthRole = (() => {
     });
   }
 
+  // 업체(협력사) 역할은 계정마다 상점이 필수다. 이 역할에 상점이 없는 사용 중 계정이 있으면 로그인이 거부되므로 미리 알려 준다.
+  async function warnSupplyAccountsWithoutShop(roleUid) {
+    try {
+      const accts = await Api.get('/authority/mngr/list', { pRoleUid: roleUid });
+      const n = accts.filter(a => a.state === 1 && !a.shopCode).length;
+      if (n > 0) UI.toast(`이 역할의 사용 중 계정 ${n}개에 상점이 없어 로그인이 거부됩니다. 관리자 계정에서 상점을 지정하세요.`, 'error');
+    } catch (_) { /* 계정 조회 권한이 없으면 경고만 생략 */ }
+  }
+
   // ── 등록/수정 모달 ────────────────────────────────────────────────
   function openModal(r) {
     const isEdit = !!r;
@@ -223,6 +232,7 @@ const PageAuthRole = (() => {
           if (isEdit) await Api.put('/authority/role', payload);
           else        await Api.post('/authority/role', payload);
           UI.toast(isEdit ? '수정되었습니다' : '등록되었습니다', 'success');
+          if (isEdit && payload.supplyYn === 1) warnSupplyAccountsWithoutShop(payload.roleUid);
           loadList();
           close();
         } catch (e) { UI.toast(e.message, 'error'); }

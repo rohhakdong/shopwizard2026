@@ -25,6 +25,8 @@ public class Mngr {
     private String shopCode;
     private String warehsCode;
     private int prodApprovYn;
+    /** 역할의 협력사(업체) 여부(tAthRole.SupplyYn) — 로그인 조회에서만 채워진다. 업체 역할 계정은 상점코드가 필수. */
+    private int supplyYn;
     private String remark;
     private Integer state;
     private String registDate;
