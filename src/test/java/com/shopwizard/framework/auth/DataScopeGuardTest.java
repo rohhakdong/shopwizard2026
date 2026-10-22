@@ -40,8 +40,8 @@ class DataScopeGuardTest {
         return req;
     }
 
-    private static final Map<String, String> SHOP_ACCT = Map.of("loginId", "u", "shopCode", "MINE");
-    private static final Map<String, String> UNRESTRICTED = Map.of("loginId", "admin", "shopCode", "", "chnlCode", "");
+    private static final Map<String, String> SHOP_ACCT = Map.of("svcAll", "Y", "loginId", "u", "shopCode", "MINE");
+    private static final Map<String, String> UNRESTRICTED = Map.of("svcAll", "Y", "loginId", "admin", "shopCode", "", "chnlCode", "");
 
     @Test
     void 제한_없는_계정은_DB_조회_없이_통과() {
@@ -56,8 +56,8 @@ class DataScopeGuardTest {
 
     @Test
     void 내_라인은_통과_남의_라인은_403() {
-        when(mapper.countLines(10, 1, "MINE", null)).thenReturn(1);
-        when(mapper.countLines(11, 1, "MINE", null)).thenReturn(0);
+        when(mapper.countLines(10, 1, "MINE", null, null)).thenReturn(1);
+        when(mapper.countLines(11, 1, "MINE", null, null)).thenReturn(0);
         MockHttpServletRequest req = as(SHOP_ACCT);
 
         assertDoesNotThrow(() -> guard.requireLine(req, 10, 1));
@@ -75,16 +75,16 @@ class DataScopeGuardTest {
 
     @Test
     void 채널과_상점을_모두_쿼리에_전달한다_AND() {
-        when(mapper.countLines(10, 1, "S", "C")).thenReturn(1);
-        MockHttpServletRequest req = as(Map.of("loginId", "u", "shopCode", "S", "chnlCode", "C"));
+        when(mapper.countLines(10, 1, "S", "C", null)).thenReturn(1);
+        MockHttpServletRequest req = as(Map.of("svcAll", "Y", "loginId", "u", "shopCode", "S", "chnlCode", "C"));
         assertDoesNotThrow(() -> guard.requireLine(req, 10, 1));
-        verify(mapper).countLines(10, 1, "S", "C");
+        verify(mapper).countLines(10, 1, "S", "C", null);
     }
 
     @Test
     void 배치는_하나라도_남의_라인이면_전체_거부() {
-        when(mapper.countLines(eq(1), anyInt(), eq("MINE"), any())).thenReturn(1);
-        when(mapper.countLines(eq(2), anyInt(), eq("MINE"), any())).thenReturn(0);
+        when(mapper.countLines(eq(1), anyInt(), eq("MINE"), any(), any())).thenReturn(1);
+        when(mapper.countLines(eq(2), anyInt(), eq("MINE"), any(), any())).thenReturn(0);
         MockHttpServletRequest req = as(SHOP_ACCT);
         List<int[]> lines = List.of(new int[]{1, 1}, new int[]{1, 2}, new int[]{2, 1});
 
@@ -95,21 +95,21 @@ class DataScopeGuardTest {
 
     @Test
     void 상품은_상점_기준이고_채널_전용_계정은_제한하지_않는다() {
-        when(mapper.countCatProd("OK", "MINE")).thenReturn(1);
+        when(mapper.countCatProd("OK", "MINE", null)).thenReturn(1);
         MockHttpServletRequest shop = as(SHOP_ACCT);
         assertDoesNotThrow(() -> guard.requireCatProd(shop, "OK"));
         assertThrows(ResponseStatusException.class, () -> guard.requireCatProd(shop, "NOT-MINE"));
         assertThrows(ResponseStatusException.class, () -> guard.requirePrdProd(shop, "NOT-MINE"));
 
-        MockHttpServletRequest chnlOnly = as(Map.of("loginId", "u", "chnlCode", "C"));
+        MockHttpServletRequest chnlOnly = as(Map.of("svcAll", "Y", "loginId", "u", "chnlCode", "C"));
         assertDoesNotThrow(() -> guard.requireCatProd(chnlOnly, "ANY"));
-        verify(mapper, org.mockito.Mockito.never()).countCatProd(eq("ANY"), anyString());
+        verify(mapper, org.mockito.Mockito.never()).countCatProd(eq("ANY"), anyString(), any());
     }
 
     @Test
     void 주문_헤더_정산_소유권() {
-        when(mapper.countOrder(5, "MINE", null)).thenReturn(1);
-        when(mapper.countAdjust("7", "MINE", null)).thenReturn(1);
+        when(mapper.countOrder(5, "MINE", null, null)).thenReturn(1);
+        when(mapper.countAdjust("7", "MINE", null, null)).thenReturn(1);
         MockHttpServletRequest req = as(SHOP_ACCT);
         assertDoesNotThrow(() -> guard.requireOrder(req, 5));
         assertThrows(ResponseStatusException.class, () -> guard.requireOrder(req, 6));
@@ -124,7 +124,7 @@ class DataScopeGuardTest {
         assertThrows(ResponseStatusException.class, () -> guard.requireRow(req, new Object(), "OTHER", "ANY-CH"));
         assertDoesNotThrow(() -> guard.requireRow(req, null, null, null));
 
-        MockHttpServletRequest chnl = as(Map.of("loginId", "u", "chnlCode", "C"));
+        MockHttpServletRequest chnl = as(Map.of("svcAll", "Y", "loginId", "u", "chnlCode", "C"));
         assertThrows(ResponseStatusException.class, () -> guard.requireRow(chnl, new Object(), "S", "OTHER-CH"));
         assertDoesNotThrow(() -> guard.requireRow(chnl, new Object(), "S", "C"));
     }
@@ -142,5 +142,68 @@ class DataScopeGuardTest {
         assertDoesNotThrow(() -> guard.requireLine(as(SHOP_ACCT), 99, 1));
         assertEquals("OTHER", guard.shopFor(as(SHOP_ACCT), "OTHER"));
         verifyNoInteractions(mapper);
+    }
+
+    private static final Map<String, String> SOH_ACCT = Map.of("loginId", "u", "svcCode", "SOH001", "svcAll", "N");
+
+    @Test
+    void 서비스_제한_계정은_상점_채널_제한이_없어도_다른_서비스_라인은_403() {
+        when(mapper.countLines(10, 1, null, null, "SOH001")).thenReturn(1);
+        when(mapper.countLines(11, 1, null, null, "SOH001")).thenReturn(0);
+        MockHttpServletRequest req = as(SOH_ACCT);
+
+        assertDoesNotThrow(() -> guard.requireLine(req, 10, 1));
+        assertThrows(ResponseStatusException.class, () -> guard.requireLine(req, 11, 1));
+        when(mapper.countOrder(5, null, null, "SOH001")).thenReturn(1);
+        assertDoesNotThrow(() -> guard.requireOrder(req, 5));
+        assertThrows(ResponseStatusException.class, () -> guard.requireOrder(req, 6));
+        assertThrows(ResponseStatusException.class, () -> guard.requireAdjust(req, 9));
+        assertThrows(ResponseStatusException.class, () -> guard.requirePrdProd(req, "NOT-MINE"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireCatProd(req, "NOT-MINE"));
+    }
+
+    @Test
+    void svcFor_는_서비스_제한_계정의_서비스를_강제하고_전체_권한은_요청값을_쓴다() {
+        assertEquals("SOH001", guard.svcFor(as(SOH_ACCT), "SHP001"));
+        assertEquals("SHP001", guard.svcFor(as(Map.of("loginId", "a", "svcCode", "SHP001", "svcAll", "Y")), "SHP001"));
+    }
+
+    @Test
+    void 마스터_행은_내_서비스가_아니면_403_전체_권한은_조회없이_통과() {
+        when(mapper.countShopInSvc("MINE-SHOP", "SOH001")).thenReturn(1);
+        MockHttpServletRequest req = as(SOH_ACCT);
+        assertDoesNotThrow(() -> guard.requireShopSvc(req, "MINE-SHOP"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireShopSvc(req, "SHP-SHOP"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireShopSvc(req, null));
+        assertThrows(ResponseStatusException.class, () -> guard.requireRoleSvc(req, "SHP-ROLE"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireMngrSvc(req, "SHP-ACCOUNT"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireBrandSvc(req, 7));
+
+        org.mockito.Mockito.clearInvocations(mapper);
+        MockHttpServletRequest full = as(Map.of("loginId", "a", "svcCode", "SHP001", "svcAll", "Y"));
+        assertDoesNotThrow(() -> guard.requireShopSvc(full, "ANY"));
+        assertDoesNotThrow(() -> guard.requireRoleSvc(full, "ANY"));
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void 서비스_마스터와_권한_체계는_전체_권한만() {
+        assertThrows(ResponseStatusException.class, () -> guard.requireAllServices(as(SOH_ACCT)));
+        assertDoesNotThrow(() -> guard.requireAllServices(as(Map.of("loginId", "a", "svcCode", "SHP001", "svcAll", "Y"))));
+    }
+
+    @Test
+    void 서비스_제한은_정산_쓰기의_requireUnscoped_에_영향을_주지_않는다() {
+        assertDoesNotThrow(() -> guard.requireUnscoped(as(SOH_ACCT)));            // 상점/채널 제한이 없으니 통과
+        assertThrows(ResponseStatusException.class, () -> guard.requireUnscoped(as(SHOP_ACCT)));
+    }
+
+    @Test
+    void 단건_행은_서비스_제한_계정이면_채널_상점의_서비스를_확인한다() {
+        when(mapper.countChnlInSvc("CH-MINE", "SOH001")).thenReturn(1);
+        MockHttpServletRequest req = as(SOH_ACCT);
+        assertDoesNotThrow(() -> guard.requireRow(req, new Object(), null, "CH-MINE"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireRow(req, new Object(), null, "CH-OTHER"));
+        assertThrows(ResponseStatusException.class, () -> guard.requireRow(req, new Object(), null, null));   // 채널·상점 모두 없으면 거부
     }
 }

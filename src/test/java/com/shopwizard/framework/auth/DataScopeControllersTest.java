@@ -46,13 +46,13 @@ class DataScopeControllersTest {
 
     private static MockHttpServletRequest shopAdmin(String shop) {
         MockHttpServletRequest req = new MockHttpServletRequest();
-        AuthSession.login(req, AuthSession.Type.MNGR, Map.of("loginId", "u", "shopCode", shop));
+        AuthSession.login(req, AuthSession.Type.MNGR, Map.of("svcAll", "Y", "loginId", "u", "shopCode", shop));
         return req;
     }
 
     private static MockHttpServletRequest chnlAdmin(String chnl) {
         MockHttpServletRequest req = new MockHttpServletRequest();
-        AuthSession.login(req, AuthSession.Type.MNGR, Map.of("loginId", "u", "chnlCode", chnl));
+        AuthSession.login(req, AuthSession.Type.MNGR, Map.of("svcAll", "Y", "loginId", "u", "chnlCode", chnl));
         return req;
     }
 
@@ -67,8 +67,8 @@ class DataScopeControllersTest {
     void 발주확인_배치에_남의_라인이_섞이면_서비스를_호출하지_않고_403() {
         ShipDirectService service = mock(ShipDirectService.class);
         var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard);
-        when(mapper.countLines(1, 1, "MINE", null)).thenReturn(1);
-        when(mapper.countLines(2, 1, "MINE", null)).thenReturn(0);
+        when(mapper.countLines(1, 1, "MINE", null, null)).thenReturn(1);
+        when(mapper.countLines(2, 1, "MINE", null, null)).thenReturn(0);
 
         ShipDirectCheckRequest req = new ShipDirectCheckRequest();
         req.setLines(List.of(line(1, 1), line(2, 1)));
@@ -85,7 +85,7 @@ class DataScopeControllersTest {
     void 송장입력은_남의_라인이면_403_내_라인은_서비스로() {
         ShipDirectService service = mock(ShipDirectService.class);
         var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard);
-        when(mapper.countLines(5, 1, "MINE", null)).thenReturn(1);
+        when(mapper.countLines(5, 1, "MINE", null, null)).thenReturn(1);
 
         assertThrows(ResponseStatusException.class,
                 () -> controller.updateInvoice(Map.of("orderNo", 6, "orderProdNo", 1, "invNo", "X"), shopAdmin("MINE")));

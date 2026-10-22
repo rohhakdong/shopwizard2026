@@ -33,6 +33,7 @@
         INNER JOIN shopwizard.tCmpShopWarehs SW ON SW.WarehsCode = W.WarehsCode
         </if>
         <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND W.SvcCode = #{pSvcCode}</if>
             <if test="pWarehsCode != null and pWarehsCode != ''">AND W.WarehsCode = #{pWarehsCode}</if>
             <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName LIKE CONCAT('%',#{pWarehsName},'%')</if>
             <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>
@@ -51,6 +52,7 @@
         INNER JOIN shopwizard.tCmpShopWarehs SW ON SW.WarehsCode = W.WarehsCode
         </if>
         <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND W.SvcCode = #{pSvcCode}</if>
             <if test="pWarehsCode != null and pWarehsCode != ''">AND W.WarehsCode = #{pWarehsCode}</if>
             <if test="pWarehsName != null and pWarehsName != ''">AND W.WarehsName LIKE CONCAT('%',#{pWarehsName},'%')</if>
             <if test="pShopCode != null and pShopCode != ''">AND SW.ShopCode = #{pShopCode}</if>

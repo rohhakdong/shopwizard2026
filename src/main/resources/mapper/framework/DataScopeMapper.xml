@@ -11,6 +11,9 @@
         WHERE OP.OrderNo = #{orderNo} AND OP.OrderProdNo = #{orderProdNo}
         <if test="shopCode != null">AND OP.ShopCode = #{shopCode}</if>
         <if test="chnlCode != null">AND O.ChnlCode = #{chnlCode}</if>
+        <if test="svcCode != null">
+            AND EXISTS (SELECT 1 FROM shopwizard.tCmpChnl Ch WHERE Ch.ChnlCode = O.ChnlCode AND Ch.SvcCode = #{svcCode})
+        </if>
     </select>
 
     <!-- 주문 헤더: 내 상점 라인이 하나라도 있는 주문 / 내 채널 주문 -->
@@ -22,20 +25,64 @@
         <if test="shopCode != null">
             AND EXISTS (SELECT 1 FROM shopion.tOrdOrderProd OP WHERE OP.OrderNo = O.OrderNo AND OP.ShopCode = #{shopCode})
         </if>
+        <if test="svcCode != null">
+            AND EXISTS (SELECT 1 FROM shopwizard.tCmpChnl Ch WHERE Ch.ChnlCode = O.ChnlCode AND Ch.SvcCode = #{svcCode})
+        </if>
     </select>
 
     <select id="countCatProd" resultType="int">
-        SELECT COUNT(*) FROM shopwizard.tCatProd WHERE ProdCode = #{prodCode} AND ShopCode = #{shopCode}
+        SELECT COUNT(*) FROM shopwizard.tCatProd P WHERE P.ProdCode = #{prodCode}
+        <if test="shopCode != null">AND P.ShopCode = #{shopCode}</if>
+        <if test="svcCode != null">
+            AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop S WHERE S.ShopCode = P.ShopCode AND S.SvcCode = #{svcCode})
+        </if>
     </select>
 
     <select id="countPrdProd" resultType="int">
-        SELECT COUNT(*) FROM shopion.tPrdProd WHERE ProdCode = #{prodCode} AND ShopCode = #{shopCode}
+        SELECT COUNT(*) FROM shopion.tPrdProd P WHERE P.ProdCode = #{prodCode}
+        <if test="shopCode != null">AND P.ShopCode = #{shopCode}</if>
+        <if test="svcCode != null">
+            AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop S WHERE S.ShopCode = P.ShopCode AND S.SvcCode = #{svcCode})
+        </if>
     </select>
 
     <select id="countAdjust" resultType="int">
-        SELECT COUNT(*) FROM shopwizard.tAdjAdjust WHERE AdjustNo = #{adjustNo}
-        <if test="shopCode != null">AND ShopCode = #{shopCode}</if>
-        <if test="chnlCode != null">AND ChnlCode = #{chnlCode}</if>
+        SELECT COUNT(*) FROM shopwizard.tAdjAdjust A WHERE A.AdjustNo = #{adjustNo}
+        <if test="shopCode != null">AND A.ShopCode = #{shopCode}</if>
+        <if test="chnlCode != null">AND A.ChnlCode = #{chnlCode}</if>
+        <if test="svcCode != null">
+            AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop S WHERE S.ShopCode = A.ShopCode AND S.SvcCode = #{svcCode})
+        </if>
+    </select>
+
+    <!-- ── 서비스(테넌트) 소유 확인 ── -->
+    <select id="countShopInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpShop WHERE ShopCode = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countChnlInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpChnl WHERE ChnlCode = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countCompInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpComp WHERE CompCode = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countSupplyInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpSupplyComp WHERE SupplyCode = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countSaleCompInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpSaleComp WHERE SaleCompCode = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countWarehsInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpWarehs WHERE WarehsCode = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countBrandInSvc" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatBrand WHERE BrandId = #{id} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countRoleInSvc" resultType="int">
+        SELECT COUNT(*) FROM wizardn.tAthRole WHERE RoleUid = #{code} AND SvcCode = #{svcCode}
+    </select>
+    <select id="countMngrInSvc" resultType="int">
+        SELECT COUNT(*) FROM wizardn.tAthMngr M INNER JOIN wizardn.tAthRole R ON R.RoleUid = M.RoleUid
+        WHERE M.MngrUid = #{code} AND R.SvcCode = #{svcCode}
     </select>
 
 </mapper>

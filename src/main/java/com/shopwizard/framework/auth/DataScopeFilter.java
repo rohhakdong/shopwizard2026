@@ -14,7 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 상점/채널로 제한된 관리자(DataScope)의 조회 요청에서 {@code pShopCode}/{@code pChnlCode} 를 세션 값으로 고정한다.
+ * 상점/채널/서비스로 제한된 관리자(DataScope)의 조회 요청에서 {@code pShopCode}/{@code pChnlCode}/{@code pSvcCode} 를 세션 값으로 고정한다.
  * 대부분의 목록·건수·집계 쿼리가 이 파라미터를 이미 지원하므로, 컨트롤러를 건드리지 않고 한 곳에서 "남의 업체 행"을
  * 걸러낸다. 클라이언트가 다른 값을 보내도 덮어쓴다(채널이 세션에 없으면 클라이언트가 보낸 pChnlCode 는 그대로 — 좁히는
  * 방향은 허용).
@@ -35,9 +35,11 @@ public class DataScopeFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         if (enabled && isRead(request)) {
             String path = path(request);
-            if (MngrPaths.isMngrProtected(path) && !MngrPaths.isPublicRead(path)) {
+            // 스토어프론트 공개 조회 경로(/product/prod/list 등)도 관리자 세션이 있으면 같은 범위로 거른다 — 판매 상품 관리 화면이
+            // 같은 경로를 쓰기 때문이다. 관리자 세션이 없는 고객·비회원은 DataScope.of 가 제한 없음을 돌려줘 영향이 없다.
+            if (MngrPaths.isMngrProtected(path)) {
                 DataScope scope = DataScope.of(request);
-                if (scope.scoped()) {
+                if (scope.anyScoped()) {
                     chain.doFilter(new ScopedRequest(request, scope), response);
                     return;
                 }
@@ -67,6 +69,12 @@ public class DataScopeFilter extends OncePerRequestFilter {
             Map<String, String[]> merged = new LinkedHashMap<>(request.getParameterMap());
             if (scope.shopCode() != null) merged.put("pShopCode", new String[]{scope.shopCode()});
             if (scope.chnlCode() != null) merged.put("pChnlCode", new String[]{scope.chnlCode()});
+            // 서비스 제한: 클라이언트가 보낸 pSvcCode 는 항상 세션 서비스로 덮어쓴다(비어 있어도 채운다 — 주문 목록 등은 pSvcCode 가
+            // 없으면 아예 동작하지 않는다). svcCode 이름으로 서비스를 거르는 조회가 있으면 그것도 내 서비스로 좁힌다.
+            if (scope.svcCode() != null) {
+                merged.put("pSvcCode", new String[]{scope.svcCode()});
+                if (merged.containsKey("svcCode")) merged.put("svcCode", new String[]{scope.svcCode()});
+            }
             this.params = Collections.unmodifiableMap(merged);
         }
 

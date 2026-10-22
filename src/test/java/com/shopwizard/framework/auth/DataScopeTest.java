@@ -54,4 +54,28 @@ class DataScopeTest {
         AuthSession.login(req, AuthSession.Type.SHOP, Map.of("shopCode", "S1"));   // 상점 계정 세션은 MNGR 스코프가 아님
         assertFalse(DataScope.of(req).scoped());
     }
+
+    @Test
+    void 서비스는_역할의_서비스로_제한하고_전체_권한_계정만_제한이_없다() {
+        DataScope soho = DataScope.of(asAdmin(Map.of("loginId", "u", "svcCode", "SOH001", "svcAll", "N")));
+        assertEquals("SOH001", soho.svcCode());
+        assertTrue(soho.svcScoped());
+        assertFalse(soho.scoped());          // 상점/채널 제한 의미는 그대로 — 정산 쓰기(requireUnscoped)가 서비스 때문에 막히면 안 된다
+        assertTrue(soho.anyScoped());
+
+        DataScope all = DataScope.of(asAdmin(Map.of("loginId", "u", "svcCode", "SHP001", "svcAll", "Y")));
+        assertNull(all.svcCode());
+        assertFalse(all.svcScoped());
+        assertFalse(all.anyScoped());
+    }
+
+    @Test
+    void svcAll_claim_이_없는_기존_세션이나_서비스가_없는_역할은_fail_closed() {
+        DataScope old = DataScope.of(asAdmin(Map.of("loginId", "u", "svcCode", "SHP001")));   // svcAll 없음
+        assertEquals("SHP001", old.svcCode());
+
+        DataScope noSvc = DataScope.of(asAdmin(Map.of("loginId", "u", "svcCode", " ", "svcAll", "N")));
+        assertEquals(DataScope.NO_SERVICE, noSvc.svcCode());   // 어떤 서비스와도 일치하지 않는다
+        assertTrue(noSvc.svcScoped());
+    }
 }

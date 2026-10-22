@@ -23,6 +23,7 @@
         FROM wizardn.tAthFunctn
         <where>
             <if test="pRoleUid != null and pRoleUid != ''">AND RoleUid = #{pRoleUid}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND RoleUid IN (SELECT RoleUid FROM wizardn.tAthRole WHERE SvcCode = #{pSvcCode})</if>
             <if test="pMenuCode != null and pMenuCode != ''">AND MenuCode = #{pMenuCode}</if>
             <if test="pFunctnUri != null and pFunctnUri != ''">AND FunctnUri = #{pFunctnUri}</if>
         </where>

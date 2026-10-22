@@ -67,6 +67,8 @@ public class AuthController {
                     claims.put("name",       mngr.getMngrName());
                     claims.put("roleUid",    mngr.getRoleUid());
                     claims.put("svcCode",    mngr.getSvcCode());
+                    // 전체 권한(역할·메뉴·기능 관리 모두 가능) 계정만 서비스 경계 밖의 데이터를 본다 — DataScope 참고.
+                    claims.put("svcAll",     rolePermissionService.get(mngr.getRoleUid()).full() ? "Y" : "N");
                     claims.put("chnlCode",   mngr.getChnlCode());
                     claims.put("compCode",   mngr.getCompCode());
                     claims.put("shopCode",   mngr.getShopCode());

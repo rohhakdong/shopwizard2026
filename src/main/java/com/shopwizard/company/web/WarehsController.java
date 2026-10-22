@@ -4,6 +4,7 @@ import com.shopwizard.company.model.Warehs;
 import com.shopwizard.company.service.WarehsService;
 import com.shopwizard.framework.auth.AuthSession;
 import jakarta.servlet.http.HttpServletRequest;
+import com.shopwizard.framework.auth.DataScopeGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WarehsController {
     private final WarehsService warehsService;
+    private final DataScopeGuard scopeGuard;
 
     /** 관리자 전용 전체 필드 조회 (mngr_loginId 인증 필요 — WebMvcConfig 참고). 비밀번호(해시값이라도)는
      *  응답에 실을 이유가 없으므로 항상 비운다. */
@@ -72,12 +74,15 @@ public class WarehsController {
     }
 
     @PostMapping
-    public int insert(@RequestBody Warehs warehs) {
+    public int insert(@RequestBody Warehs warehs, HttpServletRequest request) {
+        warehs.setSvcCode(scopeGuard.svcFor(request, warehs.getSvcCode()));
         return warehsService.insert(warehs);
     }
 
     @PutMapping
-    public int update(@RequestBody Warehs warehs) {
+    public int update(@RequestBody Warehs warehs, HttpServletRequest request) {
+        scopeGuard.requireWarehsSvc(request, warehs.getWarehsCode());
+        warehs.setSvcCode(scopeGuard.svcFor(request, warehs.getSvcCode()));
         return warehsService.update(warehs);
     }
 
@@ -85,8 +90,9 @@ public class WarehsController {
      *  /company/warehs)과 분리해, 프론트가 "변경 안 함"으로 보내는 기존 해시값을 다시 저장하다가
      *  통째로 재해싱해버리는 사고를 막는다. */
     @PutMapping("/passwd")
-    public int updatePasswd(@RequestBody Map<String, Object> body) {
+    public int updatePasswd(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         String warehsCode = (String) body.get("warehsCode");
+        scopeGuard.requireWarehsSvc(request, warehsCode);
         String passwd     = (String) body.get("passwd");
         if (warehsCode == null || warehsCode.isEmpty() || passwd == null || passwd.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "창고코드와 비밀번호를 모두 입력하세요.");
@@ -102,7 +108,8 @@ public class WarehsController {
      * (이전엔 @RequestBody라 실제로 호출하면 500이 나던 상태였다.)
      */
     @DeleteMapping("/{warehsCode}")
-    public int delete(@PathVariable String warehsCode) {
+    public int delete(@PathVariable String warehsCode, HttpServletRequest request) {
+        scopeGuard.requireWarehsSvc(request, warehsCode);
         Warehs warehs = new Warehs();
         warehs.setWarehsCode(warehsCode);
         return warehsService.delete(warehs);

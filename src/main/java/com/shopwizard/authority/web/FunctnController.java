@@ -2,6 +2,8 @@ package com.shopwizard.authority.web;
 
 import com.shopwizard.authority.model.Functn;
 import com.shopwizard.authority.service.FunctnService;
+import com.shopwizard.framework.auth.DataScopeGuard;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,8 @@ import java.util.Map;
 public class FunctnController {
 
     private final FunctnService functnService;
+
+    private final DataScopeGuard scopeGuard;
 
     @GetMapping("/list")
     public List<Functn> selectList(@RequestParam Map<String, Object> params) {
@@ -31,17 +35,20 @@ public class FunctnController {
     }
 
     @PostMapping
-    public int insert(@RequestBody Functn functn) {
+    public int insert(@RequestBody Functn functn, HttpServletRequest request) {
+        scopeGuard.requireRoleSvc(request, functn.getRoleUid());
         return functnService.insert(functn);
     }
 
     @PutMapping
-    public int update(@RequestBody Functn functn) {
+    public int update(@RequestBody Functn functn, HttpServletRequest request) {
+        scopeGuard.requireRoleSvc(request, functn.getRoleUid());
         return functnService.update(functn);
     }
 
     @DeleteMapping
-    public int delete(@RequestBody Functn functn) {
+    public int delete(@RequestBody Functn functn, HttpServletRequest request) {
+        scopeGuard.requireRoleSvc(request, functn.getRoleUid());
         return functnService.delete(functn);
     }
 }

@@ -21,6 +21,10 @@
         <where>
             <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
             <if test="pItemCode != null and pItemCode != ''">AND ItemCode = #{pItemCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND EXISTS (SELECT 1 FROM shopwizard.tCatProd SVC_P INNER JOIN shopwizard.tCmpShop SVC_S ON SVC_S.ShopCode = SVC_P.ShopCode
+                            WHERE SVC_P.ProdCode = shopwizard.tCatProdItem.ProdCode AND SVC_S.SvcCode = #{pSvcCode})
+            </if>
         </where>
         <choose>
             <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
@@ -34,6 +38,10 @@
         <where>
             <if test="pProdCode != null and pProdCode != ''">AND ProdCode = #{pProdCode}</if>
             <if test="pItemCode != null and pItemCode != ''">AND ItemCode = #{pItemCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND EXISTS (SELECT 1 FROM shopwizard.tCatProd SVC_P INNER JOIN shopwizard.tCmpShop SVC_S ON SVC_S.ShopCode = SVC_P.ShopCode
+                            WHERE SVC_P.ProdCode = shopwizard.tCatProdItem.ProdCode AND SVC_S.SvcCode = #{pSvcCode})
+            </if>
         </where>
     </select>
 

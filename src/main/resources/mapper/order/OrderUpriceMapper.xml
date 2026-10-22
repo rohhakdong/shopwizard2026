@@ -7,6 +7,9 @@
         FROM shopwizard.tOrdOrderUprice
         <where>
             <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop SVC_S WHERE SVC_S.ShopCode = shopwizard.tOrdOrderUprice.ShopCode AND SVC_S.SvcCode = #{pSvcCode})
+            </if>
             <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
             <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
             <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
@@ -25,6 +28,9 @@
         FROM shopwizard.tOrdOrderUprice
         <where>
             <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">
+                AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop SVC_S WHERE SVC_S.ShopCode = shopwizard.tOrdOrderUprice.ShopCode AND SVC_S.SvcCode = #{pSvcCode})
+            </if>
             <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
             <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
             <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>

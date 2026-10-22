@@ -40,6 +40,7 @@
         FROM shopwizard.tCmpSaleComp SC
         INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
         <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SC.SvcCode = #{pSvcCode}</if>
             <if test="pCompCode != null and pCompCode != ''">AND SC.CompCode = #{pCompCode}</if>
             <if test="pSaleCompCode != null and pSaleCompCode != ''">AND SC.SaleCompCode = #{pSaleCompCode}</if>
             <if test="pSaleCompName != null and pSaleCompName != ''">AND SC.SaleCompName LIKE CONCAT('%',#{pSaleCompName},'%')</if>
@@ -57,6 +58,7 @@
         FROM shopwizard.tCmpSaleComp SC
         INNER JOIN shopwizard.tCmpComp C ON SC.CompCode = C.CompCode
         <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND SC.SvcCode = #{pSvcCode}</if>
             <if test="pCompCode != null and pCompCode != ''">AND SC.CompCode = #{pCompCode}</if>
             <if test="pSaleCompCode != null and pSaleCompCode != ''">AND SC.SaleCompCode = #{pSaleCompCode}</if>
             <if test="pSaleCompName != null and pSaleCompName != ''">AND SC.SaleCompName LIKE CONCAT('%',#{pSaleCompName},'%')</if>

@@ -72,12 +72,15 @@ public class ChnlController {
     }
 
     @PostMapping
-    public int insert(@RequestBody Chnl chnl) {
+    public int insert(@RequestBody Chnl chnl, HttpServletRequest request) {
+        chnl.setSvcCode(scopeGuard.svcFor(request, chnl.getSvcCode()));
         return chnlService.insert(chnl);
     }
 
     @PutMapping
-    public int update(@RequestBody Chnl chnl) {
+    public int update(@RequestBody Chnl chnl, HttpServletRequest request) {
+        scopeGuard.requireChnlSvc(request, chnl.getChnlCode());
+        chnl.setSvcCode(scopeGuard.svcFor(request, chnl.getSvcCode()));
         return chnlService.update(chnl);
     }
 
@@ -86,7 +89,8 @@ public class ChnlController {
      * (auth-mngr.js 등 기존 화면들도 대부분 이 방식), @RequestBody 대신 경로변수를 받는다.
      */
     @DeleteMapping("/{chnlCode}")
-    public int delete(@PathVariable String chnlCode) {
+    public int delete(@PathVariable String chnlCode, HttpServletRequest request) {
+        scopeGuard.requireChnlSvc(request, chnlCode);
         Chnl chnl = new Chnl();
         chnl.setChnlCode(chnlCode);
         return chnlService.delete(chnl);

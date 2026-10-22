@@ -2,6 +2,8 @@ package com.shopwizard.company.web;
 
 import com.shopwizard.company.model.SupplyComp;
 import com.shopwizard.company.service.SupplyCompService;
+import com.shopwizard.framework.auth.DataScopeGuard;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
@@ -13,6 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SupplyCompController {
     private final SupplyCompService supplyCompService;
+    private final DataScopeGuard scopeGuard;
 
     @GetMapping
     public List<SupplyComp> getList(@RequestParam Map<String, Object> params) {
@@ -37,17 +40,21 @@ public class SupplyCompController {
     }
 
     @PostMapping
-    public int insert(@RequestBody SupplyComp supplyComp) {
+    public int insert(@RequestBody SupplyComp supplyComp, HttpServletRequest request) {
+        supplyComp.setSvcCode(scopeGuard.svcFor(request, supplyComp.getSvcCode()));
         return supplyCompService.insert(supplyComp);
     }
 
     @PutMapping
-    public int update(@RequestBody SupplyComp supplyComp) {
+    public int update(@RequestBody SupplyComp supplyComp, HttpServletRequest request) {
+        scopeGuard.requireSupplySvc(request, supplyComp.getSupplyCode());
+        supplyComp.setSvcCode(scopeGuard.svcFor(request, supplyComp.getSvcCode()));
         return supplyCompService.update(supplyComp);
     }
 
     @DeleteMapping("/{supplyCode}")
-    public int delete(@PathVariable String supplyCode) {
+    public int delete(@PathVariable String supplyCode, HttpServletRequest request) {
+        scopeGuard.requireSupplySvc(request, supplyCode);
         Map<String, Object> params = new HashMap<>();
         params.put("supplyCode", supplyCode);
         return supplyCompService.delete(params);

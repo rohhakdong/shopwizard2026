@@ -104,8 +104,9 @@ public class ShopController {
      *  /company/shop)과 분리해, 프론트가 "변경 안 함"으로 보내는 기존 해시값을 다시 저장하다가
      *  통째로 재해싱해버리는 사고를 막는다. */
     @PutMapping("/passwd")
-    public int updatePasswd(@RequestBody Map<String, Object> body) {
+    public int updatePasswd(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         String shopCode = (String) body.get("shopCode");
+        scopeGuard.requireShopSvc(request, shopCode);
         String passwd   = (String) body.get("passwd");
         if (shopCode == null || shopCode.isEmpty() || passwd == null || passwd.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "상점코드와 비밀번호를 모두 입력하세요.");
@@ -121,12 +122,15 @@ public class ShopController {
     }
 
     @PostMapping
-    public int insert(@RequestBody Shop shop) {
+    public int insert(@RequestBody Shop shop, HttpServletRequest request) {
+        shop.setSvcCode(scopeGuard.svcFor(request, shop.getSvcCode()));
         return shopService.insert(shop);
     }
 
     @PutMapping
-    public int update(@RequestBody Shop shop) {
+    public int update(@RequestBody Shop shop, HttpServletRequest request) {
+        scopeGuard.requireShopSvc(request, shop.getShopCode());
+        shop.setSvcCode(scopeGuard.svcFor(request, shop.getSvcCode()));
         return shopService.update(shop);
     }
 
@@ -137,7 +141,8 @@ public class ShopController {
      * 한 번도 정상 동작한 적이 없었다는 뜻.)
      */
     @DeleteMapping("/{shopCode}")
-    public int delete(@PathVariable String shopCode) {
+    public int delete(@PathVariable String shopCode, HttpServletRequest request) {
+        scopeGuard.requireShopSvc(request, shopCode);
         Shop shop = new Shop();
         shop.setShopCode(shopCode);
         return shopService.delete(shop);

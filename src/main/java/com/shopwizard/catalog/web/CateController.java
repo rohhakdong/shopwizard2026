@@ -2,6 +2,8 @@ package com.shopwizard.catalog.web;
 
 import com.shopwizard.catalog.model.Cate;
 import com.shopwizard.catalog.service.CateService;
+import com.shopwizard.framework.auth.DataScopeGuard;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CateController {
     private final CateService cateService;
+    private final DataScopeGuard scopeGuard;
 
     @GetMapping("/list") public List<Cate> selectList(@RequestParam Map<String, Object> params) { return cateService.selectList(params); }
     @GetMapping("/code-max") public String selectCateCodeMax(@RequestParam Map<String, Object> params) { return cateService.selectCateCodeMax(params); }
@@ -21,8 +24,16 @@ public class CateController {
     @GetMapping("/list-final-table") public List<Cate> selectListFinalTable(@RequestParam Map<String, Object> params) { return cateService.selectListFinalTable(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return cateService.selectCount(params); }
     @GetMapping("/count-child") public int selectCountChild(@RequestParam Map<String, Object> params) { return cateService.selectCountChild(params); }
-    @PostMapping public int insert(@RequestBody Cate cate) { return cateService.insert(cate); }
-    @PutMapping public int update(@RequestBody Cate cate) { return cateService.update(cate); }
+    @PostMapping
+    public int insert(@RequestBody Cate cate, HttpServletRequest request) {
+        cate.setSvcCode(scopeGuard.svcFor(request, cate.getSvcCode()));
+        return cateService.insert(cate);
+    }
+    @PutMapping
+    public int update(@RequestBody Cate cate, HttpServletRequest request) {
+        cate.setSvcCode(scopeGuard.svcFor(request, cate.getSvcCode()));   // 복합키(svcCode+cateCode) — 서비스 제한 계정은 자기 서비스의 카테고리만 수정한다
+        return cateService.update(cate);
+    }
 
     /**
      * 프론트의 공통 Api.delete()는 DELETE 요청에 body가 아닌 querystring으로 값을 실어 보내므로
@@ -31,9 +42,9 @@ public class CateController {
      * 경로변수 하나로는 표현이 안 돼 쿼리 파라미터 둘을 받는다.
      */
     @DeleteMapping
-    public int delete(@RequestParam String svcCode, @RequestParam String cateCode) {
+    public int delete(@RequestParam String svcCode, @RequestParam String cateCode, HttpServletRequest request) {
         Cate cate = new Cate();
-        cate.setSvcCode(svcCode);
+        cate.setSvcCode(scopeGuard.svcFor(request, svcCode));
         cate.setCateCode(cateCode);
         return cateService.delete(cate);
     }

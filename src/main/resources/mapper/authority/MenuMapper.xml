@@ -41,6 +41,7 @@
                 <otherwise>AND MenuLevel = 0</otherwise>
             </choose>
             <if test="pRoleUid != null and pRoleUid != ''">AND RoleUid = #{pRoleUid}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND RoleUid IN (SELECT RoleUid FROM wizardn.tAthRole WHERE SvcCode = #{pSvcCode})</if>
             <if test="pState != null and pState == 1">AND State = #{pState}</if>
         </where>
         ORDER BY MenuSeq, MenuCode

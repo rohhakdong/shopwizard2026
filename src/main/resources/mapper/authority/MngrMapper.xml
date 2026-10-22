@@ -37,6 +37,7 @@
         FROM wizardn.tAthMngr M
         INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
         <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND R.SvcCode = #{pSvcCode}</if>
             <if test="pMngrUid != null and pMngrUid != ''">AND M.MngrUid = #{pMngrUid}</if>
             <if test="pRoleUid != null and pRoleUid != ''">AND M.RoleUid = #{pRoleUid}</if>
             <if test="pLoginId != null and pLoginId != ''">AND M.LoginId = #{pLoginId}</if>
@@ -50,6 +51,7 @@
         FROM wizardn.tAthMngr M
         INNER JOIN wizardn.tAthRole R ON M.RoleUid = R.RoleUid
         <where>
+            <if test="pSvcCode != null and pSvcCode != ''">AND R.SvcCode = #{pSvcCode}</if>
             <if test="pMngrUid != null and pMngrUid != ''">AND M.MngrUid = #{pMngrUid}</if>
             <if test="pRoleUid != null and pRoleUid != ''">AND M.RoleUid = #{pRoleUid}</if>
             <if test="pLoginId != null and pLoginId != ''">AND M.LoginId = #{pLoginId}</if>
