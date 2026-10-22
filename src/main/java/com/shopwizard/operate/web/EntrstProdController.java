@@ -23,24 +23,4 @@ public class EntrstProdController {
     @GetMapping
     public EntrstProd select(@RequestParam Map<String, Object> params) { return entrstProdService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody EntrstProd entrstProd) { entrstProdService.insert(entrstProd); }
-
-    @PutMapping
-    public void update(@RequestBody EntrstProd entrstProd) { entrstProdService.update(entrstProd); }
-
-    @PutMapping("/deli")
-    public void updateByDeli(@RequestBody Map<String, Object> params) { entrstProdService.updateByDeli(params); }
-
-    @PutMapping("/price")
-    public void updateByPrice(@RequestBody Map<String, Object> params) { entrstProdService.updateByPrice(params); }
-
-    @PutMapping("/bank")
-    public void updateByBank(@RequestBody Map<String, Object> params) { entrstProdService.updateByBank(params); }
-
-    @PutMapping("/loan")
-    public void updateByLoan(@RequestBody Map<String, Object> params) { entrstProdService.updateByLoan(params); }
-
-    @DeleteMapping
-    public void delete(@RequestBody EntrstProd entrstProd) { entrstProdService.delete(entrstProd); }
 }

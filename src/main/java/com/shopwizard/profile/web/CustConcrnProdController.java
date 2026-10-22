@@ -31,15 +31,4 @@ public class CustConcrnProdController {
     @GetMapping
     public CustConcrnProd select(@RequestParam Map<String, Object> params) { return custConcrnProdService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody CustConcrnProd custConcrnProd) { return custConcrnProdService.insert(custConcrnProd); }
-
-    @PutMapping
-    public int update(@RequestBody CustConcrnProd custConcrnProd) { return custConcrnProdService.update(custConcrnProd); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return custConcrnProdService.delete(params); }
-
-    @DeleteMapping("/byCustId/{custId}")
-    public int deleteByCustId(@PathVariable Integer custId) { return custConcrnProdService.deleteByCustId(custId); }
 }

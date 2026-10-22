@@ -8,5 +8,4 @@ import java.util.Map;
 @Mapper
 public interface CustInfoMngrMapper {
     List<CustInfoMngr> selectList(Map<String, Object> params);
-    int insert(CustInfoMngr custInfoMngr);
 }

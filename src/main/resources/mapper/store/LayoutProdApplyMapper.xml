@@ -80,44 +80,4 @@
         </where>
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.LayoutProdApply">
-        INSERT INTO shopion.tStrLayoutProdApply (
-            DesignId, LayoutCode, ChnlCode, ProdCode, LocType, ProdSeq,
-            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{designId}, #{layoutCode}, #{chnlCode}, #{prodCode}, #{locType}, #{prodSeq},
-            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.LayoutProdApply">
-        UPDATE shopion.tStrLayoutProdApply
-        SET LocType = #{locType},
-            ProdSeq = #{prodSeq},
-            Remark = #{remark},
-            State = #{state},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE DesignId = #{designId}
-          AND LayoutCode = #{layoutCode}
-          AND ChnlCode = #{chnlCode}
-          AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrLayoutProdApply
-        WHERE DesignId = #{pDesignId}
-          AND LayoutCode = #{pLayoutCode}
-        <if test="pChnlCode != null and pChnlCode != ''">
-            AND ChnlCode = #{pChnlCode}
-        </if>
-        <if test="prodCodes != null">
-            AND ProdCode IN
-            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
-                #{item}
-            </foreach>
-        </if>
-    </delete>
-
 </mapper>

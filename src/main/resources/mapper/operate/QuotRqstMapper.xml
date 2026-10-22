@@ -38,21 +38,4 @@
         SELECT * FROM shopion.tOprQuotRqst WHERE QuotRqstNo = #{quotRqstNo}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.operate.model.QuotRqst">
-        INSERT INTO shopion.tOprQuotRqst (QuotRqstNo, RqstProdName, RqstProdAttr, CateName, MakerName, ModelName, RqstQty, ProdUnit, CustOrderNo, RqstMemo, AtchFile, QuotState, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
-        VALUES (#{quotRqstNo}, #{rqstProdName}, #{rqstProdAttr}, #{cateName}, #{makerName}, #{modelName}, #{rqstQty}, #{prodUnit}, #{custOrderNo}, #{rqstMemo}, #{atchFile}, #{quotState}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.operate.model.QuotRqst">
-        UPDATE shopion.tOprQuotRqst SET
-        QuotState = #{quotState}, QuotDate = NOW(), ProdCode = #{prodCode}, ProdName = #{prodName},
-        ProdAttr = #{prodAttr}, SalePrice = #{salePrice}, OrderQty = #{orderQty},
-        ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE QuotRqstNo = #{quotRqstNo}
-    </update>
-
-    <delete id="delete" parameterType="com.shopwizard.operate.model.QuotRqst">
-        DELETE FROM shopion.tOprQuotRqst WHERE QuotRqstNo = #{quotRqstNo}
-    </delete>
-
 </mapper>

@@ -11,7 +11,4 @@ public interface BranchStoreMapper {
     List<BranchStore> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     BranchStore select(Map<String, Object> params);
-    int insert(BranchStore branchStore);
-    int update(BranchStore branchStore);
-    int delete(Map<String, Object> params);
 }

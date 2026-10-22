@@ -34,8 +34,4 @@ public class ConstrService {
         constrMapper.delete(constrCode);
     }
 
-    @Transactional
-    public void deleteMultiple(List<Constr> list) {
-        constrMapper.deleteMultiple(list);
-    }
 }

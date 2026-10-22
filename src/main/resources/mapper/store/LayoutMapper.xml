@@ -57,45 +57,4 @@
           AND LayoutCode = #{pLayoutCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.Layout">
-        INSERT INTO shopion.tStrLayout (
-            DesignId, LayoutCode, LayoutName, LayoutDesc, ParentLayoutCode,
-            LayoutLevel, LayoutSeq, ImgName, ImgLink, ImgWidth, ImgHeight, ImgHtml,
-            State, Remark, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{designId}, #{layoutCode}, #{layoutName}, #{layoutDesc}, #{parentLayoutCode},
-            #{layoutLevel}, #{layoutSeq}, #{imgName}, #{imgLink}, #{imgWidth}, #{imgHeight}, #{imgHtml},
-            #{state}, #{remark}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.Layout">
-        UPDATE shopion.tStrLayout
-        SET LayoutName = #{layoutName},
-            LayoutDesc = #{layoutDesc},
-            ParentLayoutCode = #{parentLayoutCode},
-            LayoutLevel = #{layoutLevel},
-            LayoutSeq = #{layoutSeq},
-            ImgName = #{imgName},
-            ImgLink = #{imgLink},
-            ImgWidth = #{imgWidth},
-            ImgHeight = #{imgHeight},
-            <if test="imgHtml != null and imgHtml != ''">
-            ImgHtml = #{imgHtml},
-            </if>
-            State = #{state},
-            Remark = #{remark},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE DesignId = #{designId}
-          AND LayoutCode = #{layoutCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrLayout
-        WHERE DesignId = #{pDesignId}
-          AND LayoutCode = #{pLayoutCode}
-    </delete>
-
 </mapper>

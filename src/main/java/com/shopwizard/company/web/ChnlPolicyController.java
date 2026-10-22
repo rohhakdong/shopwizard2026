@@ -36,18 +36,4 @@ public class ChnlPolicyController {
         return chnlPolicyService.getMax();
     }
 
-    @PostMapping
-    public int insert(@RequestBody ChnlPolicy chnlPolicy) {
-        return chnlPolicyService.insert(chnlPolicy);
-    }
-
-    @PutMapping
-    public int update(@RequestBody ChnlPolicy chnlPolicy) {
-        return chnlPolicyService.update(chnlPolicy);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestBody ChnlPolicy chnlPolicy) {
-        return chnlPolicyService.delete(chnlPolicy);
-    }
 }

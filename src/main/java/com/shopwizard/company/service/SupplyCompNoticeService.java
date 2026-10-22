@@ -4,7 +4,6 @@ import com.shopwizard.company.mapper.SupplyCompNoticeMapper;
 import com.shopwizard.company.model.SupplyCompNotice;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
@@ -17,10 +16,4 @@ public class SupplyCompNoticeService {
     public SupplyCompNotice get(Map<String, Object> params) { return supplyCompNoticeMapper.select(params); }
     public String getCntnts(int noticeNo) { return supplyCompNoticeMapper.selectCntnts(noticeNo); }
 
-    @Transactional
-    public int insert(SupplyCompNotice supplyCompNotice) { return supplyCompNoticeMapper.insert(supplyCompNotice); }
-    @Transactional
-    public int update(SupplyCompNotice supplyCompNotice) { return supplyCompNoticeMapper.update(supplyCompNotice); }
-    @Transactional
-    public int delete(SupplyCompNotice supplyCompNotice) { return supplyCompNoticeMapper.delete(supplyCompNotice); }
 }

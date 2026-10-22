@@ -67,28 +67,4 @@
         <![CDATA[ AND E.EndDate >= ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY) ]]>
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.Estimt">
-        INSERT INTO shopion.tPrfEstimt (
-            CompCode, BranchId, DeptCode, AccntId, StartDate, EndDate, EstimtAmt,
-            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{compCode}, #{branchId}, #{deptCode}, #{accntId}, #{startDate}, #{endDate}, #{estimtAmt},
-            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.Estimt">
-        UPDATE shopion.tPrfEstimt SET
-            EstimtAmt = #{estimtAmt}, State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE CompCode = #{compCode} AND BranchId = #{branchId} AND DeptCode = #{deptCode}
-        AND AccntId = #{accntId} AND StartDate = #{startDate} AND EndDate = #{endDate}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfEstimt
-        WHERE CompCode = #{compCode} AND BranchId = #{branchId} AND DeptCode = #{deptCode}
-        AND AccntId = #{accntId} AND StartDate = #{startDate} AND EndDate = #{endDate}
-    </delete>
-
 </mapper>

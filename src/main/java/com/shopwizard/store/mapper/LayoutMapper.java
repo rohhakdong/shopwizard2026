@@ -11,7 +11,4 @@ public interface LayoutMapper {
     String selectLayoutCodeMax(Map<String, Object> params);
     Layout select(Map<String, Object> params);
     String selectImgHtml(Map<String, Object> params);
-    int insert(Layout layout);
-    int update(Layout layout);
-    int delete(Map<String, Object> params);
 }

@@ -33,23 +33,4 @@ public class EventBoardController {
         return eventBoardService.select(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody EventBoard eventBoard) {
-        return eventBoardService.insert(eventBoard);
-    }
-
-    @PutMapping
-    public int update(@RequestBody EventBoard eventBoard) {
-        return eventBoardService.update(eventBoard);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return eventBoardService.delete(params);
-    }
-
-    @DeleteMapping("/event")
-    public int deleteEvent(@RequestParam Map<String, Object> params) {
-        return eventBoardService.deleteEvent(params);
-    }
 }

@@ -24,18 +24,6 @@ public class CustConsltController {
     @GetMapping("/{custConsltNo}")
     public CustConslt select(@PathVariable Integer custConsltNo) { return custConsltService.select(custConsltNo); }
 
-    @PostMapping
-    public void insert(@RequestBody CustConslt custConslt) { custConsltService.insert(custConslt); }
-
-    @PutMapping
-    public void update(@RequestBody CustConslt custConslt) { custConsltService.update(custConslt); }
-
-    @PutMapping("/move")
-    public void move(@RequestBody CustConslt custConslt) { custConsltService.move(custConslt); }
-
-    @DeleteMapping("/{custConsltNo}")
-    public void delete(@PathVariable Integer custConsltNo) { custConsltService.delete(custConsltNo); }
-
     @GetMapping("/count/cust/{custId}")
     public int countByCustId(@PathVariable Integer custId) { return custConsltService.countByCustId(custId); }
 

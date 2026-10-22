@@ -33,18 +33,4 @@ public class LayoutController {
         return layoutService.selectImgHtml(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody Layout layout) {
-        return layoutService.insert(layout);
-    }
-
-    @PutMapping
-    public int update(@RequestBody Layout layout) {
-        return layoutService.update(layout);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return layoutService.delete(params);
-    }
 }

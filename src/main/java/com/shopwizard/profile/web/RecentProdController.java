@@ -24,12 +24,4 @@ public class RecentProdController {
     @GetMapping
     public RecentProd select(@RequestParam Map<String, Object> params) { return recentProdService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody RecentProd recentProd) { return recentProdService.insert(recentProd); }
-
-    @PutMapping
-    public int update(@RequestBody RecentProd recentProd) { return recentProdService.update(recentProd); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return recentProdService.delete(params); }
 }

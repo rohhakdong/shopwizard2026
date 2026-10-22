@@ -11,9 +11,4 @@
         </where>
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.log.model.CustInfoMngr">
-        INSERT INTO wizardn.tLogCustInfoMngr (LogId, CustId, MenuName, SvcName, DaoName, TableName, OrderNo, MngrIpAddr, MngrUid, ExecCntnts, ExecResult, State, Remark, RegistId, RegistName, RegistDate)
-        VALUES (#{logId}, #{custId}, #{menuName}, #{svcName}, #{daoName}, #{tableName}, #{orderNo}, #{mngrIpAddr}, #{mngrUid}, #{execCntnts}, #{execResult}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
-    </insert>
-
 </mapper>

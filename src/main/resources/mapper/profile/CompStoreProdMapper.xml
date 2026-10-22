@@ -46,35 +46,4 @@
         LIMIT 0,1
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.CompStoreProd">
-        INSERT INTO shopion.tPrfCompStoreProd (
-            CompCode, StoreCode, ProdCode, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{compCode}, #{storeCode}, #{prodCode}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.CompStoreProd">
-        UPDATE shopion.tPrfCompStoreProd SET
-            State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE CompCode = #{compCode}
-        AND StoreCode = #{storeCode}
-        AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfCompStoreProd
-        WHERE CompCode = #{compCode}
-        AND StoreCode = #{storeCode}
-        <if test="prodCodes != null and prodCodes.size() > 0">
-        AND ProdCode IN
-        <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
-            #{item}
-        </foreach>
-        </if>
-    </delete>
-
 </mapper>

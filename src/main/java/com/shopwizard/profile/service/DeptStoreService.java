@@ -19,7 +19,4 @@ public class DeptStoreService {
     public List<DeptStore> selectList(Map<String, Object> params) { return deptStoreMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return deptStoreMapper.selectCount(params); }
     public DeptStore select(Map<String, Object> params) { return deptStoreMapper.select(params); }
-    public int insert(DeptStore deptStore) { return deptStoreMapper.insert(deptStore); }
-    public int update(DeptStore deptStore) { return deptStoreMapper.update(deptStore); }
-    public int delete(Map<String, Object> params) { return deptStoreMapper.delete(params); }
 }

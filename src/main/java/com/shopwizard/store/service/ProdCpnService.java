@@ -16,7 +16,4 @@ public class ProdCpnService {
 
     public List<ProdCpn> selectList(Map<String, Object> params) { return prodCpnMapper.selectList(params); }
     public ProdCpn select(Integer cpnId) { return prodCpnMapper.select(cpnId); }
-    public int insert(ProdCpn prodCpn) { return prodCpnMapper.insert(prodCpn); }
-    public int update(ProdCpn prodCpn) { return prodCpnMapper.update(prodCpn); }
-    public int delete(Integer cpnId) { return prodCpnMapper.delete(cpnId); }
 }

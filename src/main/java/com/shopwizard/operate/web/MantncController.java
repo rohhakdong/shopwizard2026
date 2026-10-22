@@ -27,24 +27,4 @@ public class MantncController {
     @GetMapping("/max")
     public int selectMax(@RequestParam Map<String, Object> params) { return mantncService.selectMax(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Mantnc mantnc) { mantncService.insert(mantnc); }
-
-    @PutMapping
-    public void update(@RequestBody Mantnc mantnc) { mantncService.update(mantnc); }
-
-    @PutMapping("/cmpletconfrm")
-    public void updateByCmpletConfrm(@RequestBody Mantnc mantnc) { mantncService.updateByCmpletConfrm(mantnc); }
-
-    @PutMapping("/reciptconfrm")
-    public void updateByReciptConfrm(@RequestBody Mantnc mantnc) { mantncService.updateByReciptConfrm(mantnc); }
-
-    @PutMapping("/exec")
-    public void updateByExec(@RequestBody Mantnc mantnc) { mantncService.updateByExec(mantnc); }
-
-    @PutMapping("/cmplet")
-    public void updateByCmplet(@RequestBody Mantnc mantnc) { mantncService.updateByCmplet(mantnc); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Mantnc mantnc) { mantncService.delete(mantnc); }
 }

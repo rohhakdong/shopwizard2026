@@ -24,12 +24,4 @@ public class BranchController {
     @GetMapping("/{branchId}")
     public Branch select(@PathVariable Integer branchId) { return branchService.select(branchId); }
 
-    @PostMapping
-    public int insert(@RequestBody Branch branch) { return branchService.insert(branch); }
-
-    @PutMapping
-    public int update(@RequestBody Branch branch) { return branchService.update(branch); }
-
-    @DeleteMapping("/{branchId}")
-    public int delete(@PathVariable Integer branchId) { return branchService.delete(branchId); }
 }

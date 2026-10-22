@@ -24,20 +24,4 @@
         SELECT * FROM shopion.tPrfDuty WHERE DutyId = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.Duty" useGeneratedKeys="true" keyProperty="dutyId">
-        INSERT INTO shopion.tPrfDuty (CompCode, DutyName, DutyDesc, DutySeq, State, Remark, RegistId, RegistName, RegistDate)
-        VALUES (#{compCode}, #{dutyName}, #{dutyDesc}, #{dutySeq}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.Duty">
-        UPDATE shopion.tPrfDuty SET
-            DutyName = #{dutyName}, DutyDesc = #{dutyDesc}, DutySeq = #{dutySeq},
-            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE DutyId = #{dutyId}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tPrfDuty WHERE DutyId = #{value}
-    </delete>
-
 </mapper>

@@ -28,18 +28,4 @@ public class LayoutImgController {
         return layoutImgService.select(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody LayoutImg layoutImg) {
-        return layoutImgService.insert(layoutImg);
-    }
-
-    @PutMapping
-    public int update(@RequestBody LayoutImg layoutImg) {
-        return layoutImgService.update(layoutImg);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return layoutImgService.delete(params);
-    }
 }

@@ -10,9 +10,6 @@ import java.util.Map;
 public interface NoticeMapper {
     List<Notice> selectList(Map<String, Object> params);
     Notice select(Integer noticeNo);
-    void insert(Notice notice);
-    void update(Notice notice);
-    void delete(Integer noticeNo);
     List<Notice> selectListPage(Map<String, Object> params);
     int selectCountPage(Map<String, Object> params);
     String selectCntnts(Integer noticeNo);

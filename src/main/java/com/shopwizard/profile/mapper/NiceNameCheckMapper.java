@@ -10,5 +10,4 @@ import java.util.Map;
 public interface NiceNameCheckMapper {
     List<NiceNameCheck> selectList(Map<String, Object> params);
     NiceNameCheck select(String nameCheckUid);
-    int insert(NiceNameCheck niceNameCheck);
 }

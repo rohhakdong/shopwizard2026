@@ -18,8 +18,4 @@ public class EventBoardService {
     public List<EventBoard> selectListPage(Map<String, Object> params) { return eventBoardMapper.selectListPage(params); }
     public int selectCount(Map<String, Object> params) { return eventBoardMapper.selectCount(params); }
     public EventBoard select(Map<String, Object> params) { return eventBoardMapper.select(params); }
-    public int insert(EventBoard eventBoard) { return eventBoardMapper.insert(eventBoard); }
-    public int update(EventBoard eventBoard) { return eventBoardMapper.update(eventBoard); }
-    public int delete(Map<String, Object> params) { return eventBoardMapper.delete(params); }
-    public int deleteEvent(Map<String, Object> params) { return eventBoardMapper.deleteEvent(params); }
 }

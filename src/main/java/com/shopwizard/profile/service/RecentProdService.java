@@ -19,7 +19,4 @@ public class RecentProdService {
     public List<RecentProd> selectList(Map<String, Object> params) { return recentProdMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return recentProdMapper.selectCount(params); }
     public RecentProd select(Map<String, Object> params) { return recentProdMapper.select(params); }
-    public int insert(RecentProd recentProd) { return recentProdMapper.insert(recentProd); }
-    public int update(RecentProd recentProd) { return recentProdMapper.update(recentProd); }
-    public int delete(Map<String, Object> params) { return recentProdMapper.delete(params); }
 }

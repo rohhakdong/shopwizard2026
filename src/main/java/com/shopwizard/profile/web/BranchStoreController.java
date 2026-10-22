@@ -24,12 +24,4 @@ public class BranchStoreController {
     @GetMapping
     public BranchStore select(@RequestParam Map<String, Object> params) { return branchStoreService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody BranchStore branchStore) { return branchStoreService.insert(branchStore); }
-
-    @PutMapping
-    public int update(@RequestBody BranchStore branchStore) { return branchStoreService.update(branchStore); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return branchStoreService.delete(params); }
 }

@@ -11,7 +11,4 @@ public interface QuotRqstMapper {
     List<QuotRqst> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     QuotRqst select(Map<String, Object> params);
-    void insert(QuotRqst quotRqst);
-    void update(QuotRqst quotRqst);
-    void delete(QuotRqst quotRqst);
 }

@@ -114,31 +114,4 @@
         AND P.SaleYn = 1
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.CustConcrnProd">
-        INSERT INTO shopion.tPrfCustConcrnProd (
-            CustId, ProdCode, ChnlCode, State, Remark, RegistDate, RegistId, RegistName
-        ) VALUES (
-            #{custId}, #{prodCode}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.CustConcrnProd">
-        UPDATE shopion.tPrfCustConcrnProd SET
-            State = #{state}, Remark = #{remark},
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE CustId = #{custId}
-        AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfCustConcrnProd
-        WHERE CustId = #{custId}
-        AND ProdCode = #{prodCode}
-    </delete>
-
-    <delete id="deleteByCustId" parameterType="int">
-        DELETE FROM shopion.tPrfCustConcrnProd
-        WHERE CustId = #{value}
-    </delete>
-
 </mapper>

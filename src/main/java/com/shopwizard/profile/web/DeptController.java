@@ -27,12 +27,4 @@ public class DeptController {
     @GetMapping("/deptCodeMax")
     public Map<String, Object> selectDeptCodeMax(@RequestParam Map<String, Object> params) { return deptService.selectDeptCodeMax(params); }
 
-    @PostMapping
-    public int insert(@RequestBody Dept dept) { return deptService.insert(dept); }
-
-    @PutMapping
-    public int update(@RequestBody Dept dept) { return deptService.update(dept); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return deptService.delete(params); }
 }

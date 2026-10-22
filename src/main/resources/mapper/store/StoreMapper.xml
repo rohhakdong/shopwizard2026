@@ -85,18 +85,6 @@
         ORDER BY StoreLevel, StoreSeq
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.Store">
-        INSERT INTO shopion.tStrStore (
-            ChnlCode, StoreCode, StoreName, StoreDesc, ParentStoreCode,
-            StoreLevel, StoreSeq, AdultYn, TmplCode, State, Remark,
-            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{chnlCode}, #{storeCode}, #{storeName}, #{storeDesc}, #{parentStoreCode},
-            #{storeLevel}, #{storeSeq}, #{adultYn}, #{tmplCode}, #{state}, #{remark},
-            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
     <update id="update" parameterType="com.shopwizard.store.model.Store">
         UPDATE shopion.tStrStore
         SET StoreName = #{storeName},

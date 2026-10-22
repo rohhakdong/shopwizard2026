@@ -19,7 +19,4 @@ public class EventService {
     public String selectEventCodeMax(Map<String, Object> params) { return eventMapper.selectEventCodeMax(params); }
     public Event select(Map<String, Object> params) { return eventMapper.select(params); }
     public String selectEventHtml(Map<String, Object> params) { return eventMapper.selectEventHtml(params); }
-    public int insert(Event event) { return eventMapper.insert(event); }
-    public int update(Event event) { return eventMapper.update(event); }
-    public int delete(Map<String, Object> params) { return eventMapper.delete(params); }
 }

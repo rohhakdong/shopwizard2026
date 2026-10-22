@@ -24,12 +24,4 @@ public class DeptApprovLineController {
     @GetMapping
     public DeptApprovLine select(@RequestParam Map<String, Object> params) { return deptApprovLineService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody DeptApprovLine deptApprovLine) { return deptApprovLineService.insert(deptApprovLine); }
-
-    @PutMapping
-    public int update(@RequestBody DeptApprovLine deptApprovLine) { return deptApprovLineService.update(deptApprovLine); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return deptApprovLineService.delete(params); }
 }

@@ -34,30 +34,4 @@
         AND ProdCode = #{prodCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.BranchStoreProd">
-        INSERT INTO shopion.tPrfBranchStoreProd (
-            BranchId, StoreCode, ProdCode, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{branchId}, #{storeCode}, #{prodCode}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.BranchStoreProd">
-        UPDATE shopion.tPrfBranchStoreProd SET
-            State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE BranchId = #{branchId}
-        AND StoreCode = #{storeCode}
-        AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfBranchStoreProd
-        WHERE BranchId = #{branchId}
-        AND StoreCode = #{storeCode}
-        AND ProdCode = #{prodCode}
-    </delete>
-
 </mapper>

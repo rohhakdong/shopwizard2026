@@ -21,6 +21,4 @@ public class NiceNameCheckController {
     @GetMapping("/{nameCheckUid}")
     public NiceNameCheck select(@PathVariable String nameCheckUid) { return niceNameCheckService.select(nameCheckUid); }
 
-    @PostMapping
-    public int insert(@RequestBody NiceNameCheck niceNameCheck) { return niceNameCheckService.insert(niceNameCheck); }
 }

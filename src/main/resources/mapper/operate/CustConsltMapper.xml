@@ -73,37 +73,6 @@
         WHERE CustConsltNo = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.operate.model.CustConslt">
-        INSERT INTO shopion.tOprCustConslt (CustConsltType, CustConsltReasonType, ConsltMediaType, CustId, CustName,
-        CustEmail, CustPhoneNo, CustMobileNo, ConsltChnlCode, ConsltTitle, ConsltCntnts, ConsltDate,
-        MngrId, MngrName, MngrEmail, AnswrTitle, AnswrCntnts, AnswrDate,
-        OrderNo, OrderProdNo, OrderChangeNo, ProdCode, ItemCode, ItemName,
-        DeliFeeType, DeliFee, ChnlCode, State, Remark, RegistDate, RegistId, RegistName)
-        VALUES (#{custConsltType}, #{custConsltReasonType}, #{consltMediaType}, #{custId}, #{custName},
-        #{custEmail}, #{custPhoneNo}, #{custMobileNo}, #{consltChnlCode}, #{consltTitle}, #{consltCntnts}, NOW(),
-        #{mngrId}, #{mngrName}, #{mngrEmail}, #{answrTitle}, #{answrCntnts}, #{answrDate},
-        #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{prodCode}, #{itemCode}, #{itemName},
-        #{deliFeeType}, #{deliFee}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.operate.model.CustConslt">
-        UPDATE shopion.tOprCustConslt SET
-        MngrId = #{mngrId}, MngrName = #{mngrName}, MngrEmail = #{mngrEmail}, ProdCode = #{prodCode},
-        AnswrTitle = #{answrTitle}, AnswrCntnts = #{answrCntnts}, AnswrDate = NOW(),
-        State = #{state}, Remark = #{remark}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE CustConsltNo = #{custConsltNo}
-    </update>
-
-    <update id="move" parameterType="com.shopwizard.operate.model.CustConslt">
-        UPDATE shopion.tOprCustConslt SET
-        ChnlCode = #{chnlCode}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE CustConsltNo = #{custConsltNo}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tOprCustConslt WHERE CustConsltNo = #{value}
-    </delete>
-
     <select id="countByCustId" parameterType="int" resultType="int">
         SELECT COUNT(*) FROM shopion.tOprCustConslt WHERE CustId = #{value} AND AnswrDate IS NULL
     </select>

@@ -11,8 +11,4 @@ public interface EventBoardMapper {
     List<EventBoard> selectListPage(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     EventBoard select(Map<String, Object> params);
-    int insert(EventBoard eventBoard);
-    int update(EventBoard eventBoard);
-    int delete(Map<String, Object> params);
-    int deleteEvent(Map<String, Object> params);
 }

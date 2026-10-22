@@ -23,12 +23,4 @@ public class QuotRqstController {
     @GetMapping
     public QuotRqst select(@RequestParam Map<String, Object> params) { return quotRqstService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody QuotRqst quotRqst) { quotRqstService.insert(quotRqst); }
-
-    @PutMapping
-    public void update(@RequestBody QuotRqst quotRqst) { quotRqstService.update(quotRqst); }
-
-    @DeleteMapping
-    public void delete(@RequestBody QuotRqst quotRqst) { quotRqstService.delete(quotRqst); }
 }

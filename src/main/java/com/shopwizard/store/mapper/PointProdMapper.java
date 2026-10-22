@@ -8,6 +8,4 @@ import java.util.Map;
 @Mapper
 public interface PointProdMapper {
     List<PointProd> selectList(Map<String, Object> params);
-    int insert(PointProd pointProd);
-    int delete(Map<String, Object> params);
 }

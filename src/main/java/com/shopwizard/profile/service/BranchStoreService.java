@@ -19,7 +19,4 @@ public class BranchStoreService {
     public List<BranchStore> selectList(Map<String, Object> params) { return branchStoreMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return branchStoreMapper.selectCount(params); }
     public BranchStore select(Map<String, Object> params) { return branchStoreMapper.select(params); }
-    public int insert(BranchStore branchStore) { return branchStoreMapper.insert(branchStore); }
-    public int update(BranchStore branchStore) { return branchStoreMapper.update(branchStore); }
-    public int delete(Map<String, Object> params) { return branchStoreMapper.delete(params); }
 }

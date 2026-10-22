@@ -17,8 +17,5 @@ public class AgreeService {
 
     public List<Agree> selectList(Map<String, Object> params) { return agreeMapper.selectList(params); }
     public Agree select(Map<String, Object> params) { return agreeMapper.select(params); }
-    public void insert(Agree agree) { agreeMapper.insert(agree); }
-    public void update(Agree agree) { agreeMapper.update(agree); }
-    public void delete(Agree agree) { agreeMapper.delete(agree); }
     public String selectCntnts(Integer agreeNo) { return agreeMapper.selectCntnts(agreeNo); }
 }

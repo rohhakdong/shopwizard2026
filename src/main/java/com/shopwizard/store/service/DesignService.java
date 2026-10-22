@@ -15,7 +15,4 @@ public class DesignService {
     private final DesignMapper designMapper;
 
     public List<Design> selectList(Map<String, Object> params) { return designMapper.selectList(params); }
-    public int insert(Design design) { return designMapper.insert(design); }
-    public int update(Design design) { return designMapper.update(design); }
-    public int delete(Integer designId) { return designMapper.delete(designId); }
 }

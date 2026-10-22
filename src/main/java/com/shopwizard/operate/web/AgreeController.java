@@ -20,15 +20,6 @@ public class AgreeController {
     @GetMapping
     public Agree select(@RequestParam Map<String, Object> params) { return agreeService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Agree agree) { agreeService.insert(agree); }
-
-    @PutMapping
-    public void update(@RequestBody Agree agree) { agreeService.update(agree); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Agree agree) { agreeService.delete(agree); }
-
     @GetMapping("/cntnts/{agreeNo}")
     public String selectCntnts(@PathVariable Integer agreeNo) { return agreeService.selectCntnts(agreeNo); }
 }

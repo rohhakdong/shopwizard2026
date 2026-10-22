@@ -42,32 +42,4 @@
     SELECT COUNT(*) FROM tCodWordDict WHERE KorWord = #{korWord}
   </select>
 
-  <insert id="insert" parameterType="com.shopwizard.code.model.WordDict">
-    INSERT INTO tCodWordDict (
-      KorWord, EngWord, EngAbbr,
-      State, Remark,
-      RegistDate, RegistId, RegistName
-    ) VALUES (
-      #{korWord}, #{engWord}, #{engAbbr},
-      #{state}, #{remark},
-      NOW(), #{registId}, #{registName}
-    )
-  </insert>
-
-  <update id="update" parameterType="com.shopwizard.code.model.WordDict">
-    UPDATE tCodWordDict SET
-      EngWord    = #{engWord},
-      EngAbbr    = #{engAbbr},
-      State      = #{state},
-      Remark     = #{remark},
-      ChangeDate = NOW(),
-      ChangeId   = #{changeId},
-      ChangeName = #{changeName}
-    WHERE KorWord = #{korWord}
-  </update>
-
-  <delete id="delete">
-    DELETE FROM tCodWordDict WHERE KorWord = #{korWord}
-  </delete>
-
 </mapper>

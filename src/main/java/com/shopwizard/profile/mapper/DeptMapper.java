@@ -12,7 +12,4 @@ public interface DeptMapper {
     int selectCount(Map<String, Object> params);
     Dept select(Map<String, Object> params);
     Map<String, Object> selectDeptCodeMax(Map<String, Object> params);
-    int insert(Dept dept);
-    int update(Dept dept);
-    int delete(Map<String, Object> params);
 }

@@ -120,31 +120,4 @@
         </where>
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.CompStore">
-        INSERT INTO shopion.tPrfCompStore (
-            CompCode, StoreCode, StoreName, StoreDesc, ParentStoreCode, StoreLevel,
-            StoreSeq, AdultYn, TmplCode, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{compCode}, #{storeCode}, #{storeName}, #{storeDesc}, #{parentStoreCode}, #{storeLevel},
-            #{storeSeq}, #{adultYn}, #{tmplCode}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.CompStore">
-        UPDATE shopion.tPrfCompStore SET
-            StoreName = #{storeName}, StoreDesc = #{storeDesc}, StoreSeq = #{storeSeq},
-            State = #{state}, Remark = #{remark},
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE CompCode = #{compCode}
-        AND StoreCode = #{storeCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfCompStore
-        WHERE CompCode = #{compCode}
-        AND StoreCode = #{storeCode}
-    </delete>
-
 </mapper>

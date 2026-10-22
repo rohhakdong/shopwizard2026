@@ -19,7 +19,4 @@ public class CustInfoLogService {
     public List<CustInfoLog> selectList(Map<String, Object> params) { return custInfoLogMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return custInfoLogMapper.selectCount(params); }
     public CustInfoLog select(Integer logId) { return custInfoLogMapper.select(logId); }
-    public int insert(CustInfoLog custInfoLog) { return custInfoLogMapper.insert(custInfoLog); }
-    public int update(CustInfoLog custInfoLog) { return custInfoLogMapper.update(custInfoLog); }
-    public int delete(Integer logId) { return custInfoLogMapper.delete(logId); }
 }

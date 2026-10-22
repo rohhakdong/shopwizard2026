@@ -27,20 +27,4 @@
         SELECT * FROM shopion.tPrfRecentProd WHERE SessonId = #{sessonId} AND ProdCode = #{prodCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.RecentProd">
-        INSERT INTO shopion.tPrfRecentProd (SessonId, ProdCode, CustId, State, Remark, RegistId, RegistName, RegistDate)
-        VALUES (#{sessonId}, #{prodCode}, #{custId}, #{state}, #{remark}, #{registId}, #{registName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.RecentProd">
-        UPDATE shopion.tPrfRecentProd SET
-            CustId = #{custId}, State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE SessonId = #{sessonId} AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfRecentProd WHERE SessonId = #{sessonId} AND ProdCode = #{prodCode}
-    </delete>
-
 </mapper>

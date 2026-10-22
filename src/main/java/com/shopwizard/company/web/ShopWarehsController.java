@@ -28,18 +28,4 @@ public class ShopWarehsController {
         return shopWarehsService.get(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody ShopWarehs shopWarehs) {
-        return shopWarehsService.insert(shopWarehs);
-    }
-
-    @PutMapping
-    public int update(@RequestBody ShopWarehs shopWarehs) {
-        return shopWarehsService.update(shopWarehs);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestBody ShopWarehs shopWarehs) {
-        return shopWarehsService.delete(shopWarehs);
-    }
 }

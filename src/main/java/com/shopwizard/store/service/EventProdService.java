@@ -17,7 +17,4 @@ public class EventProdService {
     public List<EventProd> selectList(Map<String, Object> params) { return eventProdMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return eventProdMapper.selectCount(params); }
     public List<EventProd> selectListAll(Map<String, Object> params) { return eventProdMapper.selectListAll(params); }
-    public int insert(EventProd eventProd) { return eventProdMapper.insert(eventProd); }
-    public int update(EventProd eventProd) { return eventProdMapper.update(eventProd); }
-    public int delete(Map<String, Object> params) { return eventProdMapper.delete(params); }
 }

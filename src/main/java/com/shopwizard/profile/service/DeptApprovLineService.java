@@ -19,7 +19,4 @@ public class DeptApprovLineService {
     public List<DeptApprovLine> selectList(Map<String, Object> params) { return deptApprovLineMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return deptApprovLineMapper.selectCount(params); }
     public DeptApprovLine select(Map<String, Object> params) { return deptApprovLineMapper.select(params); }
-    public int insert(DeptApprovLine deptApprovLine) { return deptApprovLineMapper.insert(deptApprovLine); }
-    public int update(DeptApprovLine deptApprovLine) { return deptApprovLineMapper.update(deptApprovLine); }
-    public int delete(Map<String, Object> params) { return deptApprovLineMapper.delete(params); }
 }

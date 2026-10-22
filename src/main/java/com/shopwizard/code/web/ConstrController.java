@@ -49,9 +49,4 @@ public class ConstrController {
         return ResponseEntity.ok("SUCCESS");
     }
 
-    @DeleteMapping("/multiple")
-    public ResponseEntity<String> deleteMultiple(@RequestBody List<Constr> list) {
-        constrService.deleteMultiple(list);
-        return ResponseEntity.ok("SUCCESS");
-    }
 }

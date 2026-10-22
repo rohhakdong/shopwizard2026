@@ -12,7 +12,6 @@ public interface StoreMapper {
     List<Store> selectListTable(Map<String, Object> params);
     Store select(Map<String, Object> params);
     List<Store> selectListLevel(Map<String, Object> params);
-    int insert(Store store);
     int update(Store store);
     int delete(Map<String, Object> params);
 }

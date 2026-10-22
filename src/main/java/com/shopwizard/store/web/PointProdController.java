@@ -18,13 +18,4 @@ public class PointProdController {
         return pointProdService.selectList(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody PointProd pointProd) {
-        return pointProdService.insert(pointProd);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return pointProdService.delete(params);
-    }
 }

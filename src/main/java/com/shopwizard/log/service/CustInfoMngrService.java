@@ -17,5 +17,4 @@ public class CustInfoMngrService {
     private final CustInfoMngrMapper custInfoMngrMapper;
 
     public List<CustInfoMngr> selectList(Map<String, Object> params) { return custInfoMngrMapper.selectList(params); }
-    public void insert(CustInfoMngr custInfoMngr) { custInfoMngrMapper.insert(custInfoMngr); }
 }

@@ -43,43 +43,4 @@
         LIMIT 0,1
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.CustDeliAddr">
-        INSERT INTO shopion.tPrfCustDeliAddr (
-            CustId, DefaltYn, RecverName, Zipcode, Addr1, Addr2,
-            HomePhoneNo, MobilePhoneNo, MobileSvc, ChnlCode,
-            State, Remark, RegistDate, RegistId, RegistName
-        ) VALUES (
-            #{custId}, #{defaltYn}, #{recverName}, #{zipcode}, #{addr1}, #{addr2},
-            #{homePhoneNo}, #{mobilePhoneNo}, #{mobileSvc}, #{chnlCode},
-            #{state}, #{remark}, NOW(), #{registId}, #{registName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.CustDeliAddr">
-        UPDATE shopion.tPrfCustDeliAddr SET
-            DefaltYn = #{defaltYn}, RecverName = #{recverName}, Zipcode = #{zipcode},
-            Addr1 = #{addr1}, Addr2 = #{addr2}, HomePhoneNo = #{homePhoneNo},
-            MobilePhoneNo = #{mobilePhoneNo}, MobileSvc = #{mobileSvc},
-            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE CustId = #{custId}
-        AND DeliAddrNo = #{deliAddrNo}
-    </update>
-
-    <update id="updateDefaltYn" parameterType="int">
-        UPDATE shopion.tPrfCustDeliAddr SET
-            DefaltYn = 0, ChangeDate = NOW()
-        WHERE CustId = #{value}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfCustDeliAddr
-        WHERE CustId = #{custId}
-        AND DeliAddrNo = #{deliAddrNo}
-    </delete>
-
-    <delete id="deleteByCustId" parameterType="int">
-        DELETE FROM shopion.tPrfCustDeliAddr
-        WHERE CustId = #{value}
-    </delete>
-
 </mapper>

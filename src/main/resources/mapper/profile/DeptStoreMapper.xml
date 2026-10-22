@@ -24,18 +24,4 @@
         SELECT * FROM shopion.tPrfDeptStore WHERE DeptId = #{deptId} AND StoreCode = #{storeCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.DeptStore">
-        INSERT INTO shopion.tPrfDeptStore (DeptId, StoreCode, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
-        VALUES (#{deptId}, #{storeCode}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.DeptStore">
-        UPDATE shopion.tPrfDeptStore SET State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE DeptId = #{deptId} AND StoreCode = #{storeCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfDeptStore WHERE DeptId = #{deptId} AND StoreCode = #{storeCode}
-    </delete>
-
 </mapper>

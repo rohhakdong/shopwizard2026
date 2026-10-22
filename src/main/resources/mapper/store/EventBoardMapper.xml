@@ -61,42 +61,4 @@
           AND B.BoardNo = #{pBoardNo}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.EventBoard">
-        INSERT INTO shopion.tStrEventBoard (
-            ChnlCode, BoardTitle, BoardCntnts, EventCode, CustId, CustName,
-            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{chnlCode}, #{boardTitle}, #{boardCntnts}, #{eventCode}, #{custId}, #{custName},
-            #{state}, #{remark}, #{registId}, #{registName}, #{registDate}, #{changeId}, #{changeName}, #{changeDate}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.EventBoard">
-        UPDATE shopion.tStrEventBoard
-        SET BoardTitle = #{boardTitle},
-            BoardCntnts = #{boardCntnts},
-            EventCode = #{eventCode},
-            CustId = #{custId},
-            CustName = #{custName},
-            State = #{state},
-            Remark = #{remark},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName},
-            ChangeDate = #{changeDate}
-        WHERE ChnlCode = #{chnlCode}
-          AND BoardNo = #{boardNo}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrEventBoard
-        WHERE ChnlCode = #{pChnlCode}
-          AND BoardNo = #{pBoardNo}
-    </delete>
-
-    <delete id="deleteEvent" parameterType="map">
-        DELETE FROM shopion.tStrEventBoard
-        WHERE ChnlCode = #{pChnlCode}
-          AND EventCode = #{pEventCode}
-    </delete>
-
 </mapper>

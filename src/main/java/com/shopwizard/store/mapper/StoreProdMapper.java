@@ -13,8 +13,4 @@ public interface StoreProdMapper {
     List<StoreProd> selectListOrderQty(Map<String, Object> params);
     String selectStoreCode(Map<String, Object> params);
     StoreProd select(Map<String, Object> params);
-    int insert(StoreProd storeProd);
-    int update(StoreProd storeProd);
-    int delete(Map<String, Object> params);
-    int deleteProd(Map<String, Object> params);
 }

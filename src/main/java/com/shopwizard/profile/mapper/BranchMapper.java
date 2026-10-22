@@ -11,7 +11,4 @@ public interface BranchMapper {
     List<Branch> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     Branch select(Integer branchId);
-    int insert(Branch branch);
-    int update(Branch branch);
-    int delete(Integer branchId);
 }

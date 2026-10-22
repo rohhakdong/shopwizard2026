@@ -19,7 +19,4 @@ public class DutyService {
     public List<Duty> selectList(Map<String, Object> params) { return dutyMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return dutyMapper.selectCount(params); }
     public Duty select(Integer dutyId) { return dutyMapper.select(dutyId); }
-    public int insert(Duty duty) { return dutyMapper.insert(duty); }
-    public int update(Duty duty) { return dutyMapper.update(duty); }
-    public int delete(Integer dutyId) { return dutyMapper.delete(dutyId); }
 }

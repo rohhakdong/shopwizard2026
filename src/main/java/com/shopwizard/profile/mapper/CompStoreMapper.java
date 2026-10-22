@@ -14,7 +14,4 @@ public interface CompStoreMapper {
     List<CompStore> selectListLevel(Map<String, Object> params);
     String selectStoreCodeMax(Map<String, Object> params);
     CompStore select(Map<String, Object> params);
-    int insert(CompStore compStore);
-    int update(CompStore compStore);
-    int delete(Map<String, Object> params);
 }

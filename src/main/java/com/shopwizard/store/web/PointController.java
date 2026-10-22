@@ -23,18 +23,4 @@ public class PointController {
         return pointService.select(pointId);
     }
 
-    @PostMapping
-    public int insert(@RequestBody Point point) {
-        return pointService.insert(point);
-    }
-
-    @PutMapping
-    public int update(@RequestBody Point point) {
-        return pointService.update(point);
-    }
-
-    @DeleteMapping("/{pointId}")
-    public int delete(@PathVariable Integer pointId) {
-        return pointService.delete(pointId);
-    }
 }

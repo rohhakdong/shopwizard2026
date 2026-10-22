@@ -18,23 +18,6 @@
         SELECT * FROM shopion.tOprFaq WHERE FaqNo = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.operate.model.Faq">
-        INSERT INTO shopion.tOprFaq (FaqNo, CustConsltType, FaqTypeDesc, FaqTitle, FaqCntnts, ChnlCode, State, Remark, RegistDate, RegistId, RegistName)
-        VALUES (#{faqNo}, #{custConsltType}, #{faqTypeDesc}, #{faqTitle}, #{faqCntnts}, #{chnlCode}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.operate.model.Faq">
-        UPDATE shopion.tOprFaq SET
-        CustConsltType = #{custConsltType}, FaqTypeDesc = #{faqTypeDesc}, FaqTitle = #{faqTitle},
-        FaqCntnts = #{faqCntnts}, ChnlCode = #{chnlCode}, State = #{state}, Remark = #{remark},
-        ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE FaqNo = #{faqNo}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tOprFaq WHERE FaqNo = #{value}
-    </delete>
-
     <select id="selectFaqCntnts" parameterType="int" resultType="string">
         SELECT FaqCntnts FROM shopion.tOprFaq WHERE FaqNo = #{value}
     </select>

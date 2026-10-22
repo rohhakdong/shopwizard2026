@@ -38,18 +38,4 @@ public class ChnlController {
         return chnlService.selectByShoplinkerMall(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody Chnl chnl) {
-        return chnlService.insert(chnl);
-    }
-
-    @PutMapping
-    public int update(@RequestBody Chnl chnl) {
-        return chnlService.update(chnl);
-    }
-
-    @DeleteMapping
-    public int delete() {
-        return chnlService.delete();
-    }
 }

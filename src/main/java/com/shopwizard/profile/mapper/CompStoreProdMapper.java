@@ -11,7 +11,4 @@ public interface CompStoreProdMapper {
     List<CompStoreProd> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     CompStoreProd select(Map<String, Object> params);
-    int insert(CompStoreProd compStoreProd);
-    int update(CompStoreProd compStoreProd);
-    int delete(Map<String, Object> params);
 }

@@ -11,9 +11,4 @@ public interface SendRecevLogMapper {
     int selectCount(Map<String, Object> params);
     SendRecevLog select(Map<String, Object> params);
     SendRecevLog selectTop(String docType);
-    int insert(SendRecevLog sendRecevLog);
-    int update(SendRecevLog sendRecevLog);
-    int delete(SendRecevLog sendRecevLog);
-    int updateTransResult(Integer logId);
-    int updateTransError(Map<String, Object> params);
 }

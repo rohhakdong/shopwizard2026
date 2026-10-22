@@ -24,12 +24,4 @@ public class CompStoreProdController {
     @GetMapping
     public CompStoreProd select(@RequestParam Map<String, Object> params) { return compStoreProdService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody CompStoreProd compStoreProd) { return compStoreProdService.insert(compStoreProd); }
-
-    @PutMapping
-    public int update(@RequestBody CompStoreProd compStoreProd) { return compStoreProdService.update(compStoreProd); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return compStoreProdService.delete(params); }
 }

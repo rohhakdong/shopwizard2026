@@ -58,12 +58,4 @@
     WHERE ConstrCode = #{constrCode}
   </delete>
 
-  <delete id="deleteMultiple">
-    DELETE FROM tCodConstr
-    WHERE ConstrCode IN
-    <foreach collection="list" item="item" open="(" separator="," close=")">
-      #{item.constrCode}
-    </foreach>
-  </delete>
-
 </mapper>

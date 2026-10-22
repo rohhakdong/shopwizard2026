@@ -19,7 +19,6 @@ public class StoreService {
     public List<Store> selectListTable(Map<String, Object> params) { return storeMapper.selectListTable(params); }
     public Store select(Map<String, Object> params) { return storeMapper.select(params); }
     public List<Store> selectListLevel(Map<String, Object> params) { return storeMapper.selectListLevel(params); }
-    public int insert(Store store) { return storeMapper.insert(store); }
     public int update(Store store) { return storeMapper.update(store); }
     public int delete(Map<String, Object> params) { return storeMapper.delete(params); }
 }

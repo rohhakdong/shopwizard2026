@@ -17,7 +17,4 @@ public class LayoutImgService {
     public List<LayoutImg> selectList(Map<String, Object> params) { return layoutImgMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return layoutImgMapper.selectCount(params); }
     public LayoutImg select(Map<String, Object> params) { return layoutImgMapper.select(params); }
-    public int insert(LayoutImg layoutImg) { return layoutImgMapper.insert(layoutImg); }
-    public int update(LayoutImg layoutImg) { return layoutImgMapper.update(layoutImg); }
-    public int delete(Map<String, Object> params) { return layoutImgMapper.delete(params); }
 }

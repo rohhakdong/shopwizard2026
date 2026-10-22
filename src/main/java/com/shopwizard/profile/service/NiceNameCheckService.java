@@ -18,5 +18,4 @@ public class NiceNameCheckService {
 
     public List<NiceNameCheck> selectList(Map<String, Object> params) { return niceNameCheckMapper.selectList(params); }
     public NiceNameCheck select(String nameCheckUid) { return niceNameCheckMapper.select(nameCheckUid); }
-    public int insert(NiceNameCheck niceNameCheck) { return niceNameCheckMapper.insert(niceNameCheck); }
 }

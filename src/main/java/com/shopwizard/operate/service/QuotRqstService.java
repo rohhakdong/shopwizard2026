@@ -18,7 +18,4 @@ public class QuotRqstService {
     public List<QuotRqst> selectList(Map<String, Object> params) { return quotRqstMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return quotRqstMapper.selectCount(params); }
     public QuotRqst select(Map<String, Object> params) { return quotRqstMapper.select(params); }
-    public void insert(QuotRqst quotRqst) { quotRqstMapper.insert(quotRqst); }
-    public void update(QuotRqst quotRqst) { quotRqstMapper.update(quotRqst); }
-    public void delete(QuotRqst quotRqst) { quotRqstMapper.delete(quotRqst); }
 }

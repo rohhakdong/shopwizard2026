@@ -14,8 +14,4 @@ public interface CustConcrnProdMapper {
     List<CustConcrnProdReport> selectListReport(Map<String, Object> params);
     int selectCountReport(Map<String, Object> params);
     CustConcrnProd select(Map<String, Object> params);
-    int insert(CustConcrnProd custConcrnProd);
-    int update(CustConcrnProd custConcrnProd);
-    int delete(Map<String, Object> params);
-    int deleteByCustId(Integer custId);
 }

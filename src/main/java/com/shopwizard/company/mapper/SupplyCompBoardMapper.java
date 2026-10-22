@@ -10,7 +10,4 @@ public interface SupplyCompBoardMapper {
     List<SupplyCompBoard> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     SupplyCompBoard select(Map<String, Object> params);
-    int insert(SupplyCompBoard supplyCompBoard);
-    int update(SupplyCompBoard supplyCompBoard);
-    int delete(SupplyCompBoard supplyCompBoard);
 }

@@ -10,7 +10,4 @@ public interface ShopWarehsMapper {
     List<ShopWarehs> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     ShopWarehs select(Map<String, Object> params);
-    int insert(ShopWarehs shopWarehs);
-    int update(ShopWarehs shopWarehs);
-    int delete(ShopWarehs shopWarehs);
 }

@@ -19,7 +19,4 @@ public class CustStoreProdService {
     public List<CustStoreProd> selectList(Map<String, Object> params) { return custStoreProdMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return custStoreProdMapper.selectCount(params); }
     public CustStoreProd select(Map<String, Object> params) { return custStoreProdMapper.select(params); }
-    public int insert(CustStoreProd custStoreProd) { return custStoreProdMapper.insert(custStoreProd); }
-    public int update(CustStoreProd custStoreProd) { return custStoreProdMapper.update(custStoreProd); }
-    public int delete(Map<String, Object> params) { return custStoreProdMapper.delete(params); }
 }

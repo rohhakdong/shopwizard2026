@@ -22,28 +22,4 @@
         ORDER BY PP.ProdCode
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.PointProd">
-        INSERT INTO shopion.tStrPointProd (
-            PointId, ChnlCode, ProdCode, Remark, State,
-            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{pointId}, #{chnlCode}, #{prodCode}, #{remark}, #{state},
-            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrPointProd
-        WHERE PointId = #{pPointId}
-        <if test="pChnlCode != null and pChnlCode != ''">
-            AND ChnlCode = #{pChnlCode}
-        </if>
-        <if test="prodCodes != null">
-            AND ProdCode IN
-            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
-                #{item}
-            </foreach>
-        </if>
-    </delete>
-
 </mapper>

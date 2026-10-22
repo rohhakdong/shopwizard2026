@@ -13,5 +13,4 @@ public interface ConstrMapper {
     int insert(Constr constr);
     int update(Constr constr);
     int delete(@Param("constrCode") String constrCode);
-    int deleteMultiple(@Param("list") List<Constr> list);
 }

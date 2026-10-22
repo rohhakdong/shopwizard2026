@@ -11,7 +11,4 @@ public interface DeptApprovLineMapper {
     List<DeptApprovLine> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     DeptApprovLine select(Map<String, Object> params);
-    int insert(DeptApprovLine deptApprovLine);
-    int update(DeptApprovLine deptApprovLine);
-    int delete(Map<String, Object> params);
 }

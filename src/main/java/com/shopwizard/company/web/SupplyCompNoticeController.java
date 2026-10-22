@@ -31,18 +31,4 @@ public class SupplyCompNoticeController {
         return supplyCompNoticeService.getCntnts(noticeNo);
     }
 
-    @PostMapping
-    public int insert(@RequestBody SupplyCompNotice supplyCompNotice) {
-        return supplyCompNoticeService.insert(supplyCompNotice);
-    }
-
-    @PutMapping
-    public int update(@RequestBody SupplyCompNotice supplyCompNotice) {
-        return supplyCompNoticeService.update(supplyCompNotice);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestBody SupplyCompNotice supplyCompNotice) {
-        return supplyCompNoticeService.delete(supplyCompNotice);
-    }
 }

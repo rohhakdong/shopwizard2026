@@ -23,18 +23,4 @@ public class CustCpnController {
         return custCpnService.select(cpnId);
     }
 
-    @PostMapping
-    public int insert(@RequestBody CustCpn custCpn) {
-        return custCpnService.insert(custCpn);
-    }
-
-    @PutMapping
-    public int update(@RequestBody CustCpn custCpn) {
-        return custCpnService.update(custCpn);
-    }
-
-    @DeleteMapping("/{cpnId}")
-    public int delete(@PathVariable Integer cpnId) {
-        return custCpnService.delete(cpnId);
-    }
 }

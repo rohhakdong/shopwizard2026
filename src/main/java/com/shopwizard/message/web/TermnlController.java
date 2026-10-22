@@ -24,12 +24,4 @@ public class TermnlController {
     @GetMapping
     public Termnl select(@RequestParam Map<String, Object> params) { return termnlService.select(params); }
 
-    @PostMapping
-    public void insert(@RequestBody Termnl termnl) { termnlService.insert(termnl); }
-
-    @PutMapping
-    public void update(@RequestBody Termnl termnl) { termnlService.update(termnl); }
-
-    @DeleteMapping
-    public void delete(@RequestBody Termnl termnl) { termnlService.delete(termnl); }
 }

@@ -15,16 +15,4 @@
         SELECT * FROM shopion.tPrfNiceNameCheck WHERE NameCheckUid = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.NiceNameCheck">
-        INSERT INTO shopion.tPrfNiceNameCheck (
-            NameCheckUid, NiceId, UserNm, ResIdNo, InqRsn,
-            Foreigner, Message, RetCd, RetDtlCd, Minor,
-            RegistIp, RegistDate
-        ) VALUES (
-            #{nameCheckUid}, #{niceId}, #{userNm}, #{resIdNo}, #{inqRsn},
-            #{foreigner}, #{message}, #{retCd}, #{retDtlCd}, #{minor},
-            #{registIp}, NOW()
-        )
-    </insert>
-
 </mapper>

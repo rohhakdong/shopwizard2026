@@ -33,12 +33,4 @@ public class CompStoreController {
     @GetMapping
     public CompStore select(@RequestParam Map<String, Object> params) { return compStoreService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody CompStore compStore) { return compStoreService.insert(compStore); }
-
-    @PutMapping
-    public int update(@RequestBody CompStore compStore) { return compStoreService.update(compStore); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return compStoreService.delete(params); }
 }

@@ -18,7 +18,4 @@ public class LayoutService {
     public String selectLayoutCodeMax(Map<String, Object> params) { return layoutMapper.selectLayoutCodeMax(params); }
     public Layout select(Map<String, Object> params) { return layoutMapper.select(params); }
     public String selectImgHtml(Map<String, Object> params) { return layoutMapper.selectImgHtml(params); }
-    public int insert(Layout layout) { return layoutMapper.insert(layout); }
-    public int update(Layout layout) { return layoutMapper.update(layout); }
-    public int delete(Map<String, Object> params) { return layoutMapper.delete(params); }
 }

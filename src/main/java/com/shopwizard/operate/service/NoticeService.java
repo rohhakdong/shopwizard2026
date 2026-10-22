@@ -17,9 +17,6 @@ public class NoticeService {
 
     public List<Notice> selectList(Map<String, Object> params) { return noticeMapper.selectList(params); }
     public Notice select(Integer noticeNo) { return noticeMapper.select(noticeNo); }
-    public void insert(Notice notice) { noticeMapper.insert(notice); }
-    public void update(Notice notice) { noticeMapper.update(notice); }
-    public void delete(Integer noticeNo) { noticeMapper.delete(noticeNo); }
     public List<Notice> selectListPage(Map<String, Object> params) { return noticeMapper.selectListPage(params); }
     public int selectCountPage(Map<String, Object> params) { return noticeMapper.selectCountPage(params); }
     public String selectCntnts(Integer noticeNo) { return noticeMapper.selectCntnts(noticeNo); }

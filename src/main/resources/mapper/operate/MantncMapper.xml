@@ -44,38 +44,4 @@
         SELECT IFNULL(MAX(MantncNo),0) FROM shopwizard.tOprMantnc
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.operate.model.Mantnc">
-        INSERT INTO shopwizard.tOprMantnc (RoleUid, MenuCode, MenuName, ReciptId, ReciptName, ReciptTitle, ReciptCntnts, ReciptFileName, ReciptDate, ExecState, ReciptConfrmId, ReciptConfrmName, ReciptConfrmDate, State, Remark, RegistId, RegistName, RegistDate)
-        VALUES (#{roleUid}, #{menuCode}, #{menuName}, #{reciptId}, #{reciptName}, #{reciptTitle}, #{reciptCntnts}, #{reciptFileName}, NOW(), #{execState}, #{registId}, #{registName}, NOW(), #{state}, #{remark}, #{registId}, #{registName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.operate.model.Mantnc">
-        UPDATE shopwizard.tOprMantnc SET RoleUid = #{roleUid}, MenuCode = #{menuCode}, MenuName = #{menuName}, ReciptId = #{reciptId}, ReciptName = #{reciptName}, ReciptTitle = #{reciptTitle}, ReciptCntnts = #{reciptCntnts}, ReciptFileName = #{reciptFileName}, ReciptDate = NOW(), ExecState = #{execState}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE MantncNo = #{mantncNo}
-    </update>
-
-    <update id="updateByCmpletConfrm" parameterType="com.shopwizard.operate.model.Mantnc">
-        UPDATE shopwizard.tOprMantnc SET ExecState = #{execState}, CmpletConfrmId = #{cmpletConfrmId}, CmpletConfrmName = #{cmpletConfrmName}, CmpletConfrmDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE MantncNo = #{mantncNo}
-    </update>
-
-    <update id="updateByReciptConfrm" parameterType="com.shopwizard.operate.model.Mantnc">
-        UPDATE shopwizard.tOprMantnc SET ReciptConfrmId = #{reciptConfrmId}, ReciptConfrmName = #{reciptConfrmName}, ReciptConfrmCntnts = #{reciptConfrmCntnts}, ReciptConfrmDate = NOW(), ExecState = #{execState}
-        WHERE MantncNo = #{mantncNo}
-    </update>
-
-    <update id="updateByExec" parameterType="com.shopwizard.operate.model.Mantnc">
-        UPDATE shopwizard.tOprMantnc SET ExecState = #{execState}, ExecExpectDate = #{execExpectDate}, ExecCntnts = #{execCntnts}, ExecDate = NOW(), ExecId = #{execId}, ExecName = #{execName}
-        WHERE MantncNo = #{mantncNo}
-    </update>
-
-    <update id="updateByCmplet" parameterType="com.shopwizard.operate.model.Mantnc">
-        UPDATE shopwizard.tOprMantnc SET ExecState = #{execState}, CmpletCntnts = #{cmpletCntnts}, CmpletDate = NOW(), CmpletId = #{cmpletId}, CmpletName = #{cmpletName}
-        WHERE MantncNo = #{mantncNo}
-    </update>
-
-    <delete id="delete" parameterType="com.shopwizard.operate.model.Mantnc">
-        DELETE FROM shopwizard.tOprMantnc WHERE MantncNo = #{mantncNo}
-    </delete>
-
 </mapper>

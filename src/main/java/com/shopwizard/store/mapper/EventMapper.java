@@ -12,7 +12,4 @@ public interface EventMapper {
     String selectEventCodeMax(Map<String, Object> params);
     Event select(Map<String, Object> params);
     String selectEventHtml(Map<String, Object> params);
-    int insert(Event event);
-    int update(Event event);
-    int delete(Map<String, Object> params);
 }

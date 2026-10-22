@@ -28,18 +28,4 @@ public class StoreImgController {
         return storeImgService.selectStoreImgHtml(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody StoreImg storeImg) {
-        return storeImgService.insert(storeImg);
-    }
-
-    @PutMapping
-    public int update(@RequestBody StoreImg storeImg) {
-        return storeImgService.update(storeImg);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return storeImgService.delete(params);
-    }
 }

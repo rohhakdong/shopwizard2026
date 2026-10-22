@@ -9,7 +9,4 @@ import java.util.Map;
 public interface PointMapper {
     List<Point> selectList(Map<String, Object> params);
     Point select(Integer pointId);
-    int insert(Point point);
-    int update(Point point);
-    int delete(Integer pointId);
 }

@@ -11,7 +11,4 @@ public interface CustStoreMapper {
     List<CustStore> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     CustStore select(Map<String, Object> params);
-    int insert(CustStore custStore);
-    int update(CustStore custStore);
-    int delete(Map<String, Object> params);
 }

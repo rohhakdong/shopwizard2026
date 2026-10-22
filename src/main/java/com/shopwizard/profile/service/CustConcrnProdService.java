@@ -22,8 +22,4 @@ public class CustConcrnProdService {
     public List<CustConcrnProdReport> selectListReport(Map<String, Object> params) { return custConcrnProdMapper.selectListReport(params); }
     public int selectCountReport(Map<String, Object> params) { return custConcrnProdMapper.selectCountReport(params); }
     public CustConcrnProd select(Map<String, Object> params) { return custConcrnProdMapper.select(params); }
-    public int insert(CustConcrnProd custConcrnProd) { return custConcrnProdMapper.insert(custConcrnProd); }
-    public int update(CustConcrnProd custConcrnProd) { return custConcrnProdMapper.update(custConcrnProd); }
-    public int delete(Map<String, Object> params) { return custConcrnProdMapper.delete(params); }
-    public int deleteByCustId(Integer custId) { return custConcrnProdMapper.deleteByCustId(custId); }
 }

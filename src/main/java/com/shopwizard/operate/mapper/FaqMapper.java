@@ -10,8 +10,5 @@ import java.util.Map;
 public interface FaqMapper {
     List<Faq> selectList(Map<String, Object> params);
     Faq select(Integer faqNo);
-    void insert(Faq faq);
-    void update(Faq faq);
-    void delete(Integer faqNo);
     String selectFaqCntnts(Integer faqNo);
 }

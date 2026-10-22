@@ -29,23 +29,4 @@ public class WordDictController {
         return ResponseEntity.ok(wordDictService.findWordDictList(map));
     }
 
-    @PostMapping
-    public ResponseEntity<String> insert(@RequestBody WordDict wordDict) {
-        wordDictService.insert(wordDict);
-        return ResponseEntity.ok("SUCCESS");
-    }
-
-    @PutMapping("/{korWord}")
-    public ResponseEntity<String> update(@PathVariable String korWord,
-                                         @RequestBody WordDict wordDict) {
-        wordDict.setKorWord(korWord);
-        wordDictService.update(wordDict);
-        return ResponseEntity.ok("SUCCESS");
-    }
-
-    @DeleteMapping("/{korWord}")
-    public ResponseEntity<String> delete(@PathVariable String korWord) {
-        wordDictService.delete(korWord);
-        return ResponseEntity.ok("SUCCESS");
-    }
 }

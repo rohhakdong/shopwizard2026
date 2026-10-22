@@ -22,7 +22,4 @@ public class CompStoreService {
     public List<CompStore> selectListLevel(Map<String, Object> params) { return compStoreMapper.selectListLevel(params); }
     public String selectStoreCodeMax(Map<String, Object> params) { return compStoreMapper.selectStoreCodeMax(params); }
     public CompStore select(Map<String, Object> params) { return compStoreMapper.select(params); }
-    public int insert(CompStore compStore) { return compStoreMapper.insert(compStore); }
-    public int update(CompStore compStore) { return compStoreMapper.update(compStore); }
-    public int delete(Map<String, Object> params) { return compStoreMapper.delete(params); }
 }

@@ -36,42 +36,4 @@
           AND StoreImgCode = #{pStoreImgCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.StoreImg">
-        INSERT INTO shopion.tStrStoreImg (
-            ChnlCode, StoreCode, StoreImgCode, StoreImgName, StoreImgDesc,
-            StoreImgLink, StoreImgWidth, StoreImgHeight, StoreImgHtml, NewwinYn,
-            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{chnlCode}, #{storeCode}, #{storeImgCode}, #{storeImgName}, #{storeImgDesc},
-            #{storeImgLink}, #{storeImgWidth}, #{storeImgHeight}, #{storeImgHtml}, #{newwinYn},
-            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.StoreImg">
-        UPDATE shopion.tStrStoreImg
-        SET StoreImgName = #{storeImgName},
-            StoreImgDesc = #{storeImgDesc},
-            StoreImgLink = #{storeImgLink},
-            StoreImgWidth = #{storeImgWidth},
-            StoreImgHeight = #{storeImgHeight},
-            StoreImgHtml = #{storeImgHtml},
-            NewwinYn = #{newwinYn},
-            Remark = #{remark},
-            State = #{state},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE ChnlCode = #{chnlCode}
-          AND StoreCode = #{storeCode}
-          AND StoreImgCode = #{storeImgCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrStoreImg
-        WHERE ChnlCode = #{pChnlCode}
-          AND StoreCode = #{pStoreCode}
-          AND StoreImgCode = #{pStoreImgCode}
-    </delete>
-
 </mapper>

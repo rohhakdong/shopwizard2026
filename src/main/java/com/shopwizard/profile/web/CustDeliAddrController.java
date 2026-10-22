@@ -27,18 +27,4 @@ public class CustDeliAddrController {
     @GetMapping("/default/{custId}")
     public CustDeliAddr selectDefault(@PathVariable Integer custId) { return custDeliAddrService.selectDefault(custId); }
 
-    @PostMapping
-    public int insert(@RequestBody CustDeliAddr custDeliAddr) { return custDeliAddrService.insert(custDeliAddr); }
-
-    @PutMapping
-    public int update(@RequestBody CustDeliAddr custDeliAddr) { return custDeliAddrService.update(custDeliAddr); }
-
-    @PutMapping("/defaltYn/{custId}")
-    public int updateDefaltYn(@PathVariable Integer custId) { return custDeliAddrService.updateDefaltYn(custId); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return custDeliAddrService.delete(params); }
-
-    @DeleteMapping("/byCustId/{custId}")
-    public int deleteByCustId(@PathVariable Integer custId) { return custDeliAddrService.deleteByCustId(custId); }
 }

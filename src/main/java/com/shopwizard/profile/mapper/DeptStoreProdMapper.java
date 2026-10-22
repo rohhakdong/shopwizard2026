@@ -11,7 +11,4 @@ public interface DeptStoreProdMapper {
     List<DeptStoreProd> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     DeptStoreProd select(Map<String, Object> params);
-    int insert(DeptStoreProd deptStoreProd);
-    int update(DeptStoreProd deptStoreProd);
-    int delete(Map<String, Object> params);
 }

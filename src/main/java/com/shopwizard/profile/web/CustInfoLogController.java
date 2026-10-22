@@ -24,12 +24,4 @@ public class CustInfoLogController {
     @GetMapping("/{logId}")
     public CustInfoLog select(@PathVariable Integer logId) { return custInfoLogService.select(logId); }
 
-    @PostMapping
-    public int insert(@RequestBody CustInfoLog custInfoLog) { return custInfoLogService.insert(custInfoLog); }
-
-    @PutMapping
-    public int update(@RequestBody CustInfoLog custInfoLog) { return custInfoLogService.update(custInfoLog); }
-
-    @DeleteMapping("/{logId}")
-    public int delete(@PathVariable Integer logId) { return custInfoLogService.delete(logId); }
 }

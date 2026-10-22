@@ -23,20 +23,4 @@
         SELECT * FROM wizardn.tMsgTermnl WHERE TermnlCode = #{termnlCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.message.model.Termnl">
-        INSERT INTO wizardn.tMsgTermnl (TermnlCode, TermnlName, TermnlDesc, TermnlUrl, TermnlType, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
-        VALUES (#{termnlCode}, #{termnlName}, #{termnlDesc}, #{termnlUrl}, #{termnlType}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.message.model.Termnl">
-        UPDATE wizardn.tMsgTermnl SET
-        TermnlCode = #{termnlCode}, TermnlName = #{termnlName}, TermnlDesc = #{termnlDesc}, TermnlUrl = #{termnlUrl},
-        TermnlType = #{termnlType}, State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE TermnlCode = #{termnlCode}
-    </update>
-
-    <delete id="delete" parameterType="com.shopwizard.message.model.Termnl">
-        DELETE FROM wizardn.tMsgTermnl WHERE TermnlCode = #{termnlCode}
-    </delete>
-
 </mapper>

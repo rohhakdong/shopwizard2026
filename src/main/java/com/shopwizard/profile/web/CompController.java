@@ -24,12 +24,4 @@ public class CompController {
     @GetMapping
     public Comp select(@RequestParam Map<String, Object> params) { return compService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody Comp comp) { return compService.insert(comp); }
-
-    @PutMapping
-    public int update(@RequestBody Comp comp) { return compService.update(comp); }
-
-    @DeleteMapping("/{compCode}")
-    public int delete(@PathVariable String compCode) { return compService.delete(compCode); }
 }

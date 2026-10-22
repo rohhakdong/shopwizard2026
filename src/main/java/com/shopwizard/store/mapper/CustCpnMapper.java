@@ -9,7 +9,4 @@ import java.util.Map;
 public interface CustCpnMapper {
     List<CustCpn> selectList(Map<String, Object> params);
     CustCpn select(Integer cpnId);
-    int insert(CustCpn custCpn);
-    int update(CustCpn custCpn);
-    int delete(Integer cpnId);
 }

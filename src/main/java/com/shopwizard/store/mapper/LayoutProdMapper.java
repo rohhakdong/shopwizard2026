@@ -9,7 +9,4 @@ import java.util.Map;
 public interface LayoutProdMapper {
     List<LayoutProd> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
-    int insert(LayoutProd layoutProd);
-    int update(LayoutProd layoutProd);
-    int delete(Map<String, Object> params);
 }

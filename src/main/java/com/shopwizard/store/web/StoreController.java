@@ -38,11 +38,6 @@ public class StoreController {
         return storeService.selectListLevel(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody Store store) {
-        return storeService.insert(store);
-    }
-
     @PutMapping
     public int update(@RequestBody Store store) {
         return storeService.update(store);

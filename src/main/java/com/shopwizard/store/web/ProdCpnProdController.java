@@ -18,13 +18,4 @@ public class ProdCpnProdController {
         return prodCpnProdService.selectList(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody ProdCpnProd prodCpnProd) {
-        return prodCpnProdService.insert(prodCpnProd);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return prodCpnProdService.delete(params);
-    }
 }

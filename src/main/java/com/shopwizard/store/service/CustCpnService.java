@@ -16,7 +16,4 @@ public class CustCpnService {
 
     public List<CustCpn> selectList(Map<String, Object> params) { return custCpnMapper.selectList(params); }
     public CustCpn select(Integer cpnId) { return custCpnMapper.select(cpnId); }
-    public int insert(CustCpn custCpn) { return custCpnMapper.insert(custCpn); }
-    public int update(CustCpn custCpn) { return custCpnMapper.update(custCpn); }
-    public int delete(Integer cpnId) { return custCpnMapper.delete(cpnId); }
 }

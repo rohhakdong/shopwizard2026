@@ -12,9 +12,4 @@ public interface CustDeliAddrMapper {
     int selectCount(Map<String, Object> params);
     CustDeliAddr select(Map<String, Object> params);
     CustDeliAddr selectDefault(Integer custId);
-    int insert(CustDeliAddr custDeliAddr);
-    int update(CustDeliAddr custDeliAddr);
-    int updateDefaltYn(Integer custId);
-    int delete(Map<String, Object> params);
-    int deleteByCustId(Integer custId);
 }

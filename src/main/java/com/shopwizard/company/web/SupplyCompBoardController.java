@@ -31,18 +31,4 @@ public class SupplyCompBoardController {
         return supplyCompBoardService.get(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody SupplyCompBoard supplyCompBoard) {
-        return supplyCompBoardService.insert(supplyCompBoard);
-    }
-
-    @PutMapping
-    public int update(@RequestBody SupplyCompBoard supplyCompBoard) {
-        return supplyCompBoardService.update(supplyCompBoard);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestBody SupplyCompBoard supplyCompBoard) {
-        return supplyCompBoardService.delete(supplyCompBoard);
-    }
 }

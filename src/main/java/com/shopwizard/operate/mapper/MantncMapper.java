@@ -11,11 +11,4 @@ public interface MantncMapper {
     int selectCount(Map<String, Object> params);
     Mantnc select(Map<String, Object> params);
     int selectMax(Map<String, Object> params);
-    int insert(Mantnc mantnc);
-    int update(Mantnc mantnc);
-    int updateByCmpletConfrm(Mantnc mantnc);
-    int updateByReciptConfrm(Mantnc mantnc);
-    int updateByExec(Mantnc mantnc);
-    int updateByCmplet(Mantnc mantnc);
-    int delete(Mantnc mantnc);
 }

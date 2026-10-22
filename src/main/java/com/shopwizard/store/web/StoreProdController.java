@@ -43,23 +43,4 @@ public class StoreProdController {
         return storeProdService.select(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody StoreProd storeProd) {
-        return storeProdService.insert(storeProd);
-    }
-
-    @PutMapping
-    public int update(@RequestBody StoreProd storeProd) {
-        return storeProdService.update(storeProd);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return storeProdService.delete(params);
-    }
-
-    @DeleteMapping("/prod")
-    public int deleteProd(@RequestParam Map<String, Object> params) {
-        return storeProdService.deleteProd(params);
-    }
 }

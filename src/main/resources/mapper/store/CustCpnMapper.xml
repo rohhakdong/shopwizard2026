@@ -18,39 +18,4 @@
         WHERE CpnId = #{cpnId}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.CustCpn">
-        INSERT INTO shopion.tStrCustCpn (
-            CpnName, CpnDesc, CpnImg, DiscntType, DiscntAmt, LimitAmt,
-            DiscntStartDate, DiscntEndDate, Remark, State,
-            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{cpnName}, #{cpnDesc}, #{cpnImg}, #{discntType}, #{discntAmt}, #{limitAmt},
-            #{discntStartDate}, #{discntEndDate}, #{remark}, #{state},
-            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.CustCpn">
-        UPDATE shopion.tStrCustCpn
-        SET CpnName = #{cpnName},
-            CpnDesc = #{cpnDesc},
-            CpnImg = #{cpnImg},
-            DiscntType = #{discntType},
-            DiscntAmt = #{discntAmt},
-            LimitAmt = #{limitAmt},
-            DiscntStartDate = #{discntStartDate},
-            DiscntEndDate = #{discntEndDate},
-            Remark = #{remark},
-            State = #{state},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE CpnId = #{cpnId}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tStrCustCpn
-        WHERE CpnId = #{cpnId}
-    </delete>
-
 </mapper>

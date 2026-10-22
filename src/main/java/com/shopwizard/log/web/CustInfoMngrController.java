@@ -18,6 +18,4 @@ public class CustInfoMngrController {
     @GetMapping("/list")
     public List<CustInfoMngr> selectList(@RequestParam Map<String, Object> params) { return custInfoMngrService.selectList(params); }
 
-    @PostMapping
-    public void insert(@RequestBody CustInfoMngr custInfoMngr) { custInfoMngrService.insert(custInfoMngr); }
 }

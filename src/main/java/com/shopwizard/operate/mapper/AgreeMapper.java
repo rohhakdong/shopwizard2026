@@ -10,8 +10,5 @@ import java.util.Map;
 public interface AgreeMapper {
     List<Agree> selectList(Map<String, Object> params);
     Agree select(Map<String, Object> params);
-    void insert(Agree agree);
-    void update(Agree agree);
-    void delete(Agree agree);
     String selectCntnts(Integer agreeNo);
 }

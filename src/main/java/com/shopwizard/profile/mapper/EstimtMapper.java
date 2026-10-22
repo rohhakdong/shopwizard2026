@@ -13,7 +13,4 @@ public interface EstimtMapper {
     Estimt select(Map<String, Object> params);
     List<Estimt> selectListStatDept(Map<String, Object> params);
     Double selectMonthlyTotalAmtDeptAccnt(Map<String, Object> params);
-    int insert(Estimt estimt);
-    int update(Estimt estimt);
-    int delete(Map<String, Object> params);
 }

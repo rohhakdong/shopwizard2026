@@ -27,18 +27,4 @@ public class SendRecevLogController {
     @GetMapping("/top/{docType}")
     public SendRecevLog selectTop(@PathVariable String docType) { return sendRecevLogService.selectTop(docType); }
 
-    @PostMapping
-    public void insert(@RequestBody SendRecevLog sendRecevLog) { sendRecevLogService.insert(sendRecevLog); }
-
-    @PutMapping
-    public void update(@RequestBody SendRecevLog sendRecevLog) { sendRecevLogService.update(sendRecevLog); }
-
-    @DeleteMapping
-    public void delete(@RequestBody SendRecevLog sendRecevLog) { sendRecevLogService.delete(sendRecevLog); }
-
-    @PutMapping("/transresult/{logId}")
-    public void updateTransResult(@PathVariable Integer logId) { sendRecevLogService.updateTransResult(logId); }
-
-    @PutMapping("/transerror")
-    public void updateTransError(@RequestBody Map<String, Object> params) { sendRecevLogService.updateTransError(params); }
 }

@@ -21,7 +21,4 @@ public class EstimtService {
     public Estimt select(Map<String, Object> params) { return estimtMapper.select(params); }
     public List<Estimt> selectListStatDept(Map<String, Object> params) { return estimtMapper.selectListStatDept(params); }
     public Double selectMonthlyTotalAmtDeptAccnt(Map<String, Object> params) { return estimtMapper.selectMonthlyTotalAmtDeptAccnt(params); }
-    public int insert(Estimt estimt) { return estimtMapper.insert(estimt); }
-    public int update(Estimt estimt) { return estimtMapper.update(estimt); }
-    public int delete(Map<String, Object> params) { return estimtMapper.delete(params); }
 }

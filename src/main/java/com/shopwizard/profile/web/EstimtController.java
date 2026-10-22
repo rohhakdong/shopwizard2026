@@ -30,12 +30,4 @@ public class EstimtController {
     @GetMapping("/monthlyTotalAmtDeptAccnt")
     public Double selectMonthlyTotalAmtDeptAccnt(@RequestParam Map<String, Object> params) { return estimtService.selectMonthlyTotalAmtDeptAccnt(params); }
 
-    @PostMapping
-    public int insert(@RequestBody Estimt estimt) { return estimtService.insert(estimt); }
-
-    @PutMapping
-    public int update(@RequestBody Estimt estimt) { return estimtService.update(estimt); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return estimtService.delete(params); }
 }

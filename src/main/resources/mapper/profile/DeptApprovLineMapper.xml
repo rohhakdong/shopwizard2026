@@ -24,20 +24,4 @@
         SELECT * FROM shopion.tPrfDeptApprovLine WHERE DeptId = #{deptId} AND ApprovLevel = #{approvLevel}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.DeptApprovLine">
-        INSERT INTO shopion.tPrfDeptApprovLine (DeptId, ApprovLevel, ApprovCustId, ApprovType, FinalYn, State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate)
-        VALUES (#{deptId}, #{approvLevel}, #{approvCustId}, #{approvType}, #{finalYn}, #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW())
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.DeptApprovLine">
-        UPDATE shopion.tPrfDeptApprovLine SET
-            ApprovCustId = #{approvCustId}, ApprovType = #{approvType}, FinalYn = #{finalYn},
-            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE DeptId = #{deptId} AND ApprovLevel = #{approvLevel}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfDeptApprovLine WHERE DeptId = #{deptId} AND ApprovLevel = #{approvLevel}
-    </delete>
-
 </mapper>

@@ -18,18 +18,4 @@ public class DesignController {
         return designService.selectList(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody Design design) {
-        return designService.insert(design);
-    }
-
-    @PutMapping
-    public int update(@RequestBody Design design) {
-        return designService.update(design);
-    }
-
-    @DeleteMapping("/{designId}")
-    public int delete(@PathVariable Integer designId) {
-        return designService.delete(designId);
-    }
 }

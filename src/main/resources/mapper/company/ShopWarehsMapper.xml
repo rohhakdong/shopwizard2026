@@ -46,28 +46,4 @@
         AND WarehsCode = #{warehsCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.company.model.ShopWarehs">
-        INSERT INTO shopwizard.tCmpShopWarehs (
-            ShopCode, WarehsCode, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{shopCode}, #{warehsCode}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.company.model.ShopWarehs">
-        UPDATE shopwizard.tCmpShopWarehs SET
-            State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE ShopCode = #{shopCode}
-        AND WarehsCode = #{warehsCode}
-    </update>
-
-    <delete id="delete" parameterType="com.shopwizard.company.model.ShopWarehs">
-        DELETE FROM shopwizard.tCmpShopWarehs
-        WHERE ShopCode = #{shopCode}
-        AND WarehsCode = #{warehsCode}
-    </delete>
-
 </mapper>

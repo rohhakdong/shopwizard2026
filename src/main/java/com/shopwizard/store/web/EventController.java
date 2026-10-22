@@ -38,18 +38,4 @@ public class EventController {
         return eventService.selectEventHtml(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody Event event) {
-        return eventService.insert(event);
-    }
-
-    @PutMapping
-    public int update(@RequestBody Event event) {
-        return eventService.update(event);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return eventService.delete(params);
-    }
 }

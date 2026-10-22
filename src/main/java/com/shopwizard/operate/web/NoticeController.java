@@ -20,15 +20,6 @@ public class NoticeController {
     @GetMapping("/{noticeNo}")
     public Notice select(@PathVariable Integer noticeNo) { return noticeService.select(noticeNo); }
 
-    @PostMapping
-    public void insert(@RequestBody Notice notice) { noticeService.insert(notice); }
-
-    @PutMapping
-    public void update(@RequestBody Notice notice) { noticeService.update(notice); }
-
-    @DeleteMapping("/{noticeNo}")
-    public void delete(@PathVariable Integer noticeNo) { noticeService.delete(noticeNo); }
-
     @GetMapping("/page/list")
     public List<Notice> selectListPage(@RequestParam Map<String, Object> params) { return noticeService.selectListPage(params); }
 

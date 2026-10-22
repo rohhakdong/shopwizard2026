@@ -20,32 +20,4 @@
         ORDER BY DesignId
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.Design" useGeneratedKeys="true" keyProperty="designId">
-        INSERT INTO shopion.tStrDesign (
-            DesignName, DesignDesc, SvcCode, State, Remark,
-            RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{designName}, #{designDesc}, #{svcCode}, #{state}, #{remark},
-            #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.Design">
-        UPDATE shopion.tStrDesign
-        SET DesignName = #{designName},
-            DesignDesc = #{designDesc},
-            SvcCode = #{svcCode},
-            State = #{state},
-            Remark = #{remark},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE DesignId = #{designId}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tStrDesign
-        WHERE DesignId = #{designId}
-    </delete>
-
 </mapper>

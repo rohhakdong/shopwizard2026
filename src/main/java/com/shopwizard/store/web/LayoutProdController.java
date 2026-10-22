@@ -23,18 +23,4 @@ public class LayoutProdController {
         return layoutProdService.selectCount(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody LayoutProd layoutProd) {
-        return layoutProdService.insert(layoutProd);
-    }
-
-    @PutMapping
-    public int update(@RequestBody LayoutProd layoutProd) {
-        return layoutProdService.update(layoutProd);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return layoutProdService.delete(params);
-    }
 }

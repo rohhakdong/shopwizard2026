@@ -15,6 +15,4 @@ public class PointProdService {
     private final PointProdMapper pointProdMapper;
 
     public List<PointProd> selectList(Map<String, Object> params) { return pointProdMapper.selectList(params); }
-    public int insert(PointProd pointProd) { return pointProdMapper.insert(pointProd); }
-    public int delete(Map<String, Object> params) { return pointProdMapper.delete(params); }
 }

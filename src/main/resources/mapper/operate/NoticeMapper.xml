@@ -36,25 +36,6 @@
         SELECT * FROM shopion.tOprNotice WHERE NoticeNo = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.operate.model.Notice">
-        INSERT INTO shopion.tOprNotice (NoticeTitle, NoticeCntnts, StartDate, EndDate, PopupYn, StoreCode, EventCode, ChnlCode, CompCode, HoriznLoc, VerticLoc, PopupWidth, PopupLenght, LinkAddr, State, Remark, RegistDate, RegistId, RegistName)
-        VALUES (#{noticeTitle}, #{noticeCntnts}, #{startDate}, #{endDate}, #{popupYn}, #{storeCode}, #{eventCode}, #{chnlCode}, #{compCode}, #{horiznLoc}, #{verticLoc}, #{popupWidth}, #{popupLenght}, #{linkAddr}, #{state}, #{remark}, NOW(), #{registId}, #{registName})
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.operate.model.Notice">
-        UPDATE shopion.tOprNotice SET
-        NoticeTitle = #{noticeTitle}, NoticeCntnts = #{noticeCntnts}, StartDate = #{startDate},
-        EndDate = #{endDate}, PopupYn = #{popupYn}, StoreCode = #{storeCode}, EventCode = #{eventCode},
-        ChnlCode = #{chnlCode}, CompCode = #{compCode}, HoriznLoc = #{horiznLoc},
-        VerticLoc = #{verticLoc}, PopupWidth = #{popupWidth}, PopupLenght = #{popupLenght}, LinkAddr = #{linkAddr},
-        State = #{state}, Remark = #{remark}, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
-        WHERE NoticeNo = #{noticeNo}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tOprNotice WHERE NoticeNo = #{value}
-    </delete>
-
     <select id="selectListPage" parameterType="map" resultType="com.shopwizard.operate.model.Notice">
         SELECT * FROM shopion.tOprNotice
         <where>

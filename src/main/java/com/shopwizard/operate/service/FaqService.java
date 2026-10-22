@@ -17,8 +17,5 @@ public class FaqService {
 
     public List<Faq> selectList(Map<String, Object> params) { return faqMapper.selectList(params); }
     public Faq select(Integer faqNo) { return faqMapper.select(faqNo); }
-    public void insert(Faq faq) { faqMapper.insert(faq); }
-    public void update(Faq faq) { faqMapper.update(faq); }
-    public void delete(Integer faqNo) { faqMapper.delete(faqNo); }
     public String selectFaqCntnts(Integer faqNo) { return faqMapper.selectFaqCntnts(faqNo); }
 }

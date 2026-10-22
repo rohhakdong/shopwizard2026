@@ -20,7 +20,4 @@ public class DeptService {
     public int selectCount(Map<String, Object> params) { return deptMapper.selectCount(params); }
     public Dept select(Map<String, Object> params) { return deptMapper.select(params); }
     public Map<String, Object> selectDeptCodeMax(Map<String, Object> params) { return deptMapper.selectDeptCodeMax(params); }
-    public int insert(Dept dept) { return deptMapper.insert(dept); }
-    public int update(Dept dept) { return deptMapper.update(dept); }
-    public int delete(Map<String, Object> params) { return deptMapper.delete(params); }
 }

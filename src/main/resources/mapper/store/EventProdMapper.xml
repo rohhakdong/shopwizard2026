@@ -70,40 +70,4 @@
         ORDER BY EP.ProdSeq
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.EventProd">
-        INSERT INTO shopion.tStrEventProd (
-            ChnlCode, EventCode, ProdCode, LocType, ProdSeq,
-            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{chnlCode}, #{eventCode}, #{prodCode}, #{locType}, #{prodSeq},
-            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.EventProd">
-        UPDATE shopion.tStrEventProd
-        SET LocType = #{locType},
-            ProdSeq = #{prodSeq},
-            Remark = #{remark},
-            State = #{state},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE ChnlCode = #{chnlCode}
-          AND EventCode = #{eventCode}
-          AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrEventProd
-        WHERE ChnlCode = #{pChnlCode}
-          AND EventCode = #{pEventCode}
-        <if test="prodCodes != null">
-            AND ProdCode IN
-            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
-                #{item}
-            </foreach>
-        </if>
-    </delete>
-
 </mapper>

@@ -8,7 +8,4 @@ import java.util.Map;
 @Mapper
 public interface DesignMapper {
     List<Design> selectList(Map<String, Object> params);
-    int insert(Design design);
-    int update(Design design);
-    int delete(Integer designId);
 }

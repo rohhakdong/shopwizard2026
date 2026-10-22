@@ -20,8 +20,4 @@ public class StoreProdService {
     public List<StoreProd> selectListOrderQty(Map<String, Object> params) { return storeProdMapper.selectListOrderQty(params); }
     public String selectStoreCode(Map<String, Object> params) { return storeProdMapper.selectStoreCode(params); }
     public StoreProd select(Map<String, Object> params) { return storeProdMapper.select(params); }
-    public int insert(StoreProd storeProd) { return storeProdMapper.insert(storeProd); }
-    public int update(StoreProd storeProd) { return storeProdMapper.update(storeProd); }
-    public int delete(Map<String, Object> params) { return storeProdMapper.delete(params); }
-    public int deleteProd(Map<String, Object> params) { return storeProdMapper.deleteProd(params); }
 }

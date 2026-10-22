@@ -28,18 +28,4 @@ public class EventProdController {
         return eventProdService.selectListAll(params);
     }
 
-    @PostMapping
-    public int insert(@RequestBody EventProd eventProd) {
-        return eventProdService.insert(eventProd);
-    }
-
-    @PutMapping
-    public int update(@RequestBody EventProd eventProd) {
-        return eventProdService.update(eventProd);
-    }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) {
-        return eventProdService.delete(params);
-    }
 }

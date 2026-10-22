@@ -11,7 +11,4 @@ public interface ChnlPolicyMapper {
     int selectCount(Map<String, Object> params);
     ChnlPolicy select(Map<String, Object> params);
     String selectMax();
-    int insert(ChnlPolicy chnlPolicy);
-    int update(ChnlPolicy chnlPolicy);
-    int delete(ChnlPolicy chnlPolicy);
 }

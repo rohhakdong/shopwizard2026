@@ -10,7 +10,4 @@ public interface SupplyCompNoticeMapper {
     List<SupplyCompNotice> selectList(Map<String, Object> params);
     SupplyCompNotice select(Map<String, Object> params);
     String selectCntnts(int noticeNo);
-    int insert(SupplyCompNotice supplyCompNotice);
-    int update(SupplyCompNotice supplyCompNotice);
-    int delete(SupplyCompNotice supplyCompNotice);
 }

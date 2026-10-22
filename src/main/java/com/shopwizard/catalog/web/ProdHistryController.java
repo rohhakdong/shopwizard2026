@@ -17,7 +17,4 @@ public class ProdHistryController {
     @GetMapping("/list") public List<ProdHistry> selectList(@RequestParam Map<String, Object> params) { return prodHistryService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return prodHistryService.selectCount(params); }
     @GetMapping public ProdHistry select(@RequestParam Map<String, Object> params) { return prodHistryService.select(params); }
-    @PostMapping public int insert(@RequestBody ProdHistry prodHistry) { return prodHistryService.insert(prodHistry); }
-    @PutMapping public int update(@RequestBody ProdHistry prodHistry) { return prodHistryService.update(prodHistry); }
-    @DeleteMapping public int delete(@RequestBody ProdHistry prodHistry) { return prodHistryService.delete(prodHistry); }
 }

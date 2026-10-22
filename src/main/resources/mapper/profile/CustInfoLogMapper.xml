@@ -44,31 +44,4 @@
         WHERE LogId = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.CustInfoLog">
-        INSERT INTO shopion.tPrfCustInfoLog (
-            LogId, CustId, MenuName, ExecCntnts, SvcName, DaoName, TableName, OrderNo,
-            MngrUid, MngrLoginId, MngrName, MngrIp, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{logId}, #{custId}, #{menuName}, #{execCntnts}, #{svcName}, #{daoName}, #{tableName}, #{orderNo},
-            #{mngrUid}, #{mngrLoginId}, #{mngrName}, #{mngrIp}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.CustInfoLog">
-        UPDATE shopion.tPrfCustInfoLog SET
-            CustId = #{custId}, MenuName = #{menuName}, ExecCntnts = #{execCntnts},
-            SvcName = #{svcName}, DaoName = #{daoName}, TableName = #{tableName}, OrderNo = #{orderNo},
-            MngrUid = #{mngrUid}, MngrLoginId = #{mngrLoginId}, MngrName = #{mngrName}, MngrIp = #{mngrIp},
-            State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE LogId = #{logId}
-    </update>
-
-    <delete id="delete" parameterType="int">
-        DELETE FROM shopion.tPrfCustInfoLog
-        WHERE LogId = #{value}
-    </delete>
-
 </mapper>

@@ -59,31 +59,4 @@
         WHERE NoticeNo = #{value}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.company.model.SupplyCompNotice">
-        INSERT INTO shopwizard.tCmpSupplyCompNotice (
-            Title, Cntnts, StartDate, EndDate, PopupYn,
-            HoriznLoc, VerticLoc, PopupWidth, PopupLenght, LinkAddr,
-            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{title}, #{cntnts}, #{startDate}, #{endDate}, #{popupYn},
-            #{horiznLoc}, #{verticLoc}, #{popupWidth}, #{popupLenght}, #{linkAddr},
-            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.company.model.SupplyCompNotice">
-        UPDATE shopwizard.tCmpSupplyCompNotice SET
-            Title = #{title}, StartDate = #{startDate}, EndDate = #{endDate},
-            PopupYn = #{popupYn}, HoriznLoc = #{horiznLoc}, VerticLoc = #{verticLoc},
-            PopupWidth = #{popupWidth}, PopupLenght = #{popupLenght}, LinkAddr = #{linkAddr},
-            State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE NoticeNo = #{noticeNo}
-    </update>
-
-    <delete id="delete" parameterType="com.shopwizard.company.model.SupplyCompNotice">
-        DELETE FROM shopwizard.tCmpSupplyCompNotice
-        WHERE NoticeNo = #{noticeNo}
-    </delete>
-
 </mapper>

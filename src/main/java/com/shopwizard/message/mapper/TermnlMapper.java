@@ -10,7 +10,4 @@ public interface TermnlMapper {
     List<Termnl> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     Termnl select(Map<String, Object> params);
-    int insert(Termnl termnl);
-    int update(Termnl termnl);
-    int delete(Termnl termnl);
 }

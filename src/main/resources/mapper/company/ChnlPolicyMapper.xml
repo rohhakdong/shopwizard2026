@@ -66,48 +66,4 @@
         FROM shopwizard.tCmpChnlPolicy
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.company.model.ChnlPolicy">
-        INSERT INTO shopwizard.tCmpChnlPolicy (
-            ChnlPolicyCode, ChnlPolicyName, ChnlPolicyDesc, DesignCode,
-            MemberChnlCode, PrsdntChnlCode, AdjustChnlCode,
-            SaleFeeRate, MarginSharRate, MarginSharStndrdAmt,
-            TrnsfrFeeRate, CardFeeRate, HppmFeeRate,
-            ProdLinkYn, OrderLinkYn, CpnApplyYn,
-            PointUseYn, PointLimitAmt, PointSaveYn,
-            FreeApplyYn, FreeApplyMonth, FreeApplyAmt,
-            State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
-        ) VALUES (
-            #{chnlPolicyCode}, #{chnlPolicyName}, #{chnlPolicyDesc}, #{designCode},
-            #{memberChnlCode}, #{prsdntChnlCode}, #{adjustChnlCode},
-            #{saleFeeRate}, #{marginSharRate}, #{marginSharStndrdAmt},
-            #{trnsfrFeeRate}, #{cardFeeRate}, #{hppmFeeRate},
-            #{prodLinkYn}, #{orderLinkYn}, #{cpnApplyYn},
-            #{pointUseYn}, #{pointLimitAmt}, #{pointSaveYn},
-            #{freeApplyYn}, #{freeApplyMonth}, #{freeApplyAmt},
-            #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.company.model.ChnlPolicy">
-        UPDATE shopwizard.tCmpChnlPolicy SET
-            ChnlPolicyName = #{chnlPolicyName}, ChnlPolicyDesc = #{chnlPolicyDesc},
-            DesignCode = #{designCode}, MemberChnlCode = #{memberChnlCode},
-            PrsdntChnlCode = #{prsdntChnlCode}, AdjustChnlCode = #{adjustChnlCode},
-            SaleFeeRate = #{saleFeeRate}, MarginSharRate = #{marginSharRate},
-            MarginSharStndrdAmt = #{marginSharStndrdAmt}, TrnsfrFeeRate = #{trnsfrFeeRate},
-            CardFeeRate = #{cardFeeRate}, HppmFeeRate = #{hppmFeeRate},
-            ProdLinkYn = #{prodLinkYn}, OrderLinkYn = #{orderLinkYn},
-            CpnApplyYn = #{cpnApplyYn}, PointUseYn = #{pointUseYn},
-            PointLimitAmt = #{pointLimitAmt}, PointSaveYn = #{pointSaveYn},
-            FreeApplyYn = #{freeApplyYn}, FreeApplyMonth = #{freeApplyMonth}, FreeApplyAmt = #{freeApplyAmt},
-            State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE ChnlPolicyCode = #{chnlPolicyCode}
-    </update>
-
-    <delete id="delete" parameterType="com.shopwizard.company.model.ChnlPolicy">
-        DELETE FROM shopwizard.tCmpChnlPolicy
-        WHERE ChnlPolicyCode = #{chnlPolicyCode}
-    </delete>
-
 </mapper>

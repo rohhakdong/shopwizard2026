@@ -24,12 +24,4 @@ public class DeptEmpController {
     @GetMapping
     public DeptEmp select(@RequestParam Map<String, Object> params) { return deptEmpService.select(params); }
 
-    @PostMapping
-    public int insert(@RequestBody DeptEmp deptEmp) { return deptEmpService.insert(deptEmp); }
-
-    @PutMapping
-    public int update(@RequestBody DeptEmp deptEmp) { return deptEmpService.update(deptEmp); }
-
-    @DeleteMapping
-    public int delete(@RequestParam Map<String, Object> params) { return deptEmpService.delete(params); }
 }

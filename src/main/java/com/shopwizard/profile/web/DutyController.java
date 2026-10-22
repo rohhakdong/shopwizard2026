@@ -24,12 +24,4 @@ public class DutyController {
     @GetMapping("/{dutyId}")
     public Duty select(@PathVariable Integer dutyId) { return dutyService.select(dutyId); }
 
-    @PostMapping
-    public int insert(@RequestBody Duty duty) { return dutyService.insert(duty); }
-
-    @PutMapping
-    public int update(@RequestBody Duty duty) { return dutyService.update(duty); }
-
-    @DeleteMapping("/{dutyId}")
-    public int delete(@PathVariable Integer dutyId) { return dutyService.delete(dutyId); }
 }

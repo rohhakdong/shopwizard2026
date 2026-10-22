@@ -166,47 +166,4 @@
           AND ProdCode = #{pProdCode}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.store.model.StoreProd">
-        INSERT INTO shopion.tStrStoreProd (
-            ChnlCode, StoreCode, ProdCode, LocType, ProdSeq, OrderQty,
-            Remark, State, RegistDate, RegistId, RegistName, ChangeDate, ChangeId, ChangeName
-        ) VALUES (
-            #{chnlCode}, #{storeCode}, #{prodCode}, #{locType}, #{prodSeq}, #{orderQty},
-            #{remark}, #{state}, #{registDate}, #{registId}, #{registName}, #{changeDate}, #{changeId}, #{changeName}
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.store.model.StoreProd">
-        UPDATE shopion.tStrStoreProd
-        SET LocType = #{locType},
-            ProdSeq = #{prodSeq},
-            OrderQty = #{orderQty},
-            Remark = #{remark},
-            State = #{state},
-            ChangeDate = #{changeDate},
-            ChangeId = #{changeId},
-            ChangeName = #{changeName}
-        WHERE ChnlCode = #{chnlCode}
-          AND StoreCode = #{storeCode}
-          AND ProdCode = #{prodCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tStrStoreProd
-        WHERE ChnlCode = #{pChnlCode}
-          AND StoreCode = #{pStoreCode}
-        <if test="prodCodes != null">
-            AND ProdCode IN
-            <foreach collection="prodCodes" item="item" open="(" close=")" separator=",">
-                #{item}
-            </foreach>
-        </if>
-    </delete>
-
-    <delete id="deleteProd" parameterType="map">
-        DELETE FROM shopion.tStrStoreProd
-        WHERE ChnlCode = #{pChnlCode}
-          AND ProdCode = #{pProdCode}
-    </delete>
-
 </mapper>

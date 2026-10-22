@@ -16,7 +16,4 @@ public class PointService {
 
     public List<Point> selectList(Map<String, Object> params) { return pointMapper.selectList(params); }
     public Point select(Integer pointId) { return pointMapper.select(pointId); }
-    public int insert(Point point) { return pointMapper.insert(point); }
-    public int update(Point point) { return pointMapper.update(point); }
-    public int delete(Integer pointId) { return pointMapper.delete(pointId); }
 }

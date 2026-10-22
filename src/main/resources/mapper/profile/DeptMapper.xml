@@ -45,27 +45,4 @@
         </where>
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.profile.model.Dept">
-        INSERT INTO shopion.tPrfDept (
-            BranchId, DeptCode, DeptName, DeptDesc, ParentDeptCode, DeptLevel, DeptSeq,
-            PhoneNo, FaxNo, Email, AccntCheckYn, State, Remark, RegistId, RegistName, RegistDate
-        ) VALUES (
-            #{branchId}, #{deptCode}, #{deptName}, #{deptDesc}, #{parentDeptCode}, #{deptLevel}, #{deptSeq},
-            #{phoneNo}, #{faxNo}, #{email}, #{accntCheckYn}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
-        )
-    </insert>
-
-    <update id="update" parameterType="com.shopwizard.profile.model.Dept">
-        UPDATE shopion.tPrfDept SET
-            DeptName = #{deptName}, DeptDesc = #{deptDesc}, DeptSeq = #{deptSeq},
-            PhoneNo = #{phoneNo}, FaxNo = #{faxNo}, Email = #{email},
-            AccntCheckYn = #{accntCheckYn}, State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE BranchId = #{branchId} AND DeptCode = #{deptCode}
-    </update>
-
-    <delete id="delete" parameterType="map">
-        DELETE FROM shopion.tPrfDept WHERE BranchId = #{branchId} AND DeptCode = #{deptCode}
-    </delete>
-
 </mapper>

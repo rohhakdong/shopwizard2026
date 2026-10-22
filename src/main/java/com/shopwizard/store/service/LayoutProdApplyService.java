@@ -16,7 +16,4 @@ public class LayoutProdApplyService {
 
     public List<LayoutProdApply> selectList(Map<String, Object> params) { return layoutProdApplyMapper.selectList(params); }
     public int selectCount(Map<String, Object> params) { return layoutProdApplyMapper.selectCount(params); }
-    public int insert(LayoutProdApply layoutProdApply) { return layoutProdApplyMapper.insert(layoutProdApply); }
-    public int update(LayoutProdApply layoutProdApply) { return layoutProdApplyMapper.update(layoutProdApply); }
-    public int delete(Map<String, Object> params) { return layoutProdApplyMapper.delete(params); }
 }

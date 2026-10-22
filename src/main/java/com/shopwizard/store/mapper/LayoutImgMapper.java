@@ -10,7 +10,4 @@ public interface LayoutImgMapper {
     List<LayoutImg> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     LayoutImg select(Map<String, Object> params);
-    int insert(LayoutImg layoutImg);
-    int update(LayoutImg layoutImg);
-    int delete(Map<String, Object> params);
 }
