@@ -235,6 +235,7 @@ class CheckoutServiceTest {
     @Test
     void 주문상품_각_라인마다_순번을_1부터_채번한다() throws Exception {
         CheckoutRequest req = baseRequest("card", 30000);
+        req.getOrderProds().get(0).setSalePrice(10000);   // 라인 합계(10000 + 10000×2)가 승인액(30000)을 넘지 않게
         CheckoutProdItem second = new CheckoutProdItem();
         second.setProdCode("1000000999");
         second.setProdName("두번째상품");
@@ -253,5 +254,48 @@ class CheckoutServiceTest {
         assertThat(lines.get(0).getOrderProdNo()).isEqualTo(1);
         assertThat(lines.get(1).getOrderProdNo()).isEqualTo(2);
         assertThat(lines.get(1).getReciptAmt()).isEqualTo(20000); // 10000 * 2개
+    }
+
+    @Test
+    void 옵션_추가금은_NvPrice_로_저장하고_영수금액은_판매가_플러스_옵션가_곱하기_수량이다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26000);
+        CheckoutProdItem item = req.getOrderProds().get(0);
+        item.setSalePrice(10000);
+        item.setOptionPrice(3000);
+        item.setListPrice(12000);
+        item.setProdQty(2);          // (10000 + 3000) × 2 = 26000
+
+        checkoutService.checkout(req, tossResp("DONE", 26000L));
+
+        ArgumentCaptor<OrderProd> cap = ArgumentCaptor.forClass(OrderProd.class);
+        verify(orderProdService).insert(cap.capture());
+        OrderProd op = cap.getValue();
+        assertThat(op.getSalePrice()).isEqualTo(10000);
+        assertThat(op.getNvPrice()).isEqualTo(3000);
+        assertThat(op.getListPrice()).isEqualTo(12000);
+        assertThat(op.getReciptAmt()).isEqualTo(26000);
+    }
+
+    @Test
+    void 배송비가_있어_승인액이_라인합계보다_커도_저장된다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 12500);
+        req.getOrderProds().get(0).setSalePrice(10000);      // 라인 10000 + 배송비 2500 = 승인 12500
+
+        int orderNo = checkoutService.checkout(req, tossResp("DONE", 12500L));
+
+        assertThat(orderNo).isEqualTo(999001);
+    }
+
+    @Test
+    void 주문_라인_합계가_토스_승인액을_넘으면_저장하지_않는다() {
+        CheckoutRequest req = baseRequest("card", 1000);
+        req.getOrderProds().get(0).setSalePrice(50000);      // 1000원만 승인됐는데 라인은 5만원
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> checkoutService.checkout(req, tossResp("DONE", 1000L)));
+
+        assertThat(ex.getStatusCode().value()).isEqualTo(400);
+        verify(orderNoSeqMapper, never()).insert(any());
+        verify(orderService, never()).insert(any());
     }
 }

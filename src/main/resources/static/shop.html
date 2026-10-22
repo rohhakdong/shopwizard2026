@@ -114,7 +114,8 @@
           <div class="prod-price-row">
             <div v-if="prodDetail.listPrice && prodDetail.listPrice !== prodDetail.salePrice"
               class="list-price">{{ prodDetail.listPrice.toLocaleString() }}원</div>
-            <div class="sale-price">{{ prodDetail.salePrice ? prodDetail.salePrice.toLocaleString() + '원' : '가격문의' }}</div>
+            <div class="sale-price">{{ prodDetail.salePrice ? (prodDetail.salePrice + selectedOptionPrice).toLocaleString() + '원' : '가격문의' }}</div>
+            <div v-if="selectedOptionPrice > 0" style="font-size:12px;color:var(--text-muted)">옵션 +{{ selectedOptionPrice.toLocaleString() }}원 포함</div>
           </div>
 
           <!-- 옵션 선택 -->
@@ -603,6 +604,10 @@ createApp({
     const prodItems       = ref([]);
     const selectedItemCode = ref('');
     const qty             = ref(1);
+    const selectedOptionPrice = computed(() => {
+      const it = prodItems.value.find(i => String(i.itemCode) === String(selectedItemCode.value));
+      return it && it.optionPrice ? it.optionPrice : 0;
+    });
 
     /* 장바구니 */
     const cartList  = ref([]);
@@ -619,10 +624,23 @@ createApp({
       { value: 'vbank', label: '가상계좌' },
     ];
     const orderItemAmt = computed(() => orderItems.value.reduce((s, i) => s + (i.salePrice || 0) * (i.prodQty || 1), 0));
-    const orderDeliAmt = computed(() => {
-      const first = orderItems.value[0];
-      return (first && first.deliFeeAmt) ? first.deliFeeAmt : 0;
-    });
+    // 배송비는 서버 견적(/order/checkout/quote)이 정한다 — 상점별 선불 배송비 최대값의 합.
+    const quoteDeliAmt = ref(0);
+    const orderDeliAmt = computed(() => quoteDeliAmt.value);
+
+    // 상품금액·배송비·합계는 클라이언트가 계산하지 않고 서버가 상품 테이블로 계산한 견적을 받아 쓴다.
+    // 응답 라인은 요청 순서와 같고, 단가(unitPrice)는 판매가 + 옵션 추가금이다.
+    const refreshQuote = async () => {
+      const q = await api('POST', '/order/checkout/quote', {
+        orderProds: orderItems.value.map(i => ({ prodCode: i.prodCode, itemCode: i.itemCode, prodQty: i.prodQty })),
+      });
+      (q.lines || []).forEach((l, idx) => {
+        const it = orderItems.value[idx];
+        if (it) it.salePrice = l.unitPrice;
+      });
+      quoteDeliAmt.value = q.deliAmt || 0;
+      return q;
+    };
 
     /* 마이페이지 */
     const myTab        = ref('orders');
@@ -698,7 +716,9 @@ createApp({
       const res = await fetch(fullUrl, opts);
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
+        let msg = text;
+        try { const j = JSON.parse(text); if (j && j.message) msg = j.message; } catch (_) {}
+        throw new Error(msg || `HTTP ${res.status}`);
       }
       const text = await res.text();
       return text ? JSON.parse(text) : null;
@@ -868,6 +888,7 @@ createApp({
         deliFeeAmt: prodDetail.value.deliFeeAmt || 0,
         shopCode:  prodDetail.value.shopCode || '',
       }];
+      try { await refreshQuote(); } catch (e) { toast(e.message, 'error'); return; }
       prefillOrderForm();
       go('order');
     };
@@ -888,9 +909,10 @@ createApp({
       } catch(e) { toast('삭제 실패', 'error'); }
     };
 
-    const goOrder = () => {
+    const goOrder = async () => {
       if (!custInfo.value) { toast('로그인 후 이용하세요', 'info'); go('login'); return; }
-      orderItems.value = [...cartList.value];
+      orderItems.value = cartList.value.map(i => ({ ...i }));   // 견적으로 단가를 바꾸므로 장바구니 객체와 분리
+      try { await refreshQuote(); } catch (e) { toast(e.message, 'error'); return; }
       prefillOrderForm();
       go('order');
     };
@@ -909,7 +931,15 @@ createApp({
         toast('필수 항목을 입력해주세요', 'error'); return;
       }
 
-      const totalAmt  = orderItemAmt.value + orderDeliAmt.value;
+      // 결제 금액은 서버 견적으로 정한다. 화면에 보이던 금액과 달라졌으면(가격 변경 등) 새 금액을 보여주고 중단한다.
+      const shownTotal = orderItemAmt.value + orderDeliAmt.value;
+      let quote;
+      try { quote = await refreshQuote(); } catch (e) { toast(e.message, 'error'); return; }
+      const totalAmt = quote.totalAmt;
+      if (totalAmt !== shownTotal) {
+        toast('상품 가격이 변경되어 금액을 갱신했습니다. 확인 후 다시 결제해 주세요.', 'info');
+        return;
+      }
       const orderId   = 'SW-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
       const firstProd = orderItems.value[0];
       const orderName = orderItems.value.length > 1
@@ -1006,12 +1036,13 @@ createApp({
     };
 
     /* ── 결제 취소/실패 후 주문서 복원 ── */
-    const restorePendingOrder = () => {
+    const restorePendingOrder = async () => {
       const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
       if (!pending) return;
       orderItems.value = pending.orderItems || [];
       orderForm.value  = { ...(pending.orderForm || {}) };
       localStorage.removeItem('pendingOrder');
+      try { await refreshQuote(); } catch (e) { toast(e.message, 'error'); }   // 배송비·최신 단가를 서버 견적으로 다시 채운다
       go('order');
     };
 
@@ -1144,7 +1175,7 @@ createApp({
       shopList, prodList, prodTotal, prodPage, prodLoading, filter,
       prodPages, prodPageBlock, prodPageNums,
       safeHtml,
-      prodDetail, prodItems, selectedItemCode, qty,
+      prodDetail, prodItems, selectedItemCode, qty, selectedOptionPrice,
       cartList, cartCount, cartTotalAmt,
       orderItems, orderForm, doneOrderNo, payMethods, orderItemAmt, orderDeliAmt,
       myTab, myOrders, myOrderPage, myOrderTotal, myOrderLoading, myOrderPages, myOrderPageNums,

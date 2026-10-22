@@ -1,7 +1,12 @@
 package com.shopwizard.order.web;
 
 import com.shopwizard.framework.auth.AuthSession;
+import com.shopwizard.order.model.CheckoutProdItem;
+import com.shopwizard.order.model.CheckoutQuoteRequest;
 import com.shopwizard.order.model.CheckoutRequest;
+import com.shopwizard.order.model.PricedLine;
+import com.shopwizard.order.model.PricedOrder;
+import com.shopwizard.order.service.CheckoutPricingService;
 import com.shopwizard.order.service.CheckoutService;
 import com.shopwizard.payment.service.TossPaymentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,6 +30,17 @@ public class CheckoutController {
 
     private final TossPaymentService tossPaymentService;
     private final CheckoutService checkoutService;
+    private final CheckoutPricingService pricingService;
+
+    /**
+     * 주문서 견적. 결제창을 열기 전에 서버가 계산한 단가·배송비·합계를 받아 그 금액으로 결제한다
+     * (클라이언트가 계산한 금액은 신뢰하지 않는다 — /order/checkout 이 같은 계산으로 다시 검증한다).
+     * 비회원도 쓰는 공개 경로이며 부작용이 없다.
+     */
+    @PostMapping("/quote")
+    public PricedOrder quote(@RequestBody CheckoutQuoteRequest req) {
+        return pricingService.price(req.getOrderProds());
+    }
 
     @PostMapping
     public Map<String, Object> checkout(@RequestBody CheckoutRequest req, HttpServletRequest request) throws Exception {
@@ -35,6 +53,16 @@ public class CheckoutController {
         if (req.getTotalAmt() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액 정보가 없습니다.");
         }
+
+        // 금액은 클라이언트가 아니라 서버가 상품 테이블로 계산한다. 결제 승인(돈이 움직이는 단계) **전에** 비교해서,
+        // 위조된 금액이면 승인 호출 자체를 하지 않는다. 라인 정보(상품명·가격·옵션·상점)도 서버 값으로 교체한다.
+        PricedOrder priced = pricingService.price(req.getOrderProds());
+        if (req.getAmount() != priced.getTotalAmt() || req.getTotalAmt().longValue() != priced.getTotalAmt()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "주문 금액이 현재 상품 가격과 일치하지 않습니다. 주문서를 새로고침한 뒤 다시 시도해 주세요.");
+        }
+        req.setOrderProds(toServerLines(priced));
+        req.setTotalAmt((int) priced.getTotalAmt());
 
         // 로그인 고객의 custId는 요청 바디의 값이 아닌 서버 세션에서 강제로 가져와,
         // 다른 고객 명의로 주문이 저장되는 것(IDOR)을 막는다. 로그인하지 않은 경우(세션 없음)는
@@ -73,5 +101,23 @@ public class CheckoutController {
             }
             throw e;
         }
+    }
+
+    private static List<CheckoutProdItem> toServerLines(PricedOrder priced) {
+        List<CheckoutProdItem> out = new ArrayList<>();
+        for (PricedLine l : priced.getLines()) {
+            CheckoutProdItem it = new CheckoutProdItem();
+            it.setProdCode(l.getProdCode());
+            it.setProdName(l.getProdName());
+            it.setItemCode(l.getItemCode());
+            it.setItemName(l.getItemName());
+            it.setProdQty(l.getProdQty());
+            it.setListPrice(l.getListPrice());
+            it.setSalePrice(l.getSalePrice());
+            it.setOptionPrice(l.getOptionPrice());
+            it.setShopCode(l.getShopCode());
+            out.add(it);
+        }
+        return out;
     }
 }

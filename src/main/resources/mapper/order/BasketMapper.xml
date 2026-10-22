@@ -5,14 +5,16 @@
 
     <!--
         shopion.tOrdBasket 은 "무엇을 몇 개 담았는지"만 가진 참조 테이블이다(ProdCode/ItemCode/ProdQty/CustId 등).
-        상품명·이미지·가격은 컬럼이 없으므로 조회할 때 tPrdProd/tPrdProdItem 에서 가져온다 — 담은 뒤에 가격이
+        상품명·이미지·가격은 컬럼이 없으므로 조회할 때 tPrdProd/tPrdProdItem 에서 가져온다(단가 SalePrice 는 상품
+        판매가 + 옵션 추가금 — 결제 금액과 같은 규칙) — 담은 뒤에 가격이
         바뀌어도 장바구니에는 항상 현재 판매가가 보이고, 클라이언트가 보낸 가격을 저장·신뢰하지도 않는다.
     -->
     <sql id="basketSelect">
         SELECT B.BasketNo, B.CustId, B.SessonId, B.ProdCode, B.ItemCode, B.ProdQty,
                B.DirectOrderYn, B.ChnlCode, B.StoreCode, B.Remark, B.State,
                B.RegistId, B.RegistName, B.RegistDate, B.ChangeId, B.ChangeName, B.ChangeDate,
-               P.ProdName, P.ImgUrl AS prodImg, P.ShopCode, P.ListPrice, P.SalePrice, P.SupplyPrice,
+               P.ProdName, P.ImgUrl AS prodImg, P.ShopCode, P.ListPrice,
+               (P.SalePrice + COALESCE(PI.OptionPrice, 0)) AS SalePrice, P.SupplyPrice,
                P.DeliFeeAmt,
                NULLIF(CONCAT_WS(' / ', NULLIF(PI.AttrVal1, ''), NULLIF(PI.AttrVal2, ''),
                                        NULLIF(PI.AttrVal3, ''), NULLIF(PI.AttrVal4, '')), '') AS itemName

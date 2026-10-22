@@ -47,6 +47,7 @@ public final class MngrPaths {
             // 고객 인증 필요 API (CUST 인터셉터로 보호)
             "/order/basket/**",
             "/order/checkout",         // 토스페이먼츠 결제완료 콜백(주문 저장) — 비회원도 허용
+            "/order/checkout/quote",   // 결제 전 서버 금액 견적 — 비회원도 허용(부작용 없음)
             "/order/orderprod/my/list",
             "/order/orderprod/my/list/count",
             // 비회원 주문조회 (주문번호+연락처로 본인 확인, 로그인 불필요)

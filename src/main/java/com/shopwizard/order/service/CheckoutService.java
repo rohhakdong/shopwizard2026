@@ -60,6 +60,17 @@ public class CheckoutService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액이 일치하지 않습니다.");
         }
 
+        // 방어선: 주문 라인 합계가 실제 승인된 금액을 넘을 수 없다(배송비가 있으면 승인액이 더 크다).
+        long linesTotal = 0;
+        for (CheckoutProdItem item : req.getOrderProds()) {
+            long unit = (long) (item.getSalePrice() != null ? item.getSalePrice() : 0)
+                    + (item.getOptionPrice() != null ? item.getOptionPrice() : 0);
+            linesTotal += unit * (item.getProdQty() != null ? item.getProdQty() : 1);
+        }
+        if (linesTotal > confirmedAmount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액이 주문 금액보다 작습니다.");
+        }
+
         // 토스 결제 상태가 완료(DONE)일 때만 "지불완료"로 기록한다.
         // 가상계좌는 입금 전까지 WAITING_FOR_DEPOSIT 상태이므로 아직 결제완료로 간주하면 안 된다.
         boolean paid = "DONE".equals(str(tossResp.get("status")));
@@ -103,7 +114,8 @@ public class CheckoutService {
         int orderProdNo = 1;
         for (CheckoutProdItem item : req.getOrderProds()) {
             int qty   = item.getProdQty() != null ? item.getProdQty() : 1;
-            int price = item.getSalePrice() != null ? item.getSalePrice() : 0;
+            int price = item.getSalePrice() != null ? item.getSalePrice() : 0;       // 상품 판매가
+            int opt   = item.getOptionPrice() != null ? item.getOptionPrice() : 0;   // 옵션 추가금 (NvPrice)
 
             OrderProd op = new OrderProd();
             op.setOrderNo(orderNo);
@@ -114,9 +126,10 @@ public class CheckoutService {
             op.setItemCode(item.getItemCode());
             op.setItemName(item.getItemName());
             op.setProdQty(qty);
-            op.setListPrice(price);
+            op.setListPrice(item.getListPrice() != null ? item.getListPrice() : price);
             op.setSalePrice(price);
-            op.setReciptAmt(price * qty);
+            op.setNvPrice(opt);   // 주문관리 정의: 옵션가 = NvPrice, 판매가 = SalePrice + NvPrice
+            op.setReciptAmt((price + opt) * qty);
             op.setDeliFeeAmt(0);
             op.setOrderState(orderState);
             op.setState(1);

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.CheckoutPricingMapper">
+
+    <select id="selectProd" resultType="com.shopwizard.order.model.PricingProd">
+        SELECT ProdCode, ProdName, ShopCode, SaleYn, State, ListPrice, SalePrice, DeliFeeType, DeliFeeAmt
+        FROM shopion.tPrdProd
+        WHERE ProdCode = #{prodCode}
+    </select>
+
+    <!-- 옵션 행의 State 는 개발 DB 에서 전부 0 이므로 거르지 않는다(판매 여부는 SaleYn 으로 본다). 라벨은 BasketMapper 와 같은 규칙. -->
+    <select id="selectItem" resultType="com.shopwizard.order.model.PricingItem">
+        SELECT ItemCode, SaleYn, SupplyQty, OptionPrice,
+               NULLIF(CONCAT_WS(' / ', NULLIF(AttrVal1, ''), NULLIF(AttrVal2, ''),
+                                       NULLIF(AttrVal3, ''), NULLIF(AttrVal4, '')), '') AS itemName
+        FROM shopion.tPrdProdItem
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </select>
+
+    <select id="countRealOptions" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrdProdItem
+        WHERE ProdCode = #{prodCode} AND ItemCode &lt;&gt; '20000'
+    </select>
+
+</mapper>

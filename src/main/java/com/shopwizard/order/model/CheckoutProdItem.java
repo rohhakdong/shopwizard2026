@@ -12,4 +12,7 @@ public class CheckoutProdItem {
     private Integer prodQty;
     private Integer salePrice;
     private String shopCode;
+    // 아래 두 필드는 클라이언트가 보내도 무시된다 — CheckoutController 가 서버 계산값(CheckoutPricingService)으로 채운다.
+    private Integer listPrice;
+    private Integer optionPrice;
 }
