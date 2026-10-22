@@ -114,8 +114,9 @@ public class CheckoutService {
         int orderProdNo = 1;
         for (CheckoutProdItem item : req.getOrderProds()) {
             int qty   = item.getProdQty() != null ? item.getProdQty() : 1;
-            int price = item.getSalePrice() != null ? item.getSalePrice() : 0;       // 상품 판매가
-            int opt   = item.getOptionPrice() != null ? item.getOptionPrice() : 0;   // 옵션 추가금 (NvPrice)
+            int price = item.getSalePrice() != null ? item.getSalePrice() : 0;       // 상품 판매가(단가)
+            int opt   = item.getOptionPrice() != null ? item.getOptionPrice() : 0;   // 옵션 추가금(단가, NvPrice)
+            int list  = item.getListPrice() != null ? item.getListPrice() : price;   // 정가(단가)
 
             OrderProd op = new OrderProd();
             op.setOrderNo(orderNo);
@@ -126,9 +127,11 @@ public class CheckoutService {
             op.setItemCode(item.getItemCode());
             op.setItemName(item.getItemName());
             op.setProdQty(qty);
-            op.setListPrice(item.getListPrice() != null ? item.getListPrice() : price);
-            op.setSalePrice(price);
-            op.setNvPrice(opt);   // 주문관리 정의: 옵션가 = NvPrice, 판매가 = SalePrice + NvPrice
+            // 주문 라인 금액은 모든 채널에서 "수량이 곱해진 라인 합계"다(주문관리·마진·정산이 그대로 합산한다).
+            // 주문관리 정의: 옵션가 = NvPrice, 판매가 = SalePrice + NvPrice.
+            op.setListPrice(list * qty);
+            op.setSalePrice(price * qty);
+            op.setNvPrice(opt * qty);
             op.setReciptAmt((price + opt) * qty);
             op.setDeliFeeAmt(0);
             op.setOrderState(orderState);

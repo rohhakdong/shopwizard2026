@@ -142,4 +142,50 @@ class ShipDirectIssueServiceTest {
         assertThat(upd.getValue()).containsEntry("orderNo", 7).containsEntry("orderProdNo", 3)
                 .containsEntry("orderState", "출고지시").containsEntry("changeId", "admin");
     }
+
+    @Test
+    void 주문_수량을_원가에_곱한다_라인_금액은_모두_수량이_곱해진_합계() {
+        OrderProd l = line();
+        l.setProdQty(3);
+        when(lineLock.lockLine(any(), any())).thenReturn(l);
+        // 1개당 2개 x 3000 + 1개 x 1500 = 7500 → 3개 주문이면 22500
+        when(upriceMatchMapper.selectPriced("번들 상품", "옵션A")).thenReturn(List.of(detail(2, 3000), detail(1, 1500)));
+        when(shipDirectMapper.insertShipDirect(any())).thenReturn(1);
+
+        assertThat(service.issueOne(1, 2, "admin", "관리자")).isNull();
+
+        ArgumentCaptor<OrderProd> priced = ArgumentCaptor.forClass(OrderProd.class);
+        verify(orderProdMapper).updatePrice(priced.capture());
+        assertThat(priced.getValue().getBuyPrice()).isEqualTo(22500);
+        assertThat(priced.getValue().getNetMargin()).isEqualTo(8000 - 22500 - 100);
+    }
+
+    @Test
+    void 수량이_없거나_0이면_1로_본다() {
+        for (Integer qty : new Integer[] {null, 0}) {
+            OrderProd l = line();
+            l.setProdQty(qty);
+            when(lineLock.lockLine(any(), any())).thenReturn(l);
+            when(upriceMatchMapper.selectPriced(anyString(), anyString())).thenReturn(List.of(detail(1, 1000)));
+            when(shipDirectMapper.insertShipDirect(any())).thenReturn(1);
+
+            assertThat(service.issueOne(1, 1, "admin", "관리자")).isNull();
+        }
+        ArgumentCaptor<OrderProd> priced = ArgumentCaptor.forClass(OrderProd.class);
+        verify(orderProdMapper, org.mockito.Mockito.times(2)).updatePrice(priced.capture());
+        assertThat(priced.getAllValues()).allSatisfy(o -> assertThat(o.getBuyPrice()).isEqualTo(1000));
+    }
+
+    @Test
+    void 원가_합계가_int_범위를_넘으면_출고지시를_막는다() {
+        OrderProd l = line();
+        l.setProdQty(999);
+        when(lineLock.lockLine(any(), any())).thenReturn(l);
+        when(upriceMatchMapper.selectPriced(anyString(), anyString())).thenReturn(List.of(detail(1000, 3_000_000)));
+
+        assertThat(service.issueOne(1, 1, "admin", "관리자")).contains("너무 큽니다");
+
+        verify(orderProdMapper, never()).updatePrice(any());
+        verify(shipDirectMapper, never()).insertShipDirect(any());
+    }
 }

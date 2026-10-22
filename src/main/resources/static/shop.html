@@ -349,7 +349,7 @@
               <div class="prod-name">{{ o.prodName }}<span v-if="o.itemName" style="color:var(--text-muted);font-size:12px"> / {{ o.itemName }}</span></div>
               <div class="meta">
                 <span>{{ o.prodQty }}개</span>
-                <span>{{ o.salePrice ? o.salePrice.toLocaleString() + '원' : '' }}</span>
+                <span>{{ (o.salePrice || o.nvPrice) ? '합계 ' + ((o.salePrice || 0) + (o.nvPrice || 0)).toLocaleString() + '원' : '' }}</span>
                 <span class="state-badge" :class="orderStateClass(o.orderState)">{{ o.orderState }}</span>
               </div>
             </div>
@@ -447,7 +447,7 @@
             <div class="prod-name">{{ o.prodName }}<span v-if="o.itemName" style="color:var(--text-muted);font-size:12px"> / {{ o.itemName }}</span></div>
             <div class="meta">
               <span>{{ o.prodQty }}개</span>
-              <span>{{ o.salePrice ? o.salePrice.toLocaleString() + '원' : '' }}</span>
+              <span>{{ (o.salePrice || o.nvPrice) ? '합계 ' + ((o.salePrice || 0) + (o.nvPrice || 0)).toLocaleString() + '원' : '' }}</span>
               <span class="state-badge" :class="orderStateClass(o.orderState)">{{ o.orderState }}</span>
             </div>
           </div>

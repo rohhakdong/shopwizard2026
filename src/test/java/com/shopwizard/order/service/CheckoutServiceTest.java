@@ -270,10 +270,12 @@ class CheckoutServiceTest {
         ArgumentCaptor<OrderProd> cap = ArgumentCaptor.forClass(OrderProd.class);
         verify(orderProdService).insert(cap.capture());
         OrderProd op = cap.getValue();
-        assertThat(op.getSalePrice()).isEqualTo(10000);
-        assertThat(op.getNvPrice()).isEqualTo(3000);
-        assertThat(op.getListPrice()).isEqualTo(12000);
+        // 수량 2: 라인 금액은 모두 수량이 곱해진 합계로 저장한다(다른 채널과 같은 규칙 — 주문관리·마진·정산이 그대로 합산)
+        assertThat(op.getSalePrice()).isEqualTo(20000);
+        assertThat(op.getNvPrice()).isEqualTo(6000);
+        assertThat(op.getListPrice()).isEqualTo(24000);
         assertThat(op.getReciptAmt()).isEqualTo(26000);
+        assertThat(op.getSalePrice() + op.getNvPrice()).isEqualTo(op.getReciptAmt());
     }
 
     @Test

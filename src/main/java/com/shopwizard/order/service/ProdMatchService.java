@@ -139,8 +139,11 @@ public class ProdMatchService {
         // 원가(BuyPrice)는 우리 기준값이므로 항상 상품마스터에서 가져온다(레거시 runInsertOrder 방식).
         // 샵링커 XML 의 ori_bprice 는 0 이거나 판매가와 같은 잘못된 값이 흔해 신뢰하지 않는다.
         // 채널공급가(SupplyPrice)는 채널이 실어준 실제 정산 공급가를 우선하고, 없을 때만 상품마스터.
-        int supplyPrice = nvl(op.getSupplyPrice()) > 0 ? nvl(op.getSupplyPrice()) : nvl(prod.getSupplyPrice());
-        int buyPrice    = nvl(prod.getBuyPrice());
+        // 주문 라인 금액은 수량이 곱해진 라인 합계다. 상품마스터의 SupplyPrice/BuyPrice 는 단가라서 수량을 곱해 넣는다
+        // (채널이 준 공급가는 이미 라인 합계이므로 그대로).
+        int qty = Math.max(1, nvl(op.getProdQty()));
+        int supplyPrice = nvl(op.getSupplyPrice()) > 0 ? nvl(op.getSupplyPrice()) : Math.multiplyExact(nvl(prod.getSupplyPrice()), qty);
+        int buyPrice    = Math.multiplyExact(nvl(prod.getBuyPrice()), qty);
         int promotFee   = nvl(op.getPromotFeeAmt());
 
         op.setSupplyPrice(supplyPrice);

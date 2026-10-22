@@ -56,7 +56,14 @@ public class ShipDirectIssueService {
             return "발주단가매칭이 필요합니다. (상품명: " + nz(op.getProdName()) + " / 옵션: " + nz(op.getItemName()) + ")";
         }
 
-        int totalBuyPrice = priced.stream().mapToInt(d -> nvl(d.getQty()) * nvl(d.getUprice())).sum();
+        // 주문 라인의 금액은 전부 "수량이 곱해진 라인 합계"다(판매가·공급가·원가 공통, 실데이터로 확인). 발주단가 규칙의
+        // Σ(규칙수량×단가)는 상품 1개분이므로 주문 수량을 곱해야 정산·마진이 맞는다.
+        long buyPerUnit = priced.stream().mapToLong(d -> (long) nvl(d.getQty()) * nvl(d.getUprice())).sum();
+        long buyTotal = buyPerUnit * Math.max(1, nvl(op.getProdQty()));
+        if (buyTotal > Integer.MAX_VALUE) {
+            return "원가 합계가 너무 큽니다. 수량과 발주단가매칭을 확인하세요. (상품명: " + nz(op.getProdName()) + ")";
+        }
+        int totalBuyPrice = (int) buyTotal;
         int salePrice = nvl(op.getSalePrice());
         int nvPrice = nvl(op.getNvPrice());
         int supplyPrice = nvl(op.getSupplyPrice());
