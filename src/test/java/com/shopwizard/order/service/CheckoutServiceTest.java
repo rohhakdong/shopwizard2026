@@ -44,6 +44,7 @@ class CheckoutServiceTest {
     @Mock private OrderProdService orderProdService;
     @Mock private OrderPayService orderPayService;
     @Mock private OrderPayLogTossMapper orderPayLogTossMapper;
+    @Mock private StockLedgerService stockLedgerService;
 
     @InjectMocks private CheckoutService checkoutService;
 
@@ -299,5 +300,39 @@ class CheckoutServiceTest {
         assertThat(ex.getStatusCode().value()).isEqualTo(400);
         verify(orderNoSeqMapper, never()).insert(any());
         verify(orderService, never()).insert(any());
+    }
+
+    @Test
+    void 주문_라인마다_재고를_차감한다_상품코드_순으로() throws Exception {
+        CheckoutRequest req = baseRequest("card", 30000);
+        req.getOrderProds().get(0).setProdCode("1000000500");
+        req.getOrderProds().get(0).setSalePrice(10000);
+        CheckoutProdItem second = new CheckoutProdItem();
+        second.setProdCode("1000000100");     // 먼저 담긴 라인보다 코드가 앞 — 차감은 코드 순
+        second.setProdName("두번째상품");
+        second.setItemCode("20000");
+        second.setProdQty(2);
+        second.setSalePrice(10000);
+        req.setOrderProds(List.of(req.getOrderProds().get(0), second));
+
+        checkoutService.checkout(req, tossResp("DONE", 30000L));
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(stockLedgerService);
+        order.verify(stockLedgerService).deductForOrder(999001, 2, "1000000100", 2, "rohhakdong");
+        order.verify(stockLedgerService).deductForOrder(999001, 1, "1000000500", 1, "rohhakdong");
+    }
+
+    @Test
+    void 재고_차감이_실패하면_결제_정보를_저장하지_않고_예외를_그대로_올린다() {
+        CheckoutRequest req = baseRequest("card", 26900);
+        org.mockito.Mockito.doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "재고가 부족합니다."))
+                .when(stockLedgerService).deductForOrder(any(), any(), any(), any(), any());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> checkoutService.checkout(req, tossResp("DONE", 26900L)));
+
+        assertThat(ex.getStatusCode().value()).isEqualTo(409);
+        verify(orderPayService, never()).insert(any());
+        verify(orderPayLogTossMapper, never()).insert(any());
     }
 }

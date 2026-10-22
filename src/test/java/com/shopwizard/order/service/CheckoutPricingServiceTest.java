@@ -53,7 +53,7 @@ class CheckoutPricingServiceTest {
         i.setItemCode(code);
         i.setItemName("20000".equals(code) ? "선택사항없음" : "옵션" + code);
         i.setSaleYn(1);
-        i.setSupplyQty(10);
+        i.setSupplyQty(9_999_999);   // 개발 DB 의 옵션 재고(미관리)와 같은 값
         i.setOptionPrice(BigDecimal.valueOf(optionPrice));
         return i;
     }
@@ -258,5 +258,54 @@ class CheckoutPricingServiceTest {
         givenSimple(p);
 
         assertThatThrownBy(() -> service.price(List.of(in("P1", "20000", 1)))).isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void 재고가_0이하이면_품절_수량이_재고보다_많으면_부족으로_거절한다() {
+        PricingProd zero = prod("S0", "S1", 1000, "무료", 0);
+        zero.setSupplyQty(0);
+        givenSimple(zero);
+        PricingProd few = prod("S3", "S1", 1000, "무료", 0);
+        few.setSupplyQty(3);
+        givenSimple(few);
+
+        assertThatThrownBy(() -> service.price(List.of(in("S0", "20000", 1))))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("품절");
+        assertThatThrownBy(() -> service.price(List.of(in("S3", "20000", 4))))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("재고가 부족").hasMessageContaining("3개");
+        assertThat(service.price(List.of(in("S3", "20000", 3))).getTotalAmt()).isEqualTo(3000);   // 정확히 재고만큼은 허용
+    }
+
+    @Test
+    void 같은_상품을_여러_라인에_나눠도_합계로_재고를_본다() {
+        PricingProd few = prod("S3", "S1", 1000, "무료", 0);
+        few.setSupplyQty(3);
+        givenSimple(few);
+
+        assertThatThrownBy(() -> service.price(List.of(in("S3", "20000", 2), in("S3", "20000", 2))))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("재고가 부족");
+    }
+
+    @Test
+    void 재고가_null_이면_재고_미관리로_보고_통과한다() {
+        PricingProd unmanaged = prod("SN", "S1", 1000, "무료", 0);
+        unmanaged.setSupplyQty(null);
+        givenSimple(unmanaged);
+
+        assertThat(service.price(List.of(in("SN", "20000", 999))).getTotalAmt()).isEqualTo(999000);
+    }
+
+    @Test
+    void 옵션_재고보다_많이_주문하면_거절한다() {
+        PricingProd p = prod("P2", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("P2")).thenReturn(p);
+        lenient().when(mapper.countRealOptions("P2")).thenReturn(2);
+        PricingItem opt = item("20001", 0);
+        opt.setSupplyQty(2);
+        when(mapper.selectItem("P2", "20001")).thenReturn(opt);
+
+        assertThatThrownBy(() -> service.price(List.of(in("P2", "20001", 3))))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("옵션 재고");
+        assertThat(service.price(List.of(in("P2", "20001", 2))).getTotalAmt()).isEqualTo(20000);
     }
 }

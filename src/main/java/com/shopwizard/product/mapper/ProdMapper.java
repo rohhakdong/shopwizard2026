@@ -27,6 +27,8 @@ public interface ProdMapper {
     /** 재고를 절대값으로 설정(낙관적 검사: SupplyQty <=> expectedQty). 영향 행수 반환. */
     int setSupplyQty(Map<String, Object> params);
     void increaseSupplyQty(Map<String, Object> params);
+    /** 재고가 충분할 때만 차감(SupplyQty NULL=재고 미관리는 통과). 영향 행수 0 이면 재고 부족. */
+    int deductSupplyQtyIfEnough(Map<String, Object> params);
     void updateSupplyQtyItem(Map<String, Object> params);
     void updateCatSupplyQty(Map<String, Object> params);
     void updateCatSupplyQtyItem(Map<String, Object> params);

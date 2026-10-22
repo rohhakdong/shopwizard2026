@@ -45,7 +45,7 @@ public class OrderProdService {
     public void updateInvoice(Map<String, Object> params) { orderProdMapper.updateInvoice(params); }
     public void updateCustConsltYn(Map<String, Object> params) { orderProdMapper.updateCustConsltYn(params); }
     public int countOrderStateDiffer(Map<String, Object> params) { return orderProdMapper.countOrderStateDiffer(params); }
-    public void cancelByWebhook(Map<String, Object> params) { orderProdMapper.cancelByWebhook(params); }
+    public int cancelByWebhook(Map<String, Object> params) { return orderProdMapper.cancelByWebhook(params); }
 
     /** 배송이 시작되기 전 단계(대시보드 "배송 대기"에 쓰는 상태들). 순서는 업무 흐름 순서. */
     static final List<String> PENDING_SHIP_STATES = List.of("지불완료", "출고지시", "발주확인");

@@ -88,4 +88,35 @@ class StockLedgerServiceTest {
 
         verifyNoInteractions(stockLogMapper, productProdService);
     }
+
+    @Test
+    void 주문_차감은_이력을_선점한_뒤_조건부로_재고를_줄인다() {
+        when(stockLogMapper.insertDeduct(100, 1, "G000000001", 3, "cust")).thenReturn(1);
+        when(productProdService.deductSupplyQtyIfEnough(any())).thenReturn(true);
+
+        assertThat(ledger.deductForOrder(100, 1, "G000000001", 3, "cust")).isTrue();
+
+        @SuppressWarnings("unchecked") ArgumentCaptor<Map<String, Object>> cap = ArgumentCaptor.forClass(Map.class);
+        verify(productProdService).deductSupplyQtyIfEnough(cap.capture());
+        assertThat(cap.getValue()).containsEntry("prodCode", "G000000001").containsEntry("qty", 3);
+    }
+
+    @Test
+    void 재고가_부족하면_409로_예외를_던져_호출자_트랜잭션이_롤백된다() {
+        when(stockLogMapper.insertDeduct(100, 1, "G000000001", 3, "cust")).thenReturn(1);
+        when(productProdService.deductSupplyQtyIfEnough(any())).thenReturn(false);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> ledger.deductForOrder(100, 1, "G000000001", 3, "cust"))
+                .isInstanceOfSatisfying(org.springframework.web.server.ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode().value()).isEqualTo(409));
+    }
+
+    @Test
+    void 이미_이력이_선점된_라인은_재고를_또_줄이지_않는다() {
+        when(stockLogMapper.insertDeduct(100, 1, "G000000001", 3, "cust")).thenReturn(0);
+
+        assertThat(ledger.deductForOrder(100, 1, "G000000001", 3, "cust")).isFalse();
+
+        verify(productProdService, never()).deductSupplyQtyIfEnough(any());
+    }
 }

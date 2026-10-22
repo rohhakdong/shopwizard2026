@@ -41,7 +41,8 @@ public interface OrderProdMapper {
     List<OrderDashBoard> selectListDashboardAnyb(Map<String, Object> params);
     void updateReturnReason(OrderProd orderProd);
     void updateOrderState(Map<String, Object> params);
-    void cancelByWebhook(Map<String, Object> params);
+    /** 배송 전 상태의 라인만 주문취소로 바꾼다. 영향 행수(바뀌었으면 1) 반환. */
+    int cancelByWebhook(Map<String, Object> params);
     void updateOrderStateError(Map<String, Object> params);
     void updateRefundCancel(Map<String, Object> params);
     void updateShopInfo(Map<String, Object> params);

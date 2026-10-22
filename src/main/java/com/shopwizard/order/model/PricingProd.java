@@ -12,6 +12,8 @@ public class PricingProd {
     private String shopCode;
     private Integer saleYn;
     private Integer state;
+    /** 상품 재고. null 이면 재고 미관리(무제한). */
+    private Integer supplyQty;
     private BigDecimal listPrice;
     private BigDecimal salePrice;
     private String deliFeeType;

@@ -41,6 +41,7 @@ public class TossWebhookService {
     private final OrderService orderService;
     private final OrderProdService orderProdService;
     private final OrderLineLock lineLock;   // 헤더 → 라인 순서의 행 잠금(취소/환불확정과 같은 규칙)
+    private final StockLedgerService stockLedgerService;   // 취소된 라인의 재고 복원(차감 이력이 있는 라인만, 1회)
 
     public void handlePaymentStatusChanged(String paymentKey) throws Exception {
         if (paymentKey == null || paymentKey.isBlank()) return;
@@ -100,7 +101,10 @@ public class TossWebhookService {
             params.put("orderProdNo", orderProdNo);
             params.put("changeId", SYSTEM_ID);
             params.put("changeName", SYSTEM_NAME);
-            orderProdService.cancelByWebhook(params);
+            // 실제로 주문취소로 바뀐 라인(배송 전)만 재고를 되돌린다 — 이미 반품/환불 단계인 라인은 그쪽 흐름에서 복원된다.
+            if (orderProdService.cancelByWebhook(params) > 0) {
+                stockLedgerService.restore(orderNo, orderProdNo, SYSTEM_ID);
+            }
         }
 
         Map<String, Object> diff = new HashMap<>();

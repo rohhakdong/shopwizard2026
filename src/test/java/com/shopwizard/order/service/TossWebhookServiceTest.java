@@ -39,6 +39,7 @@ class TossWebhookServiceTest {
     @Mock private OrderPayLogTossMapper orderPayLogTossMapper;
     @Mock private OrderService orderService;
     @Mock private OrderProdService orderProdService;
+    @Mock private StockLedgerService stockLedgerService;
 
     @InjectMocks private TossWebhookService tossWebhookService;
 
@@ -195,5 +196,21 @@ class TossWebhookServiceTest {
     @SuppressWarnings("unchecked")
     private static ArgumentCaptor<Map<String, Object>> captorForMap() {
         return ArgumentCaptor.forClass(Map.class);
+    }
+
+    @Test
+    void CANCELED_로_실제_취소된_라인만_재고를_복원한다() throws Exception {
+        when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "CANCELED", "totalAmount", 26900L));
+        when(orderPayMapper.selectByPgTradeNo(PAYMENT_KEY)).thenReturn(orderPay());
+        when(orderService.select(any())).thenReturn(orderWithState("지불완료"));
+        when(orderProdService.selectOrderProdNoList(ORDER_NO)).thenReturn(List.of(1, 2));
+        // 라인1 은 배송 전이라 취소됨(1행), 라인2 는 이미 반품/환불 단계라 건드리지 못함(0행)
+        when(orderProdService.cancelByWebhook(any())).thenReturn(1, 0);
+        when(orderProdService.countOrderStateDiffer(any())).thenReturn(1);
+
+        tossWebhookService.handlePaymentStatusChanged(PAYMENT_KEY);
+
+        verify(stockLedgerService).restore(ORDER_NO, 1, "SYSTEM");
+        verify(stockLedgerService, never()).restore(org.mockito.ArgumentMatchers.eq(ORDER_NO), org.mockito.ArgumentMatchers.eq(2), any());
     }
 }

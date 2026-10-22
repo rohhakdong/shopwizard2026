@@ -470,6 +470,12 @@
         UPDATE shopion.tPrdProd SET SupplyQty = SupplyQty + #{qty} WHERE ProdCode = #{prodCode}
     </update>
 
+    <!-- 스토어프론트 주문 차감 — 확인과 차감을 한 문장으로 해서 동시 주문이 재고를 넘겨 팔지 못한다. SupplyQty 가 NULL(재고 미관리)이면 통과하고 NULL 그대로. -->
+    <update id="deductSupplyQtyIfEnough" parameterType="map">
+        UPDATE shopion.tPrdProd SET SupplyQty = SupplyQty - #{qty}
+        WHERE ProdCode = #{prodCode} AND (SupplyQty IS NULL OR SupplyQty &gt;= #{qty})
+    </update>
+
     <update id="updateCatSupplyQty" parameterType="map">
         UPDATE shopwizard.tCatProd SET SupplyQty = SupplyQty - #{qty} WHERE ProdCode = #{prodCode}
     </update>

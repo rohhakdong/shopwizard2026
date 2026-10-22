@@ -45,6 +45,7 @@ public class CheckoutPricingService {
 
         List<PricedLine> lines = new ArrayList<>();
         Map<String, Integer> feeByShop = new HashMap<>();
+        Map<String, Integer> qtyByProd = new HashMap<>();   // 같은 상품을 여러 라인에 나눠 담아도 합계로 재고를 본다
         long itemAmt = 0;
 
         for (CheckoutProdItem in : items) {
@@ -60,7 +61,17 @@ public class CheckoutPricingService {
             int salePrice = wholeWon(prod.getSalePrice(), "상품 가격");
             if (salePrice <= 0) throw bad("가격 문의 상품은 주문할 수 없습니다: " + nameOf(prod));
 
-            PricingItem item = resolveItem(prod, trim(in.getItemCode()));
+            // 재고: 상품 재고(SupplyQty, null=미관리)는 상품별 합계 수량 이하여야 한다. 실제 차감은 주문 저장 시 CheckoutService 가
+            // 같은 트랜잭션에서 조건부로 한다 — 여기는 돈이 움직이기 전에 걸러내는 사전 확인이다.
+            int totalQty = qtyByProd.merge(prod.getProdCode(), qty, Integer::sum);
+            if (prod.getSupplyQty() != null) {
+                if (prod.getSupplyQty() <= 0) throw bad("품절된 상품입니다: " + nameOf(prod));
+                if (totalQty > prod.getSupplyQty()) {
+                    throw bad("재고가 부족합니다: " + nameOf(prod) + " (남은 수량 " + prod.getSupplyQty() + "개)");
+                }
+            }
+
+            PricingItem item = resolveItem(prod, trim(in.getItemCode()), qty);
             int optionPrice = item == null ? 0 : wholeWon(item.getOptionPrice(), "옵션 가격");
             if (optionPrice < 0) throw bad("옵션 가격이 올바르지 않습니다: " + nameOf(prod));
 
@@ -107,7 +118,7 @@ public class CheckoutPricingService {
      * 주문 라인의 옵션 행을 정한다. 옵션코드를 보냈으면 그 상품의 판매 가능한 옵션이어야 하고, 안 보냈거나 기본행(20000)이면
      * 진짜 옵션이 없는 상품일 때만 허용한다(옵션 상품을 옵션 선택 없이 사는 것을 막는다).
      */
-    private PricingItem resolveItem(PricingProd prod, String itemCode) {
+    private PricingItem resolveItem(PricingProd prod, String itemCode, int qty) {
         boolean wantsDefault = itemCode == null || DEFAULT_ITEM_CODE.equals(itemCode);
         if (wantsDefault && mapper.countRealOptions(prod.getProdCode()) > 0) {
             throw bad("옵션을 선택해 주세요: " + nameOf(prod));
@@ -120,6 +131,10 @@ public class CheckoutPricingService {
         }
         if (!eq(item.getSaleYn(), 1) || (item.getSupplyQty() != null && item.getSupplyQty() <= 0)) {
             throw bad("품절된 옵션입니다: " + nameOf(prod));
+        }
+        // 옵션 재고는 수동 관리 값이라 차감하지는 않지만, 남은 수량보다 많이 주문하는 것은 막는다.
+        if (item.getSupplyQty() != null && qty > item.getSupplyQty()) {
+            throw bad("옵션 재고가 부족합니다: " + nameOf(prod) + " (남은 수량 " + item.getSupplyQty() + "개)");
         }
         return item;
     }

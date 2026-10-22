@@ -3,8 +3,10 @@ package com.shopwizard.order.service;
 import com.shopwizard.order.mapper.OrderProdStockLogMapper;
 import com.shopwizard.product.service.ProdService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +44,25 @@ public class StockLedgerService {
             return false;
         }
         return stockLogMapper.insertDeduct(orderNo, orderProdNo, prodCode, qty, registId) == 1;
+    }
+
+    /**
+     * 스토어프론트 주문 저장 시 재고를 차감한다 — 주문 저장과 같은 트랜잭션 안에서 부른다. {@link #claimDeduction} 으로 이력을 먼저
+     * 선점한 뒤, 재고가 충분할 때만 차감하는 조건부 UPDATE 로 확인과 차감을 한 번에 한다(동시 주문이 재고를 넘겨 팔 수 없다).
+     * 재고가 부족하면 409 로 예외를 던져 주문 저장 전체(이력 선점 포함)를 롤백한다. 샵링커/상품매칭은 이미 접수된 채널 주문이라
+     * 막으면 안 되므로 이 메서드가 아니라 기존 무조건 차감을 쓴다.
+     *
+     * @return 이번 호출이 차감했으면 true, 상품코드/수량이 없거나 이미 선점돼 있어 차감하지 않았으면 false
+     */
+    public boolean deductForOrder(Integer orderNo, Integer orderProdNo, String prodCode, Integer qty, String registId) {
+        if (!claimDeduction(orderNo, orderProdNo, prodCode, qty, registId)) return false;
+        Map<String, Object> dec = new HashMap<>();
+        dec.put("prodCode", prodCode);
+        dec.put("qty", qty);
+        if (!productProdService.deductSupplyQtyIfEnough(dec)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "재고가 부족합니다. 상품코드: " + prodCode);
+        }
+        return true;
     }
 
     /**

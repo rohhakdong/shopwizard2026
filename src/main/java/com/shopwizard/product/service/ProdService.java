@@ -34,6 +34,8 @@ public class ProdService {
     /** 재고 절대값 설정 — 화면이 보던 값(expectedQty)이 그 사이 바뀌었으면 false. */
     public boolean setSupplyQty(Map<String, Object> params) { return prodMapper.setSupplyQty(params) == 1; }
     public void increaseSupplyQty(Map<String, Object> params) { prodMapper.increaseSupplyQty(params); }
+    /** 재고가 충분할 때만 원자적으로 차감한다. 부족하면 false (재고는 그대로). */
+    public boolean deductSupplyQtyIfEnough(Map<String, Object> params) { return prodMapper.deductSupplyQtyIfEnough(params) == 1; }
     public void updateSupplyQtyItem(Map<String, Object> params) { prodMapper.updateSupplyQtyItem(params); }
     public void updateCatSupplyQty(Map<String, Object> params) { prodMapper.updateCatSupplyQty(params); }
     public void updateCatSupplyQtyItem(Map<String, Object> params) { prodMapper.updateCatSupplyQtyItem(params); }

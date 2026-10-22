@@ -4,7 +4,7 @@
 <mapper namespace="com.shopwizard.order.mapper.CheckoutPricingMapper">
 
     <select id="selectProd" resultType="com.shopwizard.order.model.PricingProd">
-        SELECT ProdCode, ProdName, ShopCode, SaleYn, State, ListPrice, SalePrice, DeliFeeType, DeliFeeAmt
+        SELECT ProdCode, ProdName, ShopCode, SaleYn, State, SupplyQty, ListPrice, SalePrice, DeliFeeType, DeliFeeAmt
         FROM shopion.tPrdProd
         WHERE ProdCode = #{prodCode}
     </select>

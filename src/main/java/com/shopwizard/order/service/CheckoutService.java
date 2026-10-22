@@ -18,6 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,6 +51,7 @@ public class CheckoutService {
     private final OrderProdService orderProdService;
     private final OrderPayService orderPayService;
     private final OrderPayLogTossMapper orderPayLogTossMapper;
+    private final StockLedgerService stockLedgerService;
 
     public int checkout(CheckoutRequest req, Map<String, Object> tossResp) throws Exception {
         String now = LocalDateTime.now().format(DATETIME_FMT);
@@ -139,6 +143,19 @@ public class CheckoutService {
             op.setRegistId(registId);
             op.setRegistName(registName);
             orderProdService.insert(op);
+        }
+
+        // 3-1. 재고 차감 — 주문 저장과 같은 트랜잭션. 확인+차감이 한 문장이라 동시 주문이 재고를 넘겨 팔 수 없고, 부족하면 409 로
+        //      주문 저장 전체가 롤백된다(컨트롤러가 이미 승인된 결제를 자동 취소한다). 데드락을 피하려고 상품코드 순으로 처리한다.
+        //      라인은 위에서 1번부터 순서대로 채번했으므로 같은 순서로 번호를 다시 붙인다.
+        List<Object[]> stockLines = new ArrayList<>();   // {상품코드, 라인번호, 수량}
+        int lineNo = 1;
+        for (CheckoutProdItem item : req.getOrderProds()) {
+            stockLines.add(new Object[] {item.getProdCode(), lineNo++, item.getProdQty() != null ? item.getProdQty() : 1});
+        }
+        stockLines.sort(Comparator.comparing(a -> String.valueOf(a[0])));
+        for (Object[] l : stockLines) {
+            stockLedgerService.deductForOrder(orderNo, (Integer) l[1], (String) l[0], (Integer) l[2], registId);
         }
 
         // 4. 결제 정보 저장 (tOrdOrderPay)
