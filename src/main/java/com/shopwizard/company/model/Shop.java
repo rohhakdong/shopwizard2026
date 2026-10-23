@@ -1,5 +1,6 @@
 package com.shopwizard.company.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -15,6 +16,8 @@ public class Shop {
     private String applyEndDate;
     private String adjustPeriodCode;
     private String loginId;
+    // 해시를 응답으로 내보내지 않는다(요청 바디로 받기만 한다)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passwd;
     private String mngrName;
     private String phoneNo;

@@ -4,6 +4,8 @@ import com.shopwizard.company.mapper.ShopMapper;
 import com.shopwizard.company.model.Shop;
 import com.shopwizard.company.model.ShopPublicView;
 import com.shopwizard.framework.util.EncryptUtil;
+import com.shopwizard.framework.util.PasswordHasher;
+import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +32,7 @@ public class ShopService {
     @Transactional
     public int insert(Shop shop) {
         if (shop.getPasswd() != null && !shop.getPasswd().isEmpty()) {
-            shop.setPasswd(EncryptUtil.encryptBySHA(shop.getPasswd()));
+            shop.setPasswd(PasswordHasher.hash(shop.getPasswd()));   // BCrypt (레거시 SHA-1 은 로그인 시 자동 전환)
         }
         return shopMapper.insert(shop);
     }
@@ -44,7 +46,7 @@ public class ShopService {
     public int updatePasswd(String shopCode, String rawPassword, String changeId, String changeName) {
         Map<String, Object> params = new HashMap<>();
         params.put("shopCode", shopCode);
-        params.put("passwd", EncryptUtil.encryptBySHA(rawPassword));
+        params.put("passwd", PasswordHasher.hash(rawPassword));
         params.put("changeId", changeId);
         params.put("changeName", changeName);
         return shopMapper.updatePasswd(params);
@@ -53,11 +55,25 @@ public class ShopService {
     @Transactional
     public int delete(Shop shop) { return shopMapper.delete(shop); }
 
-    /** 상점 계정 로그인 — LoginId로 조회 후 SHA 해싱한 입력값과 저장된 해시를 비교한다. */
+    /** 상점 계정 로그인 — 저장값이 BCrypt 면 BCrypt 로, 레거시 SHA-1 이면 상수시간 비교 후 성공 시 BCrypt 로 자동 전환한다. */
+    @Transactional
     public Shop login(String loginId, String rawPassword) {
         Shop shop = shopMapper.selectByLoginId(loginId);
         if (shop == null || shop.getPasswd() == null) return null;
-        if (!EncryptUtil.encryptBySHA(rawPassword).equals(shop.getPasswd())) return null;
+        String stored = shop.getPasswd();
+        if (!PasswordHasher.matches(rawPassword, stored, () -> EncryptUtil.encryptBySHA(rawPassword))) return null;
+        if (!PasswordHasher.isBcrypt(stored)) {
+            try {
+                Map<String, Object> params = new HashMap<>();
+                params.put("shopCode", shop.getShopCode());
+                params.put("passwd", PasswordHasher.hash(rawPassword));
+                params.put("changeId", "SYSTEM");
+                params.put("changeName", "SYSTEM");
+                shopMapper.updatePasswd(params);
+            } catch (ResponseStatusException ignored) {
+                // 전환 불가(예: 72바이트 초과) — 다음 로그인에도 레거시 해시로 검증된다
+            }
+        }
         return shop;
     }
 }

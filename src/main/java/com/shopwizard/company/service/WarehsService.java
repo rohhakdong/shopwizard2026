@@ -3,6 +3,8 @@ package com.shopwizard.company.service;
 import com.shopwizard.company.mapper.WarehsMapper;
 import com.shopwizard.company.model.Warehs;
 import com.shopwizard.framework.util.EncryptUtil;
+import com.shopwizard.framework.util.PasswordHasher;
+import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +28,7 @@ public class WarehsService {
     @Transactional
     public int insert(Warehs warehs) {
         if (warehs.getPasswd() != null && !warehs.getPasswd().isEmpty()) {
-            warehs.setPasswd(EncryptUtil.encryptBySHA(warehs.getPasswd()));
+            warehs.setPasswd(PasswordHasher.hash(warehs.getPasswd()));   // BCrypt (레거시 SHA-1 은 로그인 시 자동 전환)
         }
         return warehsMapper.insert(warehs);
     }
@@ -40,7 +42,7 @@ public class WarehsService {
     public int updatePasswd(String warehsCode, String rawPassword, String changeId, String changeName) {
         Map<String, Object> params = new HashMap<>();
         params.put("warehsCode", warehsCode);
-        params.put("passwd", EncryptUtil.encryptBySHA(rawPassword));
+        params.put("passwd", PasswordHasher.hash(rawPassword));
         params.put("changeId", changeId);
         params.put("changeName", changeName);
         return warehsMapper.updatePasswd(params);
@@ -49,11 +51,25 @@ public class WarehsService {
     @Transactional
     public int delete(Warehs warehs) { return warehsMapper.delete(warehs); }
 
-    /** 창고 계정 로그인 — LoginId로 조회 후 SHA 해싱한 입력값과 저장된 해시를 비교한다. */
+    /** 창고 계정 로그인 — 저장값이 BCrypt 면 BCrypt 로, 레거시 SHA-1 이면 상수시간 비교 후 성공 시 BCrypt 로 자동 전환한다. */
+    @Transactional
     public Warehs login(String loginId, String rawPassword) {
         Warehs warehs = warehsMapper.selectByLoginId(loginId);
         if (warehs == null || warehs.getPasswd() == null) return null;
-        if (!EncryptUtil.encryptBySHA(rawPassword).equals(warehs.getPasswd())) return null;
+        String stored = warehs.getPasswd();
+        if (!PasswordHasher.matches(rawPassword, stored, () -> EncryptUtil.encryptBySHA(rawPassword))) return null;
+        if (!PasswordHasher.isBcrypt(stored)) {
+            try {
+                Map<String, Object> params = new HashMap<>();
+                params.put("warehsCode", warehs.getWarehsCode());
+                params.put("passwd", PasswordHasher.hash(rawPassword));
+                params.put("changeId", "SYSTEM");
+                params.put("changeName", "SYSTEM");
+                warehsMapper.updatePasswd(params);
+            } catch (ResponseStatusException ignored) {
+                // 전환 불가(예: 72바이트 초과) — 다음 로그인에도 레거시 해시로 검증된다
+            }
+        }
         return warehs;
     }
 }
