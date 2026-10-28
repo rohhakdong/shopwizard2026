@@ -153,6 +153,54 @@ class KcpGatewayTest {
         verify(client, never()).inquiryByOrder(any(), any(), any());
     }
 
+    // ── 모바일 거래등록 ─────────────────────────────────────────
+
+    private static Map<String, Object> registered() {
+        Map<String, Object> m = new HashMap<>();
+        m.put("Code", "0000"); m.put("Message", "Success"); m.put("approvalKey", "AK-1");
+        m.put("PayUrl", "https://testsmpay.kcp.co.kr/pay/mobileGW.kcp");
+        return m;
+    }
+
+    @Test
+    void 모바일_거래등록은_결제수단을_CARD_BANK_로_바꾸고_결제창_주소를_만든다() throws Exception {
+        when(client.registerTrade("SW-1", 26900L, "상품", "CARD", "https://s/r")).thenReturn(registered());
+        when(client.registerTrade("SW-1", 26900L, "상품", "BANK", "https://s/r")).thenReturn(registered());
+
+        KcpGateway.MobileRegistration card = gw.registerMobile("SW-1", 26900, "상품", "card", "https://s/r");
+        assertThat(card.approvalKey()).isEqualTo("AK-1");
+        assertThat(card.payMethod()).isEqualTo("CARD");
+        // KCP 가이드: PayUrl 의 마지막 '/' 앞부분 + /jsp/encodingFilter/encodingFilter.jsp
+        assertThat(card.formAction()).isEqualTo("https://testsmpay.kcp.co.kr/pay/jsp/encodingFilter/encodingFilter.jsp");
+        assertThat(gw.registerMobile("SW-1", 26900, "상품", "trans", "https://s/r").payMethod()).isEqualTo("BANK");
+    }
+
+    @Test
+    void 모바일_거래등록이_거절되면_결제창을_열지_않는다() throws Exception {
+        Map<String, Object> rejected = new HashMap<>();
+        rejected.put("Code", "E001"); rejected.put("Message", "사이트코드 오류");
+        when(client.registerTrade(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString())).thenReturn(rejected);
+
+        assertThatThrownBy(() -> gw.registerMobile("SW-1", 1000, "상품", "card", "https://s/r"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(502));
+    }
+
+    @Test
+    void 모바일_거래등록_입력이_이상하면_KCP_를_호출하지_않는다() throws Exception {
+        assertThatThrownBy(() -> gw.registerMobile("SW-1", 1000, "상품", "vbank", "https://s/r")).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> gw.registerMobile("bad order!", 1000, "상품", "card", "https://s/r")).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> gw.registerMobile("SW-1", 0, "상품", "card", "https://s/r")).isInstanceOf(ResponseStatusException.class);
+        verify(client, never()).registerTrade(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void 모바일_거래등록_연결_실패는_502() throws Exception {
+        when(client.registerTrade(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString()))
+                .thenThrow(new KcpException("연결 실패", false, null));
+        assertThatThrownBy(() -> gw.registerMobile("SW-1", 1000, "상품", "card", "https://s/r"))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(502));
+    }
+
     // ── 취소 ──────────────────────────────────────────────────
 
     private static Map<String, Object> inquiry(long rem) {

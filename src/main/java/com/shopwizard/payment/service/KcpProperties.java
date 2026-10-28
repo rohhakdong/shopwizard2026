@@ -24,6 +24,9 @@ public class KcpProperties {
     public static final String PROD_API = "https://spl.kcp.co.kr";
     public static final String TEST_SCRIPT = "https://testspay.kcp.co.kr/plugin/kcp_spay_hub.js";
     public static final String PROD_SCRIPT = "https://spay.kcp.co.kr/plugin/kcp_spay_hub.js";
+    /** 모바일 거래등록(/trade/register.do) 서버 — 승인 API 와 호스트가 다르다. */
+    public static final String TEST_MOBILE_API = "https://testsmpay.kcp.co.kr";
+    public static final String PROD_MOBILE_API = "https://smpay.kcp.co.kr";
     /** KCP 공용 테스트 사이트코드 — 운영 모드에서는 쓸 수 없다. */
     public static final String TEST_SITE_CD = "T0000";
 
@@ -35,6 +38,9 @@ public class KcpProperties {
     private String privateKeyPassword = "";
     private String apiBase = "";
     private String scriptUrl = "";
+    private String mobileApiBase = "";
+    /** 모바일 결제 복귀(Ret_URL)의 기준 주소(예: https://shop.example.com). 비워 두면 요청이 들어온 주소를 쓴다. KCP 는 https 를 요구한다. */
+    private String publicBaseUrl = "";
     private int connectTimeoutMs = 5000;
     /** 승인 응답 대기. KCP 문서에 기준이 없어 넉넉히 잡고, 초과하면 거래 조회로 승인 여부를 확인한다. */
     private int readTimeoutMs = 30000;
@@ -46,6 +52,18 @@ public class KcpProperties {
     public String apiBaseUrl() {
         String b = apiBase == null ? "" : apiBase.trim();
         if (b.isEmpty()) return prod() ? PROD_API : TEST_API;
+        return b.endsWith("/") ? b.substring(0, b.length() - 1) : b;
+    }
+
+    public String mobileApiBaseUrl() {
+        String b = mobileApiBase == null ? "" : mobileApiBase.trim();
+        if (b.isEmpty()) return prod() ? PROD_MOBILE_API : TEST_MOBILE_API;
+        return b.endsWith("/") ? b.substring(0, b.length() - 1) : b;
+    }
+
+    /** 설정된 공개 주소(끝 슬래시 제거). 없으면 빈 문자열. */
+    public String publicBase() {
+        String b = publicBaseUrl == null ? "" : publicBaseUrl.trim();
         return b.endsWith("/") ? b.substring(0, b.length() - 1) : b;
     }
 

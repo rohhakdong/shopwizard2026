@@ -86,14 +86,33 @@ public class KcpClient {
         return post("/std/inquery", body, "inquiry");
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * 모바일 거래등록. 서명·인증서 없이 사이트코드만 보낸다. 응답은 {@code Code}(0000 정상)/{@code Message}/{@code approvalKey}/{@code PayUrl}.
+     * 승인 API 와 다른 서버라 호출 간격 제한을 공유하지 않는다(공개 엔드포인트가 승인 호출을 지연시키지 않도록).
+     */
+    public Map<String, Object> registerTrade(String ordrIdxx, long goodMny, String goodName, String payMethod, String retUrl) throws KcpException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("site_cd", props.getSiteCd());
+        body.put("ordr_idxx", ordrIdxx);
+        body.put("good_mny", String.valueOf(goodMny));
+        body.put("good_name", goodName);
+        body.put("pay_method", payMethod);
+        body.put("Ret_URL", retUrl);
+        return post(props.mobileApiBaseUrl(), "/trade/register.do", body, "register", false);
+    }
+
     private Map<String, Object> post(String path, Map<String, Object> body, String what) throws KcpException {
-        throttle();
+        return post(props.apiBaseUrl(), path, body, what, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> post(String base, String path, Map<String, Object> body, String what, boolean throttled) throws KcpException {
+        if (throttled) throttle();
         HttpURLConnection conn;
         byte[] payload;
         try {
             payload = mapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8);
-            conn = (HttpURLConnection) new URL(props.apiBaseUrl() + path).openConnection();
+            conn = (HttpURLConnection) new URL(base + path).openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
             conn.setConnectTimeout(props.getConnectTimeoutMs());
@@ -111,7 +130,7 @@ public class KcpClient {
             int code = conn.getResponseCode();
             String resp = readAll(code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream());
             Map<String, Object> parsed = (Map<String, Object>) mapper.readValue(resp, Map.class);
-            log.info("KCP {} http={} res_cd={}", what, code, parsed.get("res_cd"));
+            log.info("KCP {} http={} res_cd={}", what, code, parsed.getOrDefault("res_cd", parsed.get("Code")));
             return parsed;
         } catch (IOException | RuntimeException e) {
             // 요청을 보낸 뒤의 실패(타임아웃·끊김·이해할 수 없는 응답) — KCP 가 처리했는지 알 수 없다.

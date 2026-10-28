@@ -49,9 +49,50 @@ public class KcpGateway implements PaymentGateway {
     /** PC 결제창 pay_method(12자리 비트코드) */
     private static final Map<String, String> PC_PAY_METHOD = Map.of("card", "100000000000", "trans", "010000000000");
 
+    /** 모바일 결제창 pay_method(4자) */
+    private static final Map<String, String> MOBILE_PAY_METHOD = Map.of("card", "CARD", "trans", "BANK");
+    private static final Pattern ORDER_CODE = Pattern.compile("[A-Za-z0-9_-]{1,50}");
+
     private final KcpProperties props;
     private final KcpCredentials credentials;
     private final KcpClient client;
+
+    /** 모바일 거래등록 결과 — 결제창을 열 때 필요한 approvalKey 와 KCP 가 알려 준 결제창 주소. */
+    public record MobileRegistration(String approvalKey, String payUrl, String payMethod) {
+        /** 결제창 폼의 action — PayUrl 의 마지막 '/' 앞부분 + encodingFilter 경로(KCP 가이드). */
+        public String formAction() {
+            int i = payUrl.lastIndexOf('/');
+            return (i < 0 ? payUrl : payUrl.substring(0, i)) + "/jsp/encodingFilter/encodingFilter.jsp";
+        }
+    }
+
+    /**
+     * 모바일 결제창을 열기 전에 KCP 에 거래를 등록한다. 금액({@code amount})은 호출자가 서버 가격 계산으로 정한 값이어야 하며,
+     * 승인 단계에서 KCP 가 인증된 금액과 대조하므로 여기서 속이면 승인이 거절된다.
+     */
+    public MobileRegistration registerMobile(String orderCode, long amount, String goodName, String payMethod, String retUrl) {
+        String method = MOBILE_PAY_METHOD.get(payMethod);
+        if (method == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 결제수단입니다.");
+        }
+        if (orderCode == null || !ORDER_CODE.matcher(orderCode).matches() || amount <= 0 || isBlank(retUrl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 정보가 올바르지 않습니다.");
+        }
+        String name = isBlank(goodName) ? "주문" : (goodName.length() > 100 ? goodName.substring(0, 100) : goodName);
+        Map<String, Object> resp;
+        try {
+            resp = client.registerTrade(orderCode, amount, name, method, retUrl);
+        } catch (KcpException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "결제 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        }
+        String approvalKey = str(resp.get("approvalKey"));
+        String payUrl = str(resp.get("PayUrl"));
+        if (!"0000".equals(str(resp.get("Code"))) || isBlank(approvalKey) || isBlank(payUrl)) {
+            log.warn("KCP 모바일 거래등록 거절 order={} code={}", orderCode, str(resp.get("Code")));
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "결제창을 준비하지 못했습니다: " + str(resp.get("Message")));
+        }
+        return new MobileRegistration(approvalKey, payUrl, method);
+    }
 
     @Override
     public String code() {
@@ -78,6 +119,7 @@ public class KcpGateway implements PaymentGateway {
         m.put("scriptUrl", props.scriptUrlResolved());
         m.put("currency", "410");
         m.put("payMethodCodes", PC_PAY_METHOD);
+        m.put("mobilePayMethodCodes", MOBILE_PAY_METHOD);
         return m;
     }
 

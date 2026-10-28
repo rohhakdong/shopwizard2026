@@ -55,6 +55,9 @@ kcp:
   cert-path: ${KCP_CERT_PATH:}
   private-key-path: ${KCP_PRIVATE_KEY_PATH:}
   private-key-password: ${KCP_PRIVATE_KEY_PASSWORD:}
+  # 모바일 결제 복귀(Ret_URL) 기준 주소. KCP 는 https 를 요구한다. 비우면 요청이 들어온 주소를 쓰므로
+  # 리버스 프록시 뒤 운영 환경에서는 https 도메인(예: https://shop.example.com)을 지정하는 것을 권장한다.
+  public-base-url: ${KCP_PUBLIC_BASE_URL:}
 
 toss:
   client-key: ${TOSS_CLIENT_KEY:test_ck_6bJXmgo28e2KNmxGge1j3LAnGKWx}

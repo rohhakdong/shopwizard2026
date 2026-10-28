@@ -633,6 +633,8 @@ createApp({
     });
     const pgOfMethod = (v) => (payMethods.value.find(m => m.value === v) || {}).pg || payConfig.value.defaultPg;
     const pgClient   = (code) => ((payConfig.value.pgs.find(p => p.code === code) || {}).client) || {};
+    // 모바일 브라우저는 KCP PC 결제창(스크립트)을 쓸 수 없어 거래등록 + 결제창 페이지 이동 방식으로 결제한다.
+    const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     const loadScript = (src) => new Promise((resolve, reject) => {
       if ([...document.scripts].some(sc => sc.src === src)) { resolve(); return; }
       const el = document.createElement('script');
@@ -652,7 +654,7 @@ createApp({
       }
       // KCP 결제창 스크립트는 KCP 가 켜져 있을 때만 불러온다(주소는 서버 설정: 테스트/운영이 다르다).
       const kcp = pgClient('KCP');
-      if (kcp.scriptUrl) {
+      if (kcp.scriptUrl && !IS_MOBILE) {
         try { await loadScript(kcp.scriptUrl); } catch (e) { toast(e.message, 'error'); }
       }
     };
@@ -773,6 +775,13 @@ createApp({
       const amount     = urlParams.get('amount');
       const errorCode  = urlParams.get('code');
 
+      if (urlParams.get('kcp') === 'return') {
+        history.replaceState({}, '', '/shop.html');
+        const done = await handleKcpReturn();
+        await loadShops();
+        if (!done && view.value === 'home') await loadProds(1);
+        return;
+      }
       if (paymentKey && orderId && amount) {
         history.replaceState({}, '', '/shop.html');
         await handlePaymentSuccess(paymentKey, orderId, parseInt(amount));
@@ -1012,7 +1021,12 @@ createApp({
       try {
         const pg = pgOfMethod(f.payMethod);
         if (pg === 'KCP') {
-          // 결제창은 이 페이지 위에 뜨고 리다이렉트가 없다 — 인증이 끝나면 m_Completepayment 콜백이 불린다.
+          if (IS_MOBILE) {
+            // 모바일: 서버가 거래등록한 뒤 이 탭이 KCP 결제창 페이지로 넘어가고, 인증이 끝나면 /payment/kcp/return 을 거쳐 돌아온다.
+            await openKcpMobile({ orderId, orderName, f, orderProds });
+            return;
+          }
+          // PC: 결제창은 이 페이지 위에 뜨고 리다이렉트가 없다 — 인증이 끝나면 m_Completepayment 콜백이 불린다.
           await openKcpWindow({ orderId, orderName, totalAmt, f, kcp: pgClient('KCP') });
           return;
         }
@@ -1105,6 +1119,67 @@ createApp({
           toast('결제창을 열지 못했습니다', 'error');
         }
       }
+    };
+
+    /* ── KCP 결제창 (모바일) ──
+       서버가 거래등록(금액은 서버 계산)을 하고 결제창 폼(action·필드)을 만들어 준다. 그 폼을 제출하면 이 탭이 KCP 페이지로 넘어가므로
+       돌아왔을 때 이어 갈 정보(주문번호·금액)를 pendingOrder 에 먼저 저장해 둔다. */
+    const openKcpMobile = async ({ orderId, orderName, f, orderProds }) => {
+      let reg;
+      try {
+        reg = await api('POST', '/payment/kcp/register', { orderId, payMethod: f.payMethod, orderName, orderProds });
+      } catch (e) {
+        localStorage.removeItem('pendingOrder');
+        throw e;
+      }
+      const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
+      if (!pending) throw new Error('주문 데이터가 없습니다');
+      pending.kcp = { orderId, totalAmt: parseInt(reg.fields.good_mny) };
+      localStorage.setItem('pendingOrder', JSON.stringify(pending));
+
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.name = 'order_info';
+      form.action = reg.action;
+      form.style.display = 'none';
+      for (const [k, v] of Object.entries(reg.fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = k; input.value = v;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+    };
+
+    /* ── KCP 모바일 결제창에서 돌아온 직후 처리 — /payment/kcp/return 이 sessionStorage('kcpReturn') 에 담아 둔 인증 결과를 승인한다 ── */
+    const handleKcpReturn = async () => {
+      let ret = null;
+      try {
+        ret = JSON.parse(sessionStorage.getItem('kcpReturn') || 'null');
+        sessionStorage.removeItem('kcpReturn');
+      } catch (_) {}
+      const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
+      const kcp = pending && pending.kcp;
+      if (!ret || !kcp) {
+        localStorage.removeItem('pendingOrder');
+        toast('결제 결과를 확인하지 못했습니다. 결제가 되었는지 주문 내역을 확인해 주세요', 'error');
+        return false;
+      }
+      if (ret.res_cd !== '0000') {
+        if (ret.res_cd !== '3001') toast('결제가 취소되었습니다' + (ret.res_msg ? ': ' + ret.res_msg : ''), 'error');   // 3001 = 사용자가 닫음
+        await restorePendingOrder();
+        return false;
+      }
+      if (ret.ordr_idxx && ret.ordr_idxx !== kcp.orderId) {
+        localStorage.removeItem('pendingOrder');
+        toast('결제 정보가 일치하지 않습니다', 'error');
+        return false;
+      }
+      await finishCheckout({
+        pgCode: 'KCP', orderId: kcp.orderId, amount: kcp.totalAmt,
+        payload: { resCd: ret.res_cd, encData: ret.enc_data, encInfo: ret.enc_info, tranCd: ret.tran_cd },
+      });
+      return true;
     };
 
     /* ── 결제 성공 콜백 (토스: redirect 후 onMounted에서 호출) ── */

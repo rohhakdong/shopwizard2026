@@ -184,6 +184,36 @@ class KcpClientTest {
         assertSigned((String) byOrder.get("kcp_sign_data"), "T0000^20261028000000^PABK");
     }
 
+    // ── 모바일 거래등록 ─────────────────────────────────────────
+
+    @Test
+    void 모바일_거래등록은_모바일_서버로_사이트코드와_주문정보만_보낸다() throws Exception {
+        props.setMobileApiBase(props.getApiBase());   // 가짜 서버로
+        responseJson = "{\"Code\":\"0000\",\"Message\":\"Success\",\"approvalKey\":\"AK-1\",\"PayUrl\":\"https://x/pay/mobileGW.kcp\"}";
+
+        Map<String, Object> resp = new KcpClient(props, credentials)
+                .registerTrade("SW-1", 26900, "상품", "CARD", "https://shop.example.com/payment/kcp/return");
+
+        assertThat(path.get()).isEqualTo("/trade/register.do");
+        Map<String, Object> sent = sentJson();
+        assertThat(sent).containsEntry("site_cd", "T0000").containsEntry("ordr_idxx", "SW-1")
+                .containsEntry("good_mny", "26900").containsEntry("good_name", "상품")
+                .containsEntry("pay_method", "CARD").containsEntry("Ret_URL", "https://shop.example.com/payment/kcp/return");
+        // 거래등록에는 인증서·서명이 필요 없다 — 보내지 않는다.
+        assertThat(sent).doesNotContainKeys("kcp_cert_info", "kcp_sign_data");
+        assertThat(resp).containsEntry("approvalKey", "AK-1");
+    }
+
+    @Test
+    void 모바일_거래등록_서버_주소는_mode_로_고른다() {
+        KcpProperties p = new KcpProperties();
+        assertThat(p.mobileApiBaseUrl()).isEqualTo("https://testsmpay.kcp.co.kr");
+        p.setMode("prod");
+        assertThat(p.mobileApiBaseUrl()).isEqualTo("https://smpay.kcp.co.kr");
+        p.setMobileApiBase("http://127.0.0.1:9/");
+        assertThat(p.mobileApiBaseUrl()).isEqualTo("http://127.0.0.1:9");
+    }
+
     // ── 실패 구분 ──────────────────────────────────────────────
 
     @Test
