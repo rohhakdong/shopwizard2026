@@ -7,6 +7,10 @@ import com.shopwizard.order.mapper.OrderProdMapper;
 import com.shopwizard.order.model.OrderPay;
 import com.shopwizard.order.model.OrderPayLogToss;
 import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.payment.model.CancelRequest;
+import com.shopwizard.payment.service.PaymentGateway;
+import com.shopwizard.payment.service.PaymentGatewayRegistry;
+import com.shopwizard.payment.service.TossGateway;
 import com.shopwizard.payment.service.TossPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,9 +28,11 @@ import java.util.Set;
  * WHERE 가드가 없음). 그 주문의 모든 라인이 환불완료에 도달하면 헤더도 승격한다
  * ({@link OrderProdMapper#countOrderStateDiffer}).
  *
- * <p><b>PG 환불</b>: 스토어프론트에서 토스로 결제한 주문(tOrdOrderPay.PgCode='TOSS')이면 라인 결제금액만큼
- * 토스 <b>부분취소</b>를 호출한다. 샵링커 등 마켓 주문은 PG 가 우리 쪽에 없어(환불은 마켓 정산 몫) 상태만
- * 바꾼다. {@code skipPg} 이면 토스 호출을 생략한다(가상계좌 등 자동 취소 불가, 이미 별도 환불).</p>
+ * <p><b>PG 환불</b>: 스토어프론트에서 PG 로 결제한 주문(tOrdOrderPay.PgCode — 토스/KCP …)이면 라인 결제금액만큼
+ * 그 PG 의 <b>부분취소</b>를 호출한다. 샵링커 등 마켓 주문은 PG 가 우리 쪽에 없어(환불은 마켓 정산 몫) 상태만
+ * 바꾼다. {@code skipPg} 이면 PG 호출을 생략한다(가상계좌 등 자동 취소 불가, 이미 별도 환불).
+ * 토스는 Idempotency-Key 로 재시도가 안전하고, 멱등키가 없는 KCP 는 PG 잔액을 "결제금액 − 이미 환불한 라인 합"과 대조해
+ * 이중 취소를 막는다({@link CancelRequest#getRemainingBefore()}).</p>
  *
  * <p>순서: 검증(결제 조회, 금액, 가상계좌 여부) → <b>DB 상태 변경(행 잠금)</b> → 토스 취소 호출. 토스 취소가
  * 예외를 던지면 REQUIRES_NEW 트랜잭션이 롤백돼 상태가 그대로 남는다. DB 를 먼저 바꿔 행 잠금을 잡아두는 이유:
@@ -51,6 +57,7 @@ public class RefundConfirmService {
     private final OrderPayMapper orderPayMapper;
     private final OrderPayLogTossMapper orderPayLogTossMapper;
     private final TossPaymentService tossPaymentService;
+    private final PaymentGatewayRegistry gatewayRegistry;
     private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
 
     /** 성공하면 null, 업무상 실패는 사유 문자열 반환. 토스 호출 실패 등은 예외 → 이 건만 롤백된다. */
@@ -90,29 +97,46 @@ public class RefundConfirmService {
             orderMapper.updateOrderState(headerUpd);
         }
 
-        // 3) 토스 부분취소 — 예외가 나면 위 DB 변경이 롤백된다.
+        // 3) PG 부분취소 — 예외가 나면 위 DB 변경이 롤백된다.
         if (pg != null && pg.callApi) {
-            Map<String, Object> resp;
-            try {
-                resp = tossPaymentService.cancelPartial(pg.paymentKey, "환불확정", pg.amount,
-                        "refund-" + orderNo + "-" + orderProdNo);
-            } catch (ResponseStatusException e) {
-                throw new IllegalStateException("토스 결제 취소 실패: " + e.getReason(), e);
+            if (pg.gateway == null) {
+                Map<String, Object> resp;
+                try {
+                    resp = tossPaymentService.cancelPartial(pg.paymentKey, "환불확정", pg.amount,
+                            "refund-" + orderNo + "-" + orderProdNo);
+                } catch (ResponseStatusException e) {
+                    throw new IllegalStateException("토스 결제 취소 실패: " + e.getReason(), e);
+                }
+                orderPayLogTossMapper.insert(OrderPayLogToss.from(orderNo, resp, registId, registName));
+            } else {
+                CancelRequest cancel = new CancelRequest();
+                cancel.setTradeNo(pg.paymentKey);
+                cancel.setReason("환불확정");
+                cancel.setAmount((long) pg.amount);
+                cancel.setIdempotencyKey("refund-" + orderNo + "-" + orderProdNo);
+                cancel.setPayType(pg.payType);
+                cancel.setRemainingBefore(pg.remainingBefore);
+                try {
+                    pg.gateway.cancel(cancel);
+                } catch (ResponseStatusException e) {
+                    throw new IllegalStateException(pg.gateway.label() + " 결제 취소 실패: " + e.getReason(), e);
+                }
             }
-            orderPayLogTossMapper.insert(OrderPayLogToss.from(orderNo, resp, registId, registName));
         }
         return null;
     }
 
-    /** 토스 결제 주문이면 환불 금액/상태를 확인해 호출 계획을 만든다. 토스 결제가 아니면 null(상태만 변경). */
+    /** PG 결제 주문이면 환불 금액/상태를 확인해 호출 계획을 만든다. PG 결제가 아니면 null(상태만 변경). */
     private PgRefund preparePgRefund(Integer orderNo, OrderProd op) throws Exception {
-        OrderPay pay = orderPayMapper.selectTossByOrderNo(orderNo);
+        OrderPay pay = orderPayMapper.selectPgByOrderNo(orderNo);
         if (pay == null || pay.getPgTradeNo() == null || pay.getPgTradeNo().isBlank()) {
             return null;
         }
+        boolean toss = TossGateway.CODE.equals(pay.getPgCode());
         if (VBANK_PAY_TYPE.equals(pay.getPayType())) {
             throw new IllegalStateException("가상계좌 결제는 환불계좌 정보가 필요해 자동 취소할 수 없습니다. "
-                    + "토스 대시보드에서 환불한 뒤 '토스 호출 생략'을 체크하고 처리하세요.");
+                    + (toss ? "토스 대시보드" : pay.getPgCode() + " 관리자 화면") + "에서 환불한 뒤 '"
+                    + (toss ? "토스" : "결제취소") + " 호출 생략'을 체크하고 처리하세요.");
         }
 
         int amount = nvl(op.getReciptAmt()) > 0 ? op.getReciptAmt() : nvl(op.getSalePrice()) * nvl(op.getProdQty());
@@ -120,19 +144,43 @@ public class RefundConfirmService {
             throw new IllegalStateException("환불 금액을 계산할 수 없습니다. (결제금액 0원)");
         }
 
+        if (!toss) {
+            return prepareGatewayRefund(orderNo, pay, amount);
+        }
+
         Map<String, Object> payment = tossPaymentService.getPayment(pay.getPgTradeNo());
         String status = String.valueOf(payment.get("status"));
         if ("CANCELED".equals(status)) {
             // 이미 전액 취소된 결제(토스 대시보드 취소 등) — 더 환불할 것이 없으므로 호출 없이 상태만 반영한다.
-            return new PgRefund(pay.getPgTradeNo(), amount, false);
+            return new PgRefund(pay.getPgTradeNo(), amount, false, null, null, null);
         }
         if (!CANCELABLE_PG_STATUS.contains(status)) {
             throw new IllegalStateException("토스 결제 상태가 환불 가능한 상태가 아닙니다. (상태: " + status + ")");
         }
-        return new PgRefund(pay.getPgTradeNo(), amount, true);
+        return new PgRefund(pay.getPgTradeNo(), amount, true, null, null, null);
     }
 
-    private record PgRefund(String paymentKey, int amount, boolean callApi) {}
+    /**
+     * 토스 외 PG(KCP …). 멱등키가 없어서, 이 취소 직전에 PG 잔액이 얼마여야 하는지(결제금액 − 이미 환불한 라인 합)를 같이 넘기고
+     * 게이트웨이가 PG 잔액과 대조한다. 이 라인은 아직 환불완료가 아니라 합계에 들어 있지 않다.
+     */
+    private PgRefund prepareGatewayRefund(Integer orderNo, OrderPay pay, int amount) {
+        PaymentGateway gw = gatewayRegistry.forExistingPayment(pay.getPgCode());
+        if (gw == null) {
+            throw new IllegalStateException("지원하지 않는 결제 PG 입니다: " + pay.getPgCode()
+                    + ". PG 관리자 화면에서 환불한 뒤 '결제취소 호출 생략'을 체크하고 처리하세요.");
+        }
+        long remainingBefore = (long) nvl(pay.getPayAmt()) - orderProdMapper.sumRefundedAmount(orderNo);
+        if (remainingBefore < amount) {
+            throw new IllegalStateException("환불 금액(" + amount + "원)이 남은 결제금액(" + remainingBefore
+                    + "원)보다 큽니다. 이미 일부를 PG 에서 직접 환불했다면 '결제취소 호출 생략'으로 처리하세요.");
+        }
+        return new PgRefund(pay.getPgTradeNo(), amount, true, gw, pay.getPayType(), remainingBefore);
+    }
+
+    /** gateway == null 이면 토스(기존 경로). */
+    private record PgRefund(String paymentKey, int amount, boolean callApi,
+                            PaymentGateway gateway, String payType, Long remainingBefore) {}
 
     private static int nvl(Integer i) { return i == null ? 0 : i; }
 }

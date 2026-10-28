@@ -118,6 +118,7 @@ public class CheckoutController {
                 CancelRequest cancel = new CancelRequest();
                 cancel.setTradeNo(paid.getTradeNo());
                 cancel.setReason("주문 저장 실패로 인한 자동 취소");
+                cancel.setPayType("TRANS".equals(paid.getMethod()) ? "010000000000" : "100000000000");   // KCP 가 조회·취소에 쓴다
                 gateway.cancel(cancel);
             } catch (Exception cancelEx) {
                 // 취소 자체가 실패해도 원래 예외를 그대로 전달 — 로그로 남겨 수동 대사(reconciliation) 대상이 되게 한다.

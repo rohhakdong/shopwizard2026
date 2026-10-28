@@ -47,6 +47,9 @@ public class PaymentGatewayRegistry {
             throw new IllegalStateException("payment.default-pg(" + def + ") 가 payment.enabled-pgs 에 없습니다.");
         }
         this.defaultGateway = d;
+
+        // 켜진 PG 만 점검한다(꺼진 PG 의 키가 없어도 앱은 떠야 한다).
+        for (PaymentGateway g : enabled) g.verifyReady();
     }
 
     /** 새 결제에 쓸 수 있는 PG(설정 순서). */

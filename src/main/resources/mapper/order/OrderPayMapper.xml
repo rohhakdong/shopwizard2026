@@ -44,10 +44,11 @@
         LIMIT 1
     </select>
 
-    <!-- 환불확정에서 주문번호만으로 토스 결제건을 찾는다. 같은 OrderNo 에 여러 건이면 최신(PayNo 최대) 한 건. -->
-    <select id="selectTossByOrderNo" parameterType="int" resultType="com.shopwizard.order.model.OrderPay">
+    <!-- 환불확정에서 주문번호만으로 PG(토스/KCP …) 결제건을 찾는다. PgCode 가 없는 건(마켓 주문)은 제외.
+         같은 OrderNo 에 여러 건이면 최신(PayNo 최대) 한 건. -->
+    <select id="selectPgByOrderNo" parameterType="int" resultType="com.shopwizard.order.model.OrderPay">
         SELECT * FROM shopion.tOrdOrderPay
-        WHERE OrderNo = #{orderNo} AND PgCode = 'TOSS'
+        WHERE OrderNo = #{orderNo} AND PgCode IS NOT NULL AND PgCode != ''
         ORDER BY PayNo DESC
         LIMIT 1
     </select>

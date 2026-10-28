@@ -49,6 +49,8 @@ public interface OrderProdMapper {
     void updateInvoice(Map<String, Object> params);
     void updateCustConsltYn(Map<String, Object> params);
     int countOrderStateDiffer(Map<String, Object> params);
+    /** 주문에서 이미 환불완료된 라인의 금액 합(라인 ReciptAmt, 없으면 판매가×수량) — PG 잔액 대조용. */
+    long sumRefundedAmount(int orderNo);
     /** 서비스 범위의 라인 수를 상태별로 센 결과 — 각 행은 {state, cnt}. 대시보드 "배송 대기"용. */
     List<Map<String, Object>> countByStates(Map<String, Object> params);
     List<OrderDetlStats> selectListStatisticsProd(Map<String, Object> params);

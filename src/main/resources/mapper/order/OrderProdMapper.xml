@@ -732,6 +732,12 @@
         AND ProdCode = #{prodCode}
     </update>
 
+    <select id="sumRefundedAmount" parameterType="int" resultType="long">
+        SELECT COALESCE(SUM(CASE WHEN ReciptAmt &gt; 0 THEN ReciptAmt ELSE COALESCE(SalePrice, 0) * COALESCE(ProdQty, 0) END), 0)
+        FROM shopion.tOrdOrderProd
+        WHERE OrderNo = #{orderNo} AND OrderState = '환불완료'
+    </select>
+
     <select id="countOrderStateDiffer" parameterType="map" resultType="int">
         SELECT COUNT(*)
         FROM shopion.tOrdOrderProd

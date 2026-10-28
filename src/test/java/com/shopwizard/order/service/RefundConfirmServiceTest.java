@@ -6,6 +6,10 @@ import com.shopwizard.order.mapper.OrderPayMapper;
 import com.shopwizard.order.mapper.OrderProdMapper;
 import com.shopwizard.order.model.OrderPay;
 import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.payment.model.CancelRequest;
+import com.shopwizard.payment.model.CancelResult;
+import com.shopwizard.payment.service.PaymentGateway;
+import com.shopwizard.payment.service.PaymentGatewayRegistry;
 import com.shopwizard.payment.service.TossPaymentService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +49,8 @@ class RefundConfirmServiceTest {
     @Mock private OrderPayMapper orderPayMapper;
     @Mock private OrderPayLogTossMapper orderPayLogTossMapper;
     @Mock private TossPaymentService tossPaymentService;
+    @Mock private PaymentGatewayRegistry gatewayRegistry;
+    @Mock private PaymentGateway kcp;
     @InjectMocks private RefundConfirmService service;
 
     private OrderProd line(String state, Integer reciptAmt, Integer salePrice, Integer qty) {
@@ -92,7 +98,7 @@ class RefundConfirmServiceTest {
     @Test
     void 토스_결제가_아닌_주문_마켓주문은_PG호출없이_상태만_바꾼다() throws Exception {
         givenLine(line("주문취소", 5000, 5000, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(null);
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(null);
         when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(0);
 
         assertThat(service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자")).isNull();
@@ -105,7 +111,7 @@ class RefundConfirmServiceTest {
     @Test
     void 토스_결제는_라인금액으로_부분취소를_호출하고_멱등키와_로그를_남긴다() throws Exception {
         givenLine(line("반품완료", 12000, 4000, 3));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "DONE"));
         when(tossPaymentService.cancelPartial(anyString(), anyString(), anyLong(), anyString()))
                 .thenReturn(Map.of("status", "PARTIAL_CANCELED", "paymentKey", PAYMENT_KEY, "totalAmount", 20000L));
@@ -122,7 +128,7 @@ class RefundConfirmServiceTest {
     @Test
     void DB상태를_먼저_바꾼_뒤_토스를_호출한다_웹훅이_덮어쓰지_못하게_행잠금을_먼저_잡는다() throws Exception {
         givenLine(line("주문취소", 5000, 5000, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "DONE"));
         when(tossPaymentService.cancelPartial(anyString(), anyString(), anyLong(), anyString()))
                 .thenReturn(Map.of("status", "CANCELED"));
@@ -139,7 +145,7 @@ class RefundConfirmServiceTest {
     @Test
     void ReciptAmt가_없으면_판매가x수량으로_계산한다() throws Exception {
         givenLine(line("주문취소", null, 3500, 2));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "PARTIAL_CANCELED"));
         when(tossPaymentService.cancelPartial(anyString(), anyString(), anyLong(), anyString()))
                 .thenReturn(Map.of("status", "PARTIAL_CANCELED"));
@@ -164,7 +170,7 @@ class RefundConfirmServiceTest {
     @Test
     void 가상계좌는_자동취소하지_않고_DB도_바꾸지_않는다() throws Exception {
         givenLine(line("주문취소", 5000, 5000, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("001000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("001000000000"));
 
         assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
                 .isInstanceOf(IllegalStateException.class)
@@ -177,7 +183,7 @@ class RefundConfirmServiceTest {
     @Test
     void 환불금액이_0원이면_실패한다() throws Exception {
         givenLine(line("주문취소", 0, 0, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
 
         assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("환불 금액");
@@ -187,7 +193,7 @@ class RefundConfirmServiceTest {
     @Test
     void 이미_전액_취소된_결제는_토스를_호출하지_않고_상태만_반영한다() throws Exception {
         givenLine(line("주문취소", 5000, 5000, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "CANCELED"));
         when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(0);
 
@@ -200,7 +206,7 @@ class RefundConfirmServiceTest {
     @Test
     void 대기중_만료_등_취소할_수_없는_결제상태면_실패한다() throws Exception {
         givenLine(line("주문취소", 5000, 5000, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "WAITING_FOR_DEPOSIT"));
 
         assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
@@ -211,7 +217,7 @@ class RefundConfirmServiceTest {
     @Test
     void 토스_취소가_실패하면_예외로_전파돼_트랜잭션이_롤백된다() throws Exception {
         givenLine(line("주문취소", 5000, 5000, 1));
-        when(orderPayMapper.selectTossByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(tossPay("100000000000"));
         when(tossPaymentService.getPayment(PAYMENT_KEY)).thenReturn(Map.of("status", "DONE"));
         when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(1);
         when(tossPaymentService.cancelPartial(anyString(), anyString(), anyLong(), anyString()))
@@ -226,5 +232,113 @@ class RefundConfirmServiceTest {
         ArgumentCaptor<Map<String, Object>> upd = ArgumentCaptor.forClass(Map.class);
         verify(orderProdMapper, times(1)).updateOrderState(upd.capture());
         assertThat(upd.getValue()).containsEntry("orderState", "환불완료");
+    }
+
+    // ── KCP (토스 외 PG: 게이트웨이 + 잔액 대조) ─────────────────────────
+
+    private OrderPay kcpPay(String payType, int payAmt) {
+        OrderPay pay = new OrderPay();
+        pay.setOrderNo(ORDER_NO);
+        pay.setPgCode("KCP");
+        pay.setPgTradeNo("KCP-TNO-1");
+        pay.setPayType(payType);
+        pay.setPayAmt(payAmt);
+        return pay;
+    }
+
+    @Test
+    void KCP_결제는_결제금액에서_이미_환불한_금액을_뺀_직전_잔액과_함께_게이트웨이로_취소한다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(kcpPay("100000000000", 10000));
+        when(gatewayRegistry.forExistingPayment("KCP")).thenReturn(kcp);
+        when(orderProdMapper.sumRefundedAmount(ORDER_NO)).thenReturn(2000L);   // 앞서 2,000원 환불됨 → 직전 잔액 8,000
+        when(kcp.cancel(any())).thenReturn(new CancelResult());
+        when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(1);
+
+        assertThat(service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자")).isNull();
+
+        ArgumentCaptor<CancelRequest> cap = ArgumentCaptor.forClass(CancelRequest.class);
+        verify(kcp).cancel(cap.capture());
+        assertThat(cap.getValue().getTradeNo()).isEqualTo("KCP-TNO-1");
+        assertThat(cap.getValue().getAmount()).isEqualTo(3000L);
+        assertThat(cap.getValue().getRemainingBefore()).isEqualTo(8000L);
+        assertThat(cap.getValue().getPayType()).isEqualTo("100000000000");
+        verifyNoInteractions(tossPaymentService, orderPayLogTossMapper);
+    }
+
+    @Test
+    void KCP_도_DB_상태를_먼저_바꾼_뒤_취소를_호출한다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(kcpPay("100000000000", 3000));
+        when(gatewayRegistry.forExistingPayment("KCP")).thenReturn(kcp);
+        when(kcp.cancel(any())).thenReturn(new CancelResult());
+        when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(0);
+
+        service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자");
+
+        InOrder order = inOrder(orderProdMapper, kcp);
+        order.verify(orderProdMapper).updateOrderState(any());
+        order.verify(kcp).cancel(any());
+    }
+
+    @Test
+    void KCP_취소가_실패하면_예외로_전파돼_상태가_롤백된다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(kcpPay("100000000000", 3000));
+        when(gatewayRegistry.forExistingPayment("KCP")).thenReturn(kcp);
+        when(kcp.label()).thenReturn("NHN KCP");
+        when(kcp.cancel(any())).thenThrow(new ResponseStatusException(HttpStatus.BAD_GATEWAY, "KCP 결제 취소 실패: [8000] 한도초과"));
+        when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(1);
+
+        assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("NHN KCP 결제 취소 실패");
+    }
+
+    @Test
+    void KCP_잔액_불일치_같은_게이트웨이_예외는_그대로_올라가_취소가_멈춘다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(kcpPay("100000000000", 3000));
+        when(gatewayRegistry.forExistingPayment("KCP")).thenReturn(kcp);
+        when(kcp.cancel(any())).thenThrow(new IllegalStateException("KCP 거래 잔액(500원)이 시스템 기록(3000원)과 달라 자동 취소하지 않았습니다."));
+        when(orderProdMapper.countOrderStateDiffer(any())).thenReturn(1);
+
+        assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("자동 취소하지 않았습니다");
+    }
+
+    @Test
+    void 환불금액이_남은_결제금액보다_크면_DB도_PG도_건드리지_않는다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(kcpPay("100000000000", 3000));
+        when(gatewayRegistry.forExistingPayment("KCP")).thenReturn(kcp);
+        when(orderProdMapper.sumRefundedAmount(ORDER_NO)).thenReturn(1000L);   // 남은 2,000 < 환불 3,000
+
+        assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("남은 결제금액");
+        verify(orderProdMapper, never()).updateOrderState(any());
+        verify(kcp, never()).cancel(any());
+    }
+
+    @Test
+    void 구현체를_모르는_PG_는_자동_취소하지_않는다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        OrderPay pay = kcpPay("100000000000", 3000);
+        pay.setPgCode("NOPE");
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(pay);
+        when(gatewayRegistry.forExistingPayment("NOPE")).thenReturn(null);
+
+        assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("NOPE");
+        verify(orderProdMapper, never()).updateOrderState(any());
+    }
+
+    @Test
+    void KCP_가상계좌는_자동취소하지_않고_안내_문구에_결제취소_호출_생략을_쓴다() throws Exception {
+        givenLine(line("주문취소", 3000, 3000, 1));
+        when(orderPayMapper.selectPgByOrderNo(ORDER_NO)).thenReturn(kcpPay("001000000000", 3000));
+
+        assertThatThrownBy(() -> service.confirmOne(ORDER_NO, PROD_NO, false, "admin", "관리자"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("가상계좌").hasMessageContaining("결제취소 호출 생략");
+        verify(orderProdMapper, never()).updateOrderState(any());
     }
 }

@@ -44,6 +44,18 @@ payment:
   enabled-pgs: ${PAYMENT_ENABLED_PGS:TOSS}
   default-pg: ${PAYMENT_DEFAULT_PG:}
 
+# NHN KCP. 켜려면 PAYMENT_ENABLED_PGS=KCP (토스와 함께면 KCP,TOSS). 인증서·개인키는 저장소 밖 파일의 경로만 받고,
+# 개인키 비밀번호는 환경변수로만 준다(run-server.bat 등 gitignore 대상). 켜진 상태에서 값이 틀리면 앱이 기동하지 않는다.
+#  - test: 사이트코드 T0000 + KCP 공용 샘플 인증서(developer.kcp.co.kr), 승인/취소는 stg-spl, 실결제 없음
+#  - prod: 발급받은 사이트코드(KCP_SITE_CD) + 발급 인증서/개인키, 승인/취소는 spl
+kcp:
+  mode: ${KCP_MODE:test}
+  site-cd: ${KCP_SITE_CD:T0000}
+  site-name: ${KCP_SITE_NAME:SHOPION}
+  cert-path: ${KCP_CERT_PATH:}
+  private-key-path: ${KCP_PRIVATE_KEY_PATH:}
+  private-key-password: ${KCP_PRIVATE_KEY_PASSWORD:}
+
 toss:
   client-key: ${TOSS_CLIENT_KEY:test_ck_6bJXmgo28e2KNmxGge1j3LAnGKWx}
   secret-key: ${TOSS_SECRET_KEY:test_sk_DnyRpQWGrNzDwJAdkJ1OrKwv1M9E}

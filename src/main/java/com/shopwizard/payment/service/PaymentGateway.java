@@ -32,4 +32,8 @@ public interface PaymentGateway {
 
     /** 결제 취소(전체/부분). 실패하면 예외. */
     CancelResult cancel(CancelRequest request) throws Exception;
+
+    /** 켜진 PG 의 설정(키·인증서·사이트코드)을 기동 시 점검한다. 잘못됐으면 예외로 앱이 뜨지 않게 한다. */
+    default void verifyReady() {
+    }
 }

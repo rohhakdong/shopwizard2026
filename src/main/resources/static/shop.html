@@ -633,6 +633,14 @@ createApp({
     });
     const pgOfMethod = (v) => (payMethods.value.find(m => m.value === v) || {}).pg || payConfig.value.defaultPg;
     const pgClient   = (code) => ((payConfig.value.pgs.find(p => p.code === code) || {}).client) || {};
+    const loadScript = (src) => new Promise((resolve, reject) => {
+      if ([...document.scripts].some(sc => sc.src === src)) { resolve(); return; }
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = () => resolve();
+      el.onerror = () => reject(new Error('결제창 스크립트를 불러오지 못했습니다'));
+      document.head.appendChild(el);
+    });
     const loadPayConfig = async () => {
       try {
         payConfig.value = await api('GET', '/payment/config') || { defaultPg: '', pgs: [] };
@@ -640,6 +648,12 @@ createApp({
         if (methods.length && !methods.some(m => m.value === orderForm.value.payMethod)) orderForm.value.payMethod = methods[0].value;
       } catch (e) {
         toast('결제 설정을 불러오지 못했습니다', 'error');
+        return;
+      }
+      // KCP 결제창 스크립트는 KCP 가 켜져 있을 때만 불러온다(주소는 서버 설정: 테스트/운영이 다르다).
+      const kcp = pgClient('KCP');
+      if (kcp.scriptUrl) {
+        try { await loadScript(kcp.scriptUrl); } catch (e) { toast(e.message, 'error'); }
       }
     };
     const orderItemAmt = computed(() => orderItems.value.reduce((s, i) => s + (i.salePrice || 0) * (i.prodQty || 1), 0));
@@ -997,6 +1011,11 @@ createApp({
 
       try {
         const pg = pgOfMethod(f.payMethod);
+        if (pg === 'KCP') {
+          // 결제창은 이 페이지 위에 뜨고 리다이렉트가 없다 — 인증이 끝나면 m_Completepayment 콜백이 불린다.
+          await openKcpWindow({ orderId, orderName, totalAmt, f, kcp: pgClient('KCP') });
+          return;
+        }
         if (pg !== 'TOSS') {
           localStorage.removeItem('pendingOrder');
           toast('지원하지 않는 결제수단입니다', 'error');
@@ -1029,8 +1048,72 @@ createApp({
       }
     };
 
-    /* ── 결제 성공 콜백 (redirect 후 onMounted에서 호출) ── */
+    /* ── KCP 결제창 (PC) ──
+       KCP 스크립트가 document.order_info 폼을 읽어 결제창을 띄우고, 인증이 끝나면 전역 m_Completepayment(form, close) 를 부른다.
+       GetField 가 폼의 hidden 필드(res_cd/res_msg/enc_data/enc_info/tran_cd)를 채운다. 금액은 여기서 보낸 good_mny 가 아니라
+       서버가 다시 계산한 값으로 승인되므로(KCP 가 인증된 금액과 대조) 화면에서 바꿔도 소용없다. */
+    const openKcpWindow = async ({ orderId, orderName, totalAmt, f, kcp }) => {
+      if (typeof KCP_Pay_Execute_Web !== 'function') throw new Error('결제창을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요');
+      const payMethodCode = (kcp.payMethodCodes || {})[f.payMethod];
+      if (!payMethodCode) throw new Error('지원하지 않는 결제수단입니다');
+
+      const old = document.getElementById('kcpOrderInfo');
+      if (old) old.remove();
+      const form = document.createElement('form');
+      form.name = 'order_info';
+      form.id = 'kcpOrderInfo';
+      form.style.display = 'none';
+      const fields = {
+        site_cd: kcp.siteCd, site_name: kcp.siteName, currency: kcp.currency || '410',
+        pay_method: payMethodCode, ordr_idxx: orderId, good_name: String(orderName).slice(0, 100), good_mny: String(totalAmt),
+        buyr_name: f.orderName || '', buyr_tel2: f.orderMobileNo || '', buyr_mail: f.orderEmail || '', quotaopt: '12',
+        res_cd: '', res_msg: '', enc_info: '', enc_data: '', tran_cd: '',
+      };
+      for (const [k, v] of Object.entries(fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = k; input.value = v;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+
+      window.m_Completepayment = async (frm, closeEvent) => {
+        // 결제창 인증 결과를 폼에서 꺼낸 뒤 창을 먼저 닫고, 승인(서버 호출)은 그 다음에 한다.
+        let resCd, resMsg, payload;
+        try {
+          GetField(form, frm);
+          resCd = form.res_cd.value;
+          resMsg = form.res_msg.value;
+          payload = { resCd, encData: form.enc_data.value, encInfo: form.enc_info.value, tranCd: form.tran_cd.value };
+        } finally {
+          try { closeEvent(); } catch (_) {}
+          form.remove();
+        }
+        if (resCd !== '0000') {
+          localStorage.removeItem('pendingOrder');
+          if (resCd !== '3001') toast('[' + resCd + '] ' + resMsg, 'error');   // 3001 = 사용자가 결제창을 닫음
+          return;
+        }
+        await finishCheckout({ pgCode: 'KCP', orderId, amount: totalAmt, payload });
+      };
+
+      try {
+        KCP_Pay_Execute_Web(form);
+      } catch (e) {
+        // 결제창이 정상 종료될 때도 스크립트가 예외를 던질 수 있다(KCP 가이드) — 열기 자체가 막힌 경우만 알린다.
+        if (!document.querySelector('iframe[src*="kcp.co.kr"], div[id*="kcp"], div[class*="kcp"]')) {
+          localStorage.removeItem('pendingOrder');
+          toast('결제창을 열지 못했습니다', 'error');
+        }
+      }
+    };
+
+    /* ── 결제 성공 콜백 (토스: redirect 후 onMounted에서 호출) ── */
     const handlePaymentSuccess = async (paymentKey, orderId, amount) => {
+      await finishCheckout({ pgCode: 'TOSS', paymentKey, orderId, amount });
+    };
+
+    /* ── PG 승인 + 주문 저장 (PG 공통) — extra 는 PG 별 인증 결과(토스 paymentKey / KCP payload) ── */
+    const finishCheckout = async ({ pgCode, orderId, amount, paymentKey, payload }) => {
       try {
         toast('결제 승인 중...', 'info');
 
@@ -1038,11 +1121,12 @@ createApp({
         const pending = JSON.parse(localStorage.getItem('pendingOrder') || 'null');
         if (!pending) throw new Error('주문 데이터가 없습니다');
 
-        /* 토스 결제 승인 + 주문/상품/결제 저장을 한 번에 처리 */
+        /* PG 결제 승인 + 주문/상품/결제 저장을 한 번에 처리 */
         const result = await api('POST', '/order/checkout', {
           ...pending.orderBody,
-          pgCode: 'TOSS',
-          paymentKey,
+          pgCode,
+          ...(paymentKey ? { paymentKey } : {}),
+          ...(payload ? { payload } : {}),
           orderId,
           amount,
         });

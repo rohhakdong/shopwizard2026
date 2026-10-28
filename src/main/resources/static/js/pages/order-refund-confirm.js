@@ -5,9 +5,9 @@
  *   그 주문의 모든 라인이 환불완료에 도달하면 tOrdOrder 헤더도 승격된다. 별도 스테이징 테이블 없이
  *   주문 상태만 바로 전환하며, 서버가 건별로 REQUIRES_NEW 트랜잭션으로 처리해 한 건 실패가 나머지
  *   건에 영향을 주지 않는다.
- *   스토어프론트에서 토스로 결제한 주문(pgCode='TOSS')은 라인 결제금액만큼 토스 부분취소가 함께
+ *   스토어프론트에서 PG(토스/KCP)로 결제한 주문(pgCode 있음)은 라인 결제금액만큼 그 PG 의 부분취소가 함께
  *   호출되고(실패하면 그 건은 환불완료로 바뀌지 않는다), 샵링커 등 마켓 주문은 상태만 바뀐다.
- *   "토스 호출 생략"을 체크하면 토스 호출 없이 상태만 바꾼다(가상계좌, 이미 별도로 환불한 건).
+ *   "결제취소 호출 생략"을 체크하면 PG 호출 없이 상태만 바꾼다(가상계좌, 이미 별도로 환불한 건).
  *
  * 목록은 주문관리와 같은 /order/orderprod/list 를 pOrderState 로 "구분"(주문취소/반품완료)을
  * 골라 재사용한다.
@@ -27,7 +27,9 @@ const PageOrderRefundConfirm = (() => {
   function num(n) { return Number(n) || 0; }
   function realSalePrice(o) { return num(o.salePrice) + num(o.nvPrice); }
   function key(o) { return `${o.orderNo}:${o.orderProdNo}`; }
-  function isToss(o) { return o.pgCode === 'TOSS'; }
+  const PG_NAME = { TOSS: '토스', KCP: 'KCP' };
+  function isPg(o) { return !!o.pgCode; }
+  function pgName(o) { return PG_NAME[o.pgCode] || o.pgCode || ''; }
   function svcCode() { return (typeof info !== 'undefined' && info?.svcCode) || 'SHP001'; }
 
   // ── 진입점 ─────────────────────────────────────────────────────────
@@ -125,7 +127,7 @@ const PageOrderRefundConfirm = (() => {
         <td style="font-size:11px;color:var(--text-muted)">${esc(o.itemName)}</td>
         <td style="text-align:right;font-size:11px">${o.prodQty}</td>
         <td style="text-align:right;font-size:11px">${won(realSalePrice(o))}</td>
-        <td style="font-size:11px">${isToss(o) ? '<span class="badge badge-blue">토스 ' + esc(o.payTypeName || '') + '</span>' : esc(o.payTypeName) || '-'}</td>
+        <td style="font-size:11px">${isPg(o) ? '<span class="badge badge-blue">' + esc(pgName(o)) + ' ' + esc(o.payTypeName || '') + '</span>' : esc(o.payTypeName) || '-'}</td>
         <td style="font-size:11px;max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.returnReason)}">${esc(o.returnReason) || '-'}</td>
         <td style="font-size:11px">${esc(o.chnlName)}</td>
         <td style="font-size:11px">${esc(o.shopName)}</td>
@@ -194,21 +196,22 @@ const PageOrderRefundConfirm = (() => {
   function confirmSelected() {
     const lines = [...selected.values()];
     if (lines.length === 0) return;
-    const tossCount = lines.filter(isToss).length;
+    const pgCount = lines.filter(isPg).length;
+    const pgNames = [...new Set(lines.filter(isPg).map(pgName))].join('/');
 
     const body = document.createElement('div');
     body.innerHTML = `
       <div style="font-size:13px;margin-bottom:12px">선택한 <strong>${lines.length}건</strong>을 환불확정 처리하시겠습니까?</div>
-      ${tossCount > 0 ? `
+      ${pgCount > 0 ? `
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
-        이 중 <strong>토스 결제 ${tossCount}건</strong>은 라인 결제금액만큼 토스 결제 취소(부분취소)가 호출됩니다.
+        이 중 <strong>${esc(pgNames)} 결제 ${pgCount}건</strong>은 라인 결제금액만큼 PG 결제 취소(부분취소)가 호출됩니다.
         취소가 실패한 건은 환불완료로 바뀌지 않습니다.
       </div>
       <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;cursor:pointer">
         <input type="checkbox" id="rcSkipPg" style="margin-top:2px">
-        <span>토스 결제 취소 호출 생략 — 가상계좌이거나 토스 대시보드에서 이미 환불한 건(상태만 환불완료로 변경)</span>
+        <span>결제취소 호출 생략 — 가상계좌이거나 PG 관리자 화면에서 이미 환불한 건(상태만 환불완료로 변경)</span>
       </label>` : `
-      <div style="font-size:12px;color:var(--text-muted)">토스 결제 건이 없어 상태만 환불완료로 변경됩니다(마켓 주문은 마켓에서 환불).</div>`}`;
+      <div style="font-size:12px;color:var(--text-muted)">PG 결제 건이 없어 상태만 환불완료로 변경됩니다(마켓 주문은 마켓에서 환불).</div>`}`;
 
     UI.modal({
       title: '환불확정',
