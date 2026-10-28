@@ -9,6 +9,8 @@ import com.shopwizard.order.model.OrderNoSeq;
 import com.shopwizard.order.model.OrderPay;
 import com.shopwizard.order.model.OrderPayLogToss;
 import com.shopwizard.order.model.OrderProd;
+import com.shopwizard.payment.model.PaymentResult;
+import com.shopwizard.payment.service.TossGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 고객 쇼핑몰(shop.html) 체크아웃 완료 처리.
@@ -53,12 +56,27 @@ public class CheckoutService {
     private final OrderPayLogTossMapper orderPayLogTossMapper;
     private final StockLedgerService stockLedgerService;
 
+    /** 같은 PG 의 같은 가맹점 주문번호로 이미 저장된 주문이 있으면 그 주문번호(재전송·새로고침 때 중복 주문 방지). */
+    @Transactional(readOnly = true)
+    public Optional<Integer> findExistingOrderNo(String pgCode, String pgOrderCode) {
+        if (pgCode == null || pgOrderCode == null || pgOrderCode.isBlank()) return Optional.empty();
+        return orderPayService.findOrderNoByPgOrder(pgCode, pgOrderCode);
+    }
+
+    /** 토스 승인 응답(Map)을 받는 기존 시그니처 — PG 공통 결과로 바꿔 위임한다. */
     public int checkout(CheckoutRequest req, Map<String, Object> tossResp) throws Exception {
+        PaymentResult converted = TossGateway.toResult(tossResp);
+        if (converted.getTradeNo() == null) converted.setTradeNo(req.getPaymentKey());
+        if (converted.getOrderCode() == null) converted.setOrderCode(req.getOrderId());
+        return checkout(req, converted);
+    }
+
+    public int checkout(CheckoutRequest req, PaymentResult result) throws Exception {
         String now = LocalDateTime.now().format(DATETIME_FMT);
 
-        // 토스가 실제로 승인한 금액만 신뢰한다 — 클라이언트가 보낸 totalAmt는 참고값일 뿐,
+        // PG 가 실제로 승인한 금액만 신뢰한다 — 클라이언트가 보낸 totalAmt는 참고값일 뿐,
         // 서버가 검증한 값과 다르면 결제/주문 저장을 거부한다.
-        Long confirmedAmount = numToLong(tossResp.get("totalAmount"));
+        Long confirmedAmount = result.getAmount();
         if (confirmedAmount == null || req.getTotalAmt() == null
                 || confirmedAmount != req.getTotalAmt().longValue()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액이 일치하지 않습니다.");
@@ -75,9 +93,9 @@ public class CheckoutService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 금액이 주문 금액보다 작습니다.");
         }
 
-        // 토스 결제 상태가 완료(DONE)일 때만 "지불완료"로 기록한다.
+        // PG 결제 상태가 완료(DONE)일 때만 "지불완료"로 기록한다.
         // 가상계좌는 입금 전까지 WAITING_FOR_DEPOSIT 상태이므로 아직 결제완료로 간주하면 안 된다.
-        boolean paid = "DONE".equals(str(tossResp.get("status")));
+        boolean paid = result.paid();
         String orderState = paid ? "지불완료" : "주문접수";
 
         // 비회원 주문(CustId=0)은 로그인 계정이 없어 registId/registName이 빈 값으로 올 수 있다.
@@ -159,10 +177,6 @@ public class CheckoutService {
         }
 
         // 4. 결제 정보 저장 (tOrdOrderPay)
-        Map<String, Object> card          = asMap(tossResp.get("card"));
-        Map<String, Object> transfer      = asMap(tossResp.get("transfer"));
-        Map<String, Object> virtualAccnt  = asMap(tossResp.get("virtualAccount"));
-
         OrderPay pay = new OrderPay();
         pay.setOrderNo(orderNo);
         // PayNo는 전역 auto_increment이지만, 관리자 조회 쿼리(payJoin)가 OPay.PayNo = 1을
@@ -171,22 +185,22 @@ public class CheckoutService {
         pay.setPayType(PAY_TYPE_CODE.getOrDefault(req.getPayMethod(), req.getPayMethod()));
         pay.setPayDate(now);
         pay.setPayAmt(confirmedAmount.intValue());
-        pay.setCardComp(card != null ? str(card.get("company")) : null);
-        pay.setApprovNo(card != null ? str(card.get("approveNo")) : null);
-        pay.setApprovDate(OrderPayLogToss.toMysqlDateTime(str(tossResp.get("approvedAt"))));
-        pay.setReciptBank(transfer != null ? str(transfer.get("bank"))
-                : virtualAccnt != null ? str(virtualAccnt.get("bankCode")) : null);
+        pay.setCardComp(result.getCardComp());
+        pay.setApprovNo(result.getApproveNo());
+        pay.setApprovDate(result.getApprovedAt());
+        pay.setReciptBank(result.getReciptBank());
         pay.setReciptName(req.getOrderName());
-        pay.setPgCode("TOSS");
-        pay.setPgOrderNo(req.getOrderId());
-        pay.setPgTradeNo(req.getPaymentKey());
+        pay.setPgCode(result.getPgCode());
+        pay.setPgOrderNo(result.getOrderCode());
+        pay.setPgTradeNo(result.getTradeNo());
         pay.setRegistId(registId);
         pay.setRegistName(registName);
         orderPayService.insert(pay);
 
-        // 5. 토스 결제 승인 원본 로그 저장 (tOrdOrderPayLogToss)
-        OrderPayLogToss log = OrderPayLogToss.from(orderNo, tossResp, registId, registName);
-        orderPayLogTossMapper.insert(log);
+        // 5. PG 결제 승인 원본 로그 저장 — 토스는 tOrdOrderPayLogToss (다른 PG 는 해당 PG 의 로그 테이블)
+        if (TossGateway.CODE.equals(result.getPgCode()) && result.getRaw() != null) {
+            orderPayLogTossMapper.insert(OrderPayLogToss.from(orderNo, result.getRaw(), registId, registName));
+        }
 
         return orderNo;
     }

@@ -38,7 +38,14 @@ server:
 upload:
   dir: ${UPLOAD_DIR:uploads}
 
+# 결제 PG 설정. enabled-pgs 는 새 결제에 쓸 PG(쉼표 구분, 순서 = 화면 표시 순서), default-pg 는 요청에 PG 가 없을 때의 기본값.
+# 토스를 계약하면 TOSS_SECRET_KEY / TOSS_CLIENT_KEY 를 주고 PAYMENT_ENABLED_PGS=KCP,TOSS 처럼 켜면 된다(코드 변경 없음).
+payment:
+  enabled-pgs: ${PAYMENT_ENABLED_PGS:TOSS}
+  default-pg: ${PAYMENT_DEFAULT_PG:}
+
 toss:
+  client-key: ${TOSS_CLIENT_KEY:test_ck_6bJXmgo28e2KNmxGge1j3LAnGKWx}
   secret-key: ${TOSS_SECRET_KEY:test_sk_DnyRpQWGrNzDwJAdkJ1OrKwv1M9E}
 
 shop:

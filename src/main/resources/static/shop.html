@@ -573,7 +573,8 @@ const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
 createApp({
   setup() {
-    const TOSS_CLIENT_KEY = 'test_ck_6bJXmgo28e2KNmxGge1j3LAnGKWx';
+    /* 결제 PG 설정 — 어떤 PG 를 쓰는지·결제수단·클라이언트 키는 서버가 정한다(/payment/config). 화면에 키를 박아 두지 않는다. */
+    const payConfig = ref({ defaultPg: '', pgs: [] });
 
     /* ── 상태 ── */
     const view         = ref('home');
@@ -618,11 +619,29 @@ createApp({
     const orderItems  = ref([]);
     const orderForm   = ref({ orderName:'', orderMobileNo:'', orderEmail:'', recverName:'', recverMobileNo:'', recverAddr:'', deliMemo:'', payMethod:'card' });
     const doneOrderNo = ref('');
-    const payMethods  = [
-      { value: 'card',  label: '신용카드' },
-      { value: 'trans', label: '계좌이체' },
-      { value: 'vbank', label: '가상계좌' },
-    ];
+    // 결제수단 목록 = 켜진 PG 들의 수단(설정 순서, 같은 수단은 먼저 나온 PG 가 처리). value 는 서버 CheckoutRequest.payMethod 로 돌아간다.
+    const payMethods  = computed(() => {
+      const seen = new Set(), out = [];
+      for (const pg of payConfig.value.pgs) {
+        for (const m of pg.methods || []) {
+          if (seen.has(m.value)) continue;
+          seen.add(m.value);
+          out.push({ value: m.value, label: m.label, pg: pg.code });
+        }
+      }
+      return out;
+    });
+    const pgOfMethod = (v) => (payMethods.value.find(m => m.value === v) || {}).pg || payConfig.value.defaultPg;
+    const pgClient   = (code) => ((payConfig.value.pgs.find(p => p.code === code) || {}).client) || {};
+    const loadPayConfig = async () => {
+      try {
+        payConfig.value = await api('GET', '/payment/config') || { defaultPg: '', pgs: [] };
+        const methods = payMethods.value;
+        if (methods.length && !methods.some(m => m.value === orderForm.value.payMethod)) orderForm.value.payMethod = methods[0].value;
+      } catch (e) {
+        toast('결제 설정을 불러오지 못했습니다', 'error');
+      }
+    };
     const orderItemAmt = computed(() => orderItems.value.reduce((s, i) => s + (i.salePrice || 0) * (i.prodQty || 1), 0));
     // 배송비는 서버 견적(/order/checkout/quote)이 정한다 — 상점별 선불 배송비 최대값의 합.
     const quoteDeliAmt = ref(0);
@@ -731,6 +750,7 @@ createApp({
     /* ── 초기화 ── */
     onMounted(async () => {
       await checkLogin();
+      await loadPayConfig();
 
       /* 토스페이먼츠 결제 redirect 후 처리 */
       const urlParams  = new URLSearchParams(window.location.search);
@@ -976,7 +996,15 @@ createApp({
       }));
 
       try {
-        const tossPayments = TossPayments(TOSS_CLIENT_KEY);
+        const pg = pgOfMethod(f.payMethod);
+        if (pg !== 'TOSS') {
+          localStorage.removeItem('pendingOrder');
+          toast('지원하지 않는 결제수단입니다', 'error');
+          return;
+        }
+        const tossClientKey = pgClient('TOSS').clientKey;
+        if (!tossClientKey) throw new Error('결제 설정이 올바르지 않습니다');
+        const tossPayments = TossPayments(tossClientKey);
         const customerKey  = custInfo.value ? 'CUST-' + custInfo.value.custId : TossPayments.ANONYMOUS;
         const payment      = tossPayments.payment({ customerKey });
 
@@ -1013,6 +1041,7 @@ createApp({
         /* 토스 결제 승인 + 주문/상품/결제 저장을 한 번에 처리 */
         const result = await api('POST', '/order/checkout', {
           ...pending.orderBody,
+          pgCode: 'TOSS',
           paymentKey,
           orderId,
           amount,

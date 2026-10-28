@@ -18,6 +18,9 @@ public class OrderPayService {
     public List<OrderPay> selectList(Map<String, Object> params) { return orderPayMapper.selectList(params); }
     public OrderPay select(Map<String, Object> params) { return orderPayMapper.select(params); }
     public void insert(OrderPay orderPay) { orderPayMapper.insert(orderPay); }
+    public java.util.Optional<Integer> findOrderNoByPgOrder(String pgCode, String pgOrderCode) {
+        return java.util.Optional.ofNullable(orderPayMapper.selectOrderNoByPgOrder(pgCode, pgOrderCode));
+    }
     public void update(OrderPay orderPay) { orderPayMapper.update(orderPay); }
     public void updateOrderPayRecipt(Map<String, Object> params) { orderPayMapper.updateOrderPayRecipt(params); }
     public void updateOrderPayReciptAuto(Map<String, Object> params) { orderPayMapper.updateOrderPayReciptAuto(params); }

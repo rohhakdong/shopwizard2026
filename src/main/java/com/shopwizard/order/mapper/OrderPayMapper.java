@@ -11,6 +11,9 @@ public interface OrderPayMapper {
     List<OrderPay> selectList(Map<String, Object> params);
     OrderPay select(Map<String, Object> params);
     OrderPay selectByPgTradeNo(String pgTradeNo);
+    /** 같은 PG 의 같은 가맹점 주문번호로 이미 저장된 결제의 주문번호(없으면 null) — 재전송·새로고침 때 중복 주문을 막는다. */
+    Integer selectOrderNoByPgOrder(@org.apache.ibatis.annotations.Param("pgCode") String pgCode,
+                                   @org.apache.ibatis.annotations.Param("pgOrderCode") String pgOrderCode);
     OrderPay selectTossByOrderNo(int orderNo);
     void insert(OrderPay orderPay);
     void update(OrderPay orderPay);

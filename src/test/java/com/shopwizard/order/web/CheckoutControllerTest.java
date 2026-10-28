@@ -8,7 +8,11 @@ import com.shopwizard.order.model.PricedLine;
 import com.shopwizard.order.model.PricedOrder;
 import com.shopwizard.order.service.CheckoutPricingService;
 import com.shopwizard.order.service.CheckoutService;
-import com.shopwizard.payment.service.TossPaymentService;
+import com.shopwizard.payment.model.ApproveRequest;
+import com.shopwizard.payment.model.CancelRequest;
+import com.shopwizard.payment.model.PaymentResult;
+import com.shopwizard.payment.service.PaymentGateway;
+import com.shopwizard.payment.service.PaymentGatewayRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,14 +39,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CheckoutControllerTest {
 
-    @Mock private TossPaymentService tossPaymentService;
+    @Mock private PaymentGatewayRegistry gatewayRegistry;
+    @Mock private PaymentGateway gateway;
     @Mock private CheckoutService checkoutService;
     @Mock private CheckoutPricingService pricingService;
     private CheckoutController controller;
 
     @BeforeEach
     void setUp() throws Exception {
-        controller = new CheckoutController(tossPaymentService, checkoutService, pricingService);
+        controller = new CheckoutController(gatewayRegistry, checkoutService, pricingService);
         // 서버 견적: 상품 P1(상점 S1) 1000원 × 1개 + 옵션 추가금 0, 배송비 0
         PricedLine line = new PricedLine();
         line.setProdCode("P1"); line.setProdName("서버상품명"); line.setShopCode("S1");
@@ -51,9 +56,14 @@ class CheckoutControllerTest {
         line.setUnitPrice(1000); line.setLineAmt(1000);
         PricedOrder priced = new PricedOrder();
         priced.setLines(List.of(line)); priced.setItemAmt(1000); priced.setDeliAmt(0); priced.setTotalAmt(1000);
-        when(pricingService.price(any())).thenReturn(priced);
-        lenient().when(tossPaymentService.confirm(anyString(), anyString(), anyLong())).thenReturn(Map.of());
-        lenient().when(checkoutService.checkout(any(), any())).thenReturn(1001);
+        lenient().when(pricingService.price(any())).thenReturn(priced);
+        PaymentResult paid = new PaymentResult();
+        paid.setPgCode("TOSS"); paid.setTradeNo("pk"); paid.setOrderCode("SW-1"); paid.setAmount(1000L); paid.setStatus("DONE");
+        lenient().when(gatewayRegistry.require(any())).thenReturn(gateway);
+        lenient().when(gateway.code()).thenReturn("TOSS");
+        lenient().when(gateway.approve(any(ApproveRequest.class))).thenReturn(paid);
+        lenient().when(checkoutService.findExistingOrderNo(any(), any())).thenReturn(java.util.Optional.empty());
+        lenient().when(checkoutService.checkout(any(), any(PaymentResult.class))).thenReturn(1001);
     }
 
     private static CheckoutRequest req(String registId, String registName) {
@@ -74,7 +84,7 @@ class CheckoutControllerTest {
 
     private CheckoutRequest captured() throws Exception {
         ArgumentCaptor<CheckoutRequest> c = ArgumentCaptor.forClass(CheckoutRequest.class);
-        verify(checkoutService).checkout(c.capture(), any());
+        verify(checkoutService).checkout(c.capture(), any(PaymentResult.class));
         return c.getValue();
     }
 
@@ -135,8 +145,8 @@ class CheckoutControllerTest {
         assertThatThrownBy(() -> controller.checkout(forged, http))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(400));
 
-        verify(tossPaymentService, never()).confirm(anyString(), anyString(), anyLong());
-        verify(checkoutService, never()).checkout(any(), any());
+        verify(gateway, never()).approve(any());
+        verify(checkoutService, never()).checkout(any(), any(PaymentResult.class));
     }
 
     @Test
@@ -146,7 +156,7 @@ class CheckoutControllerTest {
         MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
 
         assertThatThrownBy(() -> controller.checkout(r, http)).isInstanceOf(ResponseStatusException.class);
-        verify(tossPaymentService, never()).confirm(anyString(), anyString(), anyLong());
+        verify(gateway, never()).approve(any());
     }
 
     @Test
@@ -177,5 +187,62 @@ class CheckoutControllerTest {
 
         assertThat(out.getTotalAmt()).isEqualTo(1000);
         verify(pricingService).price(q.getOrderProds());
+    }
+
+    @Test
+    void 서버_금액으로_승인하고_PG_와_결제수단을_승인_요청에_실어_보낸다() throws Exception {
+        CheckoutRequest r = req("x", "x");
+        r.setPayMethod("card");
+        r.setPayload(Map.of("encData", "E"));
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+
+        controller.checkout(r, http);
+
+        ArgumentCaptor<ApproveRequest> cap = ArgumentCaptor.forClass(ApproveRequest.class);
+        verify(gateway).approve(cap.capture());
+        assertThat(cap.getValue().getAmount()).isEqualTo(1000L);          // 서버가 계산한 합계
+        assertThat(cap.getValue().getOrderCode()).isEqualTo("SW-1");
+        assertThat(cap.getValue().getPayMethod()).isEqualTo("card");
+        assertThat(cap.getValue().payload("encData")).isEqualTo("E");
+        assertThat(cap.getValue().payload("paymentKey")).isEqualTo("pk"); // 기존 paymentKey 필드는 payload 로 옮겨 전달(하위 호환)
+    }
+
+    @Test
+    void 금액을_안_보내는_PG_결제도_서버_계산_금액으로_진행한다() throws Exception {
+        CheckoutRequest r = req("x", "x");
+        r.setAmount(null);
+        r.setTotalAmt(null);
+        r.setPaymentKey(null);
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+
+        controller.checkout(r, http);
+
+        verify(gateway).approve(any(ApproveRequest.class));
+        assertThat(captured().getTotalAmt()).isEqualTo(1000);
+    }
+
+    @Test
+    void 같은_PG_주문번호로_이미_저장된_주문이_있으면_승인_없이_그_주문을_돌려준다() throws Exception {
+        lenient().when(checkoutService.findExistingOrderNo("TOSS", "SW-1")).thenReturn(java.util.Optional.of(777));
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+
+        Map<String, Object> out = controller.checkout(req("x", "x"), http);
+
+        assertThat(out.get("orderNo")).isEqualTo(777);
+        verify(gateway, never()).approve(any());
+        verify(checkoutService, never()).checkout(any(), any(PaymentResult.class));
+    }
+
+    @Test
+    void 승인_뒤_주문_저장이_실패하면_PG_취소를_호출하고_원래_예외를_올린다() throws Exception {
+        lenient().when(checkoutService.checkout(any(), any(PaymentResult.class))).thenThrow(new IllegalStateException("저장 실패"));
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+
+        assertThatThrownBy(() -> controller.checkout(req("x", "x"), http)).isInstanceOf(IllegalStateException.class);
+
+        ArgumentCaptor<CancelRequest> cap = ArgumentCaptor.forClass(CancelRequest.class);
+        verify(gateway).cancel(cap.capture());
+        assertThat(cap.getValue().getTradeNo()).isEqualTo("pk");
+        assertThat(cap.getValue().partial()).isFalse();   // 전체취소
     }
 }

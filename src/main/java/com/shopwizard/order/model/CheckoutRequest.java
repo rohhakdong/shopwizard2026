@@ -11,7 +11,11 @@ import java.util.List;
  */
 @Data
 public class CheckoutRequest {
-    // 토스 결제 승인용
+    // 결제 PG (비어 있으면 payment.default-pg) 와 PG 별 인증 결과(토스: paymentKey / KCP: encData, encInfo, tranCd …)
+    private String pgCode;
+    private java.util.Map<String, String> payload;
+
+    // 토스 결제 승인용 (하위 호환 — payload.paymentKey 와 같은 값)
     private String paymentKey;
     private String orderId;     // 토스 orderId (예: SW-...)
     private Long amount;

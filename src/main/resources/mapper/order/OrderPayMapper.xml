@@ -37,6 +37,13 @@
         LIMIT 1
     </select>
 
+    <select id="selectOrderNoByPgOrder" resultType="java.lang.Integer">
+        SELECT OrderNo FROM shopion.tOrdOrderPay
+        WHERE PgCode = #{pgCode} AND PgOrderCode = #{pgOrderCode}
+        ORDER BY PayNo DESC
+        LIMIT 1
+    </select>
+
     <!-- 환불확정에서 주문번호만으로 토스 결제건을 찾는다. 같은 OrderNo 에 여러 건이면 최신(PayNo 최대) 한 건. -->
     <select id="selectTossByOrderNo" parameterType="int" resultType="com.shopwizard.order.model.OrderPay">
         SELECT * FROM shopion.tOrdOrderPay
