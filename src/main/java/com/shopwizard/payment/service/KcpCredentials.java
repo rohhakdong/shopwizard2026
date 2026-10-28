@@ -28,7 +28,7 @@ public class KcpCredentials {
     private volatile String certInfo;
     private volatile PrivateKey privateKey;
 
-    /** kcp_cert_info — PEM 파일 전체(BEGIN/END 줄 포함). 줄바꿈은 LF 로 통일한다. */
+    /** kcp_cert_info — PEM 파일 전체(BEGIN/END 표지 포함)를 개행 없이 한 줄로 이은 값. */
     public String certInfo() {
         String c = certInfo;
         if (c == null) {
@@ -72,11 +72,12 @@ public class KcpCredentials {
     static String readCert(String path) {
         if (path == null || path.isBlank()) throw new IllegalStateException("kcp.cert-path 가 설정되지 않았습니다.");
         try {
-            String text = Files.readString(Path.of(path.trim()), StandardCharsets.UTF_8).replace("\r\n", "\n").replace("\r", "\n");
+            String text = Files.readString(Path.of(path.trim()), StandardCharsets.UTF_8);
             if (!text.contains("-----BEGIN CERTIFICATE-----")) {
                 throw new IllegalStateException("kcp.cert-path 파일이 PEM 인증서 형식이 아닙니다.");
             }
-            return text.trim() + "\n";
+            // KCP 는 한 줄로 직렬화한 값만 받는다(개행이 있으면 S032). BEGIN/END 표지는 유지하고 줄바꿈·공백만 없앤다.
+            return text.replaceAll("[\\r\\n]", "").trim();
         } catch (java.io.IOException e) {
             throw new IllegalStateException("KCP 인증서 파일을 읽을 수 없습니다: " + path, e);
         }

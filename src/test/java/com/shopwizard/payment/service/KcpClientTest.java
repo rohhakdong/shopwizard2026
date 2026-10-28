@@ -112,7 +112,7 @@ class KcpClientTest {
 
     @Test
     void 인증서는_PEM_전체를_LF_줄바꿈으로_돌려준다() {
-        assertThat(credentials.certInfo()).isEqualTo("-----BEGIN CERTIFICATE-----\nQUJD\nREVG\n-----END CERTIFICATE-----\n");
+        assertThat(credentials.certInfo()).isEqualTo("-----BEGIN CERTIFICATE-----QUJDREVG-----END CERTIFICATE-----");
     }
 
     @Test
