@@ -109,6 +109,9 @@ public class OrderProd {
     private String pgCode;
     private String cardComp;
     private String reciptBank;
+    /** 가상계좌 번호 / 입금 마감 — 입금 대기 주문을 고객이 다시 볼 때 쓴다(내 주문·비회원 조회). */
+    private String reciptAccnt;
+    private String payExpectDate;
     private String payCompName;
     private String approvNo;
     private String reciptName;

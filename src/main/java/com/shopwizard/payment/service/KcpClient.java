@@ -49,7 +49,30 @@ public class KcpClient {
         return post("/gw/enc/v1/payment", body, "approve");
     }
 
-    /** 거래취소. {@code modType} STSC(전체)/STPC(부분 — modMny·remMny 필수). */
+    /**
+     * 가상계좌 발급(서버 API — 결제창 없음). 서명은 필요 없고 인증서만 보낸다. 성공 코드는 {@code V000}.
+     * {@code vaDate} 는 입금 마감(yyyyMMddHHmmss), {@code vaName} 은 입금자명(14자 이내).
+     */
+    public Map<String, Object> issueVirtualAccount(String ordrIdxx, long amount, String goodName, String buyerName,
+                                                   String bankCode, String vaName, String vaDate) throws KcpException {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("site_cd", props.getSiteCd());
+        body.put("kcp_cert_info", credentials.certInfo());
+        body.put("pay_method", "VCNT");
+        body.put("amount", String.valueOf(amount));
+        body.put("currency", "410");
+        body.put("ordr_idxx", ordrIdxx);
+        body.put("good_name", goodName);
+        body.put("buyr_name", buyerName);
+        body.put("va_txtype", "41100000");
+        body.put("va_mny", String.valueOf(amount));
+        body.put("va_bankcode", bankCode);
+        body.put("va_name", vaName);
+        body.put("va_date", vaDate);
+        return post("/gw/hub/v1/payment", body, "vbank-issue");
+    }
+
+    /** 거래취소. {@code modType} STSC(전체)/STPC(부분 — modMny·remMny 필수). 가상계좌 사용중지도 STSC. */
     public Map<String, Object> cancel(String tno, String modType, Long modMny, Long remMny, String reason) throws KcpException {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("site_cd", props.getSiteCd());

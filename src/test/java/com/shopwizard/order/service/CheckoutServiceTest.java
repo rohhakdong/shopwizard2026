@@ -148,6 +148,62 @@ class CheckoutServiceTest {
     }
 
     @Test
+    void KCP_가상계좌는_계좌와_입금예정정보를_결제건에_저장하고_주문접수로_둔다() throws Exception {
+        CheckoutRequest req = baseRequest("vbank", 26900);
+        com.shopwizard.payment.model.PaymentResult r = new com.shopwizard.payment.model.PaymentResult();
+        r.setPgCode("KCP"); r.setTradeNo("26931077341432"); r.setOrderCode("SW-TEST-ORDER"); r.setAmount(26900L);
+        r.setStatus(com.shopwizard.payment.model.PaymentResult.STATUS_WAITING_DEPOSIT); r.setMethod("VBANK");
+        r.setReciptBank("신한은행"); r.setAccount("T0123456789"); r.setDueAt("2026-11-01 10:00:00"); r.setExpectName("테스트주문자");
+
+        checkoutService.checkout(req, r);
+
+        ArgumentCaptor<Order> order = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(order.capture());
+        assertThat(order.getValue().getOrderState()).isEqualTo("주문접수");
+        assertThat(order.getValue().getPayCmpletDate()).isNull();
+
+        ArgumentCaptor<OrderPay> pay = ArgumentCaptor.forClass(OrderPay.class);
+        verify(orderPayService).insert(pay.capture());
+        OrderPay saved = pay.getValue();
+        assertThat(saved.getPayType()).isEqualTo("001000000000");
+        assertThat(saved.getReciptBank()).isEqualTo("신한은행");
+        assertThat(saved.getReciptNo()).isEqualTo("T0123456789");          // ReciptAccnt(저장은 reciptNo 로 넘기는 관례)
+        assertThat(saved.getPayExpectAmt()).isEqualByComparingTo("26900");
+        assertThat(saved.getPayExpectDate()).isEqualTo("2026-11-01 10:00:00");
+        assertThat(saved.getPayExpectName()).isEqualTo("테스트주문자");
+        assertThat(saved.getPgCode()).isEqualTo("KCP");
+        assertThat(saved.getPgTradeNo()).isEqualTo("26931077341432");
+    }
+
+    @Test
+    void 카드_결제건에는_가상계좌_정보를_넣지_않는다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900);
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<OrderPay> pay = ArgumentCaptor.forClass(OrderPay.class);
+        verify(orderPayService).insert(pay.capture());
+        assertThat(pay.getValue().getReciptNo()).isNull();
+        assertThat(pay.getValue().getPayExpectDate()).isNull();
+    }
+
+    @Test
+    void 이미_저장된_가상계좌_주문의_입금_안내를_다시_돌려준다() {
+        OrderPay p = new OrderPay();
+        p.setOrderNo(7); p.setReciptBank("국민은행"); p.setReciptAccnt("T999"); p.setPayAmt(5000);
+        p.setPayExpectDate("2026-11-02 00:00:00"); p.setPayExpectName("홍길동");
+        org.mockito.Mockito.when(orderPayService.select(any())).thenReturn(p);
+
+        Map<String, Object> info = checkoutService.findVbankInfo(7);
+
+        assertThat(info).containsEntry("bank", "국민은행").containsEntry("account", "T999").containsEntry("amount", 5000L)
+                .containsEntry("dueAt", "2026-11-02 00:00:00").containsEntry("expectName", "홍길동");
+        // 카드 결제건은 계좌가 없어 안내가 없다.
+        p.setReciptAccnt(null);
+        assertThat(checkoutService.findVbankInfo(7)).isNull();
+    }
+
+    @Test
     void PayNo는_항상_1로_채번한다() throws Exception {
         CheckoutRequest req = baseRequest("card", 26900);
         checkoutService.checkout(req, tossResp("DONE", 26900L));

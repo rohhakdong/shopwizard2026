@@ -41,7 +41,7 @@ public class TossWebhookService {
     private final OrderService orderService;
     private final OrderProdService orderProdService;
     private final OrderLineLock lineLock;   // 헤더 → 라인 순서의 행 잠금(취소/환불확정과 같은 규칙)
-    private final StockLedgerService stockLedgerService;   // 취소된 라인의 재고 복원(차감 이력이 있는 라인만, 1회)
+    private final OrderPaymentSyncService paymentSync;   // 배송 전 라인 취소 + 재고 복원 + 헤더 승격(KCP 웹훅·만료 잡과 공용)
 
     public void handlePaymentStatusChanged(String paymentKey) throws Exception {
         if (paymentKey == null || paymentKey.isBlank()) return;
@@ -95,29 +95,7 @@ public class TossWebhookService {
     private void handleCanceled(int orderNo, Order order, Map<String, Object> payment) {
         if (TERMINAL_CANCEL_STATES.contains(order.getOrderState())) return;
 
-        for (Integer orderProdNo : orderProdService.selectOrderProdNoList(orderNo)) {
-            Map<String, Object> params = new HashMap<>();
-            params.put("orderNo", orderNo);
-            params.put("orderProdNo", orderProdNo);
-            params.put("changeId", SYSTEM_ID);
-            params.put("changeName", SYSTEM_NAME);
-            // 실제로 주문취소로 바뀐 라인(배송 전)만 재고를 되돌린다 — 이미 반품/환불 단계인 라인은 그쪽 흐름에서 복원된다.
-            if (orderProdService.cancelByWebhook(params) > 0) {
-                stockLedgerService.restore(orderNo, orderProdNo, SYSTEM_ID);
-            }
-        }
-
-        Map<String, Object> diff = new HashMap<>();
-        diff.put("orderNo", orderNo);
-        diff.put("orderState", "주문취소");
-        if (orderProdService.countOrderStateDiffer(diff) == 0) {
-            Order cancelOrder = new Order();
-            cancelOrder.setOrderNo(orderNo);
-            cancelOrder.setOrderState("주문취소");
-            cancelOrder.setChangeId(SYSTEM_ID);
-            cancelOrder.setChangeName(SYSTEM_NAME);
-            orderService.updateOrderCancel(cancelOrder);
-        }
+        paymentSync.cancelBeforeShipment(orderNo, SYSTEM_ID, SYSTEM_NAME);
 
         orderPayLogTossMapper.insert(logFor(orderNo, payment));
     }

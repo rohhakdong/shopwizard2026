@@ -32,6 +32,14 @@ public class PaymentResult {
     private String approvedAt;
     /** 계좌이체 은행 / 가상계좌 은행 */
     private String reciptBank;
+    /** 가상계좌 번호(입금 대기 상태일 때) */
+    private String account;
+    /** 가상계좌 입금 마감 — yyyy-MM-dd HH:mm:ss */
+    private String dueAt;
+    /** 가상계좌 예금주 */
+    private String accountHolder;
+    /** 가상계좌 입금자명(고객이 입금할 때 쓰는 이름) */
+    private String expectName;
     /** PG 응답 원본 — PG 별 결제 로그 테이블에 저장한다 */
     private Map<String, Object> raw;
 

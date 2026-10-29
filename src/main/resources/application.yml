@@ -58,6 +58,15 @@ kcp:
   # 모바일 결제 복귀(Ret_URL) 기준 주소. KCP 는 https 를 요구한다. 비우면 요청이 들어온 주소를 쓰므로
   # 리버스 프록시 뒤 운영 환경에서는 https 도메인(예: https://shop.example.com)을 지정하는 것을 권장한다.
   public-base-url: ${KCP_PUBLIC_BASE_URL:}
+  # 가상계좌 입금 통보(웹훅). 검증키는 파트너관리자 > 기술관리센터 > 웹훅관리에서 받아 환경변수로만 준다(운영에서는 필수).
+  # 허용 IP 를 비우면 mode 별 KCP 공개 IP(테스트 1개 / 운영 3개)를 쓴다. 터널·프록시 뒤에서만 trust-forwarded 를 켠다(헤더 위조 방지).
+  webhook-key: ${KCP_WEBHOOK_KEY:}
+  webhook-allowed-ips: ${KCP_WEBHOOK_ALLOWED_IPS:}
+  webhook-trust-forwarded: ${KCP_WEBHOOK_TRUST_FORWARDED:false}
+  # 가상계좌 입금 마감(분, 기본 72시간)과 마감 후 만료 처리까지의 여유(분). 만료 잡은 10분마다 돈다.
+  va-expire-minutes: ${KCP_VA_EXPIRE_MINUTES:4320}
+  va-expire-grace-minutes: ${KCP_VA_EXPIRE_GRACE_MINUTES:60}
+  va-expire-job-enabled: ${KCP_VA_EXPIRE_JOB_ENABLED:true}
 
 toss:
   client-key: ${TOSS_CLIENT_KEY:test_ck_6bJXmgo28e2KNmxGge1j3LAnGKWx}

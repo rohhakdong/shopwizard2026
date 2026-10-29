@@ -245,4 +245,70 @@ class CheckoutControllerTest {
         assertThat(cap.getValue().getTradeNo()).isEqualTo("pk");
         assertThat(cap.getValue().partial()).isFalse();   // 전체취소
     }
+
+    private static PaymentResult waitingVbank() {
+        PaymentResult w = new PaymentResult();
+        w.setPgCode("KCP"); w.setTradeNo("T-77"); w.setOrderCode("SW-1"); w.setAmount(1000L);
+        w.setStatus(PaymentResult.STATUS_WAITING_DEPOSIT); w.setMethod("VBANK");
+        w.setReciptBank("신한은행"); w.setAccount("T0123456789"); w.setDueAt("2026-11-01 10:00:00");
+        w.setExpectName("홍고객"); w.setAccountHolder("샵피온");
+        return w;
+    }
+
+    @Test
+    void 가상계좌는_입금_안내를_응답에_싣고_주문자명과_상품명을_PG_에_넘긴다() throws Exception {
+        lenient().when(gateway.approve(any(ApproveRequest.class))).thenReturn(waitingVbank());
+        CheckoutRequest r = req("x", "x");
+        r.setPayMethod("vbank");
+        r.setOrderName("홍고객");
+        r.setPayload(Map.of("bankCode", "BK26"));
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+
+        Map<String, Object> out = controller.checkout(r, http);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> vbank = (Map<String, Object>) out.get("vbank");
+        assertThat(vbank).containsEntry("bank", "신한은행").containsEntry("account", "T0123456789")
+                .containsEntry("amount", 1000L).containsEntry("dueAt", "2026-11-01 10:00:00")
+                .containsEntry("expectName", "홍고객").containsEntry("accountHolder", "샵피온");
+        ArgumentCaptor<ApproveRequest> cap = ArgumentCaptor.forClass(ApproveRequest.class);
+        verify(gateway).approve(cap.capture());
+        assertThat(cap.getValue().getBuyerName()).isEqualTo("홍고객");
+        assertThat(cap.getValue().getGoodName()).isEqualTo("서버상품명");   // 서버 견적의 상품명(클라이언트 값 아님)
+        assertThat(cap.getValue().payload("bankCode")).isEqualTo("BK26");
+    }
+
+    @Test
+    void 카드_결제_응답에는_가상계좌_안내가_없다() throws Exception {
+        Map<String, Object> out = controller.checkout(req("x", "x"), new MockHttpServletRequest("POST", "/order/checkout"));
+        assertThat(out).doesNotContainKey("vbank");
+    }
+
+    @Test
+    void 가상계좌_발급_뒤_주문_저장이_실패하면_발급된_계좌를_사용중지하도록_가상계좌_결제유형으로_취소한다() throws Exception {
+        lenient().when(gateway.approve(any(ApproveRequest.class))).thenReturn(waitingVbank());
+        lenient().when(checkoutService.checkout(any(), any(PaymentResult.class))).thenThrow(new IllegalStateException("저장 실패"));
+        CheckoutRequest r = req("x", "x");
+        r.setPayMethod("vbank");
+
+        assertThatThrownBy(() -> controller.checkout(r, new MockHttpServletRequest("POST", "/order/checkout")))
+                .isInstanceOf(IllegalStateException.class);
+
+        ArgumentCaptor<CancelRequest> cap = ArgumentCaptor.forClass(CancelRequest.class);
+        verify(gateway).cancel(cap.capture());
+        assertThat(cap.getValue().getTradeNo()).isEqualTo("T-77");
+        assertThat(cap.getValue().getPayType()).isEqualTo("001000000000");
+    }
+
+    @Test
+    void 이미_저장된_가상계좌_주문을_다시_요청하면_입금_안내도_함께_돌려준다() throws Exception {
+        lenient().when(checkoutService.findExistingOrderNo(any(), any())).thenReturn(java.util.Optional.of(778));
+        lenient().when(checkoutService.findVbankInfo(778)).thenReturn(Map.of("bank", "국민은행", "account", "T1"));
+
+        Map<String, Object> out = controller.checkout(req("x", "x"), new MockHttpServletRequest("POST", "/order/checkout"));
+
+        assertThat(out.get("orderNo")).isEqualTo(778);
+        assertThat(out).containsKey("vbank");
+        verify(gateway, never()).approve(any());
+    }
 }

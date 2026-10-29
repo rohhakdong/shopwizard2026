@@ -1,6 +1,7 @@
 package com.shopwizard.batch;
 
 import com.shopwizard.adjust.service.AdjustDetailService;
+import com.shopwizard.order.service.KcpVirtualAccountExpiryService;
 import com.shopwizard.order.service.OrderBackupService;
 import com.shopwizard.profile.service.CustPointDetailService;
 import com.shopwizard.profile.service.CustService;
@@ -32,6 +33,17 @@ public class BatchScheduler {
     private final AdjustDetailService adjustDetailService;
     private final DailyStockStateService dailyStockStateService;
     private final OrderBackupService orderBackupService;
+    private final KcpVirtualAccountExpiryService kcpVirtualAccountExpiryService;
+
+    /** 10분마다 — 입금 기한이 지난 KCP 가상계좌 주문 정리(계좌 사용중지 + 주문취소 + 재고 복원). KCP 가 꺼져 있으면 아무 일도 하지 않는다. */
+    @Scheduled(fixedDelayString = "${kcp.va-expire-job-interval-ms:600000}", initialDelayString = "${kcp.va-expire-job-initial-delay-ms:120000}")
+    public void expireKcpVirtualAccounts() {
+        try {
+            kcpVirtualAccountExpiryService.run();
+        } catch (Exception e) {
+            log.error("expireKcpVirtualAccounts schedule error: {}", e.getMessage(), e);
+        }
+    }
 
     /** 매일 02:10 — 고객 포인트 상세 스케줄 적립 */
     @Scheduled(cron = "0 10 2 * * ?")

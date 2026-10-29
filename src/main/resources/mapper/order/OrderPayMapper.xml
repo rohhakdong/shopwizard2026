@@ -53,15 +53,46 @@
         LIMIT 1
     </select>
 
+    <!-- 웹훅(KCP)의 tno 로 결제건을 찾는다. PG 를 고정한 selectByPgTradeNo(토스)와 달리 PG 코드를 받는다. -->
+    <select id="selectByPgTradeNoAny" resultType="com.shopwizard.order.model.OrderPay">
+        SELECT * FROM shopion.tOrdOrderPay
+        WHERE PgCode = #{pgCode} AND PgTradeNo = #{pgTradeNo}
+        ORDER BY PayNo DESC
+        LIMIT 1
+    </select>
+
+    <!-- 가상계좌 입금 확인. 이미 입금 처리된 건(ReciptDate 있음)은 다시 갱신하지 않는다. -->
+    <update id="markDeposited" parameterType="map">
+        UPDATE shopion.tOrdOrderPay SET
+            PayDate = NOW(), ReciptAmt = #{amount}, ReciptDate = NOW(),
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND PayNo = #{payNo} AND ReciptDate IS NULL
+    </update>
+
+    <!-- 미입금 만료 대상: 마감 + 여유 시간이 지났는데 주문이 아직 주문접수인 KCP 가상계좌. 한 번에 최대 100건. -->
+    <select id="selectExpiredKcpVbank" resultType="com.shopwizard.order.model.OrderPay">
+        SELECT P.*
+        FROM shopion.tOrdOrderPay P
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = P.OrderNo
+        WHERE P.PgCode = 'KCP' AND P.PayType = '001000000000'
+          AND O.OrderState = '주문접수'
+          AND P.PayExpectDate IS NOT NULL
+          AND P.PayExpectDate &lt; DATE_SUB(NOW(), INTERVAL #{graceMinutes} MINUTE)
+        ORDER BY P.PayExpectDate
+        LIMIT 100
+    </select>
+
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderPay">
         INSERT INTO shopion.tOrdOrderPay (
             OrderNo, PayNo, PayType, PayDate, PayAmt, PayFee,
             CardComp, ApprovNo, ApprovDate, ReciptBank, ReciptName, ReciptAccnt, ReciptDate,
+            PayExpectAmt, PayExpectDate, PayExpectName,
             PgCode, PgOrderCode, PgTradeNo,
             State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
             #{orderNo}, #{payNo}, #{payType}, #{payDate}, #{payAmt}, #{payFee},
             #{cardComp}, #{approvNo}, #{approvDate}, #{reciptBank}, #{reciptName}, #{reciptNo}, #{reciptDate},
+            #{payExpectAmt}, #{payExpectDate}, #{payExpectName},
             #{pgCode}, #{pgOrderNo}, #{pgTradeNo},
             1, #{remark}, #{registId}, #{registName}, NOW()
         )

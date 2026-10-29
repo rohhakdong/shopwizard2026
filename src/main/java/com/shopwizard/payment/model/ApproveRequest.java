@@ -16,7 +16,11 @@ public class ApproveRequest {
     private long amount;
     /** 고객이 선택한 결제수단(card | trans | vbank | easy …) */
     private String payMethod;
-    /** PG 별 인증 결과 — 토스: paymentKey / KCP: encData, encInfo, tranCd … */
+    /** 주문자명 — 가상계좌 입금자명 등에 쓴다. */
+    private String buyerName;
+    /** 상품명(PG 에 표시) */
+    private String goodName;
+    /** PG 별 인증 결과 — 토스: paymentKey / KCP: encData, encInfo, tranCd … (KCP 가상계좌는 bankCode) */
     private Map<String, String> payload = Map.of();
 
     public String payload(String key) {

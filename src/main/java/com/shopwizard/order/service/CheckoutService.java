@@ -63,6 +63,30 @@ public class CheckoutService {
         return orderPayService.findOrderNoByPgOrder(pgCode, pgOrderCode);
     }
 
+    /**
+     * 이미 저장된 주문의 가상계좌 입금 안내(은행·계좌·금액·마감·입금자명). 가상계좌가 아니거나 계좌 정보가 없으면 null.
+     * 재전송으로 기존 주문을 돌려줄 때 안내를 다시 보여 주려고 쓴다.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> findVbankInfo(int orderNo) {
+        OrderPay p = orderPayService.select(Map.of("orderNo", orderNo));
+        if (p == null || p.getReciptAccnt() == null || p.getReciptAccnt().isBlank()) return null;
+        return vbankInfo(p.getReciptBank(), p.getReciptAccnt(), p.getPayAmt() == null ? null : p.getPayAmt().longValue(),
+                p.getPayExpectDate(), p.getPayExpectName(), null);
+    }
+
+    /** 응답에 싣는 가상계좌 입금 안내. 값이 없는 항목은 빈 문자열이 아니라 생략한다. */
+    public static Map<String, Object> vbankInfo(String bank, String account, Long amount, String dueAt, String expectName, String holder) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("bank", bank);
+        m.put("account", account);
+        m.put("amount", amount);
+        if (dueAt != null) m.put("dueAt", dueAt);
+        if (expectName != null) m.put("expectName", expectName);
+        if (holder != null) m.put("accountHolder", holder);
+        return m;
+    }
+
     /** 토스 승인 응답(Map)을 받는 기존 시그니처 — PG 공통 결과로 바꿔 위임한다. */
     public int checkout(CheckoutRequest req, Map<String, Object> tossResp) throws Exception {
         PaymentResult converted = TossGateway.toResult(tossResp);
@@ -190,6 +214,13 @@ public class CheckoutService {
         pay.setApprovDate(result.getApprovedAt());
         pay.setReciptBank(result.getReciptBank());
         pay.setReciptName(req.getOrderName());
+        if (result.getAccount() != null) {
+            // 가상계좌 — 계좌와 입금 예정 정보(금액·마감·입금자명)를 기록한다. ReciptAccnt 는 모델의 reciptNo 로 넘기는 기존 관례.
+            pay.setReciptNo(result.getAccount());
+            pay.setPayExpectAmt(java.math.BigDecimal.valueOf(confirmedAmount));
+            pay.setPayExpectDate(result.getDueAt());
+            pay.setPayExpectName(result.getExpectName());
+        }
         pay.setPgCode(result.getPgCode());
         pay.setPgOrderNo(result.getOrderCode());
         pay.setPgTradeNo(result.getTradeNo());

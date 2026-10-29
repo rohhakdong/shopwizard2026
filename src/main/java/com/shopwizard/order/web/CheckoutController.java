@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,12 @@ public class CheckoutController {
         // 같은 PG·같은 가맹점 주문번호로 이미 주문이 저장돼 있으면(재전송·새로고침) 새로 만들지 않고 그 주문을 돌려준다.
         Optional<Integer> existing = checkoutService.findExistingOrderNo(gateway.code(), req.getOrderId());
         if (existing.isPresent()) {
-            return Map.of("success", true, "orderNo", existing.get());
+            Map<String, Object> again = new LinkedHashMap<>();
+            again.put("success", true);
+            again.put("orderNo", existing.get());
+            Map<String, Object> vbank = checkoutService.findVbankInfo(existing.get());
+            if (vbank != null) again.put("vbank", vbank);   // 새로고침으로 다시 왔을 때도 입금 안내를 보여 준다
+            return again;
         }
 
         // 금액은 클라이언트가 아니라 서버가 상품 테이블로 계산한다. 결제 승인(돈이 움직이는 단계) **전에** 비교해서,
@@ -102,6 +108,8 @@ public class CheckoutController {
         approve.setOrderCode(req.getOrderId());
         approve.setAmount(priced.getTotalAmt());
         approve.setPayMethod(req.getPayMethod());
+        approve.setBuyerName(req.getOrderName());
+        approve.setGoodName(goodNameOf(req.getOrderProds()));
         Map<String, String> payload = new HashMap<>();
         if (req.getPayload() != null) payload.putAll(req.getPayload());
         if (req.getPaymentKey() != null) payload.putIfAbsent("paymentKey", req.getPaymentKey());   // 하위 호환
@@ -112,13 +120,23 @@ public class CheckoutController {
         //    "결제는 됐는데 주문은 없는" 상태가 남지 않도록 한다 (best-effort 보상 처리).
         try {
             int orderNo = checkoutService.checkout(req, paid);
-            return Map.of("success", true, "orderNo", orderNo);
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("success", true);
+            out.put("orderNo", orderNo);
+            if (paid.getAccount() != null) {
+                // 가상계좌 — 입금 전이라 결제 완료가 아니다. 화면이 입금 안내를 보여 줄 수 있게 계좌 정보를 내려준다.
+                out.put("vbank", CheckoutService.vbankInfo(paid.getReciptBank(), paid.getAccount(), paid.getAmount(),
+                        paid.getDueAt(), paid.getExpectName(), paid.getAccountHolder()));
+            }
+            return out;
         } catch (Exception e) {
             try {
                 CancelRequest cancel = new CancelRequest();
                 cancel.setTradeNo(paid.getTradeNo());
                 cancel.setReason("주문 저장 실패로 인한 자동 취소");
-                cancel.setPayType("TRANS".equals(paid.getMethod()) ? "010000000000" : "100000000000");   // KCP 가 조회·취소에 쓴다
+                // KCP 가 조회·취소(가상계좌는 사용중지)에 쓴다
+                cancel.setPayType("TRANS".equals(paid.getMethod()) ? "010000000000"
+                        : "VBANK".equals(paid.getMethod()) ? "001000000000" : "100000000000");
                 gateway.cancel(cancel);
             } catch (Exception cancelEx) {
                 // 취소 자체가 실패해도 원래 예외를 그대로 전달 — 로그로 남겨 수동 대사(reconciliation) 대상이 되게 한다.
@@ -126,6 +144,14 @@ public class CheckoutController {
             }
             throw e;
         }
+    }
+
+    /** PG 에 표시할 상품명 — 첫 상품명 + "외 N건". */
+    private static String goodNameOf(List<CheckoutProdItem> lines) {
+        if (lines == null || lines.isEmpty()) return "주문";
+        String first = lines.get(0).getProdName();
+        if (first == null || first.isBlank()) first = "주문";
+        return lines.size() > 1 ? first + " 외 " + (lines.size() - 1) + "건" : first;
     }
 
     private static List<CheckoutProdItem> toServerLines(PricedOrder priced) {

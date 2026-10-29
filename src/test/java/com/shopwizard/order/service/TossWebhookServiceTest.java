@@ -5,10 +5,10 @@ import com.shopwizard.order.mapper.OrderPayMapper;
 import com.shopwizard.order.model.Order;
 import com.shopwizard.order.model.OrderPay;
 import com.shopwizard.payment.service.TossPaymentService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,7 +41,15 @@ class TossWebhookServiceTest {
     @Mock private OrderProdService orderProdService;
     @Mock private StockLedgerService stockLedgerService;
 
-    @InjectMocks private TossWebhookService tossWebhookService;
+    private TossWebhookService tossWebhookService;
+
+    @BeforeEach
+    void setUp() {
+        // 취소 로직은 공용 서비스(OrderPaymentSyncService)로 옮겼다 — 같은 가짜 협력자를 물린 실제 객체로 기존 검증을 그대로 유지한다.
+        OrderPaymentSyncService paymentSync = new OrderPaymentSyncService(orderService, orderProdService, stockLedgerService);
+        tossWebhookService = new TossWebhookService(tossPaymentService, orderPayMapper, orderPayLogTossMapper,
+                orderService, orderProdService, lineLock, paymentSync);
+    }
 
     private OrderPay orderPay() {
         OrderPay pay = new OrderPay();

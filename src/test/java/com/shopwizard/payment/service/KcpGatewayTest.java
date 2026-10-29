@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -201,6 +202,243 @@ class KcpGatewayTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(502));
     }
 
+    // ── 가상계좌 ────────────────────────────────────────────────
+
+    private static ApproveRequest vbankReq(long amount, String bankCode) {
+        ApproveRequest r = new ApproveRequest();
+        r.setOrderCode("SW-1");
+        r.setAmount(amount);
+        r.setPayMethod("vbank");
+        r.setBuyerName("홍길동");
+        r.setGoodName("상품 외 1건");
+        r.setPayload(bankCode == null ? Map.of() : Map.of("bankCode", bankCode));
+        return r;
+    }
+
+    private static Map<String, Object> issued(long amount) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("res_cd", "V000"); m.put("res_msg", "정상처리"); m.put("tno", "T-900"); m.put("amount", amount);
+        m.put("account", "T0123456789"); m.put("bankname", "신한은행"); m.put("bankcode", "BK26"); m.put("depositor", "샵피온");
+        m.put("app_time", "20261029100000"); m.put("va_date", "20261101100000");
+        return m;
+    }
+
+    @Test
+    void 가상계좌를_발급하면_입금대기_결과로_계좌와_마감을_담는다() throws Exception {
+        when(client.issueVirtualAccount(eq("SW-1"), eq(26900L), eq("상품 외 1건"), eq("홍길동"), eq("BK26"), eq("홍길동"), anyString()))
+                .thenReturn(issued(26900));
+
+        PaymentResult r = gw.approve(vbankReq(26900, "BK26"));
+
+        assertThat(r.getPgCode()).isEqualTo("KCP");
+        assertThat(r.getStatus()).isEqualTo(PaymentResult.STATUS_WAITING_DEPOSIT);
+        assertThat(r.paid()).isFalse();                       // 발급은 결제 완료가 아니다
+        assertThat(r.getMethod()).isEqualTo("VBANK");
+        assertThat(r.getTradeNo()).isEqualTo("T-900");
+        assertThat(r.getAmount()).isEqualTo(26900L);
+        assertThat(r.getAccount()).isEqualTo("T0123456789");
+        assertThat(r.getReciptBank()).isEqualTo("신한은행");
+        assertThat(r.getAccountHolder()).isEqualTo("샵피온");
+        assertThat(r.getDueAt()).isEqualTo("2026-11-01 10:00:00");
+        assertThat(r.getExpectName()).isEqualTo("홍길동");
+    }
+
+    @Test
+    void 입금_마감은_설정한_분_뒤로_14자리_형식으로_보낸다() throws Exception {
+        props.setVaExpireMinutes(60);
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(issued(1000));
+
+        gw.approve(vbankReq(1000, "BK04"));
+
+        org.mockito.ArgumentCaptor<String> vaDate = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(client).issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), vaDate.capture());
+        assertThat(vaDate.getValue()).matches("\\d{14}");
+        java.time.LocalDateTime due = java.time.LocalDateTime.parse(vaDate.getValue(), java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        long minutes = java.time.Duration.between(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul")), due).toMinutes();
+        assertThat(minutes).isBetween(58L, 60L);
+    }
+
+    @Test
+    void 입금자명은_14자로_자른다() throws Exception {
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(issued(1000));
+        ApproveRequest r = vbankReq(1000, "BK26");
+        r.setBuyerName("가나다라마바사아자차카타파하거너더러머버서");   // 21자
+
+        PaymentResult res = gw.approve(r);
+
+        assertThat(res.getExpectName()).hasSize(14);
+    }
+
+    @Test
+    void 은행코드가_없거나_목록에_없으면_KCP_를_호출하지_않는다() throws Exception {
+        assertThatThrownBy(() -> gw.approve(vbankReq(1000, null))).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> gw.approve(vbankReq(1000, "BK99"))).isInstanceOf(ResponseStatusException.class);
+        verify(client, never()).issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void 가상계좌_발급이_거절되면_400() throws Exception {
+        Map<String, Object> rejected = new HashMap<>();
+        rejected.put("res_cd", "S032"); rejected.put("res_msg", "접근권한이 없습니다.");
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(rejected);
+
+        assertThatThrownBy(() -> gw.approve(vbankReq(1000, "BK26")))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(400));
+    }
+
+    @Test
+    void 발급_결과의_금액이_다르거나_계좌가_없으면_만들어진_계좌를_닫고_거절한다() throws Exception {
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(issued(999));   // 요청은 1000
+
+        assertThatThrownBy(() -> gw.approve(vbankReq(1000, "BK26"))).isInstanceOf(ResponseStatusException.class);
+
+        verify(client).cancel("T-900", "STSC", null, null, "발급 결과 불일치로 자동 사용중지");
+    }
+
+    @Test
+    void 발급_응답을_못_받았어도_조회로_계좌가_만들어졌으면_이어간다() throws Exception {
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new KcpException("타임아웃", true, null));
+        Map<String, Object> found = issued(1000);
+        found.put("res_cd", "0000");   // 거래조회 응답은 0000
+        when(client.inquiryByOrder(anyString(), eq("SW-1"), eq("PAVC"))).thenReturn(found);
+
+        PaymentResult r = gw.approve(vbankReq(1000, "BK26"));
+
+        assertThat(r.getAccount()).isEqualTo("T0123456789");
+        assertThat(r.getTradeNo()).isEqualTo("T-900");
+    }
+
+    @Test
+    void 발급_응답도_없고_조회에도_없으면_504() throws Exception {
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new KcpException("타임아웃", true, null));
+        Map<String, Object> none = new HashMap<>();
+        none.put("res_cd", "SSI0");
+        when(client.inquiryByOrder(anyString(), eq("SW-1"), eq("PAVC"))).thenReturn(none);
+
+        assertThatThrownBy(() -> gw.approve(vbankReq(1000, "BK26")))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(504));
+    }
+
+    @Test
+    void 발급_연결_자체가_실패하면_502() throws Exception {
+        when(client.issueVirtualAccount(anyString(), org.mockito.ArgumentMatchers.anyLong(), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new KcpException("연결 실패", false, null));
+
+        assertThatThrownBy(() -> gw.approve(vbankReq(1000, "BK26")))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(502));
+    }
+
+    @Test
+    void 입금_현황은_거래조회의_ipkum_money_를_본다() throws Exception {
+        Map<String, Object> inq = new HashMap<>();
+        inq.put("res_cd", "0000"); inq.put("ipkum_money", "26900"); inq.put("account", "T0123456789"); inq.put("va_date", "20261101100000");
+        when(client.inquiryByTno("T-900", "PAVC")).thenReturn(inq);
+
+        KcpGateway.DepositStatus d = gw.queryDeposit("T-900");
+
+        assertThat(d.paidAmount()).isEqualTo(26900L);
+        assertThat(d.account()).isEqualTo("T0123456789");
+
+        inq.put("ipkum_money", "0");
+        assertThat(gw.queryDeposit("T-900").paidAmount()).isZero();
+    }
+
+    @Test
+    void 입금_현황_조회가_실패하면_502() throws Exception {
+        Map<String, Object> inq = new HashMap<>();
+        inq.put("res_cd", "S032");
+        when(client.inquiryByTno("T-900", "PAVC")).thenReturn(inq);
+
+        assertThatThrownBy(() -> gw.queryDeposit("T-900")).isInstanceOf(ResponseStatusException.class);
+    }
+
+    private static CancelRequest vbankCancel() {
+        CancelRequest c = new CancelRequest();
+        c.setTradeNo("T-900");
+        c.setPayType("001000000000");
+        c.setAmount(26900L);
+        c.setReason("미입금 기한 만료");
+        return c;
+    }
+
+    @Test
+    void 가상계좌_취소는_사용중지를_호출한다() throws Exception {
+        Map<String, Object> inq = new HashMap<>();
+        inq.put("res_cd", "0000"); inq.put("ipkum_money", "0");
+        when(client.inquiryByTno("T-900", "PAVC")).thenReturn(inq);
+        Map<String, Object> ok = new HashMap<>();
+        ok.put("res_cd", "0000");
+        when(client.cancel("T-900", "STSC", null, null, "미입금 기한 만료")).thenReturn(ok);
+
+        CancelResult r = gw.cancel(vbankCancel());
+
+        assertThat(r.getTradeNo()).isEqualTo("T-900");
+        verify(client).cancel("T-900", "STSC", null, null, "미입금 기한 만료");
+        // 카드용 rem_mny 프로토콜(카드 거래조회)은 타지 않는다.
+        verify(client, never()).inquiryByTno("T-900", "PACA");
+    }
+
+    @Test
+    void 이미_입금된_가상계좌는_사용중지하지_않고_오류로_올린다() throws Exception {
+        Map<String, Object> inq = new HashMap<>();
+        inq.put("res_cd", "0000"); inq.put("ipkum_money", "26900");
+        when(client.inquiryByTno("T-900", "PAVC")).thenReturn(inq);
+
+        assertThatThrownBy(() -> gw.cancel(vbankCancel()))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("이미 입금");
+
+        verify(client, never()).cancel(anyString(), anyString(), any(), any(), any());
+    }
+
+    @Test
+    void 사용중지가_거절되면_502() throws Exception {
+        Map<String, Object> inq = new HashMap<>();
+        inq.put("res_cd", "0000"); inq.put("ipkum_money", "0");
+        when(client.inquiryByTno("T-900", "PAVC")).thenReturn(inq);
+        Map<String, Object> bad = new HashMap<>();
+        bad.put("res_cd", "S999"); bad.put("res_msg", "실패");
+        when(client.cancel(anyString(), anyString(), any(), any(), any())).thenReturn(bad);
+
+        assertThatThrownBy(() -> gw.cancel(vbankCancel())).isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void 결제수단_목록과_설정에_가상계좌와_은행_목록이_있다() {
+        assertThat(gw.methods()).extracting(m -> m.value()).contains("card", "trans", "vbank");
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> banks = (List<Map<String, String>>) gw.clientConfig().get("vbankBanks");
+        assertThat(banks).hasSize(13);
+        assertThat(banks).extracting(b -> b.get("code")).contains("BK03", "BK04", "BK26", "BK81", "BK71");
+        assertThat(banks).extracting(b -> b.get("name")).contains("신한은행", "농협");
+    }
+
+    @Test
+    void 운영_모드에서는_웹훅_검증키가_없으면_기동을_막는다() {
+        props.setMode("prod");
+        props.setSiteCd("A1B2C");
+        props.setWebhookKey("");
+
+        assertThatThrownBy(() -> gw.verifyReady()).isInstanceOf(IllegalStateException.class).hasMessageContaining("kcp.webhook-key");
+
+        props.setWebhookKey("verify-key");
+        gw.verifyReady();   // 키가 있으면 통과(인증서 점검은 가짜)
+    }
+
+    @Test
+    void 테스트_모드에서는_웹훅_검증키가_없어도_기동한다() {
+        props.setMode("test");
+        props.setSiteCd("T0000");
+        props.setWebhookKey("");
+
+        gw.verifyReady();
+    }
+
     // ── 취소 ──────────────────────────────────────────────────
 
     private static Map<String, Object> inquiry(long rem) {
@@ -320,6 +558,7 @@ class KcpGatewayTest {
         assertThatThrownBy(() -> gw.verifyReady()).isInstanceOf(IllegalStateException.class).hasMessageContaining("T0000");
 
         props.setSiteCd("C9448");
+        props.setWebhookKey("verify-key");   // 운영 모드는 웹훅 검증키도 필수
         gw.verifyReady();   // 인증서 점검은 가짜 credentials 라 통과
         verify(credentials).verifyReady();
     }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -48,6 +49,19 @@ public class KcpGateway implements PaymentGateway {
     private static final Map<String, String> PAY_TYPE = Map.of("card", "PACA", "trans", "PABK");
     /** PC 결제창 pay_method(12자리 비트코드) */
     private static final Map<String, String> PC_PAY_METHOD = Map.of("card", "100000000000", "trans", "010000000000");
+
+    /** 가상계좌 발급 은행 — KCP 문서의 va_bankcode. 화면의 은행 선택 순서를 그대로 쓴다. */
+    static final Map<String, String> VBANK_BANKS = vbankBanks();
+
+    private static Map<String, String> vbankBanks() {
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put("BK04", "국민은행"); m.put("BK26", "신한은행"); m.put("BK20", "우리은행"); m.put("BK81", "KEB하나은행"); m.put("BK11", "농협");
+        m.put("BK03", "기업은행"); m.put("BK23", "SC제일은행"); m.put("BK31", "iM뱅크"); m.put("BK32", "부산은행");
+        m.put("BK34", "광주은행"); m.put("BK39", "경남은행"); m.put("BK07", "수협"); m.put("BK71", "우체국");
+        return java.util.Collections.unmodifiableMap(m);
+    }
+
+    private static final DateTimeFormatter VA_DATE = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     /** 모바일 결제창 pay_method(4자) */
     private static final Map<String, String> MOBILE_PAY_METHOD = Map.of("card", "CARD", "trans", "BANK");
@@ -107,7 +121,8 @@ public class KcpGateway implements PaymentGateway {
     @Override
     public List<PayMethodOption> methods() {
         // 간편결제(토스페이·카카오페이 등)는 카드 결제창 안에 계약된 제휴사가 함께 보인다.
-        return List.of(new PayMethodOption("card", "신용카드·간편결제"), new PayMethodOption("trans", "계좌이체"));
+        return List.of(new PayMethodOption("card", "신용카드·간편결제"), new PayMethodOption("trans", "계좌이체"),
+                new PayMethodOption("vbank", "가상계좌"));
     }
 
     @Override
@@ -120,6 +135,9 @@ public class KcpGateway implements PaymentGateway {
         m.put("currency", "410");
         m.put("payMethodCodes", PC_PAY_METHOD);
         m.put("mobilePayMethodCodes", MOBILE_PAY_METHOD);
+        List<Map<String, String>> banks = new java.util.ArrayList<>();
+        VBANK_BANKS.forEach((code, name) -> banks.add(Map.of("code", code, "name", name)));
+        m.put("vbankBanks", banks);
         return m;
     }
 
@@ -136,11 +154,22 @@ public class KcpGateway implements PaymentGateway {
         if (props.prod() && KcpProperties.TEST_SITE_CD.equals(site)) {
             throw new IllegalStateException("운영 모드(kcp.mode=prod)에서는 테스트 사이트코드(T0000)를 쓸 수 없습니다.");
         }
+        // 가상계좌 입금 통보(웹훅)의 위변조를 막는 검증키. 운영에서는 필수, 테스트에서는 없으면 해시 검사를 건너뛴다(IP·조회 재확인은 유지).
+        if (isBlank(props.getWebhookKey())) {
+            if (props.prod()) {
+                throw new IllegalStateException("운영 모드(kcp.mode=prod)에서는 kcp.webhook-key(KCP_WEBHOOK_KEY)가 필요합니다. "
+                        + "파트너관리자 > 기술관리센터 > 웹훅관리의 운영 검증키를 환경변수로 주입하세요.");
+            }
+            log.warn("kcp.webhook-key 가 없어 가상계좌 웹훅의 hash_data 검증을 건너뜁니다(테스트 모드).");
+        }
         credentials.verifyReady();
     }
 
     @Override
     public PaymentResult approve(ApproveRequest req) throws Exception {
+        if ("vbank".equals(req.getPayMethod())) {
+            return issueVirtualAccount(req);   // 가상계좌는 결제창 인증 없이 서버가 계좌를 발급한다
+        }
         String payType = PAY_TYPE.get(req.getPayMethod());
         if (payType == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지원하지 않는 결제수단입니다.");
@@ -196,10 +225,128 @@ public class KcpGateway implements PaymentGateway {
                 "결제 결과를 확인하지 못했습니다. 결제가 되었는지 확인 후 다시 시도해 주세요. (주문번호: " + req.getOrderCode() + ")");
     }
 
+    /**
+     * 가상계좌 발급. 금액은 서버가 계산한 값, 입금 마감은 {@code kcp.va-expire-minutes} 후다. 발급은 결제 완료가 아니므로
+     * 결과 상태는 입금 대기이며(주문은 "주문접수"), 입금은 웹훅으로 확인한다.
+     */
+    private PaymentResult issueVirtualAccount(ApproveRequest req) {
+        String bankCode = req.payload("bankCode");
+        if (bankCode == null || !VBANK_BANKS.containsKey(bankCode)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "입금 은행을 선택해 주세요.");
+        }
+        if (isBlank(req.getOrderCode()) || !ORDER_CODE.matcher(req.getOrderCode()).matches() || req.getAmount() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "결제 정보가 올바르지 않습니다.");
+        }
+        String buyer = isBlank(req.getBuyerName()) ? "고객" : req.getBuyerName().trim();
+        String vaName = buyer.length() > 14 ? buyer.substring(0, 14) : buyer;   // 입금자명은 14자 이내
+        String goodName = isBlank(req.getGoodName()) ? "주문" : (req.getGoodName().length() > 100 ? req.getGoodName().substring(0, 100) : req.getGoodName());
+        String vaDate = LocalDateTime.now(KST).plusMinutes(props.getVaExpireMinutes()).format(VA_DATE);
+
+        Map<String, Object> resp;
+        try {
+            resp = client.issueVirtualAccount(req.getOrderCode(), req.getAmount(), goodName,
+                    buyer.length() > 40 ? buyer.substring(0, 40) : buyer, bankCode, vaName, vaDate);
+        } catch (KcpException e) {
+            if (!e.isUncertain()) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "결제 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+            }
+            resp = recoverVirtualAccount(req);   // 응답을 못 받았다 — 발급됐는지 조회로 확인한다
+        }
+
+        if (!"V000".equals(str(resp.get("res_cd"))) && !(resp.containsKey("account") && "0000".equals(str(resp.get("res_cd"))))) {
+            log.warn("KCP 가상계좌 발급 거절 order={} res_cd={}", req.getOrderCode(), str(resp.get("res_cd")));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "가상계좌 발급에 실패했습니다: " + str(resp.get("res_msg")));
+        }
+        Long issued = toLong(resp.get("amount"));
+        String account = str(resp.get("account"));
+        if (isBlank(account) || isBlank(str(resp.get("tno"))) || (issued != null && issued != req.getAmount())) {
+            // 계좌가 없거나 금액이 다르면 쓸 수 없는 발급 — 만들어진 계좌를 닫고 거절한다.
+            cancelQuietly(str(resp.get("tno")), "PAVC", "발급 결과 불일치로 자동 사용중지");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "가상계좌 발급 결과가 올바르지 않습니다.");
+        }
+
+        PaymentResult r = new PaymentResult();
+        r.setPgCode(CODE);
+        r.setTradeNo(str(resp.get("tno")));
+        r.setOrderCode(req.getOrderCode());
+        r.setAmount(req.getAmount());
+        r.setStatus(PaymentResult.STATUS_WAITING_DEPOSIT);
+        r.setMethod("VBANK");
+        r.setReciptBank(isBlank(str(resp.get("bankname"))) ? VBANK_BANKS.get(bankCode) : str(resp.get("bankname")));
+        r.setApprovedAt(appTime(str(resp.get("app_time"))));
+        r.setAccount(account);
+        r.setDueAt(appTime(isBlank(str(resp.get("va_date"))) ? vaDate : str(resp.get("va_date"))));
+        r.setAccountHolder(str(resp.get("depositor")));
+        r.setExpectName(vaName);
+        r.setRaw(resp);
+        return r;
+    }
+
+    /** 발급 응답이 없었다 — 주문번호로 거래를 조회해 계좌가 만들어졌으면 그 결과로 이어가고, 아니면 실패시킨다. */
+    private Map<String, Object> recoverVirtualAccount(ApproveRequest req) {
+        LocalDate today = LocalDate.now(KST);
+        for (LocalDate day : new LocalDate[] {today, today.minusDays(1)}) {
+            try {
+                Map<String, Object> r = client.inquiryByOrder(day.format(YMD), req.getOrderCode(), "PAVC");
+                if ("0000".equals(str(r.get("res_cd"))) && !isBlank(str(r.get("account")))) {
+                    log.warn("KCP 가상계좌 발급 응답이 없었지만 조회로 발급을 확인했습니다. order={} tno={}", req.getOrderCode(), r.get("tno"));
+                    return r;
+                }
+            } catch (KcpException ignore) {
+                break;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT,
+                "가상계좌 발급 결과를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요. (주문번호: " + req.getOrderCode() + ")");
+    }
+
+    /** 가상계좌 입금 현황(거래조회 PAVC) — {@code paidAmount} 는 ipkum_money, 입금 전이면 0. */
+    public record DepositStatus(long paidAmount, String account, String dueAt) {}
+
+    public DepositStatus queryDeposit(String tno) {
+        Map<String, Object> inq;
+        try {
+            inq = client.inquiryByTno(tno, "PAVC");
+        } catch (KcpException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "KCP 거래 조회에 실패했습니다.");
+        }
+        if (!"0000".equals(str(inq.get("res_cd")))) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "KCP 거래 조회에 실패했습니다: [" + str(inq.get("res_cd")) + "] " + str(inq.get("res_msg")));
+        }
+        Long paid = toLong(inq.get("ipkum_money"));
+        return new DepositStatus(paid == null ? 0 : paid, str(inq.get("account")), str(inq.get("va_date")));
+    }
+
+    /**
+     * 가상계좌 사용중지. 이미 입금된 계좌는 사용중지로 환불되지 않으므로 호출하지 않고 오류로 올린다(입금 확인 후 수동 환불).
+     * 주문 저장 실패 보상·미입금 만료 처리에서 쓴다.
+     */
+    private CancelResult deactivateVirtualAccount(CancelRequest req) {
+        DepositStatus d = queryDeposit(req.getTradeNo());
+        if (d.paidAmount() > 0) {
+            throw new IllegalStateException("이미 입금된 가상계좌(" + d.paidAmount() + "원)라 사용중지할 수 없습니다. 입금 내역을 확인해 환불 처리하세요.");
+        }
+        Map<String, Object> resp;
+        try {
+            resp = client.cancel(req.getTradeNo(), "STSC", null, null, req.getReason());
+        } catch (KcpException e) {
+            throw new IllegalStateException("KCP 가상계좌 사용중지 결과를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.", e);
+        }
+        if (!"0000".equals(str(resp.get("res_cd")))) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "KCP 가상계좌 사용중지 실패: [" + str(resp.get("res_cd")) + "] " + str(resp.get("res_msg")));
+        }
+        return done(req, resp, req.getAmount(), false);
+    }
+
     @Override
     public CancelResult cancel(CancelRequest req) throws Exception {
         String payType = payTypeOfStored(req.getPayType());
         Long amount = req.getAmount();
+        if ("PAVC".equals(payType)) {
+            return deactivateVirtualAccount(req);   // 가상계좌는 취소가 아니라 사용중지다(rem_mny 프로토콜 대상 아님)
+        }
 
         Map<String, Object> inq = client.inquiryByTno(req.getTradeNo(), payType);
         if (!"0000".equals(str(inq.get("res_cd")))) {
@@ -256,6 +403,7 @@ public class KcpGateway implements PaymentGateway {
 
     /** 주문 저장 실패 같은 보상 취소 — 실패해도 원래 오류를 가리지 않도록 삼키고 로그만 남긴다(수동 대사 대상). */
     private void cancelQuietly(String tno, String payType, String reason) {
+        if (isBlank(tno)) return;   // 거래번호가 없으면 닫을 거래도 없다
         try {
             client.cancel(tno, "STSC", null, null, reason);
         } catch (Exception e) {
