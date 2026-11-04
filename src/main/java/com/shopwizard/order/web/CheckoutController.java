@@ -13,8 +13,11 @@ import com.shopwizard.payment.model.CancelRequest;
 import com.shopwizard.payment.model.PaymentResult;
 import com.shopwizard.payment.service.PaymentGateway;
 import com.shopwizard.payment.service.PaymentGatewayRegistry;
+import com.shopwizard.profile.model.CustDeliAddr;
+import com.shopwizard.profile.service.CustDeliAddrService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -31,6 +34,7 @@ import java.util.Map;
  * PG 결제 승인 + 주문 저장을 한 번의 요청으로 처리한다. PG(토스/KCP …)는 {@code pgCode} 로 고르고(없으면 기본 PG),
  * 승인·취소는 {@link PaymentGateway} 뒤에 숨는다.
  */
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/order/checkout")
@@ -39,6 +43,7 @@ public class CheckoutController {
     private final PaymentGatewayRegistry gatewayRegistry;
     private final CheckoutService checkoutService;
     private final CheckoutPricingService pricingService;
+    private final CustDeliAddrService custDeliAddrService;
 
     /**
      * 주문서 견적. 결제창을 열기 전에 서버가 계산한 단가·배송비·합계를 받아 그 금액으로 결제한다
@@ -70,6 +75,9 @@ public class CheckoutController {
             if (vbank != null) again.put("vbank", vbank);   // 새로고침으로 다시 왔을 때도 입금 안내를 보여 준다
             return again;
         }
+
+        // 배송지 필수 값은 화면이 아니라 서버가 확인한다 — 결제 승인(돈이 움직이는 단계) 전에 막아야 배송지 없는 주문이 결제되지 않는다.
+        validateDelivery(req);
 
         // 금액은 클라이언트가 아니라 서버가 상품 테이블로 계산한다. 결제 승인(돈이 움직이는 단계) **전에** 비교해서,
         // 위조된 금액이면 승인 호출 자체를 하지 않는다. 라인 정보(상품명·가격·옵션·상점)도 서버 값으로 교체한다.
@@ -118,17 +126,9 @@ public class CheckoutController {
 
         // 2. 주문 + 상품 + 결제 + 로그 저장 (트랜잭션). 실패 시 이미 승인된 결제를 취소해서
         //    "결제는 됐는데 주문은 없는" 상태가 남지 않도록 한다 (best-effort 보상 처리).
+        int orderNo;
         try {
-            int orderNo = checkoutService.checkout(req, paid);
-            Map<String, Object> out = new LinkedHashMap<>();
-            out.put("success", true);
-            out.put("orderNo", orderNo);
-            if (paid.getAccount() != null) {
-                // 가상계좌 — 입금 전이라 결제 완료가 아니다. 화면이 입금 안내를 보여 줄 수 있게 계좌 정보를 내려준다.
-                out.put("vbank", CheckoutService.vbankInfo(paid.getReciptBank(), paid.getAccount(), paid.getAmount(),
-                        paid.getDueAt(), paid.getExpectName(), paid.getAccountHolder()));
-            }
-            return out;
+            orderNo = checkoutService.checkout(req, paid);
         } catch (Exception e) {
             try {
                 CancelRequest cancel = new CancelRequest();
@@ -143,6 +143,58 @@ public class CheckoutController {
                 e.addSuppressed(cancelEx);
             }
             throw e;
+        }
+
+        // 주문은 끝났다 — 이후 단계(배송지 저장)가 실패해도 결제·주문을 되돌리지 않는다.
+        if (req.isSaveDeliAddr() && custId != null && custId != 0) {
+            saveDeliAddrQuietly(custId, req, me);
+        }
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("success", true);
+        out.put("orderNo", orderNo);
+        if (paid.getAccount() != null) {
+            // 가상계좌 — 입금 전이라 결제 완료가 아니다. 화면이 입금 안내를 보여 줄 수 있게 계좌 정보를 내려준다.
+            out.put("vbank", CheckoutService.vbankInfo(paid.getReciptBank(), paid.getAccount(), paid.getAmount(),
+                    paid.getDueAt(), paid.getExpectName(), paid.getAccountHolder()));
+        }
+        return out;
+    }
+
+    private static final java.util.regex.Pattern PHONE = java.util.regex.Pattern.compile("[0-9\\-]{9,15}");
+
+    /** 수취인·연락처·주소는 필수이고 컬럼 길이를 넘기면 저장 단계에서 DB 오류가 나므로 여기서 400 으로 막는다. */
+    static void validateDelivery(CheckoutRequest req) {
+        String name = req.getRecverName() == null ? "" : req.getRecverName().trim();
+        String phone = req.getRecverMobileNo() == null ? "" : req.getRecverMobileNo().trim();
+        String addr1 = req.effectiveAddr1();
+        String addr2 = req.effectiveAddr2();
+        String zip = req.getRecverZipcode() == null ? "" : req.getRecverZipcode().trim();
+        if (name.isEmpty() || addr1.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수취인과 배송지 주소를 입력해 주세요.");
+        }
+        if (!PHONE.matcher(phone).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "수취인 연락처를 숫자와 하이픈(-)으로 입력해 주세요.");
+        }
+        if (name.length() > 50 || zip.length() > 50 || addr1.length() > 255 || addr2.length() > 255) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송지 정보가 너무 깁니다.");
+        }
+    }
+
+    /** "배송지 목록에 저장" — 중복·10개 초과·형식 불일치는 조용히 건너뛰고, 어떤 오류도 주문 결과에 영향을 주지 않는다. */
+    private void saveDeliAddrQuietly(int custId, CheckoutRequest req, Map<String, String> me) {
+        try {
+            CustDeliAddr addr = new CustDeliAddr();
+            addr.setRecverName(req.getRecverName());
+            addr.setMobilePhoneNo(req.getRecverMobileNo());
+            addr.setZipcode(req.getRecverZipcode());
+            addr.setAddr1(req.effectiveAddr1());
+            addr.setAddr2(req.effectiveAddr2());
+            String loginId = me == null ? null : me.get("loginId");
+            String name = me == null ? null : me.get("name");
+            custDeliAddrService.addIfAbsent(custId, addr, loginId, name == null || name.isBlank() ? loginId : name);
+        } catch (Exception e) {
+            log.warn("배송지 목록 저장에 실패했습니다(주문은 완료됨). custId={}: {}", custId, e.getMessage());
         }
     }
 

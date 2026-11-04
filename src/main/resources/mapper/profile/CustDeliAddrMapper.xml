@@ -43,4 +43,75 @@
         LIMIT 0,1
     </select>
 
+    <!-- ── 고객 본인 배송지(스토어프론트): CustId 는 항상 서버 세션 값이고, 단건 쿼리는 소유권(CustId)까지 조건으로 건다 ── -->
+
+    <select id="lockCust" resultType="java.lang.Integer">
+        SELECT CustId FROM shopion.tPrfCust WHERE CustId = #{custId} FOR UPDATE
+    </select>
+
+    <select id="selectMine" resultType="com.shopwizard.profile.model.CustDeliAddr">
+        SELECT * FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{custId} AND State = 1
+        ORDER BY DefaltYn DESC, DeliAddrNo DESC
+    </select>
+
+    <select id="selectOne" resultType="com.shopwizard.profile.model.CustDeliAddr">
+        SELECT * FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{custId} AND DeliAddrNo = #{deliAddrNo} AND State = 1
+    </select>
+
+    <select id="countMine" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrfCustDeliAddr WHERE CustId = #{custId} AND State = 1
+    </select>
+
+    <!-- 주문서에서 "목록에 저장"할 때 이미 같은 배송지가 있는지(수취인·연락처·주소가 모두 같음) -->
+    <select id="findSame" resultType="com.shopwizard.profile.model.CustDeliAddr">
+        SELECT * FROM shopion.tPrfCustDeliAddr
+        WHERE CustId = #{custId} AND State = 1
+          AND IFNULL(RecverName, '') = IFNULL(#{a.recverName}, '')
+          AND IFNULL(Zipcode, '') = IFNULL(#{a.zipcode}, '')
+          AND IFNULL(Addr1, '') = IFNULL(#{a.addr1}, '')
+          AND IFNULL(Addr2, '') = IFNULL(#{a.addr2}, '')
+          AND IFNULL(MobilePhoneNo, '') = IFNULL(#{a.mobilePhoneNo}, '')
+        LIMIT 1
+    </select>
+
+    <insert id="insertMine" parameterType="com.shopwizard.profile.model.CustDeliAddr" useGeneratedKeys="true" keyProperty="deliAddrNo">
+        INSERT INTO shopion.tPrfCustDeliAddr (
+            CustId, DefaltYn, RecverName, Zipcode, Addr1, Addr2, MobilePhoneNo,
+            ChnlCode, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{custId}, #{defaltYn}, #{recverName}, #{zipcode}, #{addr1}, #{addr2}, #{mobilePhoneNo},
+            (SELECT ChnlCode FROM shopion.tPrfCust WHERE CustId = #{custId}), 1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="updateMine" parameterType="com.shopwizard.profile.model.CustDeliAddr">
+        UPDATE shopion.tPrfCustDeliAddr SET
+            RecverName = #{recverName}, Zipcode = #{zipcode}, Addr1 = #{addr1}, Addr2 = #{addr2},
+            MobilePhoneNo = #{mobilePhoneNo}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE CustId = #{custId} AND DeliAddrNo = #{deliAddrNo} AND State = 1
+    </update>
+
+    <update id="clearDefault">
+        UPDATE shopion.tPrfCustDeliAddr SET DefaltYn = 0 WHERE CustId = #{custId} AND DefaltYn = 1
+    </update>
+
+    <update id="setDefault">
+        UPDATE shopion.tPrfCustDeliAddr SET DefaltYn = 1
+        WHERE CustId = #{custId} AND DeliAddrNo = #{deliAddrNo} AND State = 1
+    </update>
+
+    <delete id="deleteMine">
+        DELETE FROM shopion.tPrfCustDeliAddr WHERE CustId = #{custId} AND DeliAddrNo = #{deliAddrNo}
+    </delete>
+
+    <!-- 같은 테이블 서브쿼리는 MySQL 이 UPDATE 에서 막으므로 파생 테이블로 한 번 감싼다 -->
+    <update id="promoteLatest">
+        UPDATE shopion.tPrfCustDeliAddr SET DefaltYn = 1
+        WHERE CustId = #{custId} AND State = 1
+          AND DeliAddrNo = (SELECT M.n FROM (SELECT MAX(DeliAddrNo) AS n FROM shopion.tPrfCustDeliAddr WHERE CustId = #{custId} AND State = 1) M)
+    </update>
+
 </mapper>

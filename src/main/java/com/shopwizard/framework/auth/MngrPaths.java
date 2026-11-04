@@ -54,6 +54,8 @@ public final class MngrPaths {
             "/order/orderprod/guest/list",
             // 로그인한 회원 본인의 내 정보 수정 (CUST 인터셉터로 보호)
             "/profile/cust/me",
+            // 로그인한 회원 본인의 배송지 관리 (CUST 인터셉터로 보호, 관리자용 /profile/custDeliAddr 읽기 API 와는 별개)
+            "/profile/cust/me/**",
             // 상점(거래처) 계정 전용 API (SHOP 인터셉터로 보호)
             "/company/shop/me",
             "/order/orderprod/shop/list",

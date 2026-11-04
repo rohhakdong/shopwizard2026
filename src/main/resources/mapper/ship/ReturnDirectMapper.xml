@@ -159,7 +159,7 @@
         ) SELECT
             #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{orderType}, O.ChnlCode,
             OP.ChnlOrderNo, OP.ChnlOrderProdNo, O.OrderName, O.OrderPhoneNo, O.OrderMobileNo,
-            O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode, CONCAT(O.RecverAddr1,' ',O.RecverAddr2),
+            O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode, CONCAT_WS(' ', O.RecverAddr1, O.RecverAddr2),
             O.DeliMemo, O.OrderMemo, O.DeliHopeDate, OP.SupplyCode, OP.SupplyName,
             OP.ShopCode, OP.ShopName, OP.BundleYn, OP.StoreCode, OP.ProdCode,
             OP.ShopProdCode, OP.ProdName, OP.ProdImg, OP.MakerName, OP.ModelName, OP.ProdUnit, OP.ProdMemo01, OP.ItemCode, OP.ItemName,

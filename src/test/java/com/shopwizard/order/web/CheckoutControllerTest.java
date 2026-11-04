@@ -13,6 +13,8 @@ import com.shopwizard.payment.model.CancelRequest;
 import com.shopwizard.payment.model.PaymentResult;
 import com.shopwizard.payment.service.PaymentGateway;
 import com.shopwizard.payment.service.PaymentGatewayRegistry;
+import com.shopwizard.profile.model.CustDeliAddr;
+import com.shopwizard.profile.service.CustDeliAddrService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,11 +45,12 @@ class CheckoutControllerTest {
     @Mock private PaymentGateway gateway;
     @Mock private CheckoutService checkoutService;
     @Mock private CheckoutPricingService pricingService;
+    @Mock private CustDeliAddrService custDeliAddrService;
     private CheckoutController controller;
 
     @BeforeEach
     void setUp() throws Exception {
-        controller = new CheckoutController(gatewayRegistry, checkoutService, pricingService);
+        controller = new CheckoutController(gatewayRegistry, checkoutService, pricingService, custDeliAddrService);
         // 서버 견적: 상품 P1(상점 S1) 1000원 × 1개 + 옵션 추가금 0, 배송비 0
         PricedLine line = new PricedLine();
         line.setProdCode("P1"); line.setProdName("서버상품명"); line.setShopCode("S1");
@@ -74,6 +77,12 @@ class CheckoutControllerTest {
         r.setTotalAmt(1000);
         r.setRegistId(registId);
         r.setRegistName(registName);
+        // 배송지는 서버도 필수로 검사한다
+        r.setRecverName("수취인");
+        r.setRecverMobileNo("010-1234-5678");
+        r.setRecverZipcode("06236");
+        r.setRecverAddr1("서울시 강남구 테헤란로 1");
+        r.setRecverAddr2("101호");
         CheckoutProdItem item = new CheckoutProdItem();
         item.setProdCode("P1");
         item.setProdQty(1);
@@ -244,6 +253,106 @@ class CheckoutControllerTest {
         verify(gateway).cancel(cap.capture());
         assertThat(cap.getValue().getTradeNo()).isEqualTo("pk");
         assertThat(cap.getValue().partial()).isFalse();   // 전체취소
+    }
+
+    // ── 배송지 ────────────────────────────────────────────────────
+
+    @Test
+    void 수취인_연락처_주소가_비어_있으면_승인_호출_없이_400() throws Exception {
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+        java.util.function.Consumer<CheckoutRequest>[] breakers = new java.util.function.Consumer[] {
+                (java.util.function.Consumer<CheckoutRequest>) r -> r.setRecverName(" "),
+                (java.util.function.Consumer<CheckoutRequest>) r -> r.setRecverMobileNo(""),
+                (java.util.function.Consumer<CheckoutRequest>) r -> r.setRecverMobileNo("abc-defg"),
+                (java.util.function.Consumer<CheckoutRequest>) r -> { r.setRecverAddr1(""); r.setRecverAddr(null); },
+        };
+        for (java.util.function.Consumer<CheckoutRequest> breaker : breakers) {
+            CheckoutRequest r = req("x", "x");
+            breaker.accept(r);
+            assertThatThrownBy(() -> controller.checkout(r, http))
+                    .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(400));
+        }
+        verify(gateway, never()).approve(any());   // 돈이 움직이기 전에 막는다
+    }
+
+    @Test
+    void 컬럼_길이를_넘는_배송지는_400() {
+        CheckoutRequest r = req("x", "x");
+        r.setRecverAddr2("가".repeat(256));
+        assertThatThrownBy(() -> controller.checkout(r, new MockHttpServletRequest("POST", "/order/checkout")))
+                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(400));
+    }
+
+    @Test
+    void 예전_한_칸_주소만_보내도_받아_들인다() throws Exception {
+        CheckoutRequest r = req("x", "x");
+        r.setRecverAddr1(null); r.setRecverAddr2(null); r.setRecverZipcode(null);
+        r.setRecverAddr("서울시 어딘가 1-1");
+
+        controller.checkout(r, new MockHttpServletRequest("POST", "/order/checkout"));
+
+        assertThat(captured().effectiveAddr1()).isEqualTo("서울시 어딘가 1-1");
+        assertThat(captured().effectiveAddr2()).isEmpty();   // NULL 이 아니라 빈 문자열
+    }
+
+    @Test
+    void 로그인_회원이_저장을_켜면_주문_성공_뒤_배송지를_목록에_저장한다() throws Exception {
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+        AuthSession.login(http, AuthSession.Type.CUST, Map.of("custId", "2", "loginId", "cust01", "name", "홍고객"));
+        CheckoutRequest r = req("x", "x");
+        r.setSaveDeliAddr(true);
+
+        controller.checkout(r, http);
+
+        ArgumentCaptor<CustDeliAddr> cap = ArgumentCaptor.forClass(CustDeliAddr.class);
+        verify(custDeliAddrService).addIfAbsent(org.mockito.ArgumentMatchers.eq(2), cap.capture(), org.mockito.ArgumentMatchers.eq("cust01"), org.mockito.ArgumentMatchers.eq("홍고객"));
+        assertThat(cap.getValue().getRecverName()).isEqualTo("수취인");
+        assertThat(cap.getValue().getMobilePhoneNo()).isEqualTo("010-1234-5678");
+        assertThat(cap.getValue().getZipcode()).isEqualTo("06236");
+        assertThat(cap.getValue().getAddr1()).isEqualTo("서울시 강남구 테헤란로 1");
+        assertThat(cap.getValue().getAddr2()).isEqualTo("101호");
+    }
+
+    @Test
+    void 저장을_안_켰거나_비회원이면_배송지를_저장하지_않는다() throws Exception {
+        MockHttpServletRequest member = new MockHttpServletRequest("POST", "/order/checkout");
+        AuthSession.login(member, AuthSession.Type.CUST, Map.of("custId", "2", "loginId", "cust01", "name", "홍고객"));
+        controller.checkout(req("x", "x"), member);   // saveDeliAddr 기본 false
+
+        CheckoutRequest guestReq = req("x", "x");
+        guestReq.setSaveDeliAddr(true);               // 비회원이 true 를 보내도 저장하지 않는다
+        controller.checkout(guestReq, new MockHttpServletRequest("POST", "/order/checkout"));
+
+        verify(custDeliAddrService, never()).addIfAbsent(org.mockito.ArgumentMatchers.anyInt(), any(), any(), any());
+    }
+
+    @Test
+    void 배송지_저장이_실패해도_주문은_성공으로_돌려준다() throws Exception {
+        org.mockito.Mockito.doThrow(new IllegalStateException("DB 오류")).when(custDeliAddrService)
+                .addIfAbsent(org.mockito.ArgumentMatchers.anyInt(), any(), any(), any());
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+        AuthSession.login(http, AuthSession.Type.CUST, Map.of("custId", "2", "loginId", "cust01", "name", "홍고객"));
+        CheckoutRequest r = req("x", "x");
+        r.setSaveDeliAddr(true);
+
+        Map<String, Object> out = controller.checkout(r, http);
+
+        assertThat(out.get("success")).isEqualTo(true);
+        assertThat(out.get("orderNo")).isEqualTo(1001);
+        verify(gateway, never()).cancel(any());   // 배송지 저장 실패로 결제를 취소하지 않는다
+    }
+
+    @Test
+    void 주문_저장이_실패하면_배송지도_저장하지_않는다() throws Exception {
+        lenient().when(checkoutService.checkout(any(), any(PaymentResult.class))).thenThrow(new IllegalStateException("저장 실패"));
+        MockHttpServletRequest http = new MockHttpServletRequest("POST", "/order/checkout");
+        AuthSession.login(http, AuthSession.Type.CUST, Map.of("custId", "2", "loginId", "cust01", "name", "홍고객"));
+        CheckoutRequest r = req("x", "x");
+        r.setSaveDeliAddr(true);
+
+        assertThatThrownBy(() -> controller.checkout(r, http)).isInstanceOf(IllegalStateException.class);
+
+        verify(custDeliAddrService, never()).addIfAbsent(org.mockito.ArgumentMatchers.anyInt(), any(), any(), any());
     }
 
     private static PaymentResult waitingVbank() {

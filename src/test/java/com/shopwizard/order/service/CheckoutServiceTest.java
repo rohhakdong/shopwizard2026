@@ -188,6 +188,54 @@ class CheckoutServiceTest {
     }
 
     @Test
+    void 구조화된_배송지는_우편번호_기본주소_상세주소로_나눠_저장하고_상세가_없으면_빈_문자열이다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900);
+        req.setRecverAddr(null);
+        req.setRecverMobileNo("010-1111-2222");
+        req.setRecverZipcode(" 06236 ");
+        req.setRecverAddr1(" 서울시 강남구 테헤란로 1 ");
+        req.setRecverAddr2(null);
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<Order> cap = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(cap.capture());
+        Order saved = cap.getValue();
+        assertThat(saved.getRecverZipcode()).isEqualTo("06236");
+        assertThat(saved.getRecverAddr1()).isEqualTo("서울시 강남구 테헤란로 1");
+        // NULL 이면 출고지시가 CONCAT 으로 주소를 합칠 때 전체가 NULL 이 된다 → 항상 빈 문자열
+        assertThat(saved.getRecverAddr2()).isEqualTo("");
+        assertThat(saved.getRecverMobileNo()).isEqualTo("010-1111-2222");
+    }
+
+    @Test
+    void 상세주소는_그대로_저장한다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900);
+        req.setRecverAddr1("서울시 강남구");
+        req.setRecverAddr2("101동 202호");
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<Order> cap = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(cap.capture());
+        assertThat(cap.getValue().getRecverAddr1()).isEqualTo("서울시 강남구");
+        assertThat(cap.getValue().getRecverAddr2()).isEqualTo("101동 202호");
+    }
+
+    @Test
+    void 예전_한_칸_주소만_오면_기본주소로_저장하고_우편번호는_비운다() throws Exception {
+        CheckoutRequest req = baseRequest("card", 26900);   // recverAddr = "서울시 어딘가" 만 있다
+
+        checkoutService.checkout(req, tossResp("DONE", 26900L));
+
+        ArgumentCaptor<Order> cap = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).insert(cap.capture());
+        assertThat(cap.getValue().getRecverAddr1()).isEqualTo("서울시 어딘가");
+        assertThat(cap.getValue().getRecverAddr2()).isEqualTo("");
+        assertThat(cap.getValue().getRecverZipcode()).isNull();
+    }
+
+    @Test
     void 이미_저장된_가상계좌_주문의_입금_안내를_다시_돌려준다() {
         OrderPay p = new OrderPay();
         p.setOrderNo(7); p.setReciptBank("국민은행"); p.setReciptAccnt("T999"); p.setPayAmt(5000);

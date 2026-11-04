@@ -70,7 +70,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/order/basket/**",
                         "/order/orderprod/my/list",
                         "/order/orderprod/my/list/count",
-                        "/profile/cust/me"
+                        "/profile/cust/me",
+                        "/profile/cust/me/**"   // 내 배송지 관리
                 );
 
         // 상점(거래처) 계정 API 인증 체크: 상점(SHOP)으로 로그인한 서버 세션 필요

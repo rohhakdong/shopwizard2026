@@ -257,20 +257,51 @@
 
       <div class="order-section">
         <h3>배송지 정보</h3>
+        <!-- 회원: 저장된 배송지를 골라 채운다. 목록이 비어 있고 내 정보에 주소가 있으면 그 주소를 쓰는 버튼을 보여 준다 -->
+        <div v-if="custInfo" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button type="button" class="btn btn-gray" @click="deliPickerVisible = true">
+            배송지 선택<span v-if="deliAddrs.length"> ({{ deliAddrs.length }})</span>
+          </button>
+          <button type="button" class="btn btn-gray" v-if="!deliAddrs.length && myProfileAddr.addr1" @click="useProfileAddr">내 정보 주소 사용</button>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>수취인 *</label>
-            <input type="text" v-model="orderForm.recverName" placeholder="수취인명">
+            <input type="text" v-model="orderForm.recverName" placeholder="수취인명" maxlength="50">
           </div>
           <div class="form-group">
-            <label>연락처</label>
-            <input type="tel" v-model="orderForm.recverMobileNo" placeholder="010-0000-0000">
+            <label>연락처 *</label>
+            <input type="tel" v-model="orderForm.recverMobileNo" placeholder="010-0000-0000" maxlength="15">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>우편번호 *</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" v-model="orderForm.recverZipcode" placeholder="우편번호" readonly style="max-width:140px;background:#f8fafc">
+              <button type="button" class="btn btn-gray" @click="searchAddress(orderForm, 'recver')">주소 검색</button>
+            </div>
           </div>
         </div>
         <div class="form-row full">
           <div class="form-group">
             <label>주소 *</label>
-            <input type="text" v-model="orderForm.recverAddr" placeholder="배송지 주소">
+            <input type="text" v-model="orderForm.recverAddr1" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="form-group">
+            <label>상세주소</label>
+            <input type="text" v-model="orderForm.recverAddr2" placeholder="동·호수 등 상세 주소" maxlength="255">
+          </div>
+        </div>
+        <div v-if="custInfo" style="margin:4px 0 12px;font-size:13px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" v-model="orderForm.saveDeliAddr" :disabled="deliAddrs.length >= MAX_DELI_ADDR">
+            배송지 목록에 저장
+          </label>
+          <div v-if="deliAddrs.length >= MAX_DELI_ADDR" style="color:var(--text-muted);font-size:12px;margin-top:2px">
+            배송지는 최대 {{ MAX_DELI_ADDR }}개까지 저장할 수 있습니다. 마이페이지 &gt; 배송지 관리에서 정리해 주세요.
           </div>
         </div>
         <div class="form-row full">
@@ -352,6 +383,7 @@
         <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px">{{ custInfo.name }}님, 안녕하세요 👋</div>
         <div class="mypage-nav">
           <button :class="{active: myTab==='orders'}" @click="myTab='orders'; loadMyOrders()">주문내역</button>
+          <button :class="{active: myTab==='deli'}" @click="myTab='deli'; deliFormVisible=false; loadDeliAddrs()">배송지 관리</button>
           <button :class="{active: myTab==='profile'}" @click="myTab='profile'; loadProfileForm()">내 정보</button>
         </div>
 
@@ -383,6 +415,85 @@
                 v-for="p in myOrderPageNums" :key="p"
                 :class="{active: p === myOrderPage}"
                 @click="loadMyOrders(p)">{{ p }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 배송지 관리 탭 -->
+        <div v-if="myTab === 'deli'" style="max-width:560px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;color:var(--text-muted)">저장된 배송지 {{ deliAddrs.length }}/{{ MAX_DELI_ADDR }}개</div>
+            <button class="btn btn-primary" :disabled="deliAddrs.length >= MAX_DELI_ADDR" @click="openDeliForm(null)">+ 새 배송지</button>
+          </div>
+
+          <!-- 추가/수정 폼 -->
+          <div v-if="deliFormVisible" class="order-section" style="margin-bottom:16px">
+            <h3>{{ deliEditNo ? '배송지 수정' : '새 배송지' }}</h3>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>배송지 이름 <span style="color:var(--text-muted);font-weight:400">(선택, 예: 집·회사)</span></label>
+                <input type="text" v-model="deliForm.remark" maxlength="50" placeholder="배송지 이름">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>수취인 *</label>
+                <input type="text" v-model="deliForm.recverName" maxlength="50" placeholder="수취인명">
+              </div>
+              <div class="form-group">
+                <label>연락처 *</label>
+                <input type="tel" v-model="deliForm.mobilePhoneNo" maxlength="15" placeholder="010-0000-0000">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>우편번호 *</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" v-model="deliForm.zipcode" placeholder="우편번호" readonly style="max-width:140px;background:#f8fafc">
+                  <button type="button" class="btn btn-gray" @click="searchAddress(deliForm)">주소 검색</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>주소 *</label>
+                <input type="text" v-model="deliForm.addr1" placeholder="주소 검색을 이용해주세요" readonly style="background:#f8fafc">
+              </div>
+            </div>
+            <div class="form-row full">
+              <div class="form-group">
+                <label>상세주소</label>
+                <input type="text" v-model="deliForm.addr2" maxlength="255" placeholder="동·호수 등 상세 주소">
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin:4px 0 10px">
+              <input type="checkbox" v-model="deliForm.isDefault"> 기본 배송지로 설정
+            </label>
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+              <button class="btn btn-gray" @click="deliFormVisible = false">취소</button>
+              <button class="btn btn-primary" @click="saveDeli">저장</button>
+            </div>
+          </div>
+
+          <div v-if="deliLoading" style="text-align:center;padding:40px;color:var(--text-muted)">불러오는 중...</div>
+          <div v-else-if="!deliAddrs.length && !deliFormVisible" class="empty-box">
+            <div class="icon">📍</div>
+            <div>저장된 배송지가 없습니다</div>
+            <div style="font-size:12px;margin-top:6px">새 배송지를 추가하면 주문할 때 바로 선택할 수 있습니다.</div>
+          </div>
+          <div v-else>
+            <div class="order-history-card" v-for="a in deliAddrs" :key="a.deliAddrNo">
+              <div class="no">
+                <span v-if="a.remark" style="font-weight:600;margin-right:6px">{{ a.remark }}</span>
+                <span v-if="a.defaltYn === 1" class="state-badge state-blue" style="margin-right:6px">기본 배송지</span>
+                {{ a.recverName }} · {{ a.mobilePhoneNo }}
+              </div>
+              <div class="prod-name" style="font-weight:400">[{{ a.zipcode }}] {{ a.addr1 }} {{ a.addr2 }}</div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button class="btn btn-gray" @click="openDeliForm(a)">수정</button>
+                <button class="btn btn-gray" v-if="a.defaltYn !== 1" @click="setDefaultDeli(a)">기본으로 설정</button>
+                <button class="btn btn-gray" @click="deleteDeli(a)">삭제</button>
+              </div>
             </div>
           </div>
         </div>
@@ -577,6 +688,28 @@
   </main>
 
   <!-- 주소 검색 (다음 우편번호 서비스, 레이어 팝업) -->
+  <!-- 주문서: 저장된 배송지 선택 -->
+  <div v-if="deliPickerVisible" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px" @click.self="deliPickerVisible=false">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:520px;max-height:80vh;overflow:auto;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong>배송지 선택</strong>
+        <button type="button" @click="deliPickerVisible=false" style="border:none;background:none;font-size:18px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div v-if="!deliAddrs.length" style="padding:24px 8px;text-align:center;color:var(--text-muted);font-size:14px">
+        저장된 배송지가 없습니다.<br>아래 입력칸에 주소를 입력하고 "배송지 목록에 저장"을 체크하면 다음부터 선택할 수 있습니다.
+      </div>
+      <div v-for="a in deliAddrs" :key="a.deliAddrNo" class="order-history-card" style="cursor:pointer" @click="applyDeliAddr(a)">
+        <div class="no">
+          <span v-if="a.remark" style="font-weight:600;margin-right:6px">{{ a.remark }}</span>
+          <span v-if="a.defaltYn === 1" class="state-badge state-blue" style="margin-right:6px">기본 배송지</span>
+          {{ a.recverName }} · {{ a.mobilePhoneNo }}
+        </div>
+        <div class="prod-name" style="font-weight:400">[{{ a.zipcode }}] {{ a.addr1 }} {{ a.addr2 }}</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:8px">추가·수정·삭제는 마이페이지 &gt; 배송지 관리에서 할 수 있습니다.</div>
+    </div>
+  </div>
+
   <div v-if="postcodeVisible" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:center;justify-content:center" @click.self="postcodeVisible=false">
     <div style="background:#fff;border-radius:8px;overflow:hidden;width:100%;max-width:420px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #eee">
@@ -647,7 +780,7 @@ createApp({
 
     /* 주문 */
     const orderItems  = ref([]);
-    const orderForm   = ref({ orderName:'', orderMobileNo:'', orderEmail:'', recverName:'', recverMobileNo:'', recverAddr:'', deliMemo:'', payMethod:'card' });
+    const orderForm   = ref({ orderName:'', orderMobileNo:'', orderEmail:'', recverName:'', recverMobileNo:'', recverZipcode:'', recverAddr1:'', recverAddr2:'', saveDeliAddr:false, deliMemo:'', payMethod:'card' });
     const doneOrderNo = ref('');
     const doneVbank   = ref(null);   // 가상계좌 발급 결과(은행·계좌·금액·기한) — 완료 화면에 보여 준다
     const vbankBank   = ref('');     // 가상계좌 입금 은행 코드(KCP va_bankcode)
@@ -742,12 +875,16 @@ createApp({
     // 걸리기 쉬워, 페이지 안에 직접 그려 넣는 embed() 방식을 쓴다.
     const postcodeVisible = ref(false);
     let postcodeTargetForm = null;
-    const searchAddress = (formRef) => {
+    let postcodeTargetPrefix = '';
+    // prefix 가 있으면 `${prefix}Zipcode`/`${prefix}Addr1` 키에 채운다(주문서 배송지: 'recver' → recverZipcode/recverAddr1).
+    // 없으면 기존처럼 zipcode/addr1(내 정보·회원가입·배송지 폼).
+    const searchAddress = (formRef, prefix = '') => {
       if (!window.daum || !window.daum.Postcode) {
         toast('주소 검색 서비스를 불러오지 못했습니다', 'error');
         return;
       }
       postcodeTargetForm = formRef;
+      postcodeTargetPrefix = prefix;
       postcodeVisible.value = true;
       nextTick(() => {
         document.getElementById('postcodeLayer').innerHTML = '';
@@ -757,8 +894,8 @@ createApp({
             // 템플릿의 @click="searchAddress(profileForm)" 처럼 ref를 표현식 안에서 넘기면
             // Vue가 자동으로 .value를 언랩해서 전달하므로, 여기서 받는 formRef는 이미
             // 언랩된 순수 객체다 (formRef.value가 아니라 formRef에 직접 대입해야 함).
-            postcodeTargetForm.zipcode = data.zonecode;
-            postcodeTargetForm.addr1 = addr;
+            postcodeTargetForm[postcodeTargetPrefix ? postcodeTargetPrefix + 'Zipcode' : 'zipcode'] = data.zonecode;
+            postcodeTargetForm[postcodeTargetPrefix ? postcodeTargetPrefix + 'Addr1' : 'addr1'] = addr;
             postcodeVisible.value = false;
           },
           width: '100%',
@@ -994,18 +1131,133 @@ createApp({
       go('order');
     };
 
+    // 새 주문을 시작할 때 호출한다(바로 구매·장바구니 주문). 이전 주문에서 남은 수취인 입력(이름·연락처·주소·메모)은 비운다 —
+    // 이름만 바뀌고 이전 주소가 그대로 남으면 엉뚱한 조합이 되고, 비회원이 쓰던 공용 PC 라면 다음 사람에게 개인정보가 보인다.
+    // (결제창에서 돌아온 복원은 restorePendingOrder 가 따로 채우므로 이 함수를 거치지 않는다.)
     const prefillOrderForm = () => {
+      const f = orderForm.value;
+      f.recverName = ''; f.recverMobileNo = ''; f.recverZipcode = ''; f.recverAddr1 = ''; f.recverAddr2 = '';
+      f.deliMemo = ''; f.saveDeliAddr = false;
       if (custInfo.value) {
-        orderForm.value.orderName     = custInfo.value.name || '';
-        orderForm.value.recverName    = custInfo.value.name || '';
+        f.orderName  = custInfo.value.name || '';
+        f.recverName = custInfo.value.name || '';
+        loadOrderDeliAddrs();   // 기본 배송지 자동 채움은 목록을 받은 뒤(비동기)에 한다
       }
+    };
+
+    /* ── 배송지 (회원) ──
+       서버가 세션의 회원 것만 돌려주고 고친다(/profile/cust/me/deli-addrs). 화면은 목록·선택·폼 상태만 가진다. */
+    const MAX_DELI_ADDR = 10;
+    const deliAddrs = ref([]);
+    const deliLoading = ref(false);
+    const deliPickerVisible = ref(false);   // 주문서 배송지 선택 모달
+    const deliFormVisible = ref(false);     // 마이페이지 추가/수정 폼
+    const deliEditNo = ref(null);
+    const emptyDeliForm = () => ({ remark:'', recverName:'', mobilePhoneNo:'', zipcode:'', addr1:'', addr2:'', isDefault:false });
+    const deliForm = ref(emptyDeliForm());
+    const myProfileAddr = ref({ zipcode:'', addr1:'', addr2:'', mobilePhoneNo:'' });   // 내 정보의 주소(배송지가 없을 때 제안용)
+
+    const loadDeliAddrs = async () => {
+      if (!custInfo.value) { deliAddrs.value = []; return; }
+      deliLoading.value = true;
+      try {
+        deliAddrs.value = await api('GET', '/profile/cust/me/deli-addrs') || [];
+      } catch (e) {
+        toast('배송지 조회 실패: ' + e.message, 'error');
+      } finally {
+        deliLoading.value = false;
+      }
+    };
+
+    // 배송지 항목을 주문서 입력칸에 채운다.
+    const applyDeliAddr = (a) => {
+      const f = orderForm.value;
+      f.recverName = a.recverName || '';
+      f.recverMobileNo = a.mobilePhoneNo || '';
+      f.recverZipcode = a.zipcode || '';
+      f.recverAddr1 = a.addr1 || '';
+      f.recverAddr2 = a.addr2 || '';
+      f.saveDeliAddr = false;   // 이미 저장된 배송지다
+      deliPickerVisible.value = false;
+    };
+
+    // 주문서에 들어오면 목록과 내 정보 주소를 받아, 입력칸이 비어 있을 때만 기본 배송지로 채운다(결제 취소 후 복원된 입력은 덮어쓰지 않는다).
+    const loadOrderDeliAddrs = async () => {
+      await loadDeliAddrs();
+      try {
+        const c = await api('GET', '/profile/cust/me');
+        myProfileAddr.value = { zipcode: c?.zipcode || '', addr1: c?.addr1 || '', addr2: c?.addr2 || '', mobilePhoneNo: c?.mobilePhoneNo || '' };
+      } catch (_) { /* 제안용이라 실패해도 조용히 */ }
+      const f = orderForm.value;
+      const empty = !f.recverZipcode && !f.recverAddr1 && !f.recverMobileNo;
+      if (!deliAddrs.value.length) {
+        f.saveDeliAddr = empty;   // 첫 배송지면 저장을 기본으로 켠다
+        return;
+      }
+      if (empty) {
+        const def = deliAddrs.value.find(a => a.defaltYn === 1) || deliAddrs.value[0];
+        if (def) applyDeliAddr(def);
+      }
+    };
+
+    // "내 정보 주소 사용" — DB 에 복사하지 않고 주문서 입력칸만 채운다.
+    const useProfileAddr = () => {
+      const p = myProfileAddr.value, f = orderForm.value;
+      f.recverZipcode = p.zipcode;
+      f.recverAddr1 = p.addr1;
+      f.recverAddr2 = p.addr2;
+      if (!f.recverMobileNo) f.recverMobileNo = p.mobilePhoneNo || '';
+    };
+
+    const openDeliForm = (a) => {
+      deliEditNo.value = a ? a.deliAddrNo : null;
+      deliForm.value = a
+        ? { remark: a.remark || '', recverName: a.recverName || '', mobilePhoneNo: a.mobilePhoneNo || '', zipcode: a.zipcode || '',
+            addr1: a.addr1 || '', addr2: a.addr2 || '', isDefault: a.defaltYn === 1 }
+        : emptyDeliForm();
+      deliFormVisible.value = true;
+    };
+
+    const saveDeli = async () => {
+      const f = deliForm.value;
+      if (!f.recverName || !f.mobilePhoneNo || !f.zipcode || !f.addr1) { toast('수취인·연락처·주소는 필수입니다', 'error'); return; }
+      const body = { remark: f.remark, recverName: f.recverName, mobilePhoneNo: f.mobilePhoneNo, zipcode: f.zipcode,
+                     addr1: f.addr1, addr2: f.addr2, defaltYn: f.isDefault ? 1 : 0 };
+      try {
+        if (deliEditNo.value) await api('PUT', '/profile/cust/me/deli-addrs/' + deliEditNo.value, body);
+        else                  await api('POST', '/profile/cust/me/deli-addrs', body);
+        deliFormVisible.value = false;
+        toast('저장되었습니다', 'success');
+        await loadDeliAddrs();
+      } catch (e) { toast('저장 실패: ' + e.message, 'error'); }
+    };
+
+    const setDefaultDeli = async (a) => {
+      try {
+        await api('PUT', '/profile/cust/me/deli-addrs/' + a.deliAddrNo + '/default');
+        await loadDeliAddrs();
+      } catch (e) { toast('변경 실패: ' + e.message, 'error'); }
+    };
+
+    const deleteDeli = async (a) => {
+      if (!confirm('이 배송지를 삭제할까요?')) return;
+      try {
+        await api('DELETE', '/profile/cust/me/deli-addrs/' + a.deliAddrNo);
+        await loadDeliAddrs();
+      } catch (e) { toast('삭제 실패: ' + e.message, 'error'); }
     };
 
     /* ── 주문 제출 → 토스페이먼츠 결제창 호출 ── */
     const submitOrder = async () => {
       const f = orderForm.value;
-      if (!f.orderName || !f.orderMobileNo || !f.recverName || !f.recverAddr) {
-        toast('필수 항목을 입력해주세요', 'error'); return;
+      if (!f.orderName || !f.orderMobileNo) {
+        toast('주문자 이름과 연락처를 입력해주세요', 'error'); return;
+      }
+      if (!f.recverName || !f.recverMobileNo || !f.recverZipcode || !f.recverAddr1) {
+        toast('배송지의 수취인·연락처·주소를 입력해주세요 (주소는 주소 검색으로 입력)', 'error'); return;
+      }
+      if (!/^[0-9\-]{9,15}$/.test(String(f.recverMobileNo).trim())) {
+        toast('수취인 연락처는 숫자와 하이픈(-)으로 입력해주세요', 'error'); return;
       }
 
       // 결제 금액은 서버 견적으로 정한다. 화면에 보이던 금액과 달라졌으면(가격 변경 등) 새 금액을 보여주고 중단한다.
@@ -1041,7 +1293,10 @@ createApp({
           orderEmail:     f.orderEmail,
           recverName:     f.recverName,
           recverMobileNo: f.recverMobileNo,
-          recverAddr:     f.recverAddr,
+          recverZipcode:  f.recverZipcode,
+          recverAddr1:    f.recverAddr1,
+          recverAddr2:    f.recverAddr2 || '',
+          saveDeliAddr:   !!(custInfo.value && f.saveDeliAddr),   // 주문이 성공한 뒤에만 서버가 목록에 저장한다
           deliMemo:       f.deliMemo,
           payMethod:      f.payMethod,
           totalAmt,
@@ -1276,6 +1531,7 @@ createApp({
       orderForm.value  = { ...(pending.orderForm || {}) };
       localStorage.removeItem('pendingOrder');
       try { await refreshQuote(); } catch (e) { toast(e.message, 'error'); }   // 배송비·최신 단가를 서버 견적으로 다시 채운다
+      if (custInfo.value) loadOrderDeliAddrs();   // 배송지 목록만 다시 받는다(복원된 입력칸은 덮어쓰지 않는다)
       go('order');
     };
 
@@ -1380,6 +1636,8 @@ createApp({
         await api('POST', '/auth/cust/logout');
         custInfo.value = null;
         cartList.value = [];
+        deliAddrs.value = [];   // 다음에 로그인하는 사람에게 이전 회원의 배송지가 보이지 않게 비운다
+        myProfileAddr.value = { zipcode:'', addr1:'', addr2:'', mobilePhoneNo:'' };
         toast('로그아웃되었습니다');
         go('home');
       } catch(_) {}
@@ -1419,6 +1677,9 @@ createApp({
       handlePaymentSuccess, restorePendingOrder,
       loadMyOrders, orderStateClass, saveProfile, loadProfileForm, loadGuestOrder, searchAddress, postcodeVisible,
       doLogin, logout, doRegister,
+      // 배송지
+      MAX_DELI_ADDR, deliAddrs, deliLoading, deliPickerVisible, deliFormVisible, deliEditNo, deliForm, myProfileAddr,
+      loadDeliAddrs, applyDeliAddr, useProfileAddr, openDeliForm, saveDeli, setDefaultDeli, deleteDeli,
     };
   }
 }).mount('#app');

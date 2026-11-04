@@ -146,7 +146,9 @@ public class CheckoutService {
         order.setOrderMobileNo(req.getOrderMobileNo());
         order.setRecverName(req.getRecverName());
         order.setRecverMobileNo(req.getRecverMobileNo());
-        order.setRecverAddr1(req.getRecverAddr());
+        order.setRecverZipcode(req.getRecverZipcode() == null || req.getRecverZipcode().isBlank() ? null : req.getRecverZipcode().trim());
+        order.setRecverAddr1(req.effectiveAddr1());
+        order.setRecverAddr2(req.effectiveAddr2());   // NULL 이 아니라 ''. 출고지시가 CONCAT 으로 주소를 합칠 때 NULL 이 섞이면 전체가 NULL 이 된다
         order.setMoneyUnit("KRW");
         order.setDeliMemo(req.getDeliMemo());
         order.setOrderState(orderState);

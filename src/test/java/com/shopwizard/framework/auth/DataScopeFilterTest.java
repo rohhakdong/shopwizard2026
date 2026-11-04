@@ -98,7 +98,8 @@ class DataScopeFilterTest {
 
     @Test
     void 고객_상점_창고용_경로는_관리자_스코프를_적용하지_않는다() throws Exception {
-        for (String uri : new String[]{"/order/orderprod/my/list", "/order/orderprod/shop/list", "/profile/cust/me", "/order/basket/list"}) {
+        for (String uri : new String[]{"/order/orderprod/my/list", "/order/orderprod/shop/list", "/profile/cust/me", "/order/basket/list",
+                "/profile/cust/me/deli-addrs", "/profile/cust/me/deli-addrs/5/default"}) {
             MockHttpServletRequest r = req("GET", uri, Map.of("svcAll", "Y", "loginId", "u", "shopCode", "MINE"));
             assertSame(r, seen(on, r), uri);
         }
