@@ -1201,6 +1201,16 @@ createApp({
       }
       const empty = !f.recverZipcode && !f.recverAddr1 && !f.recverMobileNo;
       if (!deliAddrs.value.length) {
+        // 저장된 배송지가 없으면 내 정보(이름·연락처·주소)로 시작한다 — 버튼을 누르지 않아도 처음부터 자기 정보가 채워진다.
+        if (empty && c) {
+          if (!f.recverName) f.recverName = c.custName || (custInfo.value && custInfo.value.name) || '';
+          f.recverMobileNo = c.mobilePhoneNo || '';
+          if (c.zipcode && c.addr1) {
+            f.recverZipcode = c.zipcode;
+            f.recverAddr1 = c.addr1;
+            f.recverAddr2 = c.addr2 || '';
+          }
+        }
         f.saveDeliAddr = empty;   // 첫 배송지면 저장을 기본으로 켠다
         return;
       }
