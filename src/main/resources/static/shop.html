@@ -931,7 +931,11 @@ createApp({
     };
 
     /* ── 라우팅 ── */
-    const go = (v) => { prevView.value = view.value; view.value = v; window.scrollTo(0, 0); };
+    const go = (v) => {
+      prevView.value = view.value; view.value = v; window.scrollTo(0, 0);
+      // 마이페이지는 들어오면 바로 주문내역을 보여 준다(예전에는 "주문내역" 탭을 눌러야 조회됐다).
+      if (v === 'mypage' && custInfo.value) { myTab.value = 'orders'; loadMyOrders(); }
+    };
     const goBack = () => go(prevView.value === view.value ? 'home' : prevView.value);
 
     /* ── 초기화 ── */
@@ -1136,12 +1140,14 @@ createApp({
     // (결제창에서 돌아온 복원은 restorePendingOrder 가 따로 채우므로 이 함수를 거치지 않는다.)
     const prefillOrderForm = () => {
       const f = orderForm.value;
+      // 주문자 정보도 비운다 — 로그아웃 뒤 다른 사람이 쓰거나 다른 회원으로 로그인해도 이전 사람의 연락처·이메일이 남지 않게.
+      f.orderName = ''; f.orderMobileNo = ''; f.orderEmail = '';
       f.recverName = ''; f.recverMobileNo = ''; f.recverZipcode = ''; f.recverAddr1 = ''; f.recverAddr2 = '';
       f.deliMemo = ''; f.saveDeliAddr = false;
       if (custInfo.value) {
         f.orderName  = custInfo.value.name || '';
         f.recverName = custInfo.value.name || '';
-        loadOrderDeliAddrs();   // 기본 배송지 자동 채움은 목록을 받은 뒤(비동기)에 한다
+        loadOrderDeliAddrs();   // 주문자 연락처·이메일과 기본 배송지 채움은 내 정보·목록을 받은 뒤(비동기)에 한다
       }
     };
 
@@ -1183,12 +1189,16 @@ createApp({
 
     // 주문서에 들어오면 목록과 내 정보 주소를 받아, 입력칸이 비어 있을 때만 기본 배송지로 채운다(결제 취소 후 복원된 입력은 덮어쓰지 않는다).
     const loadOrderDeliAddrs = async () => {
-      await loadDeliAddrs();
-      try {
-        const c = await api('GET', '/profile/cust/me');
-        myProfileAddr.value = { zipcode: c?.zipcode || '', addr1: c?.addr1 || '', addr2: c?.addr2 || '', mobilePhoneNo: c?.mobilePhoneNo || '' };
-      } catch (_) { /* 제안용이라 실패해도 조용히 */ }
+      // 배송지 목록과 내 정보를 함께 받는다. 내 정보는 주문자 정보(이름·연락처·이메일) 채움과 "내 정보 주소 사용" 제안에 쓴다.
+      const [, c] = await Promise.all([loadDeliAddrs(), api('GET', '/profile/cust/me').catch(() => null)]);
       const f = orderForm.value;
+      if (c) {
+        myProfileAddr.value = { zipcode: c.zipcode || '', addr1: c.addr1 || '', addr2: c.addr2 || '', mobilePhoneNo: c.mobilePhoneNo || '' };
+        // 이미 입력한 값(결제 취소 뒤 복원된 주문서 등)은 덮어쓰지 않고 빈 칸만 채운다.
+        if (!f.orderName)     f.orderName     = c.custName || (custInfo.value && custInfo.value.name) || '';
+        if (!f.orderMobileNo) f.orderMobileNo = c.mobilePhoneNo || '';
+        if (!f.orderEmail)    f.orderEmail    = c.email || '';
+      }
       const empty = !f.recverZipcode && !f.recverAddr1 && !f.recverMobileNo;
       if (!deliAddrs.value.length) {
         f.saveDeliAddr = empty;   // 첫 배송지면 저장을 기본으로 켠다
