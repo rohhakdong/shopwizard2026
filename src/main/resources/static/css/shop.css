@@ -252,7 +252,23 @@ img { max-width: 100%; }
 .order-done p { font-size: 15px; color: var(--text-muted); margin-bottom: 24px; }
 
 /* ── 반응형 ──────────────────────────────────────────────────── */
+/* ── 하단 사업자 정보 ─────────────────────────────────────────── */
+/* 내용이 짧은 화면에서도 푸터가 화면 맨 아래에 붙도록 */
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+.shop-main { flex: 1 0 auto; width: 100%; }
+.shop-footer { background: #f1f5f9; border-top: 1px solid var(--border); margin-top: 24px; }
+.shop-footer-inner { max-width: 1200px; margin: 0 auto; padding: 24px 16px 28px; font-size: 12px; line-height: 1.7; color: var(--text-muted); }
+.shop-footer-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.shop-footer-list { display: flex; flex-wrap: wrap; gap: 2px 20px; }
+.shop-footer-list > div { display: flex; gap: 6px; }
+.shop-footer-list dt { font-weight: 600; white-space: nowrap; }
+.shop-footer-list dd { word-break: keep-all; overflow-wrap: anywhere; }
+.shop-footer-link { margin-left: 4px; padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; background: #fff; color: var(--text-muted); font-size: 11px; }
+.shop-footer-link:hover { color: var(--primary-dk); border-color: var(--primary); }
+.shop-footer-copy { margin-top: 10px; color: #94a3b8; }
+
 @media (max-width: 768px) {
+  .shop-footer-list { flex-direction: column; gap: 2px; }
   .prod-detail { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .prod-grid { grid-template-columns: repeat(2, 1fr); }

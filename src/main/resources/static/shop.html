@@ -687,6 +687,28 @@
 
   </main>
 
+  <!-- ── 하단 사업자 정보 (전자상거래법 표시 의무) — 회사 마스터에서 읽어 온다 ───────────── -->
+  <footer class="shop-footer" v-if="bizInfo && bizInfo.compName">
+    <div class="shop-footer-inner">
+      <div class="shop-footer-name">{{ bizInfo.compName }}</div>
+      <dl class="shop-footer-list">
+        <div v-if="bizInfo.prsdntName"><dt>대표자</dt><dd>{{ bizInfo.prsdntName }}</dd></div>
+        <div v-if="bizInfo.bizNo">
+          <dt>사업자등록번호</dt>
+          <dd>{{ bizInfo.bizNo }}
+            <a :href="'https://www.ftc.go.kr/bizCommPop.do?wrkr_no=' + bizInfo.bizNo.replace(/-/g, '')" target="_blank" rel="noopener noreferrer" class="shop-footer-link">사업자정보확인</a>
+          </dd>
+        </div>
+        <div v-if="bizInfo.mordrSaleNo"><dt>통신판매업신고</dt><dd>{{ bizInfo.mordrSaleNo }}</dd></div>
+        <div v-if="bizInfo.corpNo"><dt>법인등록번호</dt><dd>{{ bizInfo.corpNo }}</dd></div>
+        <div v-if="bizInfo.address"><dt>주소</dt><dd><template v-if="bizInfo.zipcode">({{ bizInfo.zipcode }}) </template>{{ bizInfo.address }}</dd></div>
+        <div v-if="bizInfo.phoneNo"><dt>고객센터</dt><dd>{{ bizInfo.phoneNo }}</dd></div>
+        <div v-if="bizInfo.email"><dt>이메일</dt><dd>{{ bizInfo.email }}</dd></div>
+      </dl>
+      <div class="shop-footer-copy">© {{ new Date().getFullYear() }} {{ bizInfo.compName }}. All rights reserved.</div>
+    </div>
+  </footer>
+
   <!-- 주소 검색 (다음 우편번호 서비스, 레이어 팝업) -->
   <!-- 주문서: 저장된 배송지 선택 -->
   <div v-if="deliPickerVisible" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px" @click.self="deliPickerVisible=false">
@@ -748,6 +770,7 @@ createApp({
 
     /* 상품 목록 */
     const shopList  = ref([]);
+    const bizInfo   = ref(null);   // 하단 사업자 정보
     const prodList  = ref([]);
     const prodTotal = ref(0);
     const prodPage  = ref(1);
@@ -938,8 +961,14 @@ createApp({
     };
     const goBack = () => go(prevView.value === view.value ? 'home' : prevView.value);
 
+    /* 사업자 정보는 부가 정보라 실패해도 쇼핑은 계속된다(푸터만 안 보임). */
+    const loadBizInfo = async () => {
+      try { bizInfo.value = await api('GET', '/company/shop/business-info'); } catch(_) {}
+    };
+
     /* ── 초기화 ── */
     onMounted(async () => {
+      loadBizInfo();
       await checkLogin();
       await loadPayConfig();
 
@@ -1683,7 +1712,7 @@ createApp({
 
     return {
       view, prevView, custInfo, searchKeyword, toasts,
-      shopList, prodList, prodTotal, prodPage, prodLoading, filter,
+      shopList, bizInfo, prodList, prodTotal, prodPage, prodLoading, filter,
       prodPages, prodPageBlock, prodPageNums,
       safeHtml,
       prodDetail, prodItems, selectedItemCode, qty, selectedOptionPrice,

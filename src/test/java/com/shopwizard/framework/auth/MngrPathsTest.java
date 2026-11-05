@@ -20,6 +20,13 @@ class MngrPathsTest {
     }
 
     @Test
+    void 스토어프론트_사업자_정보는_공개_조회_경로다() {
+        assertTrue(MngrPaths.isPublicRead("/company/shop/business-info"));
+        assertFalse(MngrPaths.isPublicRead("/company/shop"));      // 관리자용 상점 목록은 공개가 아니다
+        assertFalse(MngrPaths.isPublicRead("/company/comp"));      // 관리자용 회사 목록도 마찬가지
+    }
+
+    @Test
     void 관리자용_회원_배송지_경로는_계속_관리자_보호_대상이다() {
         for (String p : new String[]{
                 "/profile/custDeliAddr/list",

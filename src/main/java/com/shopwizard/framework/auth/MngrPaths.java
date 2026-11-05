@@ -19,7 +19,8 @@ public final class MngrPaths {
             "/product/prod/count",
             "/product/proditem/list",
             "/catalog/prod-item/list",
-            "/company/shop/public"
+            "/company/shop/public",
+            "/company/shop/business-info"
     };
 
     public static final String[] PATHS = {

@@ -57,6 +57,24 @@
         ORDER BY ShopName
     </select>
 
+    <!-- 스토어프론트 하단 사업자 정보 — 자사몰 채널(shop.chnl-code)이 속한 회사의 공개 가능한 항목만. 계좌·팩스 등은 싣지 않는다. -->
+    <select id="selectBusinessInfo" parameterType="string" resultType="com.shopwizard.company.model.BusinessInfoView">
+        SELECT C.CompName AS compName,
+               C.PrsdntName AS prsdntName,
+               C.CompCode AS bizNo,
+               C.CorpCode AS corpNo,
+               C.MordrSaleCode AS mordrSaleNo,
+               C.Zipcode AS zipcode,
+               CONCAT_WS(' ', NULLIF(TRIM(C.Addr1), ''), NULLIF(TRIM(C.Addr2), '')) AS address,
+               C.PhoneNo AS phoneNo,
+               C.Email AS email,
+               C.Homepg AS homepg
+        FROM shopwizard.tCmpChnl CH
+        INNER JOIN shopwizard.tCmpComp C ON C.CompCode = CH.CompCode AND C.SvcCode = CH.SvcCode
+        WHERE CH.ChnlCode = #{chnlCode}
+        LIMIT 1
+    </select>
+
     <select id="selectList" parameterType="map" resultMap="ShopResult">
         SELECT S.*, SC.SupplyName AS SupplyName
         FROM shopwizard.tCmpShop S

@@ -10,6 +10,7 @@ import java.util.Map;
 public interface ShopMapper {
     List<Shop> selectList(Map<String, Object> params);
     List<ShopPublicView> selectPublicList();
+    com.shopwizard.company.model.BusinessInfoView selectBusinessInfo(String chnlCode);
     int selectCount(Map<String, Object> params);
     String selectMax(String supplyCode);
     Shop select(String shopCode);
