@@ -109,6 +109,20 @@ class RoleAccessPolicyTest {
     }
 
     @Test
+    void 샵링커_전송은_승인_화면_권한이_있어야_하고_이력_조회는_상품_등록_화면_권한이면_된다() {
+        RolePermissions regOnly = perms(Set.of("catalog-prod"), Set.of("catalog-prod"));
+        assertFalse(ok("POST", "/catalog/prod/slinker/send", regOnly));   // 외부로 내보내는 일은 승인 권한자만
+        assertTrue(ok("GET", "/catalog/prod/slinker/mode", regOnly));
+        assertTrue(ok("GET", "/catalog/prod/slinker/log", regOnly));
+
+        RolePermissions approver = perms(Set.of("catalog-prod", ScreenRegistry.APPROVE),
+                Set.of("catalog-prod", ScreenRegistry.APPROVE));
+        assertTrue(ok("POST", "/catalog/prod/slinker/send", approver));
+        assertFalse(ok("POST", "/catalog/prod/slinker/send", RolePermissions.NONE));
+        assertFalse(ok("GET", "/catalog/prod/slinker/log", RolePermissions.NONE));
+    }
+
+    @Test
     void 상품_엑셀_일괄등록은_상품_등록_화면_권한이_있어야_한다() {
         RolePermissions reg = perms(Set.of("catalog-prod"), Set.of("catalog-prod"));
         assertTrue(ok("GET", "/catalog/prod/excel/template", reg));

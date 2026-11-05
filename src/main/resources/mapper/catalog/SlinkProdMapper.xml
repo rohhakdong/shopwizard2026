@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.SlinkProdMapper">
+
+    <select id="selectLiveSupplyQty" resultType="java.lang.Integer">
+        SELECT SupplyQty FROM shopion.tPrdProd WHERE ProdCode = #{prodCode}
+    </select>
+
+    <select id="selectProdLogs" resultType="com.shopwizard.product.model.SlinkLog">
+        SELECT LogNo, LogType, ProdCode, CateCode, ProdName, SaleYn, ResultType, ResultMessag, State,
+               RegistId, RegistName, RegistDate
+        FROM shopwizard.tPrdSlinkLog
+        WHERE ProdCode = #{prodCode} AND LogType = '상품'
+        ORDER BY LogNo DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -88,7 +88,10 @@ const PageCatalogProd = (() => {
             <div style="font-size:12px;color:var(--text-muted)">
               총 <strong id="totalCountLabel">0</strong>건
             </div>
-            <button class="btn btn-primary" id="btnBulkApprov" style="padding:4px 10px;font-size:12px;${canApprove() ? '' : 'display:none'}">선택 일괄승인</button>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost" id="btnSlink" style="padding:4px 10px;font-size:12px;${canApprove() ? '' : 'display:none'}" title="승인(게시)된 샵피온 상품을 샵링커에 등록/수정합니다">선택 샵링커 전송</button>
+              <button class="btn btn-primary" id="btnBulkApprov" style="padding:4px 10px;font-size:12px;${canApprove() ? '' : 'display:none'}">선택 일괄승인</button>
+            </div>
           </div>
 
           <!-- 목록 -->
@@ -107,6 +110,7 @@ const PageCatalogProd = (() => {
     document.getElementById('btnExcel').addEventListener('click', openExcelModal);
     document.getElementById('btnExcelDown').addEventListener('click', downloadExcel);
     document.getElementById('btnBulkApprov').addEventListener('click', bulkApprov);
+    document.getElementById('btnSlink').addEventListener('click', sendToShoplinker);
     ['sProdCode','sProdName'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
     });
@@ -194,7 +198,7 @@ const PageCatalogProd = (() => {
     const rows = list.map(p => `
       <tr>
         <td style="text-align:center">
-          ${!p.approvDate && canApprove() ? `<input type="checkbox" class="row-check" data-code="${esc(p.prodCode)}">` : ''}
+          ${canApprove() ? `<input type="checkbox" class="row-check" data-code="${esc(p.prodCode)}" data-approved="${p.approvDate ? '1' : '0'}">` : ''}
         </td>
         <td style="font-size:11px;${esc(ell)}">
           <code>${esc(p.prodCode || '')}</code><br>
@@ -227,6 +231,8 @@ const PageCatalogProd = (() => {
             data-action="option" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">옵션</button>
           ${!p.approvDate && canApprove() ? `<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px;color:var(--primary)"
             data-action="approv" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">승인</button>` : ''}
+          <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px"
+            data-action="slinklog" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}" title="샵링커 전송 이력">샵링커</button>
           <button class="btn btn-danger" style="padding:2px 7px;font-size:11px"
             data-action="del" data-code="${esc(p.prodCode)}" data-name="${esc(p.prodName)}">삭제</button>
         </td>
@@ -238,12 +244,12 @@ const PageCatalogProd = (() => {
     // table-wrap의 가로 스크롤(overflow-x:auto)이 뜬다 — 항상 읽을 수 있는 쪽을 택함.
     const thEll = `${ell};max-width:0`;
     wrap.innerHTML = `
-      <table style="table-layout:fixed;width:970px">
+      <table style="table-layout:fixed;width:1030px">
         <colgroup>
           <col style="width:30px">
           <col style="width:130px"><col style="width:200px"><col style="width:90px"><col style="width:90px">
           <col style="width:90px"><col style="width:55px"><col style="width:55px">
-          <col style="width:80px"><col style="width:150px">
+          <col style="width:80px"><col style="width:210px">
         </colgroup>
         <thead>
           <tr>
@@ -256,7 +262,7 @@ const PageCatalogProd = (() => {
         <tbody>${rows}</tbody>
       </table>`;
 
-    // 전체선택: 현재 페이지에 보이는(=미승인) 체크박스만 대상으로 한다.
+    // 전체선택: 현재 페이지에 보이는 체크박스 전부. [선택 일괄승인]은 그중 미승인 행만, [선택 샵링커 전송]은 선택한 전부를 처리한다.
     const checkAll = wrap.querySelector('#checkAll');
     if (checkAll) {
       checkAll.addEventListener('change', () => {
@@ -319,6 +325,11 @@ const PageCatalogProd = (() => {
       });
     });
 
+    // 샵링커 전송 이력
+    wrap.querySelectorAll('[data-action=slinklog]').forEach(btn => {
+      btn.addEventListener('click', () => openSlinkLogModal(btn.dataset.code, btn.dataset.name));
+    });
+
     // 삭제
     wrap.querySelectorAll('[data-action=del]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -333,6 +344,105 @@ const PageCatalogProd = (() => {
         });
       });
     });
+  }
+
+  // ── 샵링커 전송 ────────────────────────────────────────────────────
+  // 승인(게시)된 샵피온 상품을 선택해 샵링커에 등록/수정한다(수동 전송 — 자동 전송은 없다).
+  // 실제 호출은 운영 샵링커에 상품이 등록·수정되므로 서버 기본 모드는 "시험"(요청만 만들어 이력에 남기고 보내지 않음)이다.
+  // 미승인 상품·샵피온이 아닌 서비스·필수값(상점상품코드/이미지/분류) 누락 상품은 서버가 사유와 함께 건너뛴다.
+  async function sendToShoplinker() {
+    const codes = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.code);
+    if (codes.length === 0) { UI.toast('샵링커로 전송할 상품을 먼저 선택하세요', 'error'); return; }
+
+    let modeInfo;
+    try { modeInfo = await Api.get('/catalog/prod/slinker/mode'); }
+    catch (e) { UI.toast(e.message, 'error'); return; }
+    if (codes.length > modeInfo.maxProducts) {
+      UI.toast(`한 번에 최대 ${modeInfo.maxProducts}건까지 전송할 수 있습니다 (선택 ${codes.length}건)`, 'error');
+      return;
+    }
+    const live = modeInfo.mode === 'live';
+    const msg = live
+      ? `샵링커에 ${codes.length}건을 실제로 전송합니다. 샵링커에 상품이 등록·수정됩니다. 계속하시겠습니까?`
+      : `[시험 모드] ${codes.length}건의 전송 요청을 만들어 이력에만 남기고, 샵링커로는 보내지 않습니다. 계속하시겠습니까?`;
+
+    UI.confirm(msg, async close => {
+      try {
+        const r = await Api.post('/catalog/prod/slinker/send', { prodCodes: codes });
+        close();
+        openSlinkResultModal(r);
+      } catch (e) {
+        UI.toast(e.message, 'error');
+        close();
+      }
+    });
+  }
+
+  const SLINK_STATUS = {
+    SENT:    { label: '전송 성공', badge: 'badge-green' },
+    DRY:     { label: '시험(미전송)', badge: 'badge-blue' },
+    FAILED:  { label: '실패', badge: 'badge-red' },
+    SKIPPED: { label: '건너뜀', badge: 'badge-gray' },
+  };
+
+  function openSlinkResultModal(r) {
+    const results = r.results || [];
+    const count = s => results.filter(x => x.status === s).length;
+    const body = document.createElement('div');
+    body.innerHTML = `
+      ${r.mode === 'live' ? '' : `
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:10px 12px;font-size:12px;margin-bottom:10px">
+        시험 모드입니다. 요청을 만들어 이력에만 남겼고 <b>샵링커로는 실제로 보내지 않았습니다.</b>
+      </div>`}
+      <div style="font-size:13px;margin-bottom:8px">
+        총 <b>${esc(String(results.length))}</b>건 ·
+        전송 성공 <b>${esc(String(count('SENT')))}</b> · 시험 <b>${esc(String(count('DRY')))}</b> ·
+        <span style="color:${count('FAILED') ? 'var(--danger)' : 'inherit'}">실패 <b>${esc(String(count('FAILED')))}</b></span> ·
+        건너뜀 <b>${esc(String(count('SKIPPED')))}</b>
+      </div>
+      <div style="max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table class="table" style="width:100%;font-size:12px">
+          <thead><tr><th>상품코드</th><th>상품명</th><th>결과</th><th>메시지</th></tr></thead>
+          <tbody>${results.map(x => {
+            const st = SLINK_STATUS[x.status] || { label: x.status, badge: 'badge-gray' };
+            return `<tr>
+              <td><code>${esc(x.prodCode || '')}</code></td>
+              <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.prodName || '')}">${esc(x.prodName || '')}</td>
+              <td><span class="badge ${esc(st.badge)}">${esc(st.label)}</span></td>
+              <td style="line-height:1.5">${esc(x.message || '')}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+    const { el } = UI.modal({ title: '샵링커 전송 결과', body, confirmText: null, cancelText: '닫기' });
+    el.querySelector('.modal').style.width = '900px';
+  }
+
+  async function openSlinkLogModal(prodCode, prodName) {
+    const body = document.createElement('div');
+    body.innerHTML = '<div style="padding:12px;color:var(--text-muted)">불러오는 중...</div>';
+    const { el } = UI.modal({ title: `샵링커 전송 이력 – ${prodName || prodCode}`, body, confirmText: null, cancelText: '닫기' });
+    el.querySelector('.modal').style.width = '860px';
+
+    const TYPE = { 'true': '성공', 'false': '실패', 'error': '오류', 'dry': '시험' };
+    try {
+      const logs = await Api.get('/catalog/prod/slinker/log', { prodCode, limit: 30 });
+      if (!logs.length) { body.innerHTML = '<div style="padding:16px;color:var(--text-muted);text-align:center">전송 이력이 없습니다</div>'; return; }
+      body.innerHTML = `
+        <div style="max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)">
+          <table class="table" style="width:100%;font-size:12px">
+            <thead><tr><th>일시</th><th>결과</th><th>메시지</th><th>처리자</th></tr></thead>
+            <tbody>${logs.map(l => `<tr>
+              <td style="white-space:nowrap">${esc((l.registDate || '').replace('T', ' ').substring(0, 19))}</td>
+              <td>${esc(TYPE[String(l.resultType || '').substring(0, 5).replace('|', '')] || l.resultType || '')}</td>
+              <td style="line-height:1.5">${esc(l.resultMessag || '')}</td>
+              <td style="white-space:nowrap">${esc(l.registName || l.registId || '')}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+    } catch (e) {
+      body.innerHTML = `<div style="padding:12px;color:var(--danger)">${esc(e.message)}</div>`;
+    }
   }
 
   // ── 엑셀 다운로드 ──────────────────────────────────────────────────
@@ -485,8 +595,10 @@ const PageCatalogProd = (() => {
   // (백엔드 쿼리 자체가 처음부터 ProdCode IN (...) 이라 다건 승인을 염두에 두고
   // 만들어져 있었는데, 정작 프론트에는 여러 건을 한 번에 선택할 UI가 없었다).
   function bulkApprov() {
-    const codes = Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.code);
-    if (codes.length === 0) { UI.toast('승인할 상품을 먼저 선택하세요', 'error'); return; }
+    // 체크박스는 승인된 행에도 있으므로(샵링커 전송용) 일괄승인은 미승인 행만 대상으로 한다.
+    const codes = Array.from(document.querySelectorAll('.row-check:checked'))
+      .filter(cb => cb.dataset.approved === '0').map(cb => cb.dataset.code);
+    if (codes.length === 0) { UI.toast('승인할 상품(미승인)을 먼저 선택하세요', 'error'); return; }
 
     UI.confirm(`선택한 ${codes.length}건을 일괄승인 하시겠습니까? (승인 즉시 쇼핑몰에 노출됩니다)`, async close => {
       try {

@@ -82,3 +82,14 @@ shoplinker:
   order-url:      ${SHOPLINKER_ORDER_URL:http://ad2.shoplinker.co.kr/cooper/shopion/order.php}
   order2-url:     ${SHOPLINKER_ORDER2_URL:http://ad2.shoplinker.co.kr/cooper/shopion/order2.php}
   timeout-sec:    ${SHOPLINKER_TIMEOUT_SEC:60}
+
+  # ── 상품 전송(샵피온 상품을 샵링커에 등록/수정) ──
+  # 같은 호출이 등록과 수정을 겸한다(partner_product_id = 상점상품코드가 키). 운영 샵링커에 실제로 반영되는 외부 연동이라
+  # 기본은 dry-run(실제 호출 없이 요청만 만들어 이력에 남김)이다. 실전송은 계정 ID 와 모드를 환경변수로 켠 뒤에만 동작한다.
+  product-url:        ${SHOPLINKER_PRODUCT_URL:https://admin.shoplinker.co.kr/shoplinker_API/prodApiInsert_new.php}
+  product-mode:       ${SHOPLINKER_PRODUCT_MODE:dry-run}   # dry-run | live
+  # 샵링커 협력사 계정 ID. 공개 저장소이므로 기본값을 두지 않는다(운영 환경변수로만 주입).
+  customer-id:        ${SHOPLINKER_CUSTOMER_ID:}
+  image-base-url:     ${SHOPLINKER_IMAGE_BASE_URL:http://www.shopion.co.kr}
+  product-svc-code:   ${SHOPLINKER_PRODUCT_SVC_CODE:SHP001}
+  product-timeout-sec: ${SHOPLINKER_PRODUCT_TIMEOUT_SEC:30}
