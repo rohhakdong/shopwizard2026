@@ -26,6 +26,8 @@ public interface ProdMapper {
     int countShopion(String prodCode);
     /** 이 상품의 주문 라인(shopion.tOrdOrderProd) 수 — 있으면 판매 상품을 지우면 과거 주문이 관리자 조회에서 가려진다. */
     int countOrderLines(String prodCode);
+    /** 판매여부를 완전품절(-9)로 바꾼다 — 주문 이력이 있어 지울 수 없는 상품용. */
+    int markSoldOut(String prodCode);
     /** 등록 쪽 내용을 판매 상품에 덮어쓴다(재고 수량 SupplyQty 는 제외). */
     int sync2Shopion(String prodCode);
     int delete2Shopion(String prodCode);

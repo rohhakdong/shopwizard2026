@@ -266,10 +266,11 @@ const PageProductProd = (() => {
     // 삭제
     wrap.querySelectorAll('[data-action=del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        UI.confirm(`[${btn.dataset.name}] 상품을 삭제하시겠습니까?`, async close => {
+        UI.confirm(`[${btn.dataset.name}] 상품을 삭제하시겠습니까? (주문 이력이 있으면 삭제하지 않고 완전품절로 처리합니다)`, async close => {
           try {
-            await Api.delete('/product/prod', { prodCode: btn.dataset.code });
-            UI.toast('삭제되었습니다', 'success');
+            const r = await Api.delete('/product/prod', { prodCode: btn.dataset.code });
+            // 주문 이력이 있으면 서버가 지우지 않고 완전품절로만 바꾼다 — 그 사실을 그대로 알려준다.
+            UI.toast(r && r.deleted === false && r.message ? r.message : '삭제되었습니다', 'success');
             loadList();
           } catch (e) { UI.toast(e.message, 'error'); }
           close();

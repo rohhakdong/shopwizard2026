@@ -290,6 +290,11 @@
         SELECT COUNT(*) FROM shopion.tOrdOrderProd WHERE ProdCode = #{value}
     </select>
 
+    <update id="markSoldOut" parameterType="string">
+        UPDATE shopwizard.tCatProd SET SaleYn = -9, ChangeDate = NOW(), ChangeCount = ChangeCount + 1
+        WHERE ProdCode = #{value}
+    </update>
+
     <!-- 승인 후 등록 쪽(tCatProd) 수정을 판매 상품(tPrdProd)에 반영한다. copy2Shopion 과 같은 조인·컬럼이되
          SupplyQty(판매 쪽 재고 — 주문 때 차감되므로 덮어쓰면 실재고와 어긋난다)와 Regist* 는 건드리지 않는다. -->
     <update id="sync2Shopion" parameterType="string">

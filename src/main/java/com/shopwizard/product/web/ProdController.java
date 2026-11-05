@@ -31,9 +31,9 @@ public class ProdController {
     public String selectShopProdCode(@RequestParam String shopProdCode) { return prodService.selectShopProdCode(shopProdCode); }
 
     @DeleteMapping
-    public void delete(@RequestParam String prodCode, jakarta.servlet.http.HttpServletRequest request) {
+    public com.shopwizard.framework.util.DeleteResult delete(@RequestParam String prodCode, jakarta.servlet.http.HttpServletRequest request) {
         scopeGuard.requirePrdProd(request, prodCode);   // 상점 제한 관리자는 자기 상점 상품만
-        prodService.delete(prodCode);
+        return prodService.delete(prodCode);
     }
 
     @GetMapping("/search/list")

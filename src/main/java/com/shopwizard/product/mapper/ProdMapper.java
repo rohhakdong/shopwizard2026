@@ -17,6 +17,8 @@ public interface ProdMapper {
     void update(Prod prod);
     void updateReviewCntnts(Prod prod);
     void delete(String prodCode);
+    /** 이 상품의 주문 라인(tOrdOrderProd) 수 — 있으면 상품을 지워선 안 된다(관리자 주문 조회가 tPrdProd 와 조인해 과거 주문이 가려진다). */
+    int countOrderLines(String prodCode);
     List<Prod> selectListSearch(Map<String, Object> params);
     int selectCountSearch(Map<String, Object> params);
     List<Prod> selectListKeyword(Map<String, Object> params);

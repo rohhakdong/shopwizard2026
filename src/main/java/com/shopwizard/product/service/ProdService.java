@@ -3,6 +3,7 @@ package com.shopwizard.product.service;
 import com.shopwizard.product.mapper.ProdMapper;
 import com.shopwizard.product.model.Prod;
 import lombok.RequiredArgsConstructor;
+import com.shopwizard.framework.util.DeleteResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Transactional
 public class ProdService {
+    private static final int SOLD_OUT = -9;   // cSaleYnType: 완전품절
+
     private final ProdMapper prodMapper;
 
     public List<Prod> selectList(Map<String, Object> params) { return prodMapper.selectList(params); }
@@ -23,7 +26,22 @@ public class ProdService {
     public void insert(Prod prod) { prodMapper.insert(prod); }
     public void update(Prod prod) { prodMapper.update(prod); }
     public void updateReviewCntnts(Prod prod) { prodMapper.updateReviewCntnts(prod); }
-    public void delete(String prodCode) { prodMapper.delete(prodCode); }
+    /**
+     * 주문 이력이 있는 상품은 지우지 않고 완전품절(-9)로만 바꾼다 — 지우면 관리자 주문 조회에서 과거 주문이 사라진다.
+     * 등록 쪽(tCatProd)의 판매여부도 같이 맞춘다(안 맞추면 다음 수정 때 등록 쪽 값이 판매 쪽을 되살린다).
+     */
+    public DeleteResult delete(String prodCode) {
+        if (prodMapper.countOrderLines(prodCode) > 0) {
+            Map<String, Object> p = new java.util.HashMap<>();
+            p.put("prodCode", prodCode);
+            p.put("saleYn", SOLD_OUT);
+            prodMapper.updateSaleYn(p);
+            prodMapper.updateCatSaleYn(p);
+            return DeleteResult.ofSoldOut();
+        }
+        prodMapper.delete(prodCode);
+        return DeleteResult.ofDeleted();
+    }
     public List<Prod> selectListSearch(Map<String, Object> params) { return prodMapper.selectListSearch(params); }
     public int selectCountSearch(Map<String, Object> params) { return prodMapper.selectCountSearch(params); }
     public List<Prod> selectListKeyword(Map<String, Object> params) { return prodMapper.selectListKeyword(params); }

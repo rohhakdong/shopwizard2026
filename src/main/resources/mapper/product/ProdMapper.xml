@@ -230,6 +230,10 @@
         WHERE ProdCode = #{value}
     </delete>
 
+    <select id="countOrderLines" parameterType="string" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOrdOrderProd WHERE ProdCode = #{value}
+    </select>
+
     <sql id="prodSearchWhere">
         <if test="pSvcCode != null and pSvcCode != ''">AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop SVC_S WHERE SVC_S.ShopCode = shopion.tPrdProd.ShopCode AND SVC_S.SvcCode = #{pSvcCode})</if>
         <if test="pProdName != null and pProdName != ''">

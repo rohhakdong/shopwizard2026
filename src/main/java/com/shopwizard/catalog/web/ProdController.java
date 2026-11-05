@@ -69,7 +69,7 @@ public class ProdController {
      * 이번에 신규 등록 기능을 만들며 처음 눌러보고 나서야 500이 나는 걸 발견했다.)
      */
     @DeleteMapping
-    public int delete(@RequestParam String prodCode, jakarta.servlet.http.HttpServletRequest request) {
+    public com.shopwizard.framework.util.DeleteResult delete(@RequestParam String prodCode, jakarta.servlet.http.HttpServletRequest request) {
         scopeGuard.requireCatProd(request, prodCode);
         Prod prod = new Prod();
         prod.setProdCode(prodCode);

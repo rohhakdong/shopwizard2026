@@ -5,10 +5,9 @@ import com.shopwizard.catalog.mapper.ProdImgMapper;
 import com.shopwizard.catalog.mapper.ProdItemMapper;
 import com.shopwizard.catalog.mapper.ProdMapper;
 import com.shopwizard.catalog.model.Prod;
+import com.shopwizard.framework.util.DeleteResult;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,18 +78,33 @@ class ProdServiceTest {
     // ── 삭제 ────────────────────────────────────────────────
 
     @Test
-    void 주문_이력이_있으면_409로_막고_아무것도_지우지_않는다() {
+    void 주문_이력이_있으면_지우지_않고_완전품절로_바꾸고_판매_쪽에도_반영한다() {
         when(prodMapper.countOrderLines("P1")).thenReturn(3);
         when(prodMapper.countShopion("P1")).thenReturn(1);
 
-        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> service.delete(prod("P1")));
+        DeleteResult r = service.delete(prod("P1"));
 
-        assertEquals(HttpStatus.CONFLICT, e.getStatusCode());
-        assertTrue(e.getReason().contains("주문 이력"));
+        assertFalse(r.deleted());
+        assertTrue(r.message().contains("완전품절"));
+        InOrder o = inOrder(prodMapper);
+        o.verify(prodMapper).markSoldOut("P1");
+        o.verify(prodMapper).sync2Shopion("P1");
         verify(prodMapper, never()).delete(any());
         verify(prodMapper, never()).delete2Shopion(any());
         verify(prodItemMapper, never()).deleteByProdCode(any());
         verify(prodItemMapper, never()).delete2Shopion(any());
+    }
+
+    @Test
+    void 주문_이력이_있는_미게시_상품은_등록_쪽만_품절로_바꾼다() {
+        when(prodMapper.countOrderLines("P1")).thenReturn(1);
+        when(prodMapper.countShopion("P1")).thenReturn(0);
+
+        assertFalse(service.delete(prod("P1")).deleted());
+
+        verify(prodMapper).markSoldOut("P1");
+        verify(prodMapper, never()).sync2Shopion(any());
+        verify(prodMapper, never()).delete(any());
     }
 
     @Test
@@ -99,7 +113,8 @@ class ProdServiceTest {
         when(prodMapper.countShopion("P1")).thenReturn(1);
         when(prodMapper.delete(any())).thenReturn(1);
 
-        assertEquals(1, service.delete(prod("P1")));
+        assertTrue(service.delete(prod("P1")).deleted());
+        verify(prodMapper, never()).markSoldOut(any());
 
         InOrder o = inOrder(prodItemMapper, prodChnlMapper, prodImgMapper, prodMapper);
         o.verify(prodItemMapper).delete2Shopion("P1");
@@ -118,7 +133,7 @@ class ProdServiceTest {
         when(prodMapper.countOrderLines("P1")).thenReturn(0);
         when(prodMapper.countShopion("P1")).thenReturn(0);
 
-        service.delete(prod("P1"));
+        assertTrue(service.delete(prod("P1")).deleted());
 
         verify(prodMapper, never()).delete2Shopion(any());
         verify(prodItemMapper, never()).delete2Shopion(any());

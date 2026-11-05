@@ -8,10 +8,9 @@ import com.shopwizard.catalog.model.Prod;
 import com.shopwizard.catalog.model.ProdDashBoard;
 import com.shopwizard.catalog.model.ProdItem;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import com.shopwizard.framework.util.DeleteResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -83,14 +82,16 @@ public class ProdService {
 
     /**
      * 삭제 — 게시된 상품이면 판매 상품(+옵션·채널·이미지·상점/레이아웃/이벤트 진열)도 함께 지운다.
-     * 주문 이력이 있는 상품은 지우지 않고 막는다: 관리자 주문 조회가 판매 상품과 조인하므로 지우면 과거 주문이 목록에서 사라진다.
+     * 주문 이력이 있는 상품은 지우지 않고 완전품절(-9)로만 바꾼다(게시된 상품이면 판매 쪽에도 같이 반영):
+     * 관리자 주문 조회가 판매 상품과 조인하므로 지우면 과거 주문이 목록에서 사라진다.
      */
     @Transactional
-    public int delete(Prod prod) {
+    public DeleteResult delete(Prod prod) {
         String prodCode = prod.getProdCode();
         if (prodMapper.countOrderLines(prodCode) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "주문 이력이 있는 상품은 삭제할 수 없습니다. 판매여부를 '완전품절'로 바꿔 주세요.");
+            prodMapper.markSoldOut(prodCode);
+            if (isPublished(prodCode)) prodMapper.sync2Shopion(prodCode);
+            return DeleteResult.ofSoldOut();
         }
         if (isPublished(prodCode)) {
             prodItemMapper.delete2Shopion(prodCode);
@@ -104,7 +105,8 @@ public class ProdService {
         // insert()에서 항상 만들어주는 기본 아이템(ItemCode=20000)을 포함해, 이 상품에 딸린
         // tCatProdItem 옵션 행을 먼저 정리한다 — 안 지우면 상품마다 최소 1건씩 고아 데이터가 쌓인다.
         prodItemMapper.deleteByProdCode(prodCode);
-        return prodMapper.delete(prod);
+        prodMapper.delete(prod);
+        return DeleteResult.ofDeleted();
     }
 
     /** 승인 게시 — 판매 쪽에 아직 없으면 복사하고, 이미 있으면(재승인·기존 상품) 중복 오류 대신 내용을 동기화한다. */
