@@ -80,6 +80,7 @@ const PageCatalogProd = (() => {
             <button class="btn btn-primary" id="btnSearch" style="margin-top:18px">검색</button>
             <button class="btn btn-ghost" id="btnNew" style="margin-top:18px">+ 신규</button>
             <button class="btn btn-ghost" id="btnExcel" style="margin-top:18px">엑셀 일괄등록</button>
+            <button class="btn btn-ghost" id="btnExcelDown" style="margin-top:18px" title="현재 검색 조건의 상품을 엑셀 양식으로 내려받습니다. 고쳐서 [엑셀 일괄등록]으로 올리면 수정됩니다.">엑셀 다운로드</button>
           </div>
 
           <!-- 건수 + 일괄승인 -->
@@ -104,6 +105,7 @@ const PageCatalogProd = (() => {
     document.getElementById('btnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
     document.getElementById('btnNew').addEventListener('click', () => openEditModal(null));
     document.getElementById('btnExcel').addEventListener('click', openExcelModal);
+    document.getElementById('btnExcelDown').addEventListener('click', downloadExcel);
     document.getElementById('btnBulkApprov').addEventListener('click', bulkApprov);
     ['sProdCode','sProdName'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
@@ -333,6 +335,39 @@ const PageCatalogProd = (() => {
     });
   }
 
+  // ── 엑셀 다운로드 ──────────────────────────────────────────────────
+  // 현재 검색 조건의 상품을 일괄등록과 같은 35열 양식으로 내려받는다. 고쳐서 [엑셀 일괄등록]으로 올리면
+  // 상품코드가 있는 행은 수정으로 처리된다. 오류(예: 5,000건 초과)를 토스트로 보여주려고 fetch 로 받는다.
+  async function downloadExcel() {
+    const btn = document.getElementById('btnExcelDown');
+    btn.disabled = true;
+    try {
+      const qs = new URLSearchParams(Object.entries(getParams()).filter(([, v]) => v)).toString();
+      const res = await fetch('/catalog/prod/excel/export' + (qs ? '?' + qs : ''), { credentials: 'same-origin' });
+      if (!res.ok) {
+        let msg = '';
+        try { msg = JSON.parse(await res.text()).message; } catch (_) {}
+        if (res.status === 403) msg = '이 기능을 사용할 권한이 없습니다.';
+        throw new Error(msg || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const d = new Date();
+      const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `prodExcel_${stamp}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      UI.toast(`현재 검색 조건의 상품 ${totalCount.toLocaleString()}건을 내려받았습니다`, 'success');
+    } catch (e) {
+      UI.toast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   // ── 엑셀 일괄등록 ──────────────────────────────────────────────────
   // 예전 양식(prodExcel.xls, 35열)으로 작성한 파일을 올려 상품을 한 번에 등록/수정한다.
   // [검사] → 서버가 행별로 검사한 결과를 보여주고, 오류가 0건일 때만 [등록]이 켜진다.
@@ -344,7 +379,8 @@ const PageCatalogProd = (() => {
         엑셀 양식(.xls, .xlsx)으로 작성한 파일을 올려 상품을 한 번에 등록·수정합니다.<br>
         상품코드가 <b>비어 있으면 신규</b>(코드 자동 부여), <b>있으면 그 상품 수정</b>(빈 칸은 기존 값 유지)입니다.
         오류가 한 행이라도 있으면 아무것도 등록되지 않습니다. 새 상품은 승인 전 상태로 들어가며 [승인] 후 쇼핑몰에 노출됩니다.
-        <a href="/catalog/prod/excel/template" id="xlTemplate" style="margin-left:6px">엑셀 양식 받기</a>
+        <a href="/catalog/prod/excel/template" id="xlTemplate" style="margin-left:6px">엑셀 양식 받기</a><br>
+        기존 상품을 고치려면 목록의 [엑셀 다운로드]로 받은 파일을 수정해서 올리세요(같은 양식입니다).
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
         <input type="file" id="xlFile" accept=".xls,.xlsx" style="flex:1">

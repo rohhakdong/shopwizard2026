@@ -15,7 +15,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 상품 엑셀 일괄등록. 미리보기(/preview)는 검사만 하고, 등록(/import)은 서버가 다시 검사해서
@@ -35,6 +38,20 @@ public class ProdExcelController {
                         ContentDisposition.attachment().filename("prodExcel.xls", StandardCharsets.UTF_8).build().toString())
                 .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
                 .body(prodExcelService.buildTemplate());
+    }
+
+    /**
+     * 현재 검색 조건의 상품 목록을 같은 양식(.xls)으로 내려받는다 — 고쳐서 다시 올리면 수정으로 처리된다.
+     * 상점/서비스 제한 계정의 범위는 목록 조회와 똑같이 DataScopeFilter 가 pShopCode/pSvcCode 로 고정한다.
+     */
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@RequestParam Map<String, String> params) {
+        String name = "prodExcel_" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".xls";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(name, StandardCharsets.UTF_8).build().toString())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .body(prodExcelService.export(params));
     }
 
     @PostMapping("/preview")

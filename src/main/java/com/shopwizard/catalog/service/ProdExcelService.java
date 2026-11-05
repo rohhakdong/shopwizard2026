@@ -12,9 +12,11 @@ import com.shopwizard.framework.auth.DataScopeGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,6 +40,12 @@ import java.util.*;
 public class ProdExcelService {
 
     public static final int MAX_ROWS = 1000;
+    /** 한 번에 내려받을 수 있는 상품 수. */
+    public static final int MAX_EXPORT = 5000;
+    /** 엑셀 셀 하나에 넣을 수 있는 최대 글자 수. */
+    static final int MAX_CELL_CHARS = 32_767;
+    /** 내려받기에서 받는 화면 검색 조건 — 목록 조회와 같은 이름. 이 밖의 파라미터는 무시한다. */
+    private static final String[] EXPORT_FILTERS = {"pProdCode", "pProdName", "pShopCode", "pSvcCode", "pSaleYn", "pApprovDate"};
 
     /** 양식 열(순서 = 예전 양식 그대로). {열 이름, 신규 등록 시, 수정 시, 설명}. 두 번째 시트 "작성안내"에도 쓴다. */
     static final String[][] COLUMNS = {
@@ -126,6 +134,72 @@ public class ProdExcelService {
 
     /** 빈 양식(.xls) — 첫 시트는 35열 헤더, 두 번째 시트는 작성 안내. */
     public byte[] buildTemplate() {
+        return buildWorkbook(List.of(), List.of());
+    }
+
+    /** 현재 검색 조건의 상품 목록을 같은 양식으로 내려받는다 — 고쳐서 다시 올리면 수정 행으로 처리된다. */
+    public byte[] export(Map<String, String> filters) {
+        Map<String, Object> q = new HashMap<>();
+        // 화면 검색 조건만 받는다 — 목록 쿼리의 정렬(sidx/sord)처럼 SQL 에 그대로 들어가는 파라미터는 절대 통과시키지 않는다.
+        for (String key : EXPORT_FILTERS) {
+            String v = filters.get(key);
+            if (v != null && !v.isBlank()) q.put(key, v.trim());
+        }
+        q.put("pPageOffset", 0);
+        q.put("pPageSize", MAX_EXPORT + 1);
+        List<Prod> list = prodService.selectList(q);
+        if (list.size() > MAX_EXPORT) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "검색 결과가 " + MAX_EXPORT + "건을 넘습니다. 검색 조건을 좁혀 다시 시도해 주세요.");
+        }
+
+        List<ConstrVal> tax = loadCodes("cTaxType");
+        List<ConstrVal> saleYn = loadCodes("cSaleYnType");
+        List<Object[]> rows = new ArrayList<>();
+        List<String> longDesc = new ArrayList<>();
+        for (Prod p : list) {
+            String desc = p.getProdDesc() == null ? "" : p.getProdDesc();
+            if (desc.length() > MAX_CELL_CHARS) {   // 엑셀 셀 한도 — 자르면 다시 올릴 때 설명이 망가지므로 비워 둔다(빈 칸은 기존 값 유지)
+                longDesc.add(p.getProdCode());
+                desc = "";
+            }
+            rows.add(exportRow(p, desc, tax, saleYn));
+        }
+        List<String> notes = new ArrayList<>();
+        notes.add("이 파일은 목록에서 내려받은 것입니다. 고쳐서 다시 올리면 상품코드가 있는 행은 수정으로 처리됩니다.");
+        if (!longDesc.isEmpty()) {
+            notes.add("상품설명이 엑셀 셀 한도(" + MAX_CELL_CHARS + "자)를 넘는 " + longDesc.size() + "건은 설명 칸을 비워 두었습니다. "
+                    + "그 칸을 비운 채 올리면 기존 설명이 유지됩니다. 상품코드: "
+                    + String.join(", ", longDesc.subList(0, Math.min(longDesc.size(), 20))) + (longDesc.size() > 20 ? " 외" : ""));
+        }
+        return buildWorkbook(rows, notes);
+    }
+
+    /** 양식 35열 순서(COLUMNS)대로 한 상품을 한 행으로. 코드 값은 다시 올릴 때 그대로 읽히도록 한글 이름으로 쓴다. */
+    private Object[] exportRow(Prod p, String desc, List<ConstrVal> tax, List<ConstrVal> saleYn) {
+        return new Object[]{
+            p.getProdCode(), p.getShopProdCode(), p.getProdName(), p.getProdDsplName(), p.getCateCode(), p.getCateName(),
+            p.getBrandName(), p.getModelName(), p.getProdUnit(), p.getShopCode(), p.getShopName(),
+            p.getListPrice(), p.getSalePrice(), p.getSupplyPrice(), p.getBuyPrice(),
+            codeLabel(p.getVatRate(), tax), p.getMakerName(), p.getOriginName(),
+            p.getAttrName1(), p.getAttrValStr1(), p.getAttrName2(), p.getAttrValStr2(),
+            p.getAttrName3(), p.getAttrValStr3(), p.getAttrName4(), p.getAttrValStr4(),
+            p.getImgUrl(), p.getDeliFeeType(), p.getDeliFeeAmt(), desc, codeLabel(p.getSaleYn(), saleYn),
+            p.getSupplyQty(), p.getMemo01(), "수정", p.getChangeDate(),
+        };
+    }
+
+    /** 코드 값 → 한글 이름(코드 테이블에 없으면 값 그대로). 올릴 때 이 이름을 다시 코드 값으로 바꾼다. */
+    private static String codeLabel(Object value, List<ConstrVal> codes) {
+        if (value == null) return "";
+        String s = String.valueOf(value);
+        for (ConstrVal cv : codes) {
+            if (s.equals(cv.getConstrVal())) return cv.getConstrValDesc() == null ? s : cv.getConstrValDesc();
+        }
+        return s;
+    }
+
+    private byte[] buildWorkbook(List<Object[]> dataRows, List<String> notes) {
         try (Workbook wb = new HSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             CellStyle head = wb.createCellStyle();
             Font bold = wb.createFont();
@@ -143,6 +217,16 @@ public class ProdExcelService {
                 sheet.setColumnWidth(i, (COLUMNS[i][0].length() < 6 ? 14 : 18) * 256);
             }
             sheet.createFreezePane(0, 1);
+            int r = 1;
+            for (Object[] values : dataRows) {
+                Row row = sheet.createRow(r++);
+                for (int i = 0; i < values.length; i++) {
+                    Object v = values[i];
+                    if (v == null) continue;
+                    if (v instanceof Number n) row.createCell(i).setCellValue(n.doubleValue());
+                    else if (!String.valueOf(v).isEmpty()) row.createCell(i).setCellValue(String.valueOf(v));
+                }
+            }
 
             Sheet guide = wb.createSheet("작성안내");
             Row gh = guide.createRow(0);
@@ -152,15 +236,17 @@ public class ProdExcelService {
                 c.setCellValue(titles[i]);
                 c.setCellStyle(head);
             }
-            for (int r = 0; r < COLUMNS.length; r++) {
-                Row row = guide.createRow(r + 1);
-                for (int i = 0; i < 4; i++) row.createCell(i).setCellValue(COLUMNS[r][i]);
+            for (int c = 0; c < COLUMNS.length; c++) {
+                Row row = guide.createRow(c + 1);
+                for (int i = 0; i < 4; i++) row.createCell(i).setCellValue(COLUMNS[c][i]);
             }
             int n = COLUMNS.length + 2;
-            guide.createRow(n).createCell(0).setCellValue("※ 첫 시트(Sheet1)의 1행은 헤더, 2행부터 상품 데이터입니다. 열 순서는 바뀌어도 되고 헤더 이름으로 찾습니다.");
-            guide.createRow(n + 1).createCell(0).setCellValue("※ 수정할 때 빈 칸은 기존 값을 유지합니다(엑셀로 값을 비워 지우는 것은 지원하지 않습니다).");
-            guide.createRow(n + 2).createCell(0).setCellValue("※ 한 번에 최대 " + MAX_ROWS + "행까지 올릴 수 있고, 오류가 한 행이라도 있으면 아무것도 등록되지 않습니다.");
-            guide.createRow(n + 3).createCell(0).setCellValue("※ 새로 등록한 상품은 승인 전 상태로 들어가며, [승인] 후에 쇼핑몰에 노출됩니다.");
+            List<String> lines = new ArrayList<>(notes);
+            lines.add("※ 첫 시트(Sheet1)의 1행은 헤더, 2행부터 상품 데이터입니다. 열 순서는 바뀌어도 되고 헤더 이름으로 찾습니다.");
+            lines.add("※ 수정할 때 빈 칸은 기존 값을 유지합니다(엑셀로 값을 비워 지우는 것은 지원하지 않습니다).");
+            lines.add("※ 한 번에 최대 " + MAX_ROWS + "행까지 올릴 수 있고, 오류가 한 행이라도 있으면 아무것도 등록되지 않습니다.");
+            lines.add("※ 새로 등록한 상품은 승인 전 상태로 들어가며, [승인] 후에 쇼핑몰에 노출됩니다.");
+            for (String line : lines) guide.createRow(n++).createCell(0).setCellValue(line);
             guide.setColumnWidth(0, 16 * 256);
             guide.setColumnWidth(1, 12 * 256);
             guide.setColumnWidth(2, 10 * 256);
@@ -281,6 +367,14 @@ public class ProdExcelService {
 
     /** 셀 값을 상품에 옮긴다. 수정이면 값이 있는 칸만 덮어쓰고, 신규면 값이 있는 칸만 채운 뒤 기본값을 따로 넣는다. */
     private void applyCells(RawRow raw, Prod p, ProdExcelRow row, Ctx c, boolean update, String code) {
+        // 목록에서 내려받은 파일을 그대로 다시 올려도 안전해야 한다 — 값이 기존과 같은 칸은 검사도 덮어쓰기도 하지 않는다
+        // (예: 이미지를 같은 경로로 덮으면 6개 썸네일 경로가 사라지고, 최종 분류가 아닌 기존 분류·코드표에 없는 기존 값은 오류가 된다).
+        String exCate = nz(p.getCateCode()), exImg = nz(p.getImgUrl());
+        String exBrand = nz(p.getBrandName()), exMaker = nz(p.getMakerName()), exOrigin = nz(p.getOriginName());
+        String exVat = codeLabel(p.getVatRate(), c.tax(constrValService));
+        String exSale = codeLabel(p.getSaleYn(), c.saleYn(constrValService));
+        String exDeli = nz(p.getDeliFeeType());
+
         // 상품명
         String name = raw.get(H_PROD_NAME);
         if (!name.isEmpty()) {
@@ -327,7 +421,8 @@ public class ProdExcelService {
         // 분류 — 그 상점의 서비스에 있는 최종 분류여야 한다
         String cate = raw.get(H_CATE_CODE);
         if (cate.isEmpty() && !update) row.error("분류코드는 필수입니다.");
-        if (!cate.isEmpty() || shopChanged) {
+        boolean cateUnchanged = update && cate.equals(exCate);
+        if ((!cate.isEmpty() && !cateUnchanged) || shopChanged) {
             String effectiveCate = cate.isEmpty() ? p.getCateCode() : cate;
             String svc = p.getShopCode() == null ? null : c.svcOf(p.getShopCode(), mapper);
             if (!cate.isEmpty() && !cate.matches("[A-Za-z0-9]{13}")) {
@@ -341,15 +436,24 @@ public class ProdExcelService {
 
         // 텍스트 열
         String brand = textCell(raw, H_BRAND, 50, row);
-        if (brand != null) { p.setBrandName(brand); c.warnMaster(row, "브랜드", brand, () -> mapper.countBrand(c.svcOfShop(p, mapper), brand)); }
+        if (brand != null) {
+            p.setBrandName(brand);
+            if (!brand.equals(exBrand)) c.warnMaster(row, "브랜드", brand, () -> mapper.countBrand(c.svcOfShop(p, mapper), brand));
+        }
         String model = textCell(raw, H_MODEL, 50, row);
         if (model != null) p.setModelName(model);
         String unit = textCell(raw, H_UNIT, 50, row);
         if (unit != null) p.setProdUnit(unit);
         String maker = textCell(raw, H_MAKER, 50, row);
-        if (maker != null) { p.setMakerName(maker); c.warnMaster(row, "제조사", maker, () -> mapper.countMaker(maker)); }
+        if (maker != null) {
+            p.setMakerName(maker);
+            if (!maker.equals(exMaker)) c.warnMaster(row, "제조사", maker, () -> mapper.countMaker(maker));
+        }
         String origin = textCell(raw, H_ORIGIN, 50, row);
-        if (origin != null) { p.setOriginName(origin); c.warnMaster(row, "원산지", origin, () -> mapper.countOrigin(origin)); }
+        if (origin != null) {
+            p.setOriginName(origin);
+            if (!origin.equals(exOrigin)) c.warnMaster(row, "원산지", origin, () -> mapper.countOrigin(origin));
+        }
         String memo = textCell(raw, H_MEMO, 500, row);
         if (memo != null) p.setMemo01(memo);
         for (int i = 0; i < 4; i++) {
@@ -360,7 +464,7 @@ public class ProdExcelService {
 
         // 이미지 — 경로만 받는다(썸네일을 만들지 않으므로 모든 크기에 같은 경로)
         String img = raw.get(H_IMG);
-        if (!img.isEmpty() && !tooLong(img, 255, "이미지", row)) {
+        if (!img.isEmpty() && !img.equals(exImg) && !tooLong(img, 255, "이미지", row)) {
             if (!(img.startsWith("/images/") || img.startsWith("http://") || img.startsWith("https://"))) {
                 row.warn("이미지 경로가 /images/ 또는 http(s):// 로 시작하지 않습니다: " + img);
             }
@@ -386,11 +490,11 @@ public class ProdExcelService {
         if ((v = intCell(raw, H_QTY, row)) != null) p.setSupplyQty(v);
 
         // 코드 값 (한글 이름 또는 코드 값)
-        String vat = codeCell(raw, H_VAT, c.tax(constrValService), row);
+        String vat = codeCell(raw, H_VAT, c.tax(constrValService), row, exVat);
         if (vat != null) p.setVatRate(Integer.valueOf(vat));
-        String deli = codeCell(raw, H_DELI_TYPE, c.deliFee(constrValService), row);
+        String deli = codeCell(raw, H_DELI_TYPE, c.deliFee(constrValService), row, exDeli);
         if (deli != null) p.setDeliFeeType(deli);
-        String sale = codeCell(raw, H_SALE_YN, c.saleYn(constrValService), row);
+        String sale = codeCell(raw, H_SALE_YN, c.saleYn(constrValService), row, exSale);
         if (sale != null) p.setSaleYn(Integer.valueOf(sale));
     }
 
@@ -454,9 +558,10 @@ public class ProdExcelService {
         return bd.intValueExact();
     }
 
-    private static String codeCell(RawRow raw, String header, List<ConstrVal> codes, ProdExcelRow row) {
+    /** 코드 이름/값을 코드 값으로. 비었거나 기존 값과 같으면(올리기 전 그대로) null — 건드리지 않는다. */
+    private static String codeCell(RawRow raw, String header, List<ConstrVal> codes, ProdExcelRow row, String existingText) {
         String s = raw.get(header);
-        if (s.isEmpty()) return null;
+        if (s.isEmpty() || s.equals(existingText)) return null;
         String key = squash(s);
         for (ConstrVal cv : codes) {
             if (key.equals(squash(cv.getConstrValDesc())) || key.equals(squash(cv.getConstrVal()))) return cv.getConstrVal();
@@ -469,6 +574,8 @@ public class ProdExcelService {
         row.error(header + " 값이 올바르지 않습니다: " + s + " (사용 가능: " + allowed + ")");
         return null;
     }
+
+    private static String nz(String s) { return s == null ? "" : s; }
 
     private static String squash(String s) { return s == null ? "" : s.replaceAll("\\s+", "").toLowerCase(Locale.ROOT); }
 
@@ -589,12 +696,16 @@ public class ProdExcelService {
         List<ConstrVal> saleYn(ConstrValService s) { return saleYn != null ? saleYn : (saleYn = load(s, "cSaleYnType")); }
 
         private List<ConstrVal> load(ConstrValService s, String constrCode) {
-            Map<String, Object> q = new HashMap<>();
-            q.put("pConstrCode", constrCode);
-            q.put("sidx", "ConstrValSeq");
-            q.put("sord", "ASC");
-            List<ConstrVal> list = s.findConstrValList(q);
-            return list == null ? List.of() : list;
+            return loadCodes(constrCode);
         }
+    }
+
+    private List<ConstrVal> loadCodes(String constrCode) {
+        Map<String, Object> q = new HashMap<>();
+        q.put("pConstrCode", constrCode);
+        q.put("sidx", "ConstrValSeq");
+        q.put("sord", "ASC");
+        List<ConstrVal> list = constrValService.findConstrValList(q);
+        return list == null ? List.of() : list;
     }
 }

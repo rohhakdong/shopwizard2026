@@ -149,6 +149,7 @@ public final class ScreenRegistry {
         {"GET", "/catalog/prod/count", "catalog-prod"},
         {"POST", "/catalog/prod/img/upload", "catalog-prod"},
         {"GET", "/catalog/prod/excel/template", "catalog-prod"},
+        {"GET", "/catalog/prod/excel/export", "catalog-prod"},
         {"POST", "/catalog/prod/excel/preview", "catalog-prod"},
         {"POST", "/catalog/prod/excel/import", "catalog-prod"},
         {"GET", "/catalog/prod/list", "catalog-prod"},

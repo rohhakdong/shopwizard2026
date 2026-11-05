@@ -525,6 +525,158 @@ class ProdExcelServiceTest {
         assertNull(upd.getValue().getRegistId());   // 수정은 등록자를 바꾸지 않는다
     }
 
+    // ── 내려받기(export) ─────────────────────────────────────
+
+    /** 내려받기 → 다시 올리기 왕복을 시험하려고 일부러 까다로운 값(최종 분류가 아닌 분류, 코드표에 없는 값, 썸네일)을 가진 상품. */
+    private static Prod fullProd() {
+        Prod p = new Prod();
+        p.setProdCode("1000000100"); p.setShopProdCode("SKU-1");
+        p.setProdName("상품"); p.setProdDsplName("전시명");
+        p.setCateCode("G006010009001"); p.setCateName("링클/탄력케어");
+        p.setBrandName("브랜드"); p.setMakerName("제조사"); p.setOriginName("한국");
+        p.setShopCode("SHOP00000001"); p.setShopName("상점");
+        p.setListPrice(100); p.setSalePrice(5000); p.setSupplyPrice(50); p.setBuyPrice(40);
+        p.setVatRate(10); p.setSaleYn(1); p.setSupplyQty(33);
+        p.setAttrName1("사이즈"); p.setAttrValStr1("L");
+        p.setImgUrl("/images/p/a.jpg"); p.setImgUrl50("/images/p/a_thumbnail_50.jpg"); p.setImgUrl160("/images/p/a_tn_160.jpg");
+        p.setDeliFeeType("이상한배송"); p.setDeliFeeAmt(2500);
+        p.setProdDesc("<p>설명</p>"); p.setMemo01("메모"); p.setChangeDate("2026-11-05 10:00:00.0");
+        return p;
+    }
+
+    private static Sheet firstSheet(byte[] xls) throws Exception {
+        return WorkbookFactory.create(new ByteArrayInputStream(xls)).getSheetAt(0);
+    }
+
+    @Test
+    void 내려받기는_같은_양식의_헤더와_값을_쓰고_코드값은_한글_이름으로_쓴다() throws Exception {
+        when(prodService.selectList(any())).thenReturn(List.of(fullProd()));
+
+        Sheet s = firstSheet(service.export(Map.of()));
+
+        for (int i = 0; i < 35; i++) assertEquals(ALL_HEADERS[i], s.getRow(0).getCell(i).getStringCellValue());
+        Row r = s.getRow(1);
+        List<String> h = Arrays.asList(ALL_HEADERS);
+        assertEquals("1000000100", r.getCell(h.indexOf("상품코드")).getStringCellValue());   // 문자열(지수 표기 방지)
+        assertEquals(5000d, r.getCell(h.indexOf("판매가격")).getNumericCellValue());          // 숫자
+        assertEquals("과세", r.getCell(h.indexOf("부가세율")).getStringCellValue());
+        assertEquals("정상판매", r.getCell(h.indexOf("판매상태")).getStringCellValue());
+        assertEquals("링클/탄력케어", r.getCell(h.indexOf("분류명칭")).getStringCellValue());
+        assertEquals("<p>설명</p>", r.getCell(h.indexOf("상품설명")).getStringCellValue());
+        assertEquals("수정", r.getCell(h.indexOf("수정")).getStringCellValue());
+        assertNull(r.getCell(h.indexOf("속성명칭2")));   // 빈 값은 셀을 만들지 않는다
+    }
+
+    @Test
+    void 내려받기는_화면_검색조건만_받고_정렬_같은_파라미터는_버린다() throws Exception {
+        when(prodService.selectList(any())).thenReturn(List.of());
+        Map<String, String> in = new HashMap<>();
+        in.put("pProdName", " 루벨리 ");
+        in.put("pShopCode", "SHOP00000001");
+        in.put("pSaleYn", "");
+        in.put("sidx", "ProdCode; DROP TABLE x");   // SQL 에 그대로 들어가는 정렬 파라미터
+        in.put("sord", "DESC");
+        in.put("pPageSize", "1");
+
+        service.export(in);
+
+        @SuppressWarnings("unchecked") ArgumentCaptor<Map<String, Object>> q = ArgumentCaptor.forClass(Map.class);
+        verify(prodService).selectList(q.capture());
+        Map<String, Object> sent = q.getValue();
+        assertEquals("루벨리", sent.get("pProdName"));
+        assertEquals("SHOP00000001", sent.get("pShopCode"));
+        assertFalse(sent.containsKey("pSaleYn"));       // 빈 조건은 보내지 않는다
+        assertFalse(sent.containsKey("sidx"));
+        assertFalse(sent.containsKey("sord"));
+        assertEquals(ProdExcelService.MAX_EXPORT + 1, sent.get("pPageSize"));   // 한도 초과를 알아내려고 1건 더
+        assertEquals(0, sent.get("pPageOffset"));
+    }
+
+    @Test
+    void 내려받기가_한도를_넘으면_조건을_좁히라고_거절한다() {
+        List<Prod> many = new ArrayList<>();
+        for (int i = 0; i <= ProdExcelService.MAX_EXPORT; i++) many.add(fullProd());
+        when(prodService.selectList(any())).thenReturn(many);
+
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> service.export(Map.of()));
+
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, e.getStatusCode());
+        assertTrue(e.getReason().contains("좁혀"));
+    }
+
+    @Test
+    void 셀_한도를_넘는_상품설명은_비우고_작성안내에_알린다() throws Exception {
+        Prod p = fullProd();
+        p.setProdDesc("a".repeat(ProdExcelService.MAX_CELL_CHARS + 1));
+        when(prodService.selectList(any())).thenReturn(List.of(p, fullProd()));
+
+        byte[] xls = service.export(Map.of());
+
+        Sheet s = firstSheet(xls);
+        int descCol = Arrays.asList(ALL_HEADERS).indexOf("상품설명");
+        assertNull(s.getRow(1).getCell(descCol));                       // 비워 둔다(올릴 때 빈 칸 = 기존 값 유지)
+        assertEquals("<p>설명</p>", s.getRow(2).getCell(descCol).getStringCellValue());
+        Sheet guide = WorkbookFactory.create(new ByteArrayInputStream(xls)).getSheetAt(1);
+        StringBuilder all = new StringBuilder();
+        guide.forEach(row -> row.forEach(c -> all.append(c.getStringCellValue()).append('\n')));
+        assertTrue(all.toString().contains("1000000100"));
+        assertTrue(all.toString().contains("한도"));
+    }
+
+    @Test
+    void 내려받은_파일을_그대로_다시_올려도_오류_없이_값이_그대로_유지된다() throws Exception {
+        when(prodService.selectList(any())).thenReturn(List.of(fullProd()));
+        byte[] xls = service.export(Map.of());
+
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> fullProd());
+        // 기존 분류는 최종 분류가 아니고(countLeafCate 기본 0), 마스터에도 없고, 배송비구분은 코드표에 없는 값이다.
+        when(mapper.countBrand(any(), anyString())).thenReturn(0);
+        when(mapper.countMaker(anyString())).thenReturn(0);
+        when(mapper.countOrigin(anyString())).thenReturn(0);
+
+        ProdExcelResult r = service.preview(new ByteArrayInputStream(xls), request);
+
+        ProdExcelRow row = r.getRows().get(0);
+        assertEquals("OK", row.getStatus(), row.getErrors().toString());
+        assertEquals(ProdExcelRow.UPDATE, row.getAction());
+        assertTrue(row.getWarnings().isEmpty(), row.getWarnings().toString());   // 바꾸지 않은 값은 경고도 없다
+        Prod p = row.getProd();
+        assertEquals("/images/p/a_tn_160.jpg", p.getImgUrl160());                // 썸네일이 같은 경로로 덮이지 않는다
+        assertEquals("/images/p/a_thumbnail_50.jpg", p.getImgUrl50());
+        assertEquals("G006010009001", p.getCateCode());
+        assertEquals("이상한배송", p.getDeliFeeType());
+        assertEquals(10, p.getVatRate());
+        assertEquals(1, p.getSaleYn());
+        assertEquals(5000, p.getSalePrice());
+        assertEquals(33, p.getSupplyQty());
+        assertEquals("<p>설명</p>", p.getProdDesc());
+        verify(mapper, never()).countLeafCate(any(), any());
+    }
+
+    @Test
+    void 내려받은_파일에서_이미지와_분류를_바꾸면_그_칸만_검사하고_반영한다() throws Exception {
+        when(prodService.selectList(any())).thenReturn(List.of(fullProd()));
+        byte[] xls = service.export(Map.of());
+        // 같은 파일의 이미지/분류 칸만 다른 값으로 바꾼다
+        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(xls)); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Row r = wb.getSheetAt(0).getRow(1);
+            List<String> h = Arrays.asList(ALL_HEADERS);
+            r.getCell(h.indexOf("이미지")).setCellValue("/images/p/new.jpg");
+            r.getCell(h.indexOf("분류코드")).setCellValue("G999999999999");
+            wb.write(out);
+            xls = out.toByteArray();
+        }
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> fullProd());
+
+        ProdExcelResult r = service.preview(new ByteArrayInputStream(xls), request);
+
+        // 새 분류는 그 서비스의 최종 분류가 아니므로 오류, 이미지는 새 경로로 모든 크기에 들어간다
+        assertTrue(r.getRows().get(0).getErrors().get(0).contains("최종 분류가 아닙니다"));
+        verify(mapper).countLeafCate("SVC1", "G999999999999");
+    }
+
     @Test
     void 상품이_하나도_없는_DB에서는_첫_코드부터_채번한다() throws Exception {
         when(mapper.selectMaxProdCode()).thenReturn(null);

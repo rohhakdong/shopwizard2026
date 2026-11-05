@@ -112,6 +112,8 @@ class RoleAccessPolicyTest {
     void 상품_엑셀_일괄등록은_상품_등록_화면_권한이_있어야_한다() {
         RolePermissions reg = perms(Set.of("catalog-prod"), Set.of("catalog-prod"));
         assertTrue(ok("GET", "/catalog/prod/excel/template", reg));
+        assertTrue(ok("GET", "/catalog/prod/excel/export", reg));
+        assertFalse(ok("GET", "/catalog/prod/excel/export", RolePermissions.NONE));
         assertTrue(ok("POST", "/catalog/prod/excel/preview", reg));
         assertTrue(ok("POST", "/catalog/prod/excel/import", reg));
 
