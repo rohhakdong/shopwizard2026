@@ -107,4 +107,22 @@ class RoleAccessPolicyTest {
                 Set.of("catalog-prod", ScreenRegistry.APPROVE));
         assertTrue(ok("PUT", "/catalog/prod/approv", approver));
     }
+
+    @Test
+    void 상품_엑셀_일괄등록은_상품_등록_화면_권한이_있어야_한다() {
+        RolePermissions reg = perms(Set.of("catalog-prod"), Set.of("catalog-prod"));
+        assertTrue(ok("GET", "/catalog/prod/excel/template", reg));
+        assertTrue(ok("POST", "/catalog/prod/excel/preview", reg));
+        assertTrue(ok("POST", "/catalog/prod/excel/import", reg));
+
+        // 조회 권한만 있으면 양식은 받아도 등록은 못 한다(쓰기 권한 필요)
+        RolePermissions viewOnly = perms(Set.of("catalog-prod"), Set.of());
+        assertTrue(ok("GET", "/catalog/prod/excel/template", viewOnly));
+        assertFalse(ok("POST", "/catalog/prod/excel/import", viewOnly));
+
+        RolePermissions other = perms(Set.of("catalog-brand"), Set.of("catalog-brand"));
+        assertFalse(ok("GET", "/catalog/prod/excel/template", other));
+        assertFalse(ok("POST", "/catalog/prod/excel/import", other));
+        assertFalse(ok("POST", "/catalog/prod/excel/import", RolePermissions.NONE));
+    }
 }

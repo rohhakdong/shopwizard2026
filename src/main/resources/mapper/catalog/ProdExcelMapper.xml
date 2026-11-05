@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.catalog.mapper.ProdExcelMapper">
+
+    <select id="selectShopSvc" resultType="string">
+        SELECT SvcCode FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode} LIMIT 1
+    </select>
+
+    <!-- 등록 화면의 분류 선택과 같은 기준: 그 서비스의 분류 트리에 있고 자식이 없는 최종 분류. -->
+    <select id="countLeafCate" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatCate C
+        WHERE C.SvcCode = #{svcCode} AND C.CateCode = #{cateCode}
+          AND NOT EXISTS (SELECT 1 FROM shopwizard.tCatCate X WHERE X.SvcCode = C.SvcCode AND X.ParentCateCode = C.CateCode)
+    </select>
+
+    <select id="countProd" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatProd WHERE ProdCode = #{prodCode}
+    </select>
+
+    <select id="countPublished" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrdProd WHERE ProdCode = #{prodCode}
+    </select>
+
+    <select id="countShopProdCode" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatProd
+        WHERE ShopProdCode = #{shopProdCode}
+        <if test="exceptProdCode != null and exceptProdCode != ''">AND ProdCode &lt;&gt; #{exceptProdCode}</if>
+    </select>
+
+    <select id="selectMaxProdCode" resultType="string">
+        SELECT MAX(M) FROM (
+            SELECT MAX(ProdCode) AS M FROM shopwizard.tCatProd
+            UNION ALL
+            SELECT MAX(ProdCode) AS M FROM shopion.tPrdProd
+        ) T
+    </select>
+
+    <select id="countBrand" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatBrand
+        WHERE SvcCode = #{svcCode} AND (BrandKorName = #{name} OR BrandEngName = #{name})
+    </select>
+
+    <select id="countMaker" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatMaker WHERE MakerKorName = #{name} OR MakerEngName = #{name}
+    </select>
+
+    <select id="countOrigin" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCatOrigin WHERE OriginKorName = #{name} OR OriginEngName = #{name}
+    </select>
+
+</mapper>

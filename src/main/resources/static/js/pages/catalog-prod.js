@@ -79,6 +79,7 @@ const PageCatalogProd = (() => {
             </div>
             <button class="btn btn-primary" id="btnSearch" style="margin-top:18px">검색</button>
             <button class="btn btn-ghost" id="btnNew" style="margin-top:18px">+ 신규</button>
+            <button class="btn btn-ghost" id="btnExcel" style="margin-top:18px">엑셀 일괄등록</button>
           </div>
 
           <!-- 건수 + 일괄승인 -->
@@ -102,6 +103,7 @@ const PageCatalogProd = (() => {
 
     document.getElementById('btnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
     document.getElementById('btnNew').addEventListener('click', () => openEditModal(null));
+    document.getElementById('btnExcel').addEventListener('click', openExcelModal);
     document.getElementById('btnBulkApprov').addEventListener('click', bulkApprov);
     ['sProdCode','sProdName'].forEach(id => {
       document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
@@ -328,6 +330,117 @@ const PageCatalogProd = (() => {
           close();
         });
       });
+    });
+  }
+
+  // ── 엑셀 일괄등록 ──────────────────────────────────────────────────
+  // 예전 양식(prodExcel.xls, 35열)으로 작성한 파일을 올려 상품을 한 번에 등록/수정한다.
+  // [검사] → 서버가 행별로 검사한 결과를 보여주고, 오류가 0건일 때만 [등록]이 켜진다.
+  // [등록]은 같은 파일을 다시 보내고, 서버는 미리보기 결과를 믿지 않고 다시 검사한 뒤 전부 한 번에 저장한다.
+  function openExcelModal() {
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">
+        엑셀 양식(.xls, .xlsx)으로 작성한 파일을 올려 상품을 한 번에 등록·수정합니다.<br>
+        상품코드가 <b>비어 있으면 신규</b>(코드 자동 부여), <b>있으면 그 상품 수정</b>(빈 칸은 기존 값 유지)입니다.
+        오류가 한 행이라도 있으면 아무것도 등록되지 않습니다. 새 상품은 승인 전 상태로 들어가며 [승인] 후 쇼핑몰에 노출됩니다.
+        <a href="/catalog/prod/excel/template" id="xlTemplate" style="margin-left:6px">엑셀 양식 받기</a>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <input type="file" id="xlFile" accept=".xls,.xlsx" style="flex:1">
+        <button class="btn btn-primary" id="xlCheck">검사</button>
+      </div>
+      <div id="xlResult"></div>`;
+
+    const { close, el } = UI.modal({
+      title: '상품 엑셀 일괄등록',
+      body,
+      confirmText: '등록',
+      onConfirm: async closeModal => {
+        const file = fileInput.files[0];
+        if (!file || !checked) { UI.toast('먼저 파일을 선택하고 검사하세요', 'error'); return; }
+        confirmBtn.disabled = true;
+        try {
+          const r = await Api.upload('/catalog/prod/excel/import', formOf(file));
+          if (r.imported) {
+            UI.toast(`신규 ${r.newCount}건 등록, 수정 ${r.updateCount}건 반영되었습니다`, 'success');
+            closeModal();
+            loadList();
+          } else {
+            checked = false;
+            renderResult(r);
+            UI.toast('오류가 있어 등록되지 않았습니다', 'error');
+          }
+        } catch (e) {
+          UI.toast(e.message, 'error');
+          confirmBtn.disabled = !checked;
+        }
+      },
+    });
+    el.querySelector('.modal').style.width = '960px';
+
+    const fileInput  = body.querySelector('#xlFile');
+    const resultEl   = body.querySelector('#xlResult');
+    const confirmBtn = el.querySelector('[data-action=confirm]');
+    let checked = false;
+    confirmBtn.disabled = true;
+
+    const formOf = file => { const f = new FormData(); f.append('file', file); return f; };
+
+    function renderResult(r) {
+      checked = !!r.importable;
+      confirmBtn.disabled = !checked;
+      if (r.fileError) {
+        resultEl.innerHTML = `<div style="padding:12px;color:var(--danger)">${esc(r.fileError)}</div>`;
+        return;
+      }
+      const summary = `
+        <div style="font-size:13px;margin-bottom:8px">
+          총 <b>${esc(String((r.rows || []).length))}</b>행 ·
+          신규 <b>${esc(String(r.newCount))}</b> · 수정 <b>${esc(String(r.updateCount))}</b> ·
+          <span style="color:${r.errorCount ? 'var(--danger)' : 'inherit'}">오류 <b>${esc(String(r.errorCount))}</b></span> ·
+          경고 <b>${esc(String(r.warningCount))}</b>
+          ${r.errorCount ? '<span style="color:var(--danger);margin-left:8px">오류를 고쳐 파일을 다시 올려 주세요.</span>' : ''}
+        </div>`;
+      const rows = (r.rows || []).map(row => `
+        <tr>
+          <td style="text-align:right">${esc(String(row.rowNo))}</td>
+          <td>${row.action === 'UPDATE' ? '수정' : '신규'}</td>
+          <td>${esc(row.prodCode || '-')}</td>
+          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(row.prodName || '')}">${esc(row.prodName || '')}</td>
+          <td><span class="badge ${row.status === 'OK' ? 'badge-green' : 'badge-red'}">${row.status === 'OK' ? '정상' : '오류'}</span></td>
+          <td style="font-size:12px;line-height:1.5">
+            ${(row.errors || []).map(m => `<div style="color:var(--danger)">${esc(m)}</div>`).join('')}
+            ${(row.warnings || []).map(m => `<div style="color:#b45309">${esc(m)}</div>`).join('')}
+          </td>
+        </tr>`).join('');
+      resultEl.innerHTML = `${summary}
+        <div style="max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius)">
+          <table class="table" style="width:100%;font-size:12px">
+            <thead><tr><th>행</th><th>구분</th><th>상품코드</th><th>상품명</th><th>상태</th><th>메시지</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    // 파일을 바꾸면 이전 검사 결과는 더 이상 이 파일의 것이 아니다.
+    fileInput.addEventListener('change', () => {
+      checked = false;
+      confirmBtn.disabled = true;
+      resultEl.innerHTML = '';
+    });
+
+    body.querySelector('#xlCheck').addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) { UI.toast('엑셀 파일을 선택하세요', 'error'); return; }
+      resultEl.innerHTML = '<div style="padding:12px;color:var(--text-muted)">검사 중...</div>';
+      checked = false;
+      confirmBtn.disabled = true;
+      try {
+        renderResult(await Api.upload('/catalog/prod/excel/preview', formOf(file)));
+      } catch (e) {
+        resultEl.innerHTML = `<div style="padding:12px;color:var(--danger)">${esc(e.message)}</div>`;
+      }
     });
   }
 

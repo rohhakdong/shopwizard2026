@@ -38,6 +38,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'net.coobird:thumbnailator:0.4.20' // 상품이미지 업로드 시 대/중/소 썸네일 자동 생성
+    implementation 'org.apache.poi:poi-ooxml:5.4.1'   // 상품 엑셀 일괄등록 (.xls 구형 양식 + .xlsx)
 
     // Dev tools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
