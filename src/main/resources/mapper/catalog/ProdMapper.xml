@@ -282,6 +282,48 @@
         WHERE shopwizard.tCatProd.ProdCode = #{prodCode}
     </insert>
 
+    <select id="countShopion" parameterType="string" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrdProd WHERE ProdCode = #{value}
+    </select>
+
+    <select id="countOrderLines" parameterType="string" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOrdOrderProd WHERE ProdCode = #{value}
+    </select>
+
+    <!-- 승인 후 등록 쪽(tCatProd) 수정을 판매 상품(tPrdProd)에 반영한다. copy2Shopion 과 같은 조인·컬럼이되
+         SupplyQty(판매 쪽 재고 — 주문 때 차감되므로 덮어쓰면 실재고와 어긋난다)와 Regist* 는 건드리지 않는다. -->
+    <update id="sync2Shopion" parameterType="string">
+        UPDATE shopion.tPrdProd P
+        INNER JOIN shopwizard.tCatProd C ON C.ProdCode = P.ProdCode
+        INNER JOIN shopwizard.tCmpShop S ON S.ShopCode = C.ShopCode
+        INNER JOIN shopwizard.tCmpSupplyComp SC ON SC.SupplyCode = S.SupplyCode
+        SET P.CateCode = C.CateCode,
+            P.SupplyCode = SC.SupplyCode, P.SupplyName = SC.SupplyName,
+            P.ShopCode = S.ShopCode, P.ShopName = S.ShopName,
+            P.ShopProdCode = C.ShopProdCode, P.ImpaProdCode = C.ImpaProdCode,
+            P.ProdName = C.ProdName, P.ProdDsplName = C.ProdDsplName, P.Keywrd = C.Keywrd, P.SaleYn = C.SaleYn,
+            P.AttrName1 = C.AttrName1, P.AttrName2 = C.AttrName2, P.AttrName3 = C.AttrName3, P.AttrName4 = C.AttrName4,
+            P.AttrValStr1 = C.AttrValStr1, P.AttrValStr2 = C.AttrValStr2, P.AttrValStr3 = C.AttrValStr3, P.AttrValStr4 = C.AttrValStr4,
+            P.ListPrice = C.ListPrice, P.PrevPrice = C.PrevPrice, P.SalePrice = C.SalePrice,
+            P.DiscntPrice = C.DiscntPrice, P.DiscntStartDate = C.DiscntStartDate, P.DiscntEndDate = C.DiscntEndDate,
+            P.SupplyPrice = C.SupplyPrice, P.DiscntSupplyPrice = C.DiscntSupplyPrice, P.BuyPrice = C.BuyPrice,
+            P.NvPrice = C.NvPrice, P.PvPrice = C.PvPrice, P.SaveAmt = C.SaveAmt, P.VatRate = C.VatRate, P.VatAmt = C.VatAmt,
+            P.OriginName = C.OriginName, P.MakerName = C.MakerName, P.BrandName = C.BrandName, P.ProdDesc = C.ProdDesc,
+            P.ImgUrl = C.ImgUrl, P.ImgUrl50 = C.ImgUrl50, P.ImgUrl80 = C.ImgUrl80, P.ImgUrl100 = C.ImgUrl100,
+            P.ImgUrl160 = C.ImgUrl160, P.ImgUrl220 = C.ImgUrl220, P.ImgUrl280 = C.ImgUrl280,
+            P.DeliFeeId = C.DeliFeeId, P.DeliMethod = C.DeliMethod, P.DeliFeeType = C.DeliFeeType,
+            P.DeliFeeAmt = C.DeliFeeAmt, P.DeliMemoYn = C.DeliMemoYn, P.LeadTime = C.LeadTime,
+            P.LeadTimeReason = C.LeadTimeReason, P.SaleArea = C.SaleArea, P.DeliCompId = C.DeliCompId,
+            P.BundleUnit = C.BundleUnit, P.AdultYn = C.AdultYn,
+            P.ModelName = C.ModelName, P.ProdUnit = C.ProdUnit, P.SexualType = C.SexualType,
+            P.MakeYear = C.MakeYear, P.KindType = C.KindType, P.SeasonType = C.SeasonType,
+            P.GradeType = C.GradeType, P.AsYn = C.AsYn,
+            P.CardDisableYn = C.CardDisableYn, P.CashDisableYn = C.CashDisableYn,
+            P.SizeType = C.SizeType, P.ColorType = C.ColorType, P.PartDesc = C.PartDesc, P.Memo01 = C.Memo01,
+            P.ChangeId = C.ChangeId, P.ChangeName = C.ChangeName, P.ChangeDate = C.ChangeDate, P.ChangeCount = C.ChangeCount
+        WHERE P.ProdCode = #{value}
+    </update>
+
     <delete id="delete2Shopion" parameterType="string">
         DELETE FROM shopion.tPrdProd WHERE ProdCode = #{value}
     </delete>

@@ -318,7 +318,7 @@ const PageCatalogProd = (() => {
     // 삭제
     wrap.querySelectorAll('[data-action=del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        UI.confirm(`[${btn.dataset.name}] 상품을 삭제하시겠습니까?`, async close => {
+        UI.confirm(`[${btn.dataset.name}] 상품을 삭제하시겠습니까? (쇼핑몰에 게시된 상품이면 판매 상품에서도 함께 삭제됩니다. 주문 이력이 있으면 삭제할 수 없습니다)`, async close => {
           try {
             await Api.delete('/catalog/prod', { prodCode: btn.dataset.code });
             UI.toast('삭제되었습니다', 'success');

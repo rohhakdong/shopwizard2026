@@ -122,6 +122,42 @@
         FROM shopwizard.tCatProdItem WHERE ProdCode = #{prodCode}
     </insert>
 
+    <!-- 등록 쪽에서 지운 옵션을 판매 쪽에서도 지운다. 등록 쪽 옵션이 하나도 없으면(비정상) 아무것도 지우지 않는다. -->
+    <delete id="deleteMissing2Shopion" parameterType="string">
+        DELETE FROM shopion.tPrdProdItem
+        WHERE ProdCode = #{value}
+          AND EXISTS (SELECT 1 FROM shopwizard.tCatProdItem X WHERE X.ProdCode = #{value})
+          AND NOT EXISTS (SELECT 1 FROM shopwizard.tCatProdItem C
+                          WHERE C.ProdCode = shopion.tPrdProdItem.ProdCode AND C.ItemCode = shopion.tPrdProdItem.ItemCode)
+    </delete>
+
+    <!-- 등록 옵션을 판매 쪽에 반영한다. 이미 있는 옵션은 SupplyQty(주문 때 차감되는 판매 재고)와 Regist* 를 빼고 갱신하고,
+         없던 옵션은 새로 넣는다(그때만 등록 쪽 재고 수량으로 시작). -->
+    <insert id="upsert2Shopion" parameterType="string">
+        INSERT INTO shopion.tPrdProdItem (
+            ProdCode, ItemCode, AttrVal1, AttrVal2, AttrVal3, AttrVal4,
+            SupplyQty, LeadTime, LeadTimeReason, SaleYn, SaleStopDate,
+            ReservReason, ReservStartDate, ReservEndDate, ReservSupplyDate, ReservSupplyQty,
+            SalePrice, SupplyPrice, BuyPrice, OptionPrice, State, Remark,
+            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        )
+        SELECT ProdCode, ItemCode, AttrVal1, AttrVal2, AttrVal3, AttrVal4,
+               SupplyQty, LeadTime, LeadTimeReason, SaleYn, SaleStopDate,
+               ReservReason, ReservStartDate, ReservEndDate, ReservSupplyDate, ReservSupplyQty,
+               SalePrice, SupplyPrice, BuyPrice, OptionPrice, State, Remark,
+               RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+        FROM shopwizard.tCatProdItem WHERE ProdCode = #{value}
+        ON DUPLICATE KEY UPDATE
+            AttrVal1 = VALUES(AttrVal1), AttrVal2 = VALUES(AttrVal2), AttrVal3 = VALUES(AttrVal3), AttrVal4 = VALUES(AttrVal4),
+            LeadTime = VALUES(LeadTime), LeadTimeReason = VALUES(LeadTimeReason),
+            SaleYn = VALUES(SaleYn), SaleStopDate = VALUES(SaleStopDate),
+            ReservReason = VALUES(ReservReason), ReservStartDate = VALUES(ReservStartDate), ReservEndDate = VALUES(ReservEndDate),
+            ReservSupplyDate = VALUES(ReservSupplyDate), ReservSupplyQty = VALUES(ReservSupplyQty),
+            SalePrice = VALUES(SalePrice), SupplyPrice = VALUES(SupplyPrice), BuyPrice = VALUES(BuyPrice), OptionPrice = VALUES(OptionPrice),
+            State = VALUES(State), Remark = VALUES(Remark),
+            ChangeId = VALUES(ChangeId), ChangeName = VALUES(ChangeName), ChangeDate = VALUES(ChangeDate)
+    </insert>
+
     <delete id="delete2Shopion" parameterType="string">
         DELETE FROM shopion.tPrdProdItem WHERE ProdCode = #{value}
     </delete>
