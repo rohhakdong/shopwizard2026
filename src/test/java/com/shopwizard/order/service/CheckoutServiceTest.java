@@ -127,6 +127,8 @@ class CheckoutServiceTest {
         assertThat(saved.getOrderState()).isEqualTo("지불완료");
         assertThat(saved.getPayCmpletDate()).isNotNull();
         assertThat(saved.getChnlCode()).isEqualTo(CHNL_CODE);
+        // 주문접수일이 비면 관리자 화면의 기간 조회(O.OrderReciptDate)에서 이 주문이 빠진다
+        assertThat(saved.getOrderReciptDate()).isNotBlank();
     }
 
     @Test
@@ -161,6 +163,7 @@ class CheckoutServiceTest {
         verify(orderService).insert(order.capture());
         assertThat(order.getValue().getOrderState()).isEqualTo("주문접수");
         assertThat(order.getValue().getPayCmpletDate()).isNull();
+        assertThat(order.getValue().getOrderReciptDate()).isNotBlank();   // 입금 전 주문도 주문접수일은 채운다
 
         ArgumentCaptor<OrderPay> pay = ArgumentCaptor.forClass(OrderPay.class);
         verify(orderPayService).insert(pay.capture());

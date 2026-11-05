@@ -152,6 +152,8 @@ public class CheckoutService {
         order.setMoneyUnit("KRW");
         order.setDeliMemo(req.getDeliMemo());
         order.setOrderState(orderState);
+        // 주문접수일 — 관리자 주문 조회·출고지시·반품·정산의 기본 기간 조건이 이 컬럼이라, 비워 두면 날짜로 검색하는 화면에서 주문이 통째로 빠진다.
+        order.setOrderReciptDate(now);
         order.setChnlCode(shopChnlCode);
         order.setRegistId(registId);
         order.setRegistName(registName);
