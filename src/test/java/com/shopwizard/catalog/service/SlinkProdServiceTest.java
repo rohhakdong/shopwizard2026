@@ -60,6 +60,7 @@ class SlinkProdServiceTest {
         Prod p = new Prod();
         p.setProdCode(code); p.setShopCode("SHOP1"); p.setShopProdCode("sku-" + code);
         p.setProdName("상품 " + code); p.setCateCode("G009015002000"); p.setImgUrl("/images/p/" + code + ".jpg");
+        p.setMakerName("제조사");
         p.setSaleYn(1); p.setSalePrice(1000); p.setListPrice(1200); p.setSupplyPrice(800);
         p.setDeliFeeType("무료"); p.setVatRate(10);
         return p;
@@ -226,6 +227,17 @@ class SlinkProdServiceTest {
 
         assertSkipped(row, "이미지");
         assertTrue(row.getMessage().contains("상점상품코드"));
+    }
+
+    @Test
+    void 제조사가_없으면_샵링커가_거절하므로_호출하지_않고_건너뛴다() {
+        Prod p = prod("P1");
+        p.setMakerName("");
+        when(prodService.select("P1")).thenReturn(p);
+
+        SlinkSendResult.Row row = service("live", CUSTOMER).send(List.of("P1"), request).getResults().get(0);
+
+        assertSkipped(row, "제조사");
     }
 
     @Test

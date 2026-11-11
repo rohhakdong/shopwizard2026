@@ -192,11 +192,16 @@ class ShoplinkerProductRequestTest {
         assertTrue(ShoplinkerProductRequest.validate(prod()).isEmpty());
 
         Prod p = prod();
-        p.setShopProdCode(" "); p.setImgUrl(null); p.setProdName(""); p.setCateCode("G009");
+        p.setShopProdCode(" "); p.setImgUrl(null); p.setProdName(""); p.setCateCode("G009"); p.setMakerName(null);
         List<String> errors = ShoplinkerProductRequest.validate(p);
-        assertEquals(4, errors.size(), errors.toString());
+        assertEquals(5, errors.size(), errors.toString());
         assertTrue(errors.get(0).contains("상점상품코드"));
         assertTrue(errors.get(1).contains("이미지"));
+        assertTrue(errors.stream().anyMatch(e -> e.contains("제조사")));   // 실전송 시험: 샵링커 "제조업체 누락 [0005]"
+
+        Prod noMaker = prod();
+        noMaker.setMakerName("  ");
+        assertEquals(1, ShoplinkerProductRequest.validate(noMaker).size());
     }
 
     // ── 응답 ──────────────────────────────────────────────

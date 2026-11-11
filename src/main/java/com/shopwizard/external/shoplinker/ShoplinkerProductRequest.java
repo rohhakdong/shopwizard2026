@@ -43,6 +43,8 @@ public final class ShoplinkerProductRequest {
         if (isBlank(p.getShopProdCode())) errors.add("상점상품코드가 없습니다(샵링커 상품 식별키라 필수입니다).");
         if (isBlank(p.getImgUrl())) errors.add("대표 이미지가 없습니다.");
         if (isBlank(p.getProdName())) errors.add("상품명이 없습니다.");
+        // 실전송 시험(2026-11-11): 제조사(maker)가 비어 있으면 샵링커가 "제조업체 누락 [에러코드 : 0005]" 로 거절한다.
+        if (isBlank(p.getMakerName())) errors.add("제조사가 없습니다(샵링커가 '제조업체 누락'으로 거절합니다).");
         String cate = p.getCateCode();
         if (cate == null || cate.length() != 13) errors.add("분류코드가 13자리가 아닙니다.");
         return errors;
