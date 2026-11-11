@@ -26,6 +26,13 @@ public class ProdExcelRow {
     @JsonIgnore
     private Prod prod;
 
+    /** 속성값(쉼표 구분)에서 만든 옵션 조합 — 상품 저장 뒤 옵션 행으로 반영한다. 응답에는 싣지 않는다. */
+    @JsonIgnore
+    private List<String[]> optionCombos = List.of();
+    /** 이 행에서 옵션을 만들거나 다시 구성해야 하는가(속성값 칸이 새로 채워지거나 바뀐 경우). */
+    @JsonIgnore
+    private boolean rebuildOptions;
+
     public String getStatus() { return errors.isEmpty() ? "OK" : "ERROR"; }
 
     public void error(String message) { errors.add(message); }

@@ -36,6 +36,7 @@ class ProdExcelServiceTest {
 
     private final ProdExcelMapper mapper = mock(ProdExcelMapper.class);
     private final ProdService prodService = mock(ProdService.class);
+    private final ProdItemService prodItemService = mock(ProdItemService.class);
     private final ConstrValService constrValService = mock(ConstrValService.class);
     private final DataScopeGuard scopeGuard = mock(DataScopeGuard.class);
     private final PlatformTransactionManager txManager = mock(PlatformTransactionManager.class);
@@ -44,7 +45,7 @@ class ProdExcelServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProdExcelService(mapper, prodService, constrValService, scopeGuard, txManager);
+        service = new ProdExcelService(mapper, prodService, prodItemService, constrValService, scopeGuard, txManager);
         when(scopeGuard.scope(any())).thenReturn(DataScope.UNRESTRICTED);
         when(mapper.selectShopSvc("SHOP00000001")).thenReturn("SVC1");
         when(mapper.countLeafCate("SVC1", "G006010009001")).thenReturn(1);
@@ -741,6 +742,151 @@ class ProdExcelServiceTest {
         // 새 분류는 그 서비스의 최종 분류가 아니므로 오류, 이미지는 새 경로로 모든 크기에 들어간다
         assertTrue(r.getRows().get(0).getErrors().get(0).contains("최종 분류가 아닙니다"));
         verify(mapper).countLeafCate("SVC1", "G999999999999");
+    }
+
+    // ── 속성값 → 옵션 ────────────────────────────────────────
+
+    private static Object[] newRowWith(Object... extra) {
+        Object[] base = {"상품명칭", "옵션상품", "상점코드", "SHOP00000001", "분류코드", "G006010009001"};
+        Object[] all = Arrays.copyOf(base, base.length + extra.length);
+        System.arraycopy(extra, 0, all, base.length, extra.length);
+        return row(all);
+    }
+
+    @Test
+    void 신규_속성값은_모든_조합의_옵션으로_계획하고_미리보기는_저장하지_않는다() throws Exception {
+        ProdExcelResult r = service.preview(xls(newRowWith("속성명칭1", "사이즈", "속성값1", "S,M", "속성명칭2", "색상", "속성값2", "빨강,파랑")), request);
+
+        ProdExcelRow row = r.getRows().get(0);
+        assertEquals("OK", row.getStatus(), row.getErrors().toString());
+        assertTrue(row.isRebuildOptions());
+        assertEquals(4, row.getOptionCombos().size());
+        assertArrayEquals(new String[]{"M", "파랑", "", ""}, row.getOptionCombos().get(3));
+        assertTrue(row.getWarnings().stream().anyMatch(w -> w.contains("옵션 4개가 만들어집니다")), row.getWarnings().toString());
+        // 상품 컬럼에는 쉼표 목록이 그대로 저장된다(레거시와 같음)
+        assertEquals("S,M", row.getProd().getAttrValStr1());
+        assertEquals("사이즈", row.getProd().getAttrName1());
+        verifyNoInteractions(prodItemService);
+    }
+
+    @Test
+    void 속성값이_없는_신규_상품은_옵션을_만들지_않는다() throws Exception {
+        ProdExcelResult r = service.preview(xls(goodNew()), request);
+
+        assertFalse(r.getRows().get(0).isRebuildOptions());
+        assertTrue(r.getRows().get(0).getOptionCombos().isEmpty());
+    }
+
+    @Test
+    void 등록하면_상품을_저장한_뒤_옵션을_반영한다() throws Exception {
+        ProdExcelResult r = service.importAll(xls(newRowWith("속성값1", "S,M,L")), request);
+
+        assertTrue(r.isImported());
+        org.mockito.InOrder o = inOrder(prodService, prodItemService);
+        o.verify(prodService).insert(any());
+        @SuppressWarnings("unchecked") ArgumentCaptor<List<String[]>> combos = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<Prod> p = ArgumentCaptor.forClass(Prod.class);
+        o.verify(prodItemService).applyAttributeOptions(p.capture(), combos.capture());
+        assertEquals("1000000343", p.getValue().getProdCode());   // 채번된 코드로 옵션을 만든다
+        assertEquals(3, combos.getValue().size());
+    }
+
+    @Test
+    void 속성값이_없으면_등록해도_옵션_반영을_부르지_않는다() throws Exception {
+        service.importAll(xls(goodNew()), request);
+
+        verify(prodItemService, never()).applyAttributeOptions(any(), any());
+    }
+
+    @Test
+    void 조합이_100개를_넘으면_오류() throws Exception {
+        String ten = "1,2,3,4,5,6,7,8,9,10";
+        ProdExcelResult r = service.preview(xls(newRowWith("속성값1", ten, "속성값2", ten, "속성값3", "a,b")), request);
+
+        assertEquals("ERROR", r.getRows().get(0).getStatus());
+        assertTrue(r.getRows().get(0).getErrors().get(0).contains("200개로 너무 많습니다"));
+        assertFalse(r.isImportable());
+    }
+
+    @Test
+    void 속성명칭이_없거나_앞_속성값이_비어_있으면_경고() throws Exception {
+        ProdExcelResult r = service.preview(xls(newRowWith("속성값1", "S,M", "속성값3", "검정")), request);
+
+        List<String> w = r.getRows().get(0).getWarnings();
+        assertTrue(w.stream().anyMatch(x -> x.contains("속성값1이 있는데 속성명칭1이 비어")), w.toString());
+        assertTrue(w.stream().anyMatch(x -> x.contains("속성값3은 앞의 속성값이 비어 있어")), w.toString());
+        assertEquals(2, r.getRows().get(0).getOptionCombos().size());   // 속성값3 은 무시하고 S, M 만
+        assertEquals("OK", r.getRows().get(0).getStatus());              // 경고일 뿐 막지 않는다
+    }
+
+    @Test
+    void 수정에서_속성값이_기존과_같으면_옵션은_건드리지_않는다() throws Exception {
+        Prod p = existing("1000000100");
+        p.setAttrValStr1("S,M");
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> { Prod x = existing("1000000100"); x.setAttrValStr1("S,M"); return x; });
+
+        ProdExcelResult r = service.preview(xls(row("상품코드", "1000000100", "속성값1", "S,M", "판매가격", 7000d)), request);
+
+        assertFalse(r.getRows().get(0).isRebuildOptions());   // 내려받은 파일을 그대로 올릴 때 옵션이 흔들리면 안 된다
+    }
+
+    @Test
+    void 수정에서_속성값이_바뀌면_옵션을_다시_구성한다() throws Exception {
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> { Prod x = existing("1000000100"); x.setAttrValStr1("S,M"); return x; });
+
+        ProdExcelResult r = service.preview(xls(row("상품코드", "1000000100", "속성값1", "S,M,L")), request);
+
+        ProdExcelRow row = r.getRows().get(0);
+        assertTrue(row.isRebuildOptions());
+        assertEquals(3, row.getOptionCombos().size());
+        assertTrue(row.getWarnings().stream().anyMatch(w -> w.contains("다시 구성") && w.contains("판매중지")), row.getWarnings().toString());
+    }
+
+    @Test
+    void 수정에서_속성값_칸이_비어_있으면_기존_옵션을_유지한다() throws Exception {
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> { Prod x = existing("1000000100"); x.setAttrValStr1("S,M"); return x; });
+
+        ProdExcelResult r = service.preview(xls(row("상품코드", "1000000100", "판매가격", 7000d)), request);
+
+        assertFalse(r.getRows().get(0).isRebuildOptions());
+        assertEquals("S,M", r.getRows().get(0).getProd().getAttrValStr1());   // 빈 칸 = 기존 값 유지
+    }
+
+    @Test
+    void 수정을_등록하면_상품을_고친_뒤_바뀐_속성값으로_옵션을_반영한다() throws Exception {
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> existing("1000000100"));
+
+        service.importAll(xls(row("상품코드", "1000000100", "속성값1", "L,XL")), request);
+
+        org.mockito.InOrder o = inOrder(prodService, prodItemService);
+        o.verify(prodService).update(any());
+        o.verify(prodItemService).applyAttributeOptions(any(), any());
+    }
+
+    @Test
+    void 내려받은_파일을_그대로_다시_올리면_옵션_구성이_바뀌지_않는다() throws Exception {
+        Prod withAttr = fullProd();
+        withAttr.setAttrValStr1("S,M,L");
+        when(prodService.selectList(any())).thenReturn(List.of(withAttr));
+        byte[] xls = service.export(Map.of());
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenAnswer(inv -> { Prod x = fullProd(); x.setAttrValStr1("S,M,L"); return x; });
+
+        ProdExcelResult r = service.preview(new ByteArrayInputStream(xls), request);
+
+        assertEquals("OK", r.getRows().get(0).getStatus(), r.getRows().get(0).getErrors().toString());
+        assertFalse(r.getRows().get(0).isRebuildOptions());
+    }
+
+    @Test
+    void 양식_작성안내에_속성값_쉼표_규칙이_적혀_있다() {
+        String[] attr = Arrays.stream(ProdExcelService.COLUMNS).filter(c -> c[0].equals("속성값1")).findFirst().orElseThrow();
+        assertTrue(attr[3].contains("쉼표"));
+        assertTrue(attr[3].contains("조합"));
     }
 
     @Test

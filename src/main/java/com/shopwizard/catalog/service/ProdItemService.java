@@ -2,6 +2,7 @@ package com.shopwizard.catalog.service;
 
 import com.shopwizard.catalog.mapper.ProdItemMapper;
 import com.shopwizard.catalog.mapper.ProdMapper;
+import com.shopwizard.catalog.model.Prod;
 import com.shopwizard.catalog.model.ProdItem;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,92 @@ public class ProdItemService {
         return prodItemMapper.copy2Shopion(params);
     }
     @Transactional public int delete2Shopion(String prodCode) { return prodItemMapper.delete2Shopion(prodCode); }
+
+    private static final int DEFAULT_ITEM_CODE = 20000;
+    private static final String PLACEHOLDER_ATTR_VAL = "선택사항없음";
+    /** 레거시 규칙: 새 옵션의 재고는 초기값 9,999,999. */
+    private static final int INITIAL_QTY = 9_999_999;
+
+    /**
+     * 속성값에서 만든 옵션 조합을 이 상품의 옵션 행에 반영한다 — 레거시 {@code ProdServiceImpl#setProdInfo} 의 규칙:
+     * 같은 조합이 이미 있으면 다시 판매 상태로 켜고, 없으면 새로 추가하며, <b>목록에 없는 기존 옵션은 판매중지</b>한다.
+     * 단 ItemCode 20000 "선택사항없음" 기본 행은 건드리지 않는다(쇼핑몰·주문이 이 행을 기본 행으로 다룬다).
+     * 새 옵션은 기존 최대 ItemCode 다음 번호(20001, 20002 …)를 받는다. 게시된 상품이면 판매 쪽 옵션도 한 번에 맞춘다.
+     *
+     * @param prod   등록자/수정자와 리드타임을 읽는 상품(ProdCode 필수)
+     * @param combos {@link AttrCombos#expand} 결과 — 각 원소는 {속성값1~4}
+     * @return 새로 만든 옵션 수
+     */
+    @Transactional
+    public int applyAttributeOptions(Prod prod, List<String[]> combos) {
+        String prodCode = prod.getProdCode();
+        Map<String, Object> q = new java.util.HashMap<>();
+        q.put("pProdCode", prodCode);
+        List<ProdItem> existing = prodItemMapper.selectList(q);
+        String actorId = prod.getChangeId() != null ? prod.getChangeId() : prod.getRegistId();
+        String actorName = prod.getChangeName() != null ? prod.getChangeName() : prod.getRegistName();
+
+        Integer max = prodItemMapper.selectMaxItemCode(prodCode);
+        int next = Math.max(max == null ? 0 : max, DEFAULT_ITEM_CODE) + 1;
+        java.util.Set<Integer> keep = new java.util.HashSet<>();
+        int created = 0;
+
+        for (String[] c : combos) {
+            ProdItem found = findByAttrVals(existing, c);
+            if (found != null) {
+                keep.add(found.getItemCode());
+                if (!Integer.valueOf(1).equals(found.getSaleYn())) {
+                    Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("prodCode", prodCode);
+                    m.put("itemCode", found.getItemCode());
+                    prodItemMapper.enable(m);
+                }
+            } else {
+                ProdItem item = new ProdItem();
+                item.setProdCode(prodCode);
+                item.setItemCode(next++);
+                item.setAttrVal1(c[0]); item.setAttrVal2(c[1]); item.setAttrVal3(c[2]); item.setAttrVal4(c[3]);
+                item.setSupplyQty(INITIAL_QTY);
+                item.setLeadTime(prod.getLeadTime() != null ? prod.getLeadTime() : 3);
+                item.setLeadTimeReason(prod.getLeadTimeReason());
+                item.setSaleYn(1);
+                item.setSalePrice(0); item.setSupplyPrice(0); item.setBuyPrice(0); item.setOptionPrice(0);
+                item.setState(0);
+                item.setRegistId(actorId); item.setRegistName(actorName);
+                item.setChangeId(actorId); item.setChangeName(actorName);
+                prodItemMapper.insert(item);
+                created++;
+            }
+        }
+
+        for (ProdItem it : existing) {
+            if (keep.contains(it.getItemCode()) || isPlaceholder(it) || Integer.valueOf(0).equals(it.getSaleYn())) continue;
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("prodCode", prodCode);
+            m.put("itemCode", it.getItemCode());
+            m.put("changeId", actorId);
+            m.put("changeName", actorName);
+            prodItemMapper.disableItem(m);
+        }
+
+        syncIfPublished(prodCode);
+        return created;
+    }
+
+    /** 기본 행("선택사항없음")은 코드가 아니라 옵션값으로 알아본다 — 레거시 옵션 상품은 20000 이 실제 첫 번째 옵션이다. */
+    private static boolean isPlaceholder(ProdItem it) {
+        return PLACEHOLDER_ATTR_VAL.equals(it.getAttrVal1() == null ? null : it.getAttrVal1().trim());
+    }
+
+    private static ProdItem findByAttrVals(List<ProdItem> items, String[] c) {
+        for (ProdItem it : items) {
+            if (nz(it.getAttrVal1()).equals(c[0]) && nz(it.getAttrVal2()).equals(c[1])
+                    && nz(it.getAttrVal3()).equals(c[2]) && nz(it.getAttrVal4()).equals(c[3])) return it;
+        }
+        return null;
+    }
+
+    private static String nz(String s) { return s == null ? "" : s; }
 
     private void syncIfPublished(String prodCode) {
         if (isPublished(prodCode)) sync(prodCode);

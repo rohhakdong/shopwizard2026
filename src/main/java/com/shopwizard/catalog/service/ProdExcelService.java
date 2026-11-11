@@ -32,6 +32,8 @@ import java.util.*;
  *   <li>상품코드가 비어 있으면 신규(코드는 서버가 채번), 값이 있으면 그 상품 수정(빈 칸은 기존 값 유지).</li>
  *   <li>열은 순서가 아니라 <b>헤더 이름</b>으로 찾는다. 먼저 {@link #preview}로 행별 검사를 보여주고,
  *       {@link #importAll}은 다시 검사해서 오류가 하나라도 있으면 아무것도 저장하지 않는다(전체 한 트랜잭션).</li>
+ *   <li>속성값1~4 는 레거시처럼 쉼표로 나눠 <b>모든 조합의 옵션 행</b>을 만든다({@link AttrCombos}, 상품 저장 뒤
+ *       {@link ProdItemService#applyAttributeOptions}). 값이 새로 채워지거나 바뀐 행에서만 하며, 같은 값이면 옵션은 건드리지 않는다.</li>
  *   <li>실제 저장은 기존 {@link ProdService#insert}/{@link ProdService#update}를 그대로 쓴다 — 기본 옵션(20000) 생성,
  *       게시된 상품의 판매 상품 동기화가 단건 등록 화면과 똑같이 동작한다.</li>
  * </ul>
@@ -68,13 +70,13 @@ public class ProdExcelService {
         {"제조사", "필수", "선택(기존 값이 비어 있으면 필수)", "50자 이내. 비워 두면 샵링커가 '제조업체 누락'으로 거절하므로 필수입니다. 제조사 마스터에 없으면 경고만 표시합니다."},
         {"원산지", "선택", "선택", "50자 이내. 원산지 마스터에 없으면 경고만 표시합니다."},
         {"속성명칭1", "선택", "선택", "옵션 이름(예: 사이즈). 50자 이내."},
-        {"속성값1", "선택", "선택", "500자 이내."},
-        {"속성명칭2", "선택", "선택", "50자 이내."},
-        {"속성값2", "선택", "선택", "500자 이내."},
+        {"속성값1", "선택", "선택", "쉼표(,)로 여러 값을 적으면 값마다 옵션이 만들어집니다(예: S,M,L). 속성값1×속성값2×… 모든 조합이 옵션 한 행이 되고 한 상품에 최대 100개입니다. 앞의 속성값이 비면 뒤는 쓰지 않습니다. 500자 이내."},
+        {"속성명칭2", "선택", "선택", "옵션 이름(예: 색상). 50자 이내."},
+        {"속성값2", "선택", "선택", "속성값1과 같은 방식(예: 빨강,파랑). 500자 이내."},
         {"속성명칭3", "선택", "선택", "50자 이내."},
-        {"속성값3", "선택", "선택", "500자 이내."},
+        {"속성값3", "선택", "선택", "속성값1과 같은 방식. 500자 이내."},
         {"속성명칭4", "선택", "선택", "50자 이내."},
-        {"속성값4", "선택", "선택", "500자 이내."},
+        {"속성값4", "선택", "선택", "속성값1과 같은 방식. 500자 이내."},
         {"이미지", "선택", "선택", "이미지 경로 또는 URL(/images/… 또는 http…). 썸네일은 만들지 않고 같은 경로를 모든 크기에 사용합니다."},
         {"배송비구분", "선택", "선택", "무료 / 선불 / 착불. 비우면 무료."},
         {"배송비", "선택", "선택", "0 이상 정수. 비우면 0."},
@@ -102,14 +104,16 @@ public class ProdExcelService {
 
     private final ProdExcelMapper mapper;
     private final ProdService prodService;
+    private final ProdItemService prodItemService;
     private final ConstrValService constrValService;
     private final DataScopeGuard scopeGuard;
     private final TransactionTemplate tx;
 
-    public ProdExcelService(ProdExcelMapper mapper, ProdService prodService, ConstrValService constrValService,
-                            DataScopeGuard scopeGuard, PlatformTransactionManager txManager) {
+    public ProdExcelService(ProdExcelMapper mapper, ProdService prodService, ProdItemService prodItemService,
+                            ConstrValService constrValService, DataScopeGuard scopeGuard, PlatformTransactionManager txManager) {
         this.mapper = mapper;
         this.prodService = prodService;
+        this.prodItemService = prodItemService;
         this.constrValService = constrValService;
         this.scopeGuard = scopeGuard;
         this.tx = new TransactionTemplate(txManager);
@@ -278,6 +282,8 @@ public class ProdExcelService {
             } else {
                 prodService.update(p);
             }
+            // 속성값이 있으면 옵션 행을 만든다(상품 저장 뒤 — 기본 옵션 20000 은 insert 가 이미 만들었다).
+            if (row.isRebuildOptions()) prodItemService.applyAttributeOptions(p, row.getOptionCombos());
         }
         result.setImported(true);
         return result;
@@ -461,11 +467,19 @@ public class ProdExcelService {
         }
         String memo = textCell(raw, H_MEMO, 500, row);
         if (memo != null) p.setMemo01(memo);
+        String[] exAttrVal = {nz(p.getAttrValStr1()), nz(p.getAttrValStr2()), nz(p.getAttrValStr3()), nz(p.getAttrValStr4())};
         for (int i = 0; i < 4; i++) {
             String attrName = textCell(raw, H_ATTR_NAME[i], 50, row);
             String attrVal = textCell(raw, H_ATTR_VAL[i], 500, row);
             setAttr(p, i, attrName, attrVal);
         }
+        // 속성값이 새로 채워지거나 바뀌었으면 그 값으로 옵션 행을 만든다(레거시와 같음). 같은 값이면 옵션은 건드리지 않는다.
+        boolean attrChanged = false;
+        for (int i = 0; i < 4; i++) {
+            String cell = raw.get(H_ATTR_VAL[i]);
+            if (!cell.isEmpty() && !cell.equals(exAttrVal[i])) attrChanged = true;
+        }
+        planOptions(p, row, update, attrChanged);
 
         // 이미지 — 경로만 받는다(썸네일을 만들지 않으므로 모든 크기에 같은 경로)
         String img = raw.get(H_IMG);
@@ -501,6 +515,33 @@ public class ProdExcelService {
         if (deli != null) p.setDeliFeeType(deli);
         String sale = codeCell(raw, H_SALE_YN, c.saleYn(constrValService), row, exSale);
         if (sale != null) p.setSaleYn(Integer.valueOf(sale));
+    }
+
+    /**
+     * 속성값(쉼표로 구분한 목록)에서 옵션 조합을 정한다 — 레거시와 같이 속성값1×속성값2×… 모든 조합이 옵션 한 행이다.
+     * 실제 반영은 상품 저장 뒤({@link #doImport})에 하고, 여기서는 조합을 계산해 행에 담고 사용자에게 알린다.
+     */
+    private void planOptions(Prod p, ProdExcelRow row, boolean update, boolean attrChanged) {
+        String[] vals = {nz(p.getAttrValStr1()), nz(p.getAttrValStr2()), nz(p.getAttrValStr3()), nz(p.getAttrValStr4())};
+        int count = AttrCombos.count(vals);
+        if (!attrChanged || count == 0) return;
+        if (count > AttrCombos.MAX_COMBOS) {
+            row.error("속성값 조합이 " + count + "개로 너무 많습니다(한 상품에 최대 " + AttrCombos.MAX_COMBOS + "개). 속성값을 줄여 주세요.");
+            return;
+        }
+        String[] names = {nz(p.getAttrName1()), nz(p.getAttrName2()), nz(p.getAttrName3()), nz(p.getAttrName4())};
+        int used = AttrCombos.levels(vals).size();
+        for (int i = 0; i < used; i++) {
+            if (names[i].isBlank()) row.warn("속성값" + (i + 1) + "이 있는데 속성명칭" + (i + 1) + "이 비어 있습니다(옵션 이름 없이 만들어집니다).");
+        }
+        for (int level : AttrCombos.ignoredLevels(vals)) {
+            row.warn("속성값" + level + "은 앞의 속성값이 비어 있어 옵션으로 만들지 않습니다.");
+        }
+        row.setOptionCombos(AttrCombos.expand(vals));
+        row.setRebuildOptions(true);
+        row.warn(update
+                ? "옵션을 다시 구성합니다: 조합 " + count + "개(목록에 없는 기존 옵션은 판매중지)."
+                : "옵션 " + count + "개가 만들어집니다.");
     }
 
     /** 속성 i(0~3)의 이름/값을 상품에 옮긴다. null 이면(빈 칸·오류) 건드리지 않는다. */

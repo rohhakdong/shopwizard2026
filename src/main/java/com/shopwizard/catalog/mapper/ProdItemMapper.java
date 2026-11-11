@@ -20,6 +20,10 @@ public interface ProdItemMapper {
     int deleteByProdCode(String prodCode);
     int disable(String prodCode);
     int enable(Map<String, Object> params);
+    /** 이 상품의 가장 큰 ItemCode(숫자). 옵션이 없으면 null. */
+    Integer selectMaxItemCode(String prodCode);
+    /** 옵션 한 행만 판매중지(SaleYn=0). 상품 전체를 중지하는 {@link #disable} 과 다르다. */
+    int disableItem(Map<String, Object> params);
     int copy2Shopion(Map<String, Object> params);
     /** 판매 쪽에만 남은 옵션 행을 지운다(등록 쪽에 없는 ItemCode). */
     int deleteMissing2Shopion(String prodCode);

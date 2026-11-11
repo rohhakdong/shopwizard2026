@@ -104,6 +104,15 @@
         UPDATE shopwizard.tCatProdItem SET SaleYn = 0, SaleStopDate = NOW() WHERE ProdCode = #{value}
     </update>
 
+    <select id="selectMaxItemCode" parameterType="string" resultType="java.lang.Integer">
+        SELECT MAX(CAST(ItemCode AS UNSIGNED)) FROM shopwizard.tCatProdItem WHERE ProdCode = #{value}
+    </select>
+
+    <update id="disableItem" parameterType="map">
+        UPDATE shopwizard.tCatProdItem SET SaleYn = 0, SaleStopDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
+    </update>
+
     <update id="enable" parameterType="map">
         UPDATE shopwizard.tCatProdItem SET SaleYn = 1, SaleStopDate = NULL WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
     </update>
