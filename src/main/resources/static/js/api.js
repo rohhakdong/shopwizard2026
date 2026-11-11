@@ -33,6 +33,11 @@ const Api = (() => {
         try { msg = JSON.parse(text).message; } catch (_) {}
         throw new Error(msg || '다른 사용자가 먼저 변경했습니다. 새로고침 후 다시 시도하세요.');
       }
+      if (res.status === 400) {   // 입력 검증 실패 — 서버가 준 사유(예: "제조사를 입력하세요.")가 있으면 그것만 보여준다
+        let msg = '';
+        try { msg = JSON.parse(text).message; } catch (_) {}
+        if (msg) throw new Error(msg);
+      }
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
 

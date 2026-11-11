@@ -9,8 +9,10 @@ import com.shopwizard.catalog.model.ProdDashBoard;
 import com.shopwizard.catalog.model.ProdItem;
 import lombok.RequiredArgsConstructor;
 import com.shopwizard.framework.util.DeleteResult;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -37,8 +39,19 @@ public class ProdService {
     public String selectProdCode(String shopProdCode) { return prodMapper.selectProdCode(shopProdCode); }
     public List<ProdDashBoard> selectListDashboard(Map<String, Object> params) { return prodMapper.selectListDashboard(params); }
 
+    /**
+     * 제조사는 등록·수정 모두 필수다. 비어 있는 채로 샵링커에 전송하면 "제조업체 누락 [에러코드 : 0005]" 로 거절되기 때문이다
+     * (2026-11-11 실전송 시험). 화면 폼·엑셀 일괄등록이 먼저 막지만, 어떤 경로로 들어와도 서버에서 한 번 더 막는다.
+     */
+    static void requireMaker(Prod prod) {
+        if (prod.getMakerName() == null || prod.getMakerName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "제조사를 입력하세요.");
+        }
+    }
+
     @Transactional
     public int insert(Prod prod) {
+        requireMaker(prod);
         int result = prodMapper.insert(prod);
 
         ProdItem defaultItem = new ProdItem();
@@ -65,6 +78,7 @@ public class ProdService {
     /** 수정 후 판매 상품에도 반영한다. 같은 트랜잭션이라 판매 쪽 반영이 실패하면 등록 쪽 수정도 롤백된다. */
     @Transactional
     public int update(Prod prod) {
+        requireMaker(prod);
         int result = prodMapper.update(prod);
         String prodCode = prod.getProdCode();
         if (prodCode == null || prodCode.isBlank()) prodCode = prodMapper.selectProdCode(prod.getShopProdCode());

@@ -91,8 +91,16 @@ class ProdExcelServiceTest {
         }
     }
 
-    /** 양식 35열 순서로 값을 채운 한 행 — 이름/값 쌍으로 쓰고 나머지는 빈 칸. */
+    /** 양식 35열 순서로 값을 채운 한 행 — 이름/값 쌍으로 쓰고 나머지는 빈 칸. 제조사(필수)는 주지 않았으면 기본값을 채운다. */
     private static Object[] row(Object... kv) {
+        Object[] r = rowBare(kv);
+        int maker = Arrays.asList(ALL_HEADERS).indexOf("제조사");
+        if (r[maker] == null) r[maker] = "기본제조사";
+        return r;
+    }
+
+    /** {@link #row}와 같지만 제조사를 자동으로 채우지 않는다 — 제조사 필수 검사를 시험할 때 쓴다. */
+    private static Object[] rowBare(Object... kv) {
         Object[] r = new Object[ALL_HEADERS.length];
         for (int i = 0; i < kv.length; i += 2) {
             int idx = Arrays.asList(ALL_HEADERS).indexOf(kv[i]);
@@ -153,8 +161,8 @@ class ProdExcelServiceTest {
 
     @Test
     void 열은_순서가_아니라_헤더_이름으로_찾고_헤더_공백은_무시한다() throws Exception {
-        String[] headers = {"상점코드", "분류 코드", "상품명칭"};   // 순서 바뀜, '분류 코드' 공백
-        byte[] b = book(false, headers, List.<Object[]>of(new Object[]{"SHOP00000001", "G006010009001", "순서 바뀐 상품"}));
+        String[] headers = {"상점코드", "분류 코드", "상품명칭", "제조사"};   // 순서 바뀜, '분류 코드' 공백
+        byte[] b = book(false, headers, List.<Object[]>of(new Object[]{"SHOP00000001", "G006010009001", "순서 바뀐 상품", "제조사A"}));
         ProdExcelResult r = service.preview(new ByteArrayInputStream(b), request);
         assertTrue(r.isImportable(), String.valueOf(r.getRows().get(0).getErrors()));
         assertEquals("순서 바뀐 상품", r.getRows().get(0).getProd().getProdName());
@@ -260,7 +268,7 @@ class ProdExcelServiceTest {
 
     @Test
     void 필수값_누락은_행마다_오류() throws Exception {
-        ProdExcelResult r = service.preview(xls(row("상품명칭", "")), request);   // 전부 빈 행은 건너뛰므로 상품전시명칭만 채움
+        ProdExcelResult r = service.preview(xls(rowBare("상품명칭", "")), request);   // 전부 빈 행은 건너뛴다(제조사를 자동으로 채우지 않는 도우미 사용)
         // 모두 빈 행이면 건너뛰어 '행 없음' 파일 오류 — 필수 누락을 보려면 다른 칸이 하나는 있어야 한다.
         assertNotNull(r.getFileError());
 
@@ -269,6 +277,64 @@ class ProdExcelServiceTest {
         assertTrue(errors.contains("상품명칭은 필수입니다."));
         assertTrue(errors.contains("상점코드는 필수입니다."));
         assertTrue(errors.contains("분류코드는 필수입니다."));
+    }
+
+    @Test
+    void 신규는_제조사가_없으면_오류() throws Exception {
+        ProdExcelResult r = service.preview(xls(
+                rowBare("상품명칭", "a", "상점코드", "SHOP00000001", "분류코드", "G006010009001"),
+                rowBare("상품명칭", "b", "상점코드", "SHOP00000001", "분류코드", "G006010009001", "제조사", "   "),
+                row("상품명칭", "c", "상점코드", "SHOP00000001", "분류코드", "G006010009001")), request);
+
+        assertTrue(r.getRows().get(0).getErrors().contains("제조사는 필수입니다."));
+        assertTrue(r.getRows().get(1).getErrors().contains("제조사는 필수입니다."));   // 공백만 있는 칸도 비어 있는 것
+        assertEquals("OK", r.getRows().get(2).getStatus());
+        assertEquals(2, r.getErrorCount());
+        assertFalse(r.isImportable());   // 한 행이라도 오류면 전체 등록 불가
+    }
+
+    @Test
+    void 수정은_기존_제조사가_있으면_빈_칸이어도_유지하고_통과한다() throws Exception {
+        Prod withMaker = existing("1000000100");
+        withMaker.setMakerName("기존제조사");
+        when(mapper.countProd("1000000100")).thenReturn(1);
+        when(prodService.select("1000000100")).thenReturn(withMaker);
+
+        ProdExcelResult r = service.preview(xls(rowBare("상품코드", "1000000100", "판매가격", 6000d)), request);
+
+        assertEquals("OK", r.getRows().get(0).getStatus(), r.getRows().get(0).getErrors().toString());
+        assertEquals("기존제조사", r.getRows().get(0).getProd().getMakerName());
+    }
+
+    @Test
+    void 수정은_기존_제조사도_비어_있고_칸도_비면_오류_칸을_채우면_통과() throws Exception {
+        when(mapper.countProd(anyString())).thenReturn(1);
+        when(prodService.select(anyString())).thenAnswer(inv -> existing(inv.getArgument(0)));   // 제조사 없는 기존 상품 두 개
+
+        ProdExcelResult r = service.preview(xls(
+                rowBare("상품코드", "1000000100", "판매가격", 6000d),
+                rowBare("상품코드", "1000000101", "제조사", "새제조사")), request);
+
+        assertTrue(r.getRows().get(0).getErrors().get(0).contains("제조사가 비어 있습니다"));
+        assertEquals("OK", r.getRows().get(1).getStatus(), r.getRows().get(1).getErrors().toString());
+        assertEquals("새제조사", r.getRows().get(1).getProd().getMakerName());
+    }
+
+    @Test
+    void 제조사가_너무_길면_길이_오류만_알리고_필수_오류는_중복하지_않는다() throws Exception {
+        ProdExcelResult r = service.preview(xls(rowBare("상품명칭", "a", "상점코드", "SHOP00000001",
+                "분류코드", "G006010009001", "제조사", "m".repeat(51))), request);
+
+        List<String> e = r.getRows().get(0).getErrors();
+        assertEquals(1, e.size(), e.toString());
+        assertTrue(e.get(0).contains("50자"));
+    }
+
+    @Test
+    void 양식_작성안내에도_제조사가_필수로_적혀_있다() {
+        String[] maker = Arrays.stream(ProdExcelService.COLUMNS).filter(c -> c[0].equals("제조사")).findFirst().orElseThrow();
+        assertEquals("필수", maker[1]);
+        assertTrue(maker[2].contains("필수"));
     }
 
     @Test

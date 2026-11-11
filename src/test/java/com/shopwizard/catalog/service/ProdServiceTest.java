@@ -8,6 +8,8 @@ import com.shopwizard.catalog.model.Prod;
 import com.shopwizard.framework.util.DeleteResult;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +30,38 @@ class ProdServiceTest {
     private static Prod prod(String code) {
         Prod p = new Prod();
         p.setProdCode(code);
+        p.setMakerName("제조사");   // 등록·수정은 제조사 필수
         return p;
+    }
+
+    // ── 제조사 필수 ─────────────────────────────────────────
+
+    @Test
+    void 제조사가_없으면_등록과_수정을_400으로_거절하고_저장하지_않는다() {
+        for (String blank : new String[]{null, "", "   "}) {
+            Prod p = prod("P1");
+            p.setMakerName(blank);
+
+            ResponseStatusException ins = assertThrows(ResponseStatusException.class, () -> service.insert(p));
+            ResponseStatusException upd = assertThrows(ResponseStatusException.class, () -> service.update(p));
+
+            assertEquals(HttpStatus.BAD_REQUEST, ins.getStatusCode());
+            assertEquals("제조사를 입력하세요.", ins.getReason());
+            assertEquals(HttpStatus.BAD_REQUEST, upd.getStatusCode());
+        }
+        verify(prodMapper, never()).insert(any());
+        verify(prodMapper, never()).update(any());
+        verifyNoInteractions(prodItemMapper);
+    }
+
+    @Test
+    void 제조사가_있으면_등록하고_기본_옵션도_만든다() {
+        when(prodMapper.insert(any())).thenReturn(1);
+
+        assertEquals(1, service.insert(prod("P1")));
+
+        verify(prodMapper).insert(any());
+        verify(prodItemMapper).insert(any());
     }
 
     // ── 수정 ────────────────────────────────────────────────
@@ -59,6 +92,7 @@ class ProdServiceTest {
     void 수정_요청에_상품코드가_없으면_상점상품코드로_찾아_반영한다() {
         Prod p = new Prod();
         p.setShopProdCode("SP-9");
+        p.setMakerName("제조사");
         when(prodMapper.selectProdCode("SP-9")).thenReturn("P9");
         when(prodMapper.countShopion("P9")).thenReturn(1);
 

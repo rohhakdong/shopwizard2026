@@ -1040,7 +1040,12 @@ const PageCatalogProd = (() => {
     const brandOpts  = brandOptions.map(b =>
       `<option value="${esc(b.brandKorName)}" ${esc(v.brandName === b.brandKorName ? 'selected' : '')}>${esc(b.brandKorName)}</option>`
     ).join('');
-    const makerOpts  = makerOptions.map(m =>
+    // 제조사는 필수다. 기존 상품의 제조사가 마스터에 없는 값(레거시 데이터)이면 목록에 "현재값"으로 끼워 넣어,
+    // 수정할 때 그 값이 조용히 비워지거나 마스터의 다른 값으로 바뀌지 않게 한다.
+    const makerInMaster = makerOptions.some(m => m.makerKorName === v.makerName);
+    const makerCurrentOpt = v.makerName && !makerInMaster
+      ? `<option value="${esc(v.makerName)}" selected>${esc(v.makerName)} (현재값)</option>` : '';
+    const makerOpts  = makerCurrentOpt + makerOptions.map(m =>
       `<option value="${esc(m.makerKorName)}" ${esc(v.makerName === m.makerKorName ? 'selected' : '')}>${esc(m.makerKorName)}</option>`
     ).join('');
     const originOpts = originOptions.map(o =>
@@ -1101,9 +1106,9 @@ const PageCatalogProd = (() => {
           </select>
         </div>
         <div class="form-group">
-          <label>제조사명</label>
+          <label>제조사명 <span style="color:var(--danger)">*</span></label>
           <select class="input" id="pFMakerName">
-            <option value="">-- 선택 안 함 --</option>
+            <option value="">-- 선택 --</option>
             ${makerOpts}
           </select>
         </div>
@@ -1273,6 +1278,8 @@ const PageCatalogProd = (() => {
         if (!shopCode)          { UI.toast('쇼핑몰을 선택하세요', 'error'); return; }
         if (!selectedCateCode)  { UI.toast('분류를 선택하세요', 'error'); return; }
         if (!prodName)          { UI.toast('상품명을 입력하세요', 'error'); return; }
+        // 제조사는 필수 — 비어 있으면 샵링커 전송이 "제조업체 누락"으로 거절된다. 서버도 한 번 더 막는다.
+        if (!document.getElementById('pFMakerName').value.trim()) { UI.toast('제조사를 선택하세요', 'error'); return; }
 
         const registId   = (typeof info !== 'undefined' && info?.loginId) || '';
         const registName = (typeof info !== 'undefined' && info?.name) || '';
