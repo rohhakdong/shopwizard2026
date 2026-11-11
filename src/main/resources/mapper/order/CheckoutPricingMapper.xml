@@ -18,9 +18,17 @@
         WHERE ProdCode = #{prodCode} AND ItemCode = #{itemCode}
     </select>
 
+    <!-- "선택사항없음" 기본 행은 ItemCode 가 아니라 옵션값으로 알아본다. 레거시 옵션 상품은 ItemCode 20000 이 실제 첫 번째 옵션이라
+         (개발 DB 판매 상품 중 옵션이 둘 이상인 106건 전부) 코드로 가르면 그 옵션이 기본 행으로 오인된다. -->
     <select id="countRealOptions" resultType="int">
         SELECT COUNT(*) FROM shopion.tPrdProdItem
-        WHERE ProdCode = #{prodCode} AND ItemCode &lt;&gt; '20000'
+        WHERE ProdCode = #{prodCode} AND COALESCE(AttrVal1, '') &lt;&gt; '선택사항없음'
+    </select>
+
+    <select id="selectPlaceholderItemCode" resultType="string">
+        SELECT ItemCode FROM shopion.tPrdProdItem
+        WHERE ProdCode = #{prodCode} AND AttrVal1 = '선택사항없음'
+        ORDER BY ItemCode LIMIT 1
     </select>
 
 </mapper>

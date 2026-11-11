@@ -1066,14 +1066,15 @@ createApp({
           api('GET', '/product/proditem/list', { pProdCode: prodCode }),
         ]);
         prodDetail.value = detail;
-        // ItemCode 20000은 관리자가 옵션을 등록하지 않은 상품에도 항상 자동으로 생기는
-        // "선택사항없음" placeholder다(카탈로그 등록 시 서버가 항상 만들어둠). 진짜 옵션
-        // (사이즈/색상 등)이 실제로 등록된 상품에서는 이 항목을 선택지에서 빼야 한다 —
-        // 안 그러면 "선택사항없음"이 사이즈/색상과 나란히 고를 수 있는 옵션처럼 보인다.
-        // 반대로 옵션이 아예 없는 상품은 이 20000 하나만 있으므로 그대로 남겨서
-        // (기존처럼) 옵션 선택 UI 없이 바로 담기/구매가 되게 한다.
+        // "선택사항없음" placeholder 는 관리자가 옵션을 등록하지 않은 상품에도 항상 자동으로 생기는 기본 행이다
+        // (카탈로그 등록 시 서버가 ItemCode 20000 으로 만들어둠). 진짜 옵션(사이즈/색상 등)이 실제로 등록된 상품에서는
+        // 이 항목을 선택지에서 빼야 한다 — 안 그러면 "선택사항없음"이 사이즈/색상과 나란히 고를 수 있는 옵션처럼 보인다.
+        // 반대로 옵션이 아예 없는 상품은 이 기본 행 하나만 있으므로 그대로 남겨서 옵션 선택 UI 없이 바로 담기/구매가 되게 한다.
+        // 기본 행은 ItemCode 가 아니라 **옵션값("선택사항없음")**으로 알아본다: 레거시 옵션 상품은 기본 행 없이 ItemCode 20000 이
+        // 실제 첫 번째 옵션이라, 코드로 가르면 그 옵션이 쇼핑몰에서 사라진다.
         const rawItems = items || [];
-        const realOptions = rawItems.filter(i => String(i.itemCode) !== '20000');
+        const isPlaceholder = i => String(i.attrVal1 || '').trim() === '선택사항없음';
+        const realOptions = rawItems.filter(i => !isPlaceholder(i));
         prodItems.value = realOptions.length > 0 ? realOptions : rawItems;
         if (prodItems.value.length === 1) selectedItemCode.value = String(prodItems.value[0].itemCode);
       } catch(e) {

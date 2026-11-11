@@ -24,10 +24,12 @@ const PageCatalogProd = (() => {
   const canApprove = () => typeof info === 'undefined' || !info || !info.screens || !!info.screens['catalog-prod-approve'];
 
   const PAGE_SIZE = 20;
-  // 상품 등록 시 서버(ProdService.insert)가 항상 자동으로 만들어두는 "선택사항없음" 기본
-  // 옵션(tCatProdItem)의 ItemCode. 이 프로젝트의 기존 데이터 전체에서 확립된 관례라 백엔드
-  // 상수와 값을 맞춰뒀다 — 옵션 관리 화면에서 이 항목은 실제 등록 옵션이 아니므로 숨긴다.
-  const DEFAULT_ITEM_CODE = 20000;
+  // 상품 등록 시 서버(ProdService.insert)가 항상 자동으로 만들어두는 "선택사항없음" 기본 옵션(tCatProdItem).
+  // 옵션 관리 화면에서 이 항목은 실제 등록 옵션이 아니므로 숨긴다. 기본 행은 ItemCode(20000)가 아니라
+  // 옵션값("선택사항없음")으로 알아본다 — 레거시 옵션 상품은 기본 행 없이 20000 이 실제 첫 번째 옵션이라,
+  // 코드로 숨기면 그 옵션이 관리 화면에서 보이지도 고칠 수도 없게 된다.
+  const PLACEHOLDER_ATTR_VAL = '선택사항없음';
+  const isPlaceholderItem = it => String(it.attrVal1 || '').trim() === PLACEHOLDER_ATTR_VAL;
   let currentPage = 1;
   let totalCount  = 0;
   let shopList    = [];
@@ -814,11 +816,10 @@ const PageCatalogProd = (() => {
       try { items = await Api.get('/catalog/prod-item/list', { pProdCode: prod.prodCode }); }
       catch (e) { wrap.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`; return; }
 
-      // ItemCode 20000은 상품 등록 시 서버가 자동으로 만들어두는 "선택사항없음" 기본
-      // 아이템이다(ProdService.insert 참고) — 관리자가 실제로 등록한 옵션이 아니므로
-      // 목록에는 보여주지 않는다. ItemCode 채번(신규 추가 시 최댓값+1)에는 계속 포함시켜야
-      // 하므로 items 자체는 그대로 두고 화면에 그릴 목록만 따로 거른다.
-      const visibleItems = items.filter(it => it.itemCode !== DEFAULT_ITEM_CODE);
+      // "선택사항없음" 기본 아이템은 상품 등록 시 서버가 자동으로 만들어두는 행이다(ProdService.insert 참고) —
+      // 관리자가 실제로 등록한 옵션이 아니므로 목록에는 보여주지 않는다. ItemCode 채번(신규 추가 시 최댓값+1)에는
+      // 계속 포함시켜야 하므로 items 자체는 그대로 두고 화면에 그릴 목록만 따로 거른다.
+      const visibleItems = items.filter(it => !isPlaceholderItem(it));
 
       if (visibleItems.length === 0) {
         wrap.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)">등록된 옵션이 없습니다</div>';

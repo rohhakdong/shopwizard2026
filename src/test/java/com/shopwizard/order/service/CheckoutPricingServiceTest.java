@@ -66,10 +66,18 @@ class CheckoutPricingServiceTest {
         return c;
     }
 
-    /** 옵션 없는 상품(기본행 20000 만 있음)을 등록한다. */
+    /** 이름을 직접 정하는 옵션 행(레거시 데이터처럼 20000 이 실제 옵션일 때). */
+    private static PricingItem named(String code, String name, int optionPrice) {
+        PricingItem i = item(code, optionPrice);
+        i.setItemName(name);
+        return i;
+    }
+
+    /** 옵션 없는 상품(기본행 20000 "선택사항없음" 만 있음)을 등록한다. */
     private void givenSimple(PricingProd p) {
         lenient().when(mapper.selectProd(p.getProdCode())).thenReturn(p);
         lenient().when(mapper.countRealOptions(p.getProdCode())).thenReturn(0);
+        lenient().when(mapper.selectPlaceholderItemCode(p.getProdCode())).thenReturn("20000");
         lenient().when(mapper.selectItem(p.getProdCode(), "20000")).thenReturn(item("20000", 0));
     }
 
@@ -142,11 +150,88 @@ class CheckoutPricingServiceTest {
         PricingProd p = prod("P2", "S1", 10000, "무료", 0);
         when(mapper.selectProd("P2")).thenReturn(p);
         when(mapper.countRealOptions("P2")).thenReturn(3);
+        when(mapper.selectPlaceholderItemCode("P2")).thenReturn("20000");   // 새 방식: 기본 행(20000)과 실제 옵션 20001~
 
         assertThatThrownBy(() -> service.price(List.of(in("P2", null, 1))))
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("옵션을 선택");
         assertThatThrownBy(() -> service.price(List.of(in("P2", "20000", 1))))
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("옵션을 선택");
+    }
+
+    // ── 기본 행은 코드가 아니라 옵션값("선택사항없음")으로 안다 — 레거시 데이터에는 기본 행이 없다 ──
+
+    @Test
+    void 레거시_옵션_상품은_20000이_실제_첫_옵션이라_그_옵션도_주문할_수_있다() {
+        PricingProd p = prod("L1", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("L1")).thenReturn(p);
+        when(mapper.countRealOptions("L1")).thenReturn(3);             // 20000 치즈라면밥, 20001, 20002 — 전부 실제 옵션
+        when(mapper.selectPlaceholderItemCode("L1")).thenReturn(null);  // 기본 행 없음
+        when(mapper.selectItem("L1", "20000")).thenReturn(named("20000", "치즈라면밥", 500));
+
+        PricedOrder o = service.price(List.of(in("L1", "20000", 2)));
+
+        PricedLine l = o.getLines().get(0);
+        assertThat(l.getItemCode()).isEqualTo("20000");
+        assertThat(l.getItemName()).isEqualTo("치즈라면밥");   // 이전엔 "옵션을 선택해 주세요" 로 거절됐다
+        assertThat(l.getUnitPrice()).isEqualTo(10500);
+        assertThat(o.getTotalAmt()).isEqualTo(21000);
+    }
+
+    @Test
+    void 레거시_옵션_상품도_옵션을_안_고르면_거절한다() {
+        PricingProd p = prod("L1", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("L1")).thenReturn(p);
+        when(mapper.countRealOptions("L1")).thenReturn(3);
+        when(mapper.selectPlaceholderItemCode("L1")).thenReturn(null);
+
+        assertThatThrownBy(() -> service.price(List.of(in("L1", null, 1))))
+                .isInstanceOf(ResponseStatusException.class).hasMessageContaining("옵션을 선택");
+    }
+
+    @Test
+    void 레거시_단일_옵션_상품은_옵션코드를_보내든_안_보내든_주문된다() {
+        PricingProd p = prod("L2", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("L2")).thenReturn(p);
+        when(mapper.countRealOptions("L2")).thenReturn(1);             // 20000 하나뿐(실제 옵션값)
+        when(mapper.selectPlaceholderItemCode("L2")).thenReturn(null);
+        when(mapper.selectItem("L2", "20000")).thenReturn(named("20000", "비엔나소시지 450g", 0));
+
+        assertThat(service.price(List.of(in("L2", "20000", 1))).getLines().get(0).getItemName()).isEqualTo("비엔나소시지 450g");
+        assertThat(service.price(List.of(in("L2", null, 1))).getLines().get(0).getItemCode()).isEqualTo("20000");   // 코드 없이도 그 옵션
+    }
+
+    @Test
+    void 기본_행과_함께_옵션이_하나뿐인_상품도_옵션을_골라야_한다() {
+        PricingProd p = prod("N1", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("N1")).thenReturn(p);
+        when(mapper.countRealOptions("N1")).thenReturn(1);
+        when(mapper.selectPlaceholderItemCode("N1")).thenReturn("20000");
+        when(mapper.selectItem("N1", "20001")).thenReturn(item("20001", 0));
+
+        assertThatThrownBy(() -> service.price(List.of(in("N1", null, 1)))).hasMessageContaining("옵션을 선택");
+        assertThatThrownBy(() -> service.price(List.of(in("N1", "20000", 1)))).hasMessageContaining("옵션을 선택");   // 기본 행은 못 산다
+        assertThat(service.price(List.of(in("N1", "20001", 1))).getLines().get(0).getItemCode()).isEqualTo("20001");
+    }
+
+    @Test
+    void 옵션이_있는데_기본_행도_20000도_없고_코드도_없으면_어느_옵션인지_알_수_없어_거절한다() {
+        PricingProd p = prod("E1", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("E1")).thenReturn(p);
+        when(mapper.countRealOptions("E1")).thenReturn(1);             // 예: 옵션 20005 하나만 남은 상품
+        when(mapper.selectPlaceholderItemCode("E1")).thenReturn(null);
+        when(mapper.selectItem("E1", "20000")).thenReturn(null);
+
+        assertThatThrownBy(() -> service.price(List.of(in("E1", null, 1)))).hasMessageContaining("옵션을 선택");
+    }
+
+    @Test
+    void 기본_행의_코드가_20000이_아니어도_옵션값으로_알아본다() {
+        PricingProd p = prod("X1", "S1", 10000, "무료", 0);
+        when(mapper.selectProd("X1")).thenReturn(p);
+        when(mapper.countRealOptions("X1")).thenReturn(2);
+        when(mapper.selectPlaceholderItemCode("X1")).thenReturn("20007");   // 기본 행이 다른 코드에 있는 경우
+
+        assertThatThrownBy(() -> service.price(List.of(in("X1", "20007", 1)))).hasMessageContaining("옵션을 선택");
     }
 
     @Test

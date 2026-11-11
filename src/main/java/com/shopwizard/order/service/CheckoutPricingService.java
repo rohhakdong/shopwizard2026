@@ -33,7 +33,7 @@ public class CheckoutPricingService {
     static final int MAX_LINES = 50;
     /** 장바구니(BasketService.MAX_QTY)와 같은 수량 상한. */
     static final int MAX_QTY = 999;
-    /** 옵션이 없는 상품의 기본 행(선택사항없음). */
+    /** 옵션 코드를 안 보낸 상품에 붙이는 관례상의 기본 코드(기본 행·레거시 단일 옵션 모두 20000). 기본 행 판별 자체는 옵션값으로 한다. */
     static final String DEFAULT_ITEM_CODE = "20000";
     static final String PREPAID = "선불";
 
@@ -115,18 +115,35 @@ public class CheckoutPricingService {
     }
 
     /**
-     * 주문 라인의 옵션 행을 정한다. 옵션코드를 보냈으면 그 상품의 판매 가능한 옵션이어야 하고, 안 보냈거나 기본행(20000)이면
-     * 진짜 옵션이 없는 상품일 때만 허용한다(옵션 상품을 옵션 선택 없이 사는 것을 막는다).
+     * 주문 라인의 옵션 행을 정한다. 옵션코드를 보냈으면 그 상품의 판매 가능한 옵션이어야 하고, 옵션을 골라야 하는 상품을 옵션 선택 없이
+     * (옵션코드 없음 또는 "선택사항없음" 기본 행으로) 사는 것은 막는다.
+     *
+     * <p>기본 행은 <b>ItemCode 가 아니라 옵션값("선택사항없음")</b>으로 알아본다. 이 프로젝트의 데이터에는 두 모양이 섞여 있다:
+     * ① 새 방식 — 기본 행(20000, 선택사항없음)이 있고 실제 옵션은 20001 부터, ② 레거시 — 기본 행 없이 20000 이 실제 첫 번째 옵션.
+     * 코드로 가르면 ② 의 첫 번째 옵션이 기본 행으로 오인돼 주문할 수 없었다.</p>
+     * <ul>
+     *   <li>골라야 하는 상품: 실제 옵션이 둘 이상이거나, 기본 행과 함께 실제 옵션이 있는 상품.</li>
+     *   <li>고를 필요가 없는 상품: 실제 옵션이 없거나(기본 행만), 기본 행 없이 실제 옵션이 하나뿐(레거시 단일 옵션).</li>
+     * </ul>
      */
     private PricingItem resolveItem(PricingProd prod, String itemCode, int qty) {
-        boolean wantsDefault = itemCode == null || DEFAULT_ITEM_CODE.equals(itemCode);
-        if (wantsDefault && mapper.countRealOptions(prod.getProdCode()) > 0) {
+        String prodCode = prod.getProdCode();
+        int realOptions = mapper.countRealOptions(prodCode);
+        String placeholder = mapper.selectPlaceholderItemCode(prodCode);   // 없으면 null
+        boolean mustChoose = realOptions >= 2 || (realOptions == 1 && placeholder != null);
+        boolean wantsDefault = itemCode == null || itemCode.equals(placeholder);
+        if (wantsDefault && mustChoose) {
             throw bad("옵션을 선택해 주세요: " + nameOf(prod));
         }
-        // 옵션코드를 안 보낸 옵션 없는 상품은 기존 데이터 관례대로 기본행(20000)을 붙인다(기본행이 없으면 옵션 없이 진행).
-        PricingItem item = mapper.selectItem(prod.getProdCode(), itemCode == null ? DEFAULT_ITEM_CODE : itemCode);
+        // 옵션코드를 안 보낸 상품은 기본 행을, 기본 행이 없으면 기존 데이터 관례대로 20000 을 붙인다(그것도 없으면 옵션 없이 진행).
+        String code = itemCode != null ? itemCode : (placeholder != null ? placeholder : DEFAULT_ITEM_CODE);
+        PricingItem item = mapper.selectItem(prodCode, code);
         if (item == null) {
-            if (itemCode == null) return null;
+            if (itemCode == null) {
+                // 옵션이 있는데 기본 행도 20000 도 없다 = 어느 옵션인지 알 수 없다.
+                if (realOptions > 0) throw bad("옵션을 선택해 주세요: " + nameOf(prod));
+                return null;
+            }
             throw bad("존재하지 않는 옵션입니다: " + nameOf(prod));
         }
         if (!eq(item.getSaleYn(), 1) || (item.getSupplyQty() != null && item.getSupplyQty() <= 0)) {
