@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderExcelMapper">
+
+    <select id="selectChnlCodesByName" resultType="string">
+        SELECT ChnlCode
+        FROM shopwizard.tCmpChnl
+        WHERE ChnlName = #{chnlName}
+        <if test="svcCode != null and svcCode != ''">AND SvcCode = #{svcCode}</if>
+    </select>
+
+    <select id="selectExistingExcelOrderNos" resultType="string">
+        SELECT OrderNo
+        FROM shopion.tOrdOrderExcel
+        WHERE OrderNo IN
+        <foreach collection="nos" item="no" open="(" separator="," close=")">#{no}</foreach>
+    </select>
+
+    <!-- 원본 28열은 레거시처럼 문자열 그대로 보관한다(가격·수량도 VARCHAR). -->
+    <insert id="insertExcelOrder" parameterType="map">
+        INSERT INTO shopion.tOrdOrderExcel (
+            OrderNo, ChnlName, ChnlOrderNo, OrderName, OrderPhoneNo, OrderMobileNo,
+            RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr, DeliMemo,
+            ShopProdCode, ProdCode, ProdName, ShopName, SupplyPrice, SalePrice, BuyPrice, ProdQty, ItemName,
+            OrderReciptDate, ShipCmpletDate, DeliCompCode, InvNo, DeliFeeType, DeliFeeAmt, PromotFeeAmt,
+            ShopionOrderNo, State, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{orderNo}, #{chnlName}, #{chnlOrderNo}, #{orderName}, #{orderPhoneNo}, #{orderMobileNo},
+            #{recverName}, #{recverPhoneNo}, #{recverMobileNo}, #{recverZipcode}, #{recverAddr}, #{deliMemo},
+            #{shopProdCode}, #{prodCode}, #{prodName}, #{shopName}, #{supplyPrice}, #{salePrice}, #{buyPrice}, #{prodQty}, #{itemName},
+            #{orderReciptDate}, '', '', '', #{deliFeeType}, #{deliFeeAmt}, #{promotFeeAmt},
+            #{shopionOrderNo}, 1, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <insert id="insertUpload" parameterType="com.shopwizard.order.model.OrderExcelUpload"
+            useGeneratedKeys="true" keyProperty="uploadId">
+        INSERT INTO shopion.tOrdExcelUpload (ResultType, FileLoc, UploadStartDate, State, RegistId, RegistName, RegistDate)
+        VALUES ('진행', #{fileLoc}, NOW(), 1, #{registId}, #{registName}, NOW())
+    </insert>
+
+    <update id="finishUpload">
+        UPDATE shopion.tOrdExcelUpload
+        SET ResultType = #{resultType}, ResultMessag = #{resultMessag}, UploadEndDate = NOW(),
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE UploadId = #{uploadId}
+    </update>
+
+    <insert id="insertUploadDetail" parameterType="com.shopwizard.order.model.OrderExcelUploadDetail">
+        INSERT INTO shopion.tOrdExcelUploadDetail (
+            UploadId, UploadDetailNo, ExcelOrderNo, ResultType, ResultMessag, State, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{uploadId}, #{uploadDetailNo}, #{excelOrderNo}, #{resultType}, #{resultMessag}, 1, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <sql id="uploadWhere">
+        <where>
+            <if test="startDate != null and startDate != ''">AND UploadStartDate &gt;= STR_TO_DATE(#{startDate}, '%Y-%m-%d')</if>
+            <if test="endDate != null and endDate != ''">AND UploadStartDate &lt; DATE_ADD(STR_TO_DATE(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)</if>
+            <if test="registId != null and registId != ''">AND RegistId = #{registId}</if>
+        </where>
+    </sql>
+
+    <select id="selectUploadList" resultType="com.shopwizard.order.model.OrderExcelUpload">
+        SELECT UploadId, ResultType, ResultMessag, FileLoc,
+               DATE_FORMAT(UploadStartDate, '%Y-%m-%d %H:%i:%s') AS UploadStartDate,
+               DATE_FORMAT(UploadEndDate, '%Y-%m-%d %H:%i:%s') AS UploadEndDate,
+               RegistId, RegistName
+        FROM shopion.tOrdExcelUpload
+        <include refid="uploadWhere"/>
+        ORDER BY UploadId DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectUploadCount" resultType="int">
+        SELECT COUNT(*) FROM shopion.tOrdExcelUpload
+        <include refid="uploadWhere"/>
+    </select>
+
+    <select id="selectUpload" resultType="com.shopwizard.order.model.OrderExcelUpload">
+        SELECT UploadId, ResultType, ResultMessag, FileLoc,
+               DATE_FORMAT(UploadStartDate, '%Y-%m-%d %H:%i:%s') AS UploadStartDate,
+               DATE_FORMAT(UploadEndDate, '%Y-%m-%d %H:%i:%s') AS UploadEndDate,
+               RegistId, RegistName
+        FROM shopion.tOrdExcelUpload
+        WHERE UploadId = #{uploadId}
+    </select>
+
+    <select id="selectUploadDetails" resultType="com.shopwizard.order.model.OrderExcelUploadDetail">
+        SELECT UploadId, UploadDetailNo, ExcelOrderNo, ResultType, ResultMessag, RegistId, RegistName
+        FROM shopion.tOrdExcelUploadDetail
+        WHERE UploadId = #{uploadId}
+        ORDER BY UploadDetailNo ASC
+    </select>
+
+</mapper>
