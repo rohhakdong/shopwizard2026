@@ -425,6 +425,13 @@
         )
     </insert>
 
+    <select id="countByChnlOrderNo" resultType="int">
+        SELECT COUNT(*)
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo
+        WHERE O.ChnlCode = #{chnlCode} AND OP.ChnlOrderNo = #{chnlOrderNo}
+    </select>
+
     <update id="update" parameterType="com.shopwizard.order.model.OrderProd">
         UPDATE shopion.tOrdOrderProd SET
             SupplyCode = #{supplyCode}, SupplyName = #{supplyName}, ShopCode = #{shopCode},

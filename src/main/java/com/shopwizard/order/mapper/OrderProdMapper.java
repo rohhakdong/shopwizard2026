@@ -27,6 +27,9 @@ public interface OrderProdMapper {
     List<Integer> selectOrderProdNoList(Integer orderNo);
     List<OrderProd> selectGuestOrderList(Map<String, Object> params);
     void insert(OrderProd orderProd);
+    /** 같은 채널에 같은 채널주문번호로 이미 등록된 주문 줄 수(수기 주문 중복 등록 방지). */
+    int countByChnlOrderNo(@org.apache.ibatis.annotations.Param("chnlCode") String chnlCode,
+                           @org.apache.ibatis.annotations.Param("chnlOrderNo") String chnlOrderNo);
     void update(OrderProd orderProd);
     void updatePrice(OrderProd orderProd);
     void updatePriceShipDirect(OrderProd orderProd);

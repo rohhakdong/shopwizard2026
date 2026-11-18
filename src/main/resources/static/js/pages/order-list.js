@@ -132,7 +132,10 @@ const PageOrderList = (() => {
   function render(container) {
     container.innerHTML = `
       <div class="card">
-        <div class="card-header">주문관리</div>
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>주문관리</span>
+          <button class="btn btn-primary" id="olBtnAdd" type="button">+ 주문등록</button>
+        </div>
         <div class="card-body" style="padding:12px 16px">
 
           <!-- 검색바 -->
@@ -218,6 +221,7 @@ const PageOrderList = (() => {
         </div>
       </div>`;
 
+    document.getElementById('olBtnAdd').addEventListener('click', openManualOrderModal);
     document.getElementById('olBtnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
     document.getElementById('olSearchValue').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
 
@@ -275,6 +279,239 @@ const PageOrderList = (() => {
         } catch (err) { UI.toast(err.message, 'error'); }
       },
     });
+  }
+
+  // ── 주문등록(수기) ─────────────────────────────────────────────────
+  // 오픈마켓·전화 주문을 관리자가 직접 옮겨 적는다. 판매 상품을 검색해 고르면 옵션·판매가가 채워지고 판매가·옵션가는 고칠 수 있다.
+  // 공급가·매입가는 서버가 상품 마스터에서 가져온다. 주문은 항상 "지불완료", 결제는 "수기"로 저장된다(POST /order/order/manual).
+  const PLACEHOLDER_ATTR_VAL = '선택사항없음';   // 옵션 없음 기본 행 — 코드(20000)가 아니라 옵션값으로 알아본다
+  const isPlaceholderItem = it => String(it.attrVal1 || '').trim() === PLACEHOLDER_ATTR_VAL;
+  const optionLabel = it => {
+    const name = [it.attrVal1, it.attrVal2, it.attrVal3, it.attrVal4].filter(v => v && String(v).trim()).join(' / ') || it.itemCode;
+    const extra = num(it.optionPrice);
+    return extra ? `${name} (+${won(extra)}원)` : name;
+  };
+  function localDateStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function openManualOrderModal() {
+    const lines = [];   // { prodCode, prodName, shopName, options:[item], needOption, itemCode, qty, salePrice, optionPrice }
+    const chnlOpts = chnlList.map(c => `<option value="${esc(c.chnlCode)}">${esc(c.chnlName)}</option>`).join('');
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+        직접 등록한 주문은 <strong>지불완료</strong> 상태, 결제는 <strong>수기</strong>로 저장되고 재고가 바로 차감됩니다.
+        공급가·매입가는 상품 마스터 기준으로 자동 계산됩니다.
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>채널 *</label>
+          <select class="input" id="moChnl"><option value="">선택</option>${chnlOpts}</select></div>
+        <div class="form-group"><label>채널주문번호</label>
+          <input class="input" id="moChnlOrderNo" maxlength="60" placeholder="오픈마켓 주문번호(선택)"></div>
+        <div class="form-group"><label>주문일자</label>
+          <input class="input" id="moDate" type="date" value="${localDateStr()}"></div>
+        <div class="form-group"></div>
+
+        <div class="form-group"><label>주문자 이름 *</label><input class="input" id="moOrderName" maxlength="50"></div>
+        <div class="form-group"><label>주문자 휴대폰 *</label><input class="input" id="moOrderMobile" maxlength="20" placeholder="010-0000-0000"></div>
+        <div class="form-group"><label>주문자 전화</label><input class="input" id="moOrderPhone" maxlength="20"></div>
+        <div class="form-group"><label>주문자 이메일</label><input class="input" id="moOrderEmail" maxlength="100"></div>
+
+        <div class="form-group"><label>수취인 이름 *</label><input class="input" id="moRecverName" maxlength="50"></div>
+        <div class="form-group"><label>수취인 휴대폰 *</label><input class="input" id="moRecverMobile" maxlength="20" placeholder="010-0000-0000"></div>
+        <div class="form-group"><label>수취인 전화</label><input class="input" id="moRecverPhone" maxlength="20"></div>
+        <div class="form-group"><label>우편번호</label><input class="input" id="moZip" maxlength="10"></div>
+        <div class="form-group full"><label>수취인 주소 *</label><input class="input" id="moAddr1" maxlength="200"></div>
+        <div class="form-group full"><label>상세주소</label><input class="input" id="moAddr2" maxlength="200"></div>
+        <div class="form-group full"><label>배송메모</label><input class="input" id="moMemo" maxlength="200"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px">
+        <strong style="font-size:13px">주문 상품</strong>
+        <button class="btn btn-ghost" id="moAddProd" type="button">+ 상품 추가</button>
+      </div>
+      <div class="table-wrap" id="moLines" style="border:1px solid var(--border);border-radius:var(--radius)"></div>
+      <div style="text-align:right;margin-top:10px;font-size:14px">합계 <strong id="moTotal">0</strong>원</div>`;
+
+    const q = id => body.querySelector('#' + id);
+    const lineAmt = l => (num(l.salePrice) + num(l.optionPrice)) * num(l.qty);
+
+    function renderLines() {
+      const wrap = q('moLines');
+      if (!lines.length) {
+        wrap.innerHTML = '<div style="padding:18px;text-align:center;color:var(--text-muted);font-size:12px">[+ 상품 추가]로 판매 상품을 담으세요</div>';
+        q('moTotal').textContent = '0';
+        return;
+      }
+      wrap.innerHTML = `
+        <table>
+          <thead><tr>
+            <th>상품</th><th>옵션</th>
+            <th style="text-align:right;width:70px">수량</th>
+            <th style="text-align:right;width:100px">판매가</th>
+            <th style="text-align:right;width:90px">옵션가</th>
+            <th style="text-align:right;width:100px">금액</th><th style="width:44px"></th>
+          </tr></thead>
+          <tbody>${lines.map((l, i) => `
+            <tr>
+              <td style="font-size:12px"><div>${esc(l.prodName)}</div><div style="color:var(--text-muted);font-size:11px">${esc(l.prodCode)} · ${esc(l.shopName)}</div></td>
+              <td>${l.options.length
+                ? `<select class="input" data-f="item" data-i="${i}" style="min-width:130px">
+                     <option value="">-- 선택 --</option>
+                     ${l.options.map(o => `<option value="${esc(o.itemCode)}" ${String(o.itemCode) === String(l.itemCode) ? 'selected' : ''}>${esc(optionLabel(o))}</option>`).join('')}
+                   </select>`
+                : '<span style="color:var(--text-muted);font-size:12px">없음</span>'}</td>
+              <td><input class="input" type="number" min="1" max="999" data-f="qty" data-i="${i}" value="${esc(l.qty)}" style="width:64px;text-align:right"></td>
+              <td><input class="input" type="number" min="0" data-f="salePrice" data-i="${i}" value="${esc(l.salePrice)}" style="width:92px;text-align:right"></td>
+              <td><input class="input" type="number" min="0" data-f="optionPrice" data-i="${i}" value="${esc(l.optionPrice)}" style="width:82px;text-align:right"></td>
+              <td style="text-align:right" data-amt="${i}">${won(lineAmt(l))}</td>
+              <td><button class="btn btn-ghost" type="button" data-del="${i}" title="삭제">×</button></td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+      refreshTotal();
+      wrap.querySelectorAll('[data-f]').forEach(el => {
+        const handler = () => {
+          const l = lines[+el.dataset.i];
+          const f = el.dataset.f;
+          if (f === 'item') {
+            l.itemCode = el.value;
+            const o = l.options.find(x => String(x.itemCode) === el.value);
+            l.optionPrice = o ? num(o.optionPrice) : 0;
+            renderLines();   // 옵션가 칸을 새 값으로
+            return;
+          }
+          l[f] = el.value === '' ? '' : Number(el.value);
+          wrap.querySelector(`[data-amt="${el.dataset.i}"]`).textContent = won(lineAmt(l));
+          refreshTotal();
+        };
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', handler);
+      });
+      wrap.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { lines.splice(+b.dataset.del, 1); renderLines(); }));
+    }
+    function refreshTotal() { q('moTotal').textContent = won(lines.reduce((s, l) => s + lineAmt(l), 0)); }
+
+    // 상품 선택 하위 모달 — 판매 상품 검색(GET /product/prod/list, 판매중만)
+    function openProdPicker() {
+      let picked = null;
+      const pb = document.createElement('div');
+      pb.innerHTML = `
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input class="input" id="mpName" placeholder="상품명" style="flex:1">
+          <input class="input" id="mpCode" placeholder="상품코드/상점상품코드" style="width:180px">
+          <button class="btn btn-ghost" id="mpBtn" type="button" style="white-space:nowrap">검색</button>
+        </div>
+        <div class="table-wrap" id="mpWrap" style="max-height:40vh;border:1px solid var(--border);border-radius:var(--radius)">
+          <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px">상품명이나 코드로 검색하세요</div>
+        </div>
+        <div id="mpPicked" style="margin-top:8px;font-size:12px;min-height:16px"></div>`;
+      const sub = UI.modal({
+        title: '상품 선택', body: pb, confirmText: '담기', cancelText: '닫기',
+        onConfirm: async close => {
+          if (!picked) { UI.toast('상품을 선택하세요', 'error'); return; }
+          try {
+            const items = await Api.get('/product/proditem/list', { pProdCode: picked.prodCode });
+            const real = (items || []).filter(it => !isPlaceholderItem(it));
+            const hasPlaceholder = (items || []).some(isPlaceholderItem);
+            // 옵션이 하나뿐이고 기본 행이 없으면(레거시 단일 옵션) 고를 필요가 없어 미리 선택해 둔다.
+            const auto = real.length === 1 && !hasPlaceholder ? real[0] : null;
+            lines.push({
+              prodCode: picked.prodCode, prodName: picked.prodName, shopName: picked.shopName || '',
+              options: real, itemCode: auto ? String(auto.itemCode) : '',
+              qty: 1, salePrice: num(picked.salePrice), optionPrice: auto ? num(auto.optionPrice) : 0,
+            });
+            close();
+            renderLines();
+          } catch (e) { UI.toast(e.message, 'error'); }
+        },
+      });
+      const doSearch = async () => {
+        const wrap = pb.querySelector('#mpWrap');
+        wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px">검색 중...</div>';
+        try {
+          const params = { pPageOffset: 0, pPageSize: 30, pSaleYn: '1' };
+          const nm = pb.querySelector('#mpName').value.trim();
+          const cd = pb.querySelector('#mpCode').value.trim();
+          if (nm) params.pProdName = nm;
+          if (cd) params.pProdCode = cd;
+          const list = await Api.get('/product/prod/list', params);
+          if (!list || !list.length) {
+            wrap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px">결과 없음</div>';
+            return;
+          }
+          wrap.innerHTML = `
+            <table>
+              <thead><tr><th></th><th>상품코드</th><th>상품명</th><th>상점</th><th style="text-align:right">판매가</th><th style="text-align:right">재고</th></tr></thead>
+              <tbody>${list.map((p, i) => `
+                <tr style="cursor:pointer" data-i="${i}">
+                  <td><input type="radio" name="mppick" value="${i}"></td>
+                  <td style="font-size:11px">${esc(p.prodCode)}</td>
+                  <td style="font-size:11px">${esc(p.prodName)}</td>
+                  <td style="font-size:11px">${esc(p.shopName)}</td>
+                  <td style="text-align:right;font-size:11px">${won(p.salePrice)}</td>
+                  <td style="text-align:right;font-size:11px">${p.supplyQty == null ? '-' : won(p.supplyQty)}</td>
+                </tr>`).join('')}</tbody>
+            </table>`;
+          wrap.querySelectorAll('tbody tr').forEach(tr => tr.addEventListener('click', () => {
+            picked = list[+tr.dataset.i];
+            wrap.querySelector(`input[value="${tr.dataset.i}"]`).checked = true;
+            pb.querySelector('#mpPicked').innerHTML = `선택: <strong>${esc(picked.prodCode)}</strong> ${esc(picked.prodName)}`;
+          }));
+        } catch (e) {
+          wrap.innerHTML = `<div style="color:var(--danger);padding:16px;font-size:12px">${esc(e.message)}</div>`;
+        }
+      };
+      pb.querySelector('#mpBtn').addEventListener('click', doSearch);
+      pb.querySelector('#mpName').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+      pb.querySelector('#mpCode').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+      sub.el.querySelector('.modal').style.width = '720px';
+      pb.querySelector('#mpName').focus();
+    }
+
+    const modal = UI.modal({
+      title: '주문등록', body, confirmText: '등록',
+      onConfirm: async close => {
+        const v = id => q(id).value.trim();
+        const fail = m => UI.toast(m, 'error');
+        if (!v('moChnl')) return fail('채널을 선택하세요');
+        if (!v('moOrderName')) return fail('주문자 이름을 입력하세요');
+        if (!v('moOrderMobile') && !v('moOrderPhone')) return fail('주문자 연락처를 입력하세요');
+        if (!v('moRecverName')) return fail('수취인 이름을 입력하세요');
+        if (!v('moRecverMobile') && !v('moRecverPhone')) return fail('수취인 연락처를 입력하세요');
+        if (!v('moAddr1')) return fail('수취인 주소를 입력하세요');
+        if (!lines.length) return fail('주문 상품을 추가하세요');
+        for (const l of lines) {
+          if (l.options.length && !l.itemCode) return fail(`옵션을 선택하세요: ${l.prodName}`);
+          if (!(num(l.qty) >= 1)) return fail(`수량은 1 이상이어야 합니다: ${l.prodName}`);
+          if (l.salePrice === '' || l.optionPrice === '' || num(l.salePrice) < 0 || num(l.optionPrice) < 0) return fail(`가격을 확인하세요: ${l.prodName}`);
+        }
+        const btn = modal.el.querySelector('[data-action=confirm]');
+        if (btn) btn.disabled = true;
+        try {
+          const res = await Api.post('/order/order/manual', {
+            chnlCode: v('moChnl'), chnlOrderNo: v('moChnlOrderNo'), orderReciptDate: v('moDate'),
+            orderName: v('moOrderName'), orderMobileNo: v('moOrderMobile'), orderPhoneNo: v('moOrderPhone'), orderEmail: v('moOrderEmail'),
+            recverName: v('moRecverName'), recverMobileNo: v('moRecverMobile'), recverPhoneNo: v('moRecverPhone'),
+            recverZipcode: v('moZip'), recverAddr1: v('moAddr1'), recverAddr2: v('moAddr2'), deliMemo: v('moMemo'),
+            lines: lines.map(l => ({
+              prodCode: l.prodCode, itemCode: l.itemCode || null, prodQty: num(l.qty),
+              salePrice: num(l.salePrice), optionPrice: num(l.optionPrice),
+            })),
+            registId: info?.loginId || '', registName: info?.name || '',
+          });
+          UI.toast(`주문이 등록되었습니다 (주문번호 ${res.orderNo}, ${won(res.totalAmt)}원)`, 'success');
+          close();
+          loadList();
+        } catch (e) {
+          UI.toast(e.message, 'error');
+          if (btn) btn.disabled = false;
+        }
+      },
+    });
+    modal.el.querySelector('.modal').style.width = '860px';
+    q('moAddProd').addEventListener('click', openProdPicker);
+    renderLines();
   }
 
   // ── 채널/상점/담당MD 옵션 로드 ─────────────────────────────────────

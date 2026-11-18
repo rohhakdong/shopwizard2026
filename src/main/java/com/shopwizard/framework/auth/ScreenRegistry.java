@@ -65,7 +65,9 @@ public final class ScreenRegistry {
 
     /** 모든 로그인 관리자에게 열린 조회(여러 화면 공용 드롭다운; ui.js 의 loadFilterOptions 등 화면 파일 밖에서 호출됨). */
     public static final List<String> OPEN_GETS = List.of(
-            "/company/shop", "/company/chnl", "/code/constr-val", "/authority/svc/list");
+            "/company/shop", "/company/chnl", "/code/constr-val", "/authority/svc/list",
+            // 쇼핑몰이 로그인 없이 읽는 공개 조회(MngrPaths.PUBLIC_READ)이기도 하다 — 주문등록 모달이 옵션을 불러올 때 쓴다.
+            "/product/proditem/list");
 
     /** 화면이 쓰지 않는 GET 이라도 해당 도메인 화면의 view 권한이 있어야 하는 민감 도메인. */
     public static final List<String> SENSITIVE_DOMAINS = List.of(
@@ -217,6 +219,7 @@ public final class ScreenRegistry {
         {"POST", "/order/match/upload", "order-prod-match"},
         {"GET", "/order/order", "order-list"},
         {"POST", "/order/order/cancel-batch", "order-cancel,order-list"},
+        {"POST", "/order/order/manual", "order-list"},
         {"POST", "/order/order/refund-confirm-batch", "order-refund-confirm"},
         {"GET", "/order/orderprod/list", "order-cancel,order-list,order-refund-confirm,ship-direct-issue,ship-return-request"},
         {"GET", "/order/orderprod/list/count", "order-cancel,order-list,order-refund-confirm,ship-direct-issue,ship-return-request"},
@@ -233,7 +236,7 @@ public final class ScreenRegistry {
         {"DELETE", "/product/prod", "product-prod"},
         {"GET", "/product/prod", "product-prod"},
         {"GET", "/product/prod/count", "product-prod"},
-        {"GET", "/product/prod/list", "order-prod-match,product-prod"},
+        {"GET", "/product/prod/list", "order-list,order-prod-match,product-prod"},
         {"PUT", "/product/prod/saleyn", "product-prod"},
         {"PUT", "/product/prod/supplyqty", "product-prod"},
         {"POST", "/profile/cust", "profile-cust"},
