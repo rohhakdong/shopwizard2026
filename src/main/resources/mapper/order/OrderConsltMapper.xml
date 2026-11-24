@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderConsltMapper">
+
+    <sql id="consltColumns">
+        C.CustConsltNo, C.CustConsltType, C.CustConsltReasonType, C.ConsltMediaType, C.CustId, C.CustName, C.CustEmail,
+        C.CustPhoneNo, C.CustMobileNo, C.ConsltChnlCode, C.ConsltTitle, C.ConsltCntnts,
+        CAST(C.ConsltDate AS CHAR) AS ConsltDate, C.MngrId, C.MngrName, C.MngrEmail, C.AnswrTitle, C.AnswrCntnts,
+        CAST(C.AnswrDate AS CHAR) AS AnswrDate, C.OrderNo, C.OrderProdNo, C.OrderChangeNo, C.ProdCode, C.ItemCode, C.ItemName,
+        C.ChnlCode, C.State, C.Remark, C.RegistId, C.RegistName
+    </sql>
+
+    <!-- 코드표(구분·사유·매체)와 상품명은 LEFT JOIN — 코드표에서 빠진 옛 값이나 줄이 없는 상담도 목록에서 사라지지 않게 -->
+    <select id="selectByOrder" resultType="com.shopwizard.order.model.OrderConslt">
+        SELECT <include refid="consltColumns"/>,
+               T.ConstrValDesc AS CustConsltTypeName, R.ConstrValDesc AS CustConsltReasonTypeName, M.ConstrValDesc AS ConsltMediaTypeName,
+               OP.ProdName AS ProdName
+        FROM shopion.tOprCustConslt C
+        LEFT OUTER JOIN wizardn.tCodConstrVal T ON T.ConstrCode = 'cCustConsltType' AND T.ConstrVal = C.CustConsltType
+        LEFT OUTER JOIN wizardn.tCodConstrVal R ON R.ConstrCode = 'cCustConsltReasonType' AND R.ConstrVal = C.CustConsltReasonType
+        LEFT OUTER JOIN wizardn.tCodConstrVal M ON M.ConstrCode = 'cConsltMediaType' AND M.ConstrVal = C.ConsltMediaType
+        LEFT OUTER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = CAST(C.OrderNo AS UNSIGNED) AND OP.OrderProdNo = CAST(C.OrderProdNo AS UNSIGNED)
+        WHERE C.OrderNo = #{orderNo}
+        ORDER BY C.CustConsltNo DESC
+    </select>
+
+    <select id="selectOne" resultType="com.shopwizard.order.model.OrderConslt">
+        SELECT <include refid="consltColumns"/>
+        FROM shopion.tOprCustConslt C
+        WHERE C.CustConsltNo = #{custConsltNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderConslt" useGeneratedKeys="true" keyProperty="custConsltNo">
+        INSERT INTO shopion.tOprCustConslt (
+            CustConsltType, CustConsltReasonType, ConsltMediaType, CustId, CustName, CustEmail, CustPhoneNo, CustMobileNo,
+            ConsltChnlCode, ConsltTitle, ConsltCntnts, ConsltDate, MngrId, MngrName, MngrEmail,
+            AnswrTitle, AnswrCntnts, AnswrDate, OrderNo, OrderProdNo, OrderChangeNo, ProdCode, ItemCode, ItemName,
+            ChnlCode, State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{custConsltType}, #{custConsltReasonType}, #{consltMediaType}, #{custId}, #{custName}, #{custEmail}, #{custPhoneNo}, #{custMobileNo},
+            #{consltChnlCode}, #{consltTitle}, #{consltCntnts}, NOW(), #{mngrId}, #{mngrName}, #{mngrEmail},
+            #{answrTitle}, #{answrCntnts},
+            <choose><when test="answrCntnts != null and answrCntnts != ''">NOW()</when><otherwise>NULL</otherwise></choose>,
+            #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{prodCode}, #{itemCode}, #{itemName},
+            #{chnlCode}, 1, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <!-- 처리내용만 바꾼다. 상담구분·사유·내용은 건드리지 않는다. -->
+    <update id="updateAnswer">
+        UPDATE shopion.tOprCustConslt SET
+            AnswrTitle = #{answrTitle}, AnswrCntnts = #{answrCntnts}, AnswrDate = NOW(),
+            MngrId = #{mngrId}, MngrName = #{mngrName},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE CustConsltNo = #{custConsltNo}
+    </update>
+
+    <select id="countActiveCode" resultType="int">
+        SELECT COUNT(*) FROM wizardn.tCodConstrVal
+        WHERE ConstrCode = #{constrCode} AND ConstrVal = #{constrVal} AND State = 1
+    </select>
+
+    <!-- 줄 단위로 표시한다(레거시는 OrderNo+ProdCode 기준이라 상품코드가 비면 무반영, 같은 상품 두 줄이면 둘 다 표시됐다) -->
+    <update id="markConsulted">
+        UPDATE shopion.tOrdOrderProd SET
+            CustConsltYn = 1, ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo}
+        <if test="orderProdNo != null">AND OrderProdNo = #{orderProdNo}</if>
+    </update>
+
+</mapper>

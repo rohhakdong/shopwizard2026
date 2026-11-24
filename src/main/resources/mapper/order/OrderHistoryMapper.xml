@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderHistoryMapper">
+
+    <select id="selectShips" resultType="map">
+        SELECT SD.OrderProdNo AS orderProdNo, SD.OrderChangeNo AS orderChangeNo, SD.OrderType AS orderType,
+               SD.ProdName AS prodName, SD.ItemName AS itemName, SD.ProdQty AS prodQty, SD.SalePrice AS salePrice,
+               SD.DeliCompCode AS deliCompCode, COALESCE(DC.DeliCompName, SD.DeliCompName) AS deliCompName,
+               DC.LinkUrl AS linkUrl, DC.InvNoVar AS invNoVar,
+               SD.InvNo AS invNo, SD.PrevInvNo AS prevInvNo, SD.InvChangeReason AS invChangeReason, SD.InvChangeReasonDetail AS invChangeReasonDetail,
+               SD.OrderState AS orderState,
+               CAST(SD.ShipDirectDate AS CHAR) AS shipDirectDate, CAST(SD.ShipCheckDate AS CHAR) AS shipCheckDate,
+               CAST(SD.ShipCmpletDate AS CHAR) AS shipCmpletDate, CAST(SD.DeliCmpletDate AS CHAR) AS deliCmpletDate,
+               CAST(SD.ShipCancelRqstDate AS CHAR) AS shipCancelRqstDate, CAST(SD.ShipCancelCmpletDate AS CHAR) AS shipCancelCmpletDate
+        FROM shopwizard.tShpShipDirect SD
+        LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON DC.DeliCompCode = SD.DeliCompCode
+        WHERE SD.OrderNo = #{orderNo}
+        ORDER BY SD.OrderProdNo, SD.OrderChangeNo
+    </select>
+
+    <select id="selectReturns" resultType="map">
+        SELECT RD.OrderProdNo AS orderProdNo, RD.OrderChangeNo AS orderChangeNo, RD.OrderType AS orderType,
+               RD.ProdName AS prodName, RD.ItemName AS itemName, RD.ProdQty AS prodQty, RD.SalePrice AS salePrice,
+               RD.DeliCompCode AS deliCompCode, COALESCE(DC.DeliCompName, RD.DeliCompName) AS deliCompName,
+               DC.LinkUrl AS linkUrl, DC.InvNoVar AS invNoVar, RD.InvNo AS invNo,
+               RD.ReturnReason AS returnReason, RD.ReturnReasonDetail AS returnReasonDetail, RD.OrderState AS orderState,
+               CAST(RD.ReturnReciptDate AS CHAR) AS returnReciptDate, CAST(RD.ReturnRqstDate AS CHAR) AS returnRqstDate,
+               CAST(RD.ReturnConfrmDate AS CHAR) AS returnConfrmDate, CAST(RD.ReturnCmpletDate AS CHAR) AS returnCmpletDate
+        FROM shopwizard.tShpReturnDirect RD
+        LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON DC.DeliCompCode = RD.DeliCompCode
+        WHERE RD.OrderNo = #{orderNo}
+        ORDER BY RD.OrderProdNo, RD.OrderChangeNo
+    </select>
+
+    <!-- 카드번호·환불 계좌 등은 읽지 않는다. 금융기관은 카드사가 있으면 카드사, 없으면 은행(레거시 payCompName 규칙). -->
+    <select id="selectPays" resultType="map">
+        SELECT P.PayNo AS payNo, P.PayType AS payType, CV.ConstrValDesc AS payTypeName,
+               CAST(P.PayDate AS CHAR) AS payDate, P.PayExpectAmt AS payExpectAmt, P.PayAmt AS payAmt,
+               COALESCE(NULLIF(P.CardComp, ''), P.ReciptBank) AS payCompName, P.ApprovNo AS approvNo,
+               CAST(P.ApprovDate AS CHAR) AS approvDate, P.PgCode AS pgCode, P.ReciptName AS reciptName
+        FROM shopion.tOrdOrderPay P
+        LEFT OUTER JOIN wizardn.tCodConstrVal CV ON CV.ConstrCode = 'cPayType' AND CV.ConstrVal = P.PayType
+        WHERE P.OrderNo = #{orderNo}
+        ORDER BY P.PayNo
+    </select>
+
+</mapper>

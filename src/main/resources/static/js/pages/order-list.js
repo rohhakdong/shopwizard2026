@@ -706,67 +706,10 @@ const PageOrderList = (() => {
   }
 
   // ── 주문 상세 모달 ─────────────────────────────────────────────────
-  async function openDetailModal(orderNo) {
-    const body = document.createElement('div');
-    body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">불러오는 중...</div>';
-
-    UI.modal({ title: `주문 상세 – #${orderNo}`, body, confirmText: null, cancelText: '닫기' });
-
-    try {
-      const svcCode = (typeof info !== 'undefined' && info?.svcCode) || 'SHP001';
-      const [order, prods] = await Promise.all([
-        Api.get('/order/order', { orderNo }),
-        Api.get('/order/orderprod/list', { pOrderNo: orderNo, pSvcCode: svcCode, pProdJoin: 'LEFT' }),
-      ]);
-
-      const row = (label, value) => `
-        <div class="form-group">
-          <label>${label}</label>
-          <div class="input" style="background:#f8fafc;min-height:34px;line-height:34px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius)">${esc(value) || '-'}</div>
-        </div>`;
-
-      const prodRows = (prods || []).map(p => `
-        <tr>
-          <td style="font-size:12px">${esc(p.prodName)}</td>
-          <td style="font-size:11px;color:var(--text-muted)">${esc(p.itemName)}</td>
-          <td style="text-align:right;font-size:12px">${p.prodQty || ''}</td>
-          <td style="text-align:right;font-size:12px">${p.salePrice != null ? won(p.salePrice) + '원' : '-'}</td>
-          <td style="text-align:center;font-size:12px">${esc(p.invNo) || '-'}</td>
-          <td style="text-align:center">${stateBadge(p.orderState)}</td>
-        </tr>`).join('');
-
-      body.innerHTML = `
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em">주문 정보</div>
-        <div class="form-grid" style="margin-bottom:16px">
-          ${row('주문번호', order.orderNo)}
-          ${row('주문일자', fmtDt(order.orderReciptDate))}
-          ${row('주문자', order.orderName)}
-          ${row('연락처', order.orderMobileNo || order.orderPhoneNo)}
-          ${row('수취인', order.recverName)}
-          ${row('수취인 연락처', order.recverMobileNo || order.recverPhoneNo)}
-          ${row('배송지', (order.recverAddr1 || '') + ' ' + (order.recverAddr2 || ''))}
-          ${row('배송 메모', order.deliMemo)}
-          ${row('주문상태', order.orderState)}
-          ${row('결제수단', order.payTypeName || order.payType)}
-        </div>
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em">주문 상품</div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>상품명</th><th>옵션</th>
-                <th style="text-align:right">수량</th>
-                <th style="text-align:right">금액</th>
-                <th style="text-align:center">송장번호</th>
-                <th style="text-align:center">상태</th>
-              </tr>
-            </thead>
-            <tbody>${prodRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:16px">주문 상품 없음</td></tr>'}</tbody>
-          </table>
-        </div>`;
-    } catch (e) {
-      body.innerHTML = `<div style="color:var(--danger);padding:16px">${esc(e.message)}</div>`;
-    }
+  // 기본정보·고객정보·고객상담·주문내역·배송/반품내역·결제내역은 order-detail.js(PageOrderDetail)가 한 화면에 그린다.
+  // 상담을 등록하면 목록의 "상담여부" 가 바뀌므로 목록을 다시 불러온다.
+  function openDetailModal(orderNo) {
+    PageOrderDetail.open(orderNo, loadList);
   }
 
   return { render };
