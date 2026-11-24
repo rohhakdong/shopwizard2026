@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.order.mapper.OrderPriceMapper">
+
+    <select id="selectGuard" resultType="map">
+        SELECT
+            (SELECT PayType FROM shopion.tOrdOrderPay WHERE OrderNo = #{orderNo} ORDER BY PayNo LIMIT 1) AS payType,
+            (SELECT COUNT(*) FROM shopwizard.tAdjAdjustDetail D
+              WHERE D.OrderNo = #{orderNo} AND D.OrderProdNo = #{orderProdNo}
+                AND (D.BuyAdjustCloseDate IS NOT NULL OR D.AdjustNo IS NOT NULL
+                     OR D.SaleAdjustCloseDate IS NOT NULL OR D.SaleAdjustNo IS NOT NULL)) AS closedCnt,
+            (SELECT COUNT(*) FROM shopwizard.tAdjAdjustDetail D
+              WHERE D.OrderNo = #{orderNo} AND D.OrderProdNo = #{orderProdNo}
+                AND D.BuyAdjustCloseDate IS NULL AND D.AdjustNo IS NULL
+                AND D.SaleAdjustCloseDate IS NULL AND D.SaleAdjustNo IS NULL) AS openCnt,
+            (SELECT COUNT(*) FROM shopwizard.tShpShipDirect S
+              WHERE S.OrderNo = #{orderNo} AND S.OrderProdNo = #{orderProdNo}) AS shipCopyCnt,
+            (SELECT COUNT(*) FROM shopwizard.tShpReturnDirect R
+              WHERE R.OrderNo = #{orderNo} AND R.OrderProdNo = #{orderProdNo}) AS returnCopyCnt
+    </select>
+
+    <!-- 상품·수량·옵션가·주문 상태는 건드리지 않는다. ReciptAmt 는 값을 넘겼을 때만(엑셀·수기 줄). -->
+    <update id="updateLine" parameterType="map">
+        UPDATE shopion.tOrdOrderProd SET
+            SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice}, VatAmt = #{vatAmt},
+            ProdMargin = #{prodMargin}, ChnlMargin = #{chnlMargin}, NetMargin = #{netMargin},
+            <if test="reciptAmt != null">ReciptAmt = #{reciptAmt},</if>
+            DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderState = #{expectedState}
+    </update>
+
+    <!-- 출고지시 때 만들어진 사본 — NvPrice·DiscntSupplyPrice 는 그대로. 교환 등으로 수량이 다른 옛 행은 건드리지 않는다. -->
+    <update id="updateShipCopy" parameterType="map">
+        UPDATE shopwizard.tShpShipDirect SET
+            SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice}, VatAmt = #{vatAmt},
+            CustChrgDeliFee = #{deliFeeAmt}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND ProdQty = #{prodQty}
+    </update>
+
+    <update id="updateReturnCopy" parameterType="map">
+        UPDATE shopwizard.tShpReturnDirect SET
+            SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice}, VatAmt = #{vatAmt},
+            DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND ProdQty = #{prodQty}
+    </update>
+
+    <!-- 마감 전 정산자료만(마감 표시가 하나라도 있으면 0행). 출고(+)는 사본 값 그대로. -->
+    <update id="updateOpenShipDetail" parameterType="map">
+        UPDATE shopwizard.tAdjAdjustDetail SET
+            SalePrice = #{salePrice}, SupplyPrice = #{supplyPrice}, BuyPrice = #{buyPrice}, VatAmt = #{vatAmt},
+            CustChrgDeliFee = #{deliFeeAmt}, DeliFeeType = #{deliFeeType}, DeliFeeAmt = #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND ProdQty = #{prodQty}
+          AND BuyAdjustCloseDate IS NULL AND AdjustNo IS NULL AND SaleAdjustCloseDate IS NULL AND SaleAdjustNo IS NULL
+    </update>
+
+    <!-- 반품(−) 정산자료는 만들 때처럼 금액에 -1 을 곱해 넣는다(판촉비·부가세율은 부호 반전 없음). -->
+    <update id="updateOpenReturnDetail" parameterType="map">
+        UPDATE shopwizard.tAdjAdjustDetail SET
+            SalePrice = -1 * #{salePrice}, SupplyPrice = -1 * #{supplyPrice}, BuyPrice = -1 * #{buyPrice}, VatAmt = -1 * #{vatAmt},
+            DeliFeeType = #{deliFeeType}, DeliFeeAmt = -1 * #{deliFeeAmt}, PromotFeeAmt = #{promotFeeAmt},
+            ChangeDate = NOW(), ChangeId = #{changeId}, ChangeName = #{changeName}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND ProdQty = -1 * #{prodQty}
+          AND BuyAdjustCloseDate IS NULL AND AdjustNo IS NULL AND SaleAdjustCloseDate IS NULL AND SaleAdjustNo IS NULL
+    </update>
+
+</mapper>

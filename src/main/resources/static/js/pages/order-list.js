@@ -134,7 +134,10 @@ const PageOrderList = (() => {
       <div class="card">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
           <span>주문관리</span>
-          <button class="btn btn-primary" id="olBtnAdd" type="button">+ 주문등록</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" id="olBtnPriceExcel" type="button">엑셀 가격수정</button>
+            <button class="btn btn-primary" id="olBtnAdd" type="button">+ 주문등록</button>
+          </div>
         </div>
         <div class="card-body" style="padding:12px 16px">
 
@@ -222,6 +225,7 @@ const PageOrderList = (() => {
       </div>`;
 
     document.getElementById('olBtnAdd').addEventListener('click', openManualOrderModal);
+    document.getElementById('olBtnPriceExcel').addEventListener('click', () => PageOrderPriceExcel.openModal(loadList));
     document.getElementById('olBtnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
     document.getElementById('olSearchValue').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
 
