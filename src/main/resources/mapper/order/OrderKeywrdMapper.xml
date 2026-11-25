@@ -2,58 +2,85 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.order.mapper.OrderKeywrdMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderKeywrd">
-        SELECT K.*, S.ShopName AS ShopName
+    <!-- 발주 상품명 키워드(shopwizard.tOrdOrderKeywrd). 서비스 제한은 키워드의 상점 마스터로 건다(DataScopeFilter 가 GET 의 pSvcCode/pShopCode 를 고정). -->
+    <sql id="cols">
+        K.KeywrdSeq, K.KeywrdName, K.KeywrdSect, K.ShopCode, S.ShopName AS ShopName, K.State, K.Remark,
+        K.RegistId, K.RegistName, CAST(K.RegistDate AS CHAR) AS RegistDate,
+        K.ChangeId, K.ChangeName, CAST(K.ChangeDate AS CHAR) AS ChangeDate
+    </sql>
+
+    <sql id="from">
         FROM shopwizard.tOrdOrderKeywrd K
-        INNER JOIN shopwizard.tCmpShop S ON K.ShopCode = S.ShopCode
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = K.ShopCode
+    </sql>
+
+    <sql id="listWhere">
         <where>
-            <if test="pKeywrdSeq != null and pKeywrdSeq != ''">AND K.KeywrdSeq = #{pKeywrdSeq}</if>
-            <if test="pKeywrdName != null and pKeywrdName != ''">AND K.KeywrdName LIKE CONCAT('%',#{pKeywrdName},'%')</if>
+            <if test="pKeywrdSeq != null and pKeywrdSeq != '' and pKeywrdSeq.toString().matches('^[0-9]+$')">AND K.KeywrdSeq = #{pKeywrdSeq}</if>
+            <if test="pKeywrdName != null and pKeywrdName != ''">AND K.KeywrdName LIKE CONCAT('%', #{pKeywrdName}, '%')</if>
             <if test="pShopCode != null and pShopCode != ''">AND K.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
             <if test="pKeywrdSect != null and pKeywrdSect != ''">AND K.KeywrdSect = #{pKeywrdSect}</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderKeywrd">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        <include refid="listWhere"/>
+        ORDER BY K.ShopCode, K.KeywrdSect, K.KeywrdName
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tOrdOrderKeywrd K
-        INNER JOIN shopwizard.tCmpShop S ON K.ShopCode = S.ShopCode
-        <where>
-            <if test="pKeywrdSeq != null and pKeywrdSeq != ''">AND K.KeywrdSeq = #{pKeywrdSeq}</if>
-            <if test="pKeywrdName != null and pKeywrdName != ''">AND K.KeywrdName LIKE CONCAT('%',#{pKeywrdName},'%')</if>
-            <if test="pShopCode != null and pShopCode != ''">AND K.ShopCode = #{pShopCode}</if>
-            <if test="pKeywrdSect != null and pKeywrdSect != ''">AND K.KeywrdSect = #{pKeywrdSect}</if>
-        </where>
+        <include refid="from"/>
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderKeywrd">
-        SELECT K.*, S.ShopName AS ShopName
-        FROM shopwizard.tOrdOrderKeywrd K
-        INNER JOIN shopwizard.tCmpShop S ON K.ShopCode = S.ShopCode
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
         WHERE K.KeywrdSeq = #{keywrdSeq}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.order.model.OrderKeywrd">
+    <select id="selectAllActive" resultType="com.shopwizard.order.model.OrderKeywrd">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE K.State = 1
+        ORDER BY K.ShopCode, K.KeywrdSect, K.KeywrdName
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderKeywrd" useGeneratedKeys="true" keyProperty="keywrdSeq" keyColumn="KeywrdSeq">
         INSERT INTO shopwizard.tOrdOrderKeywrd (
-            KeywrdSeq, KeywrdName, KeywrdSect, ShopCode, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+            KeywrdName, KeywrdSect, ShopCode, State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
-            #{keywrdSeq}, #{keywrdName}, #{keywrdSect}, #{shopCode}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+            #{keywrdName}, #{keywrdSect}, #{shopCode}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
         )
     </insert>
 
     <update id="update" parameterType="com.shopwizard.order.model.OrderKeywrd">
         UPDATE shopwizard.tOrdOrderKeywrd SET
-            KeywrdSeq = #{keywrdSeq}, KeywrdName = #{keywrdName}, KeywrdSect = #{keywrdSect},
-            ShopCode = #{shopCode}, State = #{state}, Remark = #{remark},
-            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+            KeywrdName = #{keywrdName}, KeywrdSect = #{keywrdSect}, ShopCode = #{shopCode},
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE KeywrdSeq = #{keywrdSeq}
     </update>
 
     <delete id="delete" parameterType="com.shopwizard.order.model.OrderKeywrd">
         DELETE FROM shopwizard.tOrdOrderKeywrd WHERE KeywrdSeq = #{keywrdSeq}
     </delete>
+
+    <select id="countShop" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <select id="countDuplicate" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tOrdOrderKeywrd
+        WHERE ShopCode = #{shopCode} AND KeywrdSect = #{keywrdSect} AND KeywrdName = #{keywrdName}
+        <if test="exceptSeq != null">AND KeywrdSeq &lt;&gt; #{exceptSeq}</if>
+    </select>
 
 </mapper>

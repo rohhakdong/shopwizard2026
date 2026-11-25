@@ -1,6 +1,7 @@
 package com.shopwizard.ship.web;
 
 import com.shopwizard.framework.auth.AuthSession;
+import com.shopwizard.order.service.KeywordTargetService;
 import com.shopwizard.order.service.OrderFeeApplyService;
 import com.shopwizard.order.web.OrderMasterGuard;
 import com.shopwizard.ship.service.ShipAutoOrderService;
@@ -36,6 +37,7 @@ public class ShipAutoOrderController {
     private final ShipAutoOrderService service;
     private final ShipDataBuildService buildService;
     private final OrderFeeApplyService feeApplyService;
+    private final KeywordTargetService keywordService;
     private final OrderMasterGuard guard;
 
     /** 현황 카드: 지불완료·상품 미매칭·발주단가 미매칭·출고지시·발주서 대기. */
@@ -43,6 +45,22 @@ public class ShipAutoOrderController {
     public Map<String, Object> summary(@RequestParam("pShopCode") String shopCode, HttpServletRequest request) {
         guard.requireShop(request, shopCode);
         return service.summary(shopCode);
+    }
+
+    /** 키워드로 가져올 수 있는 상점 미지정 라인 미리보기(읽기 전용). */
+    @GetMapping("/keyword-preview")
+    public KeywordTargetService.Preview keywordPreview(@RequestParam("pShopCode") String shopCode, HttpServletRequest request) {
+        guard.requireShop(request, shopCode);
+        return keywordService.preview(shopCode);
+    }
+
+    /** 키워드에 맞는 상점 미지정 라인을 이 상점으로 배정한다(이미 다른 상점에 배정된 라인은 건드리지 않음). */
+    @PostMapping("/keyword-assign")
+    public KeywordTargetService.AssignResult keywordAssign(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        String shopCode = body == null ? null : body.get("shopCode");
+        guard.requireShop(request, shopCode);
+        AuthSession.Actor actor = AuthSession.actor(request);
+        return keywordService.assign(shopCode, actor == null ? null : actor.loginId(), actor == null ? null : actor.name());
     }
 
     /** 수수료 규칙 적용 — 지불완료 라인의 배송비·판촉비·공급가를 배송비·판촉비 규칙대로 고친다(출고지시 전에 실행). */

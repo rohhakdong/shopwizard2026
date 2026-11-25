@@ -1,6 +1,6 @@
 /**
  * 자동발주 (배송 > 자동발주) — 레거시 자동발주 팝업(autoOrderWork.jsp)의 발주서 파이프라인.
- *   ① 상점 선택 + 현황  →  ② 점검(상품·발주단가 미매칭)  →  ②-2 수수료 규칙 적용  →  ③ 출고지시(기존 issue-batch, 발주서 행 생성)
+ *   ① 상점 선택 + 현황  →  ①-2 키워드로 대상 가져오기(상점 미지정 주문 배정)  →  ② 점검(상품·발주단가 미매칭)  →  ②-2 수수료 규칙 적용  →  ③ 출고지시(기존 issue-batch, 발주서 행 생성)
  *   →  ④ 배송 데이터 생성(출고지·사은품 규칙·묶음배송·출력순서)  →  ⑤ 발주서 엑셀 + 발주확인  →  ⑥ 발주 목록(다시 받기)
  *
  *   각 단계는 순서를 강제하지 않고 그 시점의 데이터로 독립 실행된다(레거시도 단계 게이트가 없었다).
@@ -53,6 +53,20 @@ const PageShipAutoOrder = (() => {
             <button class="btn btn-ghost" id="aoRefresh" type="button">새로고침</button>
           </div>
           <div id="aoSummary" style="margin-top:10px"></div>
+        </div>
+      </div>
+      <div class="card" id="aoKeywordCard" style="display:none">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>①-2 키워드로 대상 가져오기 <span style="font-weight:400;font-size:12px;color:var(--text-muted)">— 상점이 지정되지 않은 지불완료 주문을 이 상점의 키워드로 찾아 배정합니다</span></span>
+          <span>
+            <button class="btn btn-ghost" id="aoKwPreview" type="button">미리보기</button>
+            <button class="btn btn-primary" id="aoKwAssign" type="button" disabled>상점 배정 (<span id="aoKwCount">0</span>건)</button>
+          </span>
+        </div>
+        <div class="card-body" style="padding:12px 16px;font-size:12px;line-height:1.7">
+          <div>배정만 합니다 — 상품코드는 <a href="#" id="aoKwGoMatch">상품 매칭</a> 화면에서 연결하세요. 이미 다른 상점에 배정된 주문은 건드리지 않고, 여러 상점 키워드에 걸린 주문은 <b>먼저 배정하는 상점</b>이 가져갑니다.
+            키워드는 <a href="#" id="aoKwGoKw">키워드규칙</a> 화면에서 관리합니다.</div>
+          <div id="aoKwResult" style="margin-top:8px"></div>
         </div>
       </div>
       <div class="card" id="aoCheckCard" style="display:none">
@@ -115,6 +129,10 @@ const PageShipAutoOrder = (() => {
     el('aoRefresh').addEventListener('click', () => { if (shopCode) loadAll(); });
     el('aoSelAll').addEventListener('click', selectAllShop);
     el('aoIssue').addEventListener('click', issueSelected);
+    el('aoKwPreview').addEventListener('click', keywordPreview);
+    el('aoKwAssign').addEventListener('click', keywordAssign);
+    el('aoKwGoMatch').addEventListener('click', e => { e.preventDefault(); goto('order-prod-match', '상품 매칭'); });
+    el('aoKwGoKw').addEventListener('click', e => { e.preventDefault(); goto('order-keywrd', '키워드규칙'); });
     el('aoApplyFee').addEventListener('click', applyFee);
     el('aoBuild').addEventListener('click', buildShipData);
     el('aoDownload').addEventListener('click', () => download({ pShopCode: shopCode }));
@@ -137,9 +155,12 @@ const PageShipAutoOrder = (() => {
     selected.clear();
     issuePage = 1;
     sheetPage = 1;
-    ['aoCheckCard', 'aoFeeCard', 'aoIssueCard', 'aoBuildCard', 'aoSheetCard', 'aoHistoryCard'].forEach(id => { el(id).style.display = shopCode ? '' : 'none'; });
+    ['aoKeywordCard', 'aoCheckCard', 'aoFeeCard', 'aoIssueCard', 'aoBuildCard', 'aoSheetCard', 'aoHistoryCard'].forEach(id => { el(id).style.display = shopCode ? '' : 'none'; });
     el('aoBuildResult').innerHTML = '';
     el('aoFeeResult').innerHTML = '';
+    el('aoKwResult').innerHTML = '';
+    el('aoKwAssign').disabled = true;
+    el('aoKwCount').textContent = '0';
     if (!shopCode) { el('aoSummary').innerHTML = ''; return; }
     loadAll();
   }
@@ -270,6 +291,43 @@ const PageShipAutoOrder = (() => {
         close();
         loadAll();
       } catch (e) { UI.toast(e.message, 'error'); updateIssueButton(); }
+    });
+  }
+
+  // ── ①-2 키워드로 대상 가져오기 ──────────────────────────────────────
+  async function keywordPreview() {
+    el('aoKwResult').innerHTML = '<span style="color:var(--text-muted)">계산 중...</span>';
+    el('aoKwAssign').disabled = true;
+    try {
+      const r = await Api.get('/ship/auto-order/keyword-preview', { pShopCode: shopCode });
+      el('aoKwCount').textContent = r.candidates;
+      el('aoKwAssign').disabled = r.candidates === 0;
+      if (!r.keywordCnt) {
+        el('aoKwResult').innerHTML = '이 상점에는 사용 중인 키워드가 없습니다. 키워드규칙에서 LIKE 키워드를 등록하세요.';
+        return;
+      }
+      el('aoKwResult').innerHTML = `키워드 <b>${won(r.keywordCnt)}</b>개로 상점 미지정 지불완료 주문 중 <b>${won(r.candidates)}건</b>이 후보입니다.
+        ${r.alsoOtherShops ? `<span style="color:#b45309">그중 <b>${won(r.alsoOtherShops)}건</b>은 다른 상점 키워드에도 걸립니다(먼저 배정하는 상점이 가져감).</span>` : ''}
+        ${r.sample.length ? `<div class="table-wrap" style="max-height:220px;margin-top:8px;border:1px solid var(--border);border-radius:var(--radius)">
+          <table style="width:100%;font-size:12px"><thead><tr><th>주문번호</th><th>상품명</th><th>옵션</th><th>다른 상점 키워드</th></tr></thead>
+          <tbody>${r.sample.map(x => `<tr><td>${esc(x.orderNo)}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.prodName)}">${esc(x.prodName)}</td>
+            <td>${esc(x.itemName)}</td><td style="color:#b45309">${esc((x.otherShops || []).join(', '))}</td></tr>`).join('')}</tbody></table></div>
+          <div style="color:var(--text-muted);margin-top:4px">앞 ${r.sample.length}건만 표시합니다.</div>` : ''}`;
+    } catch (e) { el('aoKwResult').innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`; }
+  }
+
+  function keywordAssign() {
+    const n = el('aoKwCount').textContent;
+    UI.confirm(`키워드에 맞는 상점 미지정 주문 ${n}건을 이 상점으로 배정하시겠습니까? (이미 다른 상점에 배정된 주문은 건드리지 않습니다)`, async close => {
+      el('aoKwAssign').disabled = true;
+      try {
+        const r = await Api.post('/ship/auto-order/keyword-assign', { shopCode });
+        UI.toast(`${r.assigned}건 배정${r.skipped ? ` · 그 사이 바뀌어 건너뜀 ${r.skipped}건` : ''}`, r.skipped ? 'error' : 'success');
+        el('aoKwResult').innerHTML = `<span style="color:var(--success,#2e7d32)">✔ 완료</span> — 후보 ${won(r.candidates)}건 중 <b>${won(r.assigned)}건</b> 배정${r.skipped ? `, 건너뜀 ${won(r.skipped)}건` : ''}`;
+        el('aoKwCount').textContent = '0';
+        close();
+        loadAll();
+      } catch (e) { UI.toast(e.message, 'error'); el('aoKwAssign').disabled = false; }
     });
   }
 

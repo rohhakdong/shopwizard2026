@@ -201,4 +201,15 @@ class RolePermissionsTest {
         assertTrue(p.write().contains("order-fee-rule"));
         assertFalse(p.view().contains("order-gift-rule"));
     }
+
+    @Test
+    void 발주상품명키워드_레거시_메뉴는_키워드규칙_화면_하나에_이어진다() {
+        RolePermissions p = RolePermissions.compute(
+                List.of(menu("1012008000000", "/wizardn/order/wOrdOrderKeywrdList.wzn")),
+                List.of(functn("1012008000000", "/wizardn/order/xOrdOrderKeywrdInsert.wzn")));
+
+        assertTrue(p.view().contains("order-keywrd"));
+        assertTrue(p.write().contains("order-keywrd"));
+        assertFalse(p.view().contains("order-fee-rule"));
+    }
 }

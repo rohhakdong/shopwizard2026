@@ -4,6 +4,7 @@ import com.shopwizard.framework.auth.AuthSession;
 import com.shopwizard.framework.auth.DataScopeGuard;
 import com.shopwizard.framework.auth.mapper.DataScopeMapper;
 import com.shopwizard.order.web.OrderMasterGuard;
+import com.shopwizard.order.service.KeywordTargetService;
 import com.shopwizard.order.service.OrderFeeApplyService;
 import com.shopwizard.ship.model.ShipCheck;
 import com.shopwizard.ship.service.ShipAutoOrderService;
@@ -33,6 +34,7 @@ class ShipAutoOrderControllerTest {
     private ShipDataBuildService buildService;
     private ShipCheckService checkService;
     private OrderFeeApplyService feeApplyService;
+    private KeywordTargetService keywordService;
     private ShipAutoOrderController controller;
     private ShipCheckController checkController;
 
@@ -47,7 +49,8 @@ class ShipAutoOrderControllerTest {
         buildService = mock(ShipDataBuildService.class);
         checkService = mock(ShipCheckService.class);
         feeApplyService = mock(OrderFeeApplyService.class);
-        controller = new ShipAutoOrderController(service, buildService, feeApplyService, guard);
+        keywordService = mock(KeywordTargetService.class);
+        controller = new ShipAutoOrderController(service, buildService, feeApplyService, keywordService, guard);
         checkController = new ShipCheckController(checkService, guard);
     }
 
@@ -97,6 +100,20 @@ class ShipAutoOrderControllerTest {
         assertThrows(ResponseStatusException.class, () -> controller.applyFee(Map.of("shopCode", "SHOP1"), login(CHNL)));
 
         verify(feeApplyService, org.mockito.Mockito.times(1)).apply("SHOP1", "u", "사용자");
+    }
+
+    @Test
+    void 키워드_가져오기도_상점_범위를_검사하고_행위자는_세션에서_읽는다() {
+        MockHttpServletRequest shop = login(SHOP);
+
+        controller.keywordPreview("SHOP1", shop);
+        controller.keywordAssign(Map.of("shopCode", "SHOP1"), shop);
+        assertThrows(ResponseStatusException.class, () -> controller.keywordPreview("SHOP2", shop));
+        assertThrows(ResponseStatusException.class, () -> controller.keywordAssign(Map.of("shopCode", "SHOP2"), shop));
+        assertThrows(ResponseStatusException.class, () -> controller.keywordAssign(Map.of("shopCode", "SHOP1"), login(CHNL)));
+
+        verify(keywordService).preview("SHOP1");
+        verify(keywordService, org.mockito.Mockito.times(1)).assign("SHOP1", "u", "사용자");
     }
 
     @Test

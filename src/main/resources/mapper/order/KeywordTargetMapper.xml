@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.KeywordTargetMapper">
+
+    <select id="selectShopName" resultType="string">
+        SELECT ShopName FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <!-- 상점 미지정 지불완료 라인. 서비스 경계는 대상 상점의 서비스와 같은 채널로 건다(주문 목록들이 pSvcCode 로 거는 것과 같은 기준). -->
+    <select id="selectUnassignedLines" resultType="map">
+        SELECT OP.OrderNo AS orderNo, OP.OrderProdNo AS orderProdNo,
+               IFNULL(OP.ProdName, '') AS prodName, IFNULL(OP.ItemName, '') AS itemName
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = O.ChnlCode
+        WHERE OP.OrderState = '지불완료'
+          AND (OP.ShopCode IS NULL OR OP.ShopCode = '')
+          AND Ch.SvcCode = (SELECT SvcCode FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode})
+          AND O.ChnlCode &lt;&gt; #{ownMallChnlCode}
+        ORDER BY OP.OrderNo, OP.OrderProdNo
+    </select>
+
+    <update id="assignShop">
+        UPDATE shopion.tOrdOrderProd
+        SET ShopCode = #{shopCode}, ShopName = #{shopName},
+            ChangeId = #{actorId}, ChangeName = #{actorName}, ChangeDate = NOW()
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo}
+          AND OrderState = '지불완료' AND (ShopCode IS NULL OR ShopCode = '')
+    </update>
+
+</mapper>
