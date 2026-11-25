@@ -212,4 +212,14 @@ class RolePermissionsTest {
         assertTrue(p.write().contains("order-keywrd"));
         assertFalse(p.view().contains("order-fee-rule"));
     }
+
+    @Test
+    void 상점관리_레거시_메뉴는_상점관리와_배송제한_화면에_이어진다() {
+        RolePermissions p = RolePermissions.compute(
+                List.of(menu("1005003000000", "/wizardn/company/wCmpShopList.wzn")),
+                List.of(functn("1005003000000", "/wizardn/company/xCmpShopUpdate.wzn")));
+
+        assertTrue(p.view().containsAll(List.of("company-shop", "ship-place-rule", "ship-rstrct-zipcode")));
+        assertTrue(p.write().containsAll(List.of("ship-place-rule", "ship-rstrct-zipcode")));
+    }
 }

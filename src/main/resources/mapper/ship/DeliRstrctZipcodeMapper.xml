@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.ship.mapper.DeliRstrctZipcodeMapper">
+
+    <!-- 배송제한 우편번호(shopwizard.tShpDeliRstrctZipcodeAddr). 전 상점 공용 마스터. -->
+    <sql id="listWhere">
+        <where>
+            <if test="pDeliRstrctSect != null and pDeliRstrctSect != ''">AND DeliRstrctSect = #{pDeliRstrctSect}</if>
+            <if test="pZipcode != null and pZipcode != ''">AND Zipcode LIKE CONCAT(#{pZipcode}, '%')</if>
+        </where>
+    </sql>
+
+    <select id="selectSects" resultType="map">
+        SELECT DeliRstrctSect AS sect, COUNT(*) AS cnt
+        FROM shopwizard.tShpDeliRstrctZipcodeAddr
+        GROUP BY DeliRstrctSect
+        ORDER BY DeliRstrctSect
+    </select>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.DeliRstrctZipcode">
+        SELECT DeliRstrctSect, Zipcode, State, Remark, RegistId, RegistName, CAST(RegistDate AS CHAR) AS RegistDate
+        FROM shopwizard.tShpDeliRstrctZipcodeAddr
+        <include refid="listWhere"/>
+        ORDER BY DeliRstrctSect, Zipcode
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tShpDeliRstrctZipcodeAddr
+        <include refid="listWhere"/>
+    </select>
+
+    <select id="selectExisting" resultType="string">
+        SELECT Zipcode FROM shopwizard.tShpDeliRstrctZipcodeAddr
+        WHERE DeliRstrctSect = #{sect}
+        AND Zipcode IN <foreach collection="zipcodes" item="z" open="(" separator="," close=")">#{z}</foreach>
+    </select>
+
+    <insert id="insertAll">
+        INSERT INTO shopwizard.tShpDeliRstrctZipcodeAddr (DeliRstrctSect, Zipcode, State, RegistId, RegistName, RegistDate)
+        VALUES
+        <foreach collection="zipcodes" item="z" separator=",">(#{sect}, #{z}, 1, #{registId}, #{registName}, NOW())</foreach>
+    </insert>
+
+    <delete id="deleteOne">
+        DELETE FROM shopwizard.tShpDeliRstrctZipcodeAddr WHERE DeliRstrctSect = #{sect} AND Zipcode = #{zipcode}
+    </delete>
+
+    <delete id="deleteSect">
+        DELETE FROM shopwizard.tShpDeliRstrctZipcodeAddr WHERE DeliRstrctSect = #{sect}
+    </delete>
+
+    <select id="countBySect" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tShpDeliRstrctZipcodeAddr WHERE DeliRstrctSect = #{sect} AND State = 1
+    </select>
+
+</mapper>

@@ -3,7 +3,9 @@ package com.shopwizard.ship.service;
 import com.shopwizard.order.mapper.OrderGiftRuleMapper;
 import com.shopwizard.order.model.OrderGiftRule;
 import com.shopwizard.ship.mapper.ShipAutoOrderMapper;
+import com.shopwizard.ship.mapper.ShipPlaceRuleMapper;
 import com.shopwizard.ship.model.PrintRow;
+import com.shopwizard.ship.model.ShipPlaceRule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,9 +36,11 @@ public class ShipDataBuildService {
 
     private final ShipAutoOrderMapper mapper;
     private final OrderGiftRuleMapper giftRuleMapper;
+    private final ShipPlaceRuleMapper placeRuleMapper;
 
     /** 결과 요약 — 화면에 "대상 N행 / 묶음 N행 / 사은품 N행" 으로 보여 준다. */
-    public record Result(String shopCode, String shipPlace, int rows, int bundledRows, int giftRows) {}
+    public record Result(String shopCode, String shipPlace, int rows, int bundledRows, int giftRows,
+                         boolean rstrctUsed, int placeRules, Map<String, Integer> sheets) {}
 
     /** 사은품 1건 계획(어느 앵커 행 아래에 무엇을 몇 개). 테스트가 직접 검증한다. */
     public record GiftPlan(Integer orderNo, Integer orderProdNo, int ruleNo, String giftName, int giftQty,
@@ -64,11 +68,42 @@ public class ShipDataBuildService {
             giftRows += mapper.insertGiftRow(p.orderNo(), p.orderProdNo(), p.giftName(), p.giftQty(), registId, registName);
         }
 
+        // 배송제한 규칙(상점 옵션이 켜져 있을 때만): 사은품 행까지 만든 뒤 적용해 사은품 행도 원 행과 같은 시트에 가게 한다.
+        boolean rstrctUsed = Integer.valueOf(1).equals(mapper.selectShipRstrctYn(shop));
+        int placeRules = 0;
+        if (rstrctUsed) {
+            for (ShipPlaceRule r : placeRuleMapper.selectActiveByShop(shop)) {
+                mapper.applyPlaceRule(shop, r.getShipPlace(), r.getNamePrefix(), r.getZipSect(), splitLines(r.getAddrPatterns()),
+                        splitLines(r.getExceptAddrPatterns()), r.getProdName(), splitCodes(r.getExceptChnlCodes()), registId, registName);
+                placeRules++;
+            }
+        }
+
         mapper.resetBundle(shop);
         int bundledRows = mapper.markBundle(shop);
         mapper.updateSortNames(shop);
 
-        return new Result(shop, shipPlace, rows.size() + giftRows, bundledRows, giftRows);
+        Map<String, Integer> sheets = new LinkedHashMap<>();
+        List<Map<String, Object>> counts = mapper.selectPlaceCounts(shop);
+        if (counts != null) for (Map<String, Object> c : counts) sheets.put(String.valueOf(c.get("shipPlace")), ((Number) c.get("cnt")).intValue());
+
+        return new Result(shop, shipPlace, rows.size() + giftRows, bundledRows, giftRows, rstrctUsed, placeRules, sheets);
+    }
+
+    /** 줄바꿈으로 이은 패턴 → 목록(빈 줄 제외). */
+    static List<String> splitLines(String text) {
+        List<String> out = new ArrayList<>();
+        if (text == null) return out;
+        for (String l : text.split("\\r?\\n")) if (!l.trim().isEmpty()) out.add(l.trim());
+        return out;
+    }
+
+    /** 쉼표로 이은 코드 → 목록. */
+    static List<String> splitCodes(String text) {
+        List<String> out = new ArrayList<>();
+        if (text == null) return out;
+        for (String c : text.split(",")) if (!c.trim().isEmpty()) out.add(c.trim());
+        return out;
     }
 
     /**

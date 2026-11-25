@@ -350,8 +350,11 @@ const PageShipAutoOrder = (() => {
     btn.disabled = true;
     try {
       const r = await Api.post('/ship/auto-order/build', { shopCode });
+      const sheets = Object.entries(r.sheets || {}).map(([k, v]) => `${esc(k)} ${won(v)}행`).join(' · ');
       el('aoBuildResult').innerHTML = `<span style="color:var(--success,#2e7d32)">✔ 완료</span> — 발주서 행 <b>${won(r.rows)}</b>개(사은품 <b>${won(r.giftRows)}</b>개 포함),
-        합배송 표시 <b>${won(r.bundledRows)}</b>행, 출고지 <b>${esc(r.shipPlace)}</b>`;
+        합배송 표시 <b>${won(r.bundledRows)}</b>행, 기본 출고지 <b>${esc(r.shipPlace)}</b><br>
+        ${r.rstrctUsed ? `배송제한 규칙 <b>${won(r.placeRules)}</b>건 적용 — 시트별: ${sheets || '없음'}`
+                       : '<span style="color:var(--text-muted)">배송제한 규칙 사용 안 함(상점 관리에서 "배송제한 규칙 사용"을 켜면 우편번호·주소 규칙으로 시트를 나눕니다)</span>'}`;
       UI.toast('배송 데이터를 생성했습니다', 'success');
       await loadSummary();
       sheetPage = 1;

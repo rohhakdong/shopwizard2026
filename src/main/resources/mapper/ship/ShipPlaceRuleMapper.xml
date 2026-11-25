@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.ship.mapper.ShipPlaceRuleMapper">
+
+    <!-- 배송제한 규칙(shopwizard.tShpShipPlaceRule). 서비스 제한은 규칙의 상점 마스터로 건다(DataScopeFilter 가 GET 의 pSvcCode/pShopCode 를 고정). -->
+    <sql id="cols">
+        R.RuleNo, R.ShopCode, S.ShopName AS ShopName, R.RuleName, R.ZipSect, R.AddrPatterns, R.ExceptAddrPatterns, R.ProdName,
+        R.ExceptChnlCodes, R.ShipPlace, R.NamePrefix, R.State, R.Remark, R.RegistId, R.RegistName, CAST(R.RegistDate AS CHAR) AS RegistDate,
+        R.ChangeId, R.ChangeName, CAST(R.ChangeDate AS CHAR) AS ChangeDate
+    </sql>
+
+    <sql id="from">
+        FROM shopwizard.tShpShipPlaceRule R
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = R.ShopCode
+    </sql>
+
+    <sql id="listWhere">
+        <where>
+            <if test="pRuleNo != null and pRuleNo != '' and pRuleNo.toString().matches('^[0-9]+$')">AND R.RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND R.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pShipPlace != null and pShipPlace != ''">AND R.ShipPlace LIKE CONCAT('%', #{pShipPlace}, '%')</if>
+            <if test="pZipSect != null and pZipSect != ''">AND R.ZipSect = #{pZipSect}</if>
+        </where>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.ShipPlaceRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        <include refid="listWhere"/>
+        ORDER BY R.ShopCode, R.RuleNo
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
+    </select>
+
+    <select id="selectCount" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+        <include refid="from"/>
+        <include refid="listWhere"/>
+    </select>
+
+    <select id="selectActiveByShop" resultType="com.shopwizard.ship.model.ShipPlaceRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE R.ShopCode = #{shopCode} AND R.State = 1
+        ORDER BY R.RuleNo
+    </select>
+
+    <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.ShipPlaceRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE R.RuleNo = #{ruleNo}
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.ShipPlaceRule" useGeneratedKeys="true" keyProperty="ruleNo" keyColumn="RuleNo">
+        INSERT INTO shopwizard.tShpShipPlaceRule (
+            ShopCode, RuleName, ZipSect, AddrPatterns, ExceptAddrPatterns, ProdName, ExceptChnlCodes, ShipPlace, NamePrefix,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{shopCode}, #{ruleName}, #{zipSect}, #{addrPatterns}, #{exceptAddrPatterns}, #{prodName}, #{exceptChnlCodes}, #{shipPlace}, #{namePrefix},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.shopwizard.ship.model.ShipPlaceRule">
+        UPDATE shopwizard.tShpShipPlaceRule SET
+            ShopCode = #{shopCode}, RuleName = #{ruleName}, ZipSect = #{zipSect}, AddrPatterns = #{addrPatterns},
+            ExceptAddrPatterns = #{exceptAddrPatterns}, ProdName = #{prodName}, ExceptChnlCodes = #{exceptChnlCodes},
+            ShipPlace = #{shipPlace}, NamePrefix = #{namePrefix}, State = #{state}, Remark = #{remark},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE RuleNo = #{ruleNo}
+    </update>
+
+    <delete id="delete" parameterType="com.shopwizard.ship.model.ShipPlaceRule">
+        DELETE FROM shopwizard.tShpShipPlaceRule WHERE RuleNo = #{ruleNo}
+    </delete>
+
+    <select id="countShop" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <select id="countChnl" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpChnl WHERE ChnlCode = #{chnlCode}
+    </select>
+
+</mapper>

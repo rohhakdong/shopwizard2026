@@ -56,4 +56,21 @@ public interface ShipAutoOrderMapper {
 
     /** 발주서 대기 행이 걸려 있는 주문라인(발주확인 대상) — 라인당 1건, 주문번호 순. */
     List<Map<String, Object>> selectPendingLines(@Param("shopCode") String shopCode, @Param("limit") int limit);
+
+    /** 상점의 "배송제한 규칙 사용" 옵션(tCmpShop.ShipRstrctYn). 상점이 없으면 null. */
+    Integer selectShipRstrctYn(@Param("shopCode") String shopCode);
+
+    /**
+     * 배송제한 규칙 1개를 발주서 대기 행에 적용한다 — 조건(우편번호 구분 OR 주소 패턴, AND 제외 주소 아님, AND 상품명 포함, AND 제외 채널 아님,
+     * 구분·주소 패턴이 모두 비면 전체)에 맞는 행의 출고지를 바꾸고, namePrefix 가 있으면 수취인명이 그 표시로 시작하지 않을 때만 앞에 붙인다.
+     * 반환값은 조건에 맞은 행 수.
+     */
+    int applyPlaceRule(@Param("shopCode") String shopCode, @Param("shipPlace") String shipPlace, @Param("namePrefix") String namePrefix,
+                       @Param("zipSect") String zipSect, @Param("addrPatterns") List<String> addrPatterns,
+                       @Param("exceptAddrPatterns") List<String> exceptAddrPatterns, @Param("prodName") String prodName,
+                       @Param("exceptChnlCodes") List<String> exceptChnlCodes,
+                       @Param("actorId") String actorId, @Param("actorName") String actorName);
+
+    /** 발주서 대기 행의 출고지(시트)별 행 수 — 배송 데이터 생성 결과 표시용. */
+    List<Map<String, Object>> selectPlaceCounts(@Param("shopCode") String shopCode);
 }

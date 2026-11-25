@@ -188,4 +188,50 @@
         LIMIT ${limit}
     </select>
 
+    <select id="selectShipRstrctYn" resultType="java.lang.Integer">
+        SELECT ShipRstrctYn FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <!-- 배송제한 규칙 1개 적용. 주소 패턴은 LIKE 패턴 그대로(% _ 와일드카드), 상품명은 포함 검사(LOCATE). 수취인명은 50자 한계를 넘지 않게 자른다. -->
+    <update id="applyPlaceRule">
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP
+            ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo AND OP.OrderState = '출고지시'
+        SET SD.ShipPlace = #{shipPlace},
+        <if test="namePrefix != null and namePrefix != ''">
+            SD.RecverName = CASE WHEN LEFT(IFNULL(SD.RecverName, ''), CHAR_LENGTH(#{namePrefix})) = #{namePrefix}
+                                 THEN SD.RecverName ELSE LEFT(CONCAT(#{namePrefix}, IFNULL(SD.RecverName, '')), 50) END,
+        </if>
+            SD.ChangeId = #{actorId}, SD.ChangeName = #{actorName}, SD.ChangeDate = NOW()
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+        <if test="(zipSect != null and zipSect != '') or (addrPatterns != null and addrPatterns.size() > 0)">
+            AND (
+            <trim prefixOverrides="OR ">
+                <if test="zipSect != null and zipSect != ''">
+                    OR REPLACE(SD.RecverZipcode, '-', '') IN
+                       (SELECT Z.Zipcode FROM shopwizard.tShpDeliRstrctZipcodeAddr Z WHERE Z.DeliRstrctSect = #{zipSect} AND Z.State = 1)
+                </if>
+                <if test="addrPatterns != null">
+                    <foreach collection="addrPatterns" item="ap">OR SD.RecverAddr LIKE #{ap}</foreach>
+                </if>
+            </trim>
+            )
+        </if>
+        <if test="exceptAddrPatterns != null">
+            <foreach collection="exceptAddrPatterns" item="ep">AND (SD.RecverAddr IS NULL OR SD.RecverAddr NOT LIKE #{ep})</foreach>
+        </if>
+        <if test="prodName != null and prodName != ''">AND LOCATE(#{prodName}, IFNULL(SD.ProdName, '')) &gt; 0</if>
+        <if test="exceptChnlCodes != null and exceptChnlCodes.size() > 0">
+            AND (SD.ChnlCode IS NULL OR SD.ChnlCode NOT IN <foreach collection="exceptChnlCodes" item="cc" open="(" separator="," close=")">#{cc}</foreach>)
+        </if>
+    </update>
+
+    <select id="selectPlaceCounts" resultType="map">
+        SELECT IFNULL(SD.ShipPlace, '기본출고지') AS shipPlace, COUNT(*) AS cnt
+        <include refid="pendingFrom"/>
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+        GROUP BY IFNULL(SD.ShipPlace, '기본출고지')
+        ORDER BY IFNULL(SD.ShipPlace, '기본출고지')
+    </select>
+
 </mapper>

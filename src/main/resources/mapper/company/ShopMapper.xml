@@ -11,6 +11,7 @@
         <result property="supplyCode" column="SupplyCode"/>
         <result property="shopName" column="ShopName"/>
         <result property="autoOrderYn" column="AutoOrderYn"/>
+        <result property="shipRstrctYn" column="ShipRstrctYn"/>
         <result property="applyStartDate" column="ApplyStartDate"/>
         <result property="applyEndDate" column="ApplyEndDate"/>
         <result property="adjustPeriodCode" column="AdjustPeriodCode"/>
@@ -91,6 +92,7 @@
             <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND S.AdjustPeriodCode = #{pAdjustPeriodCode}</if>
             <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
             <if test="pAutoOrderYn != null and pAutoOrderYn != ''">AND S.AutoOrderYn = #{pAutoOrderYn}</if>
+            <if test="pShipRstrctYn != null and pShipRstrctYn != ''">AND S.ShipRstrctYn = #{pShipRstrctYn}</if>
             <if test="pWarehsCode != null and pWarehsCode != ''">AND SW.WarehsCode = #{pWarehsCode}</if>
         </where>
         <choose>
@@ -113,6 +115,7 @@
             <if test="pAdjustPeriodCode != null and pAdjustPeriodCode != ''">AND S.AdjustPeriodCode = #{pAdjustPeriodCode}</if>
             <if test="pMngrMd != null and pMngrMd != ''">AND S.MngrMd = #{pMngrMd}</if>
             <if test="pAutoOrderYn != null and pAutoOrderYn != ''">AND S.AutoOrderYn = #{pAutoOrderYn}</if>
+            <if test="pShipRstrctYn != null and pShipRstrctYn != ''">AND S.ShipRstrctYn = #{pShipRstrctYn}</if>
         </where>
     </select>
 
@@ -154,7 +157,7 @@
 
     <insert id="insert" parameterType="com.shopwizard.company.model.Shop">
         INSERT INTO shopwizard.tCmpShop (
-            ShopCode, SvcCode, CompCode, SupplyCode, ShopName, AutoOrderYn,
+            ShopCode, SvcCode, CompCode, SupplyCode, ShopName, AutoOrderYn, ShipRstrctYn,
             ApplyStartDate, ApplyEndDate, AdjustPeriodCode, LoginId, Passwd,
             MngrName, PhoneNo, MobileNo, FaxNo, Email,
             BrandIntro, PatentCode, LndryMethod, AsDesc, ProdDesc,
@@ -162,7 +165,7 @@
             SexualType, LeadTime, VisualImg, SizeChart, ApprovDate, PasswdChangeDate,
             State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
         ) VALUES (
-            #{shopCode}, #{svcCode}, #{compCode}, #{supplyCode}, #{shopName}, #{autoOrderYn},
+            #{shopCode}, #{svcCode}, #{compCode}, #{supplyCode}, #{shopName}, #{autoOrderYn}, #{shipRstrctYn},
             #{applyStartDate}, #{applyEndDate}, #{adjustPeriodCode}, #{loginId}, #{passwd},
             #{mngrName}, #{phoneNo}, #{mobileNo}, #{faxNo}, #{email},
             #{brandIntro}, #{patentCode}, #{lndryMethod}, #{asDesc}, #{prodDesc},
@@ -177,7 +180,7 @@
          평문이 또 해싱되거나(이중 해싱) 해시값이 그대로 덮여써질 위험이 있다. -->
     <update id="update" parameterType="com.shopwizard.company.model.Shop">
         UPDATE shopwizard.tCmpShop SET
-            ShopName = #{shopName}, AutoOrderYn = #{autoOrderYn},
+            ShopName = #{shopName}, AutoOrderYn = #{autoOrderYn}, ShipRstrctYn = #{shipRstrctYn},
             ApplyStartDate = #{applyStartDate}, ApplyEndDate = #{applyEndDate},
             AdjustPeriodCode = #{adjustPeriodCode}, LoginId = #{loginId},
             MngrName = #{mngrName}, PhoneNo = #{phoneNo}, MobileNo = #{mobileNo},

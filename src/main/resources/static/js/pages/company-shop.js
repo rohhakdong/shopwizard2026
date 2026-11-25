@@ -304,6 +304,14 @@ const PageCompanyShop = (() => {
           </select>
         </div>
         <div class="form-group">
+          <label>배송제한 규칙 사용</label>
+          <select class="input" id="shFShipRstrctYn">
+            <option value="0" ${esc(!v.shipRstrctYn ? 'selected' : '')}>아니오</option>
+            <option value="1" ${esc(v.shipRstrctYn === 1 ? 'selected' : '')}>예</option>
+          </select>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">자동발주 "배송 데이터 생성"이 배송제한 규칙(우편번호·주소)으로 발주서 시트를 나눕니다</div>
+        </div>
+        <div class="form-group">
           <label>상태</label>
           <select class="input" id="shFState">
             <option value="1" ${esc((v.state ?? 1) === 1 ? 'selected' : '')}>정상</option>
@@ -379,6 +387,7 @@ const PageCompanyShop = (() => {
           applyStartDate: document.getElementById('shFStartDate').value || null,
           applyEndDate:   document.getElementById('shFEndDate').value || null,
           autoOrderYn:    parseInt(document.getElementById('shFAutoOrderYn').value),
+          shipRstrctYn:   parseInt(document.getElementById('shFShipRstrctYn').value),
           state:          parseInt(document.getElementById('shFState').value),
           remark:         document.getElementById('shFRemark').value.trim(),
           registId,

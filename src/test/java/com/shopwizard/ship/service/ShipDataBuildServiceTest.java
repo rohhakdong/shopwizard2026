@@ -3,6 +3,7 @@ package com.shopwizard.ship.service;
 import com.shopwizard.order.mapper.OrderGiftRuleMapper;
 import com.shopwizard.order.model.OrderGiftRule;
 import com.shopwizard.ship.mapper.ShipAutoOrderMapper;
+import com.shopwizard.ship.mapper.ShipPlaceRuleMapper;
 import com.shopwizard.ship.model.PrintRow;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,7 +28,8 @@ class ShipDataBuildServiceTest {
 
     private final ShipAutoOrderMapper mapper = mock(ShipAutoOrderMapper.class);
     private final OrderGiftRuleMapper giftRuleMapper = mock(OrderGiftRuleMapper.class);
-    private final ShipDataBuildService service = new ShipDataBuildService(mapper, giftRuleMapper);
+    private final ShipPlaceRuleMapper placeRuleMapper = mock(ShipPlaceRuleMapper.class);
+    private final ShipDataBuildService service = new ShipDataBuildService(mapper, giftRuleMapper, placeRuleMapper);
 
     private static PrintRow row(int orderNo, int qty, int salePrice, String addr, String name) {
         PrintRow r = new PrintRow();

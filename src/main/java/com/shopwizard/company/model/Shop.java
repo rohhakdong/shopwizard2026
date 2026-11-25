@@ -12,6 +12,8 @@ public class Shop {
     private String compCode;
     private String shopName;
     private int autoOrderYn;
+    /** 배송제한 규칙 사용 여부(1=사용) — 자동발주 "배송 데이터 생성"이 우편번호·주소 규칙으로 발주서 시트를 나눈다. */
+    private int shipRstrctYn;
     private String applyStartDate;
     private String applyEndDate;
     private String adjustPeriodCode;
