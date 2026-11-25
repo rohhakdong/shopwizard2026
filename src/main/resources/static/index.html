@@ -137,6 +137,7 @@
   <script src="/js/pages/order-prod-match-result.js"></script>
   <script src="/js/pages/order-uprice.js"></script>
   <script src="/js/pages/order-uprice-match-result.js"></script>
+  <script src="/js/pages/order-gift-rule.js"></script>
   <script src="/js/pages/order-cancel.js"></script>
   <script src="/js/pages/order-refund-confirm.js"></script>
   <script src="/js/pages/store-store.js"></script>
@@ -190,6 +191,7 @@
           { key: 'order-uprice',      label: '발주단가표',    icon: '💰', page: 'order/uprice' },
           { key: 'order-uprice-match', label: '발주단가매칭',  icon: '🧮', page: 'order/upricematch' },
           { key: 'order-uprice-match-result', label: '단가매칭결과', icon: '📊', page: 'order/upricematchresult' },
+          { key: 'order-gift-rule',   label: '사은품규칙',    icon: '🎁', page: 'order/giftrule' },
         ]
       },
       {
@@ -363,6 +365,8 @@
         PageOrderUprice.render(content);
       } else if (key === 'order-uprice-match-result') {
         PageOrderUpriceMatchResult.render(content);
+      } else if (key === 'order-gift-rule') {
+        PageOrderGiftRule.render(content);
       } else if (key === 'order-cancel') {
         PageOrderCancel.render(content);
       } else if (key === 'order-refund-confirm') {

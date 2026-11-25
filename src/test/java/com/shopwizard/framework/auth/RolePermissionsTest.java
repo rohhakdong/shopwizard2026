@@ -165,4 +165,15 @@ class RolePermissionsTest {
         assertTrue(p.view().containsAll(List.of("order-uprice-match", "order-uprice-match-result")));
         assertTrue(p.write().containsAll(List.of("order-uprice-match", "order-uprice-match-result")));
     }
+
+    @Test
+    void 발주사은품규칙_레거시_메뉴는_사은품규칙_화면_하나에_이어진다() {
+        RolePermissions p = RolePermissions.compute(
+                List.of(menu("1012007000000", "/wizardn/order/wOrdOrderGiftRuleList.wzn")),
+                List.of(functn("1012007000000", "/wizardn/order/xOrdOrderGiftRuleInsert.wzn")));
+
+        assertTrue(p.view().contains("order-gift-rule"));
+        assertTrue(p.write().contains("order-gift-rule"));
+        assertFalse(p.view().contains("order-uprice"));   // 이웃 발주 화면 권한은 따라오지 않는다
+    }
 }

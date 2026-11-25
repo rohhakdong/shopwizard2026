@@ -2,11 +2,14 @@ package com.shopwizard.order.model;
 
 import lombok.Data;
 
+/** 발주 사은품 규칙(shopwizard.tOrdOrderGiftRule). 날짜는 화면과 주고받을 때 yyyy-MM-dd 로 다룬다. */
 @Data
 public class OrderGiftRule {
-    private String ruleNo;
+    private Integer ruleNo;
     private String shopCode;
+    private String shopName;
     private String chnlCode;
+    private String chnlName;
     private String chnlProdCode;
     private String chnlProdName;
     private String dealName;

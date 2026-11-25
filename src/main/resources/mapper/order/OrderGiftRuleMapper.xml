@@ -2,54 +2,73 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.order.mapper.OrderGiftRuleMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderGiftRule">
-        SELECT *
-        FROM shopwizard.tOrdOrderGiftRule
+    <!-- 발주 사은품 규칙(shopwizard.tOrdOrderGiftRule, 기본키 RuleNo 자동증가). 서비스 제한은 규칙의 상점 마스터로 건다.
+         DataScopeFilter 가 GET 의 pSvcCode/pShopCode/pChnlCode 를 세션 값으로 고정한다. 날짜는 화면용으로 CHAR 로 돌려준다. -->
+    <sql id="cols">
+        R.RuleNo, R.ShopCode, S.ShopName AS ShopName, R.ChnlCode, C.ChnlName AS ChnlName, R.ChnlProdCode, R.ChnlProdName, R.DealName,
+        R.TotalOrderQtyStart, R.TotalOrderQtyEnd, R.TotalOrderAmtStart, R.TotalOrderAmtEnd,
+        R.GiftProdCode1, R.GiftProdName1, R.GiftProdCode2, R.GiftProdName2, R.GiftProdCode3, R.GiftProdName3,
+        R.GiftProdCode4, R.GiftProdName4, R.GiftProdCode5, R.GiftProdName5,
+        R.GiftQty, R.PromotFee, R.DupYn,
+        CAST(R.GiftStartDate AS CHAR) AS GiftStartDate, CAST(R.GiftEndDate AS CHAR) AS GiftEndDate,
+        R.State, R.Remark, R.RegistId, R.RegistName, CAST(R.RegistDate AS CHAR) AS RegistDate,
+        R.ChangeId, R.ChangeName, CAST(R.ChangeDate AS CHAR) AS ChangeDate
+    </sql>
+
+    <sql id="from">
+        FROM shopwizard.tOrdOrderGiftRule R
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = R.ShopCode
+        LEFT OUTER JOIN shopwizard.tCmpChnl C ON C.ChnlCode = R.ChnlCode
+    </sql>
+
+    <sql id="listWhere">
         <where>
-            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
-            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
-            <if test="pChnlProdCode != null and pChnlProdCode != ''">AND ChnlProdCode = #{pChnlProdCode}</if>
-            <if test="pChnlProdName != null and pChnlProdName != ''">AND ChnlProdName = #{pChnlProdName}</if>
-            <if test="pDealName != null and pDealName != ''">AND DealName = #{pDealName}</if>
-            <if test="pGiftProdCode1 != null and pGiftProdCode1 != ''">AND GiftProdCode1 = #{pGiftProdCode1}</if>
-            <if test="pGiftProdName1 != null and pGiftProdName1 != ''">AND GiftProdName1 = #{pGiftProdName1}</if>
+            <if test="pRuleNo != null and pRuleNo != '' and pRuleNo.toString().matches('^[0-9]+$')">AND R.RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND R.ShopCode = #{pShopCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND R.ChnlCode = #{pChnlCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pChnlProdName != null and pChnlProdName != ''">AND R.ChnlProdName LIKE CONCAT('%',#{pChnlProdName},'%')</if>
+            <if test="pDealName != null and pDealName != ''">AND R.DealName LIKE CONCAT('%',#{pDealName},'%')</if>
+            <if test="pGiftProdName != null and pGiftProdName != ''">AND (R.GiftProdName1 LIKE CONCAT('%',#{pGiftProdName},'%') OR R.GiftProdCode1 LIKE CONCAT('%',#{pGiftProdName},'%'))</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderGiftRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        <include refid="listWhere"/>
+        ORDER BY R.RuleNo DESC
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tOrdOrderGiftRule
-        <where>
-            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
-            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
-            <if test="pChnlProdCode != null and pChnlProdCode != ''">AND ChnlProdCode = #{pChnlProdCode}</if>
-            <if test="pChnlProdName != null and pChnlProdName != ''">AND ChnlProdName = #{pChnlProdName}</if>
-            <if test="pDealName != null and pDealName != ''">AND DealName = #{pDealName}</if>
-            <if test="pGiftProdCode1 != null and pGiftProdCode1 != ''">AND GiftProdCode1 = #{pGiftProdCode1}</if>
-            <if test="pGiftProdName1 != null and pGiftProdName1 != ''">AND GiftProdName1 = #{pGiftProdName1}</if>
-        </where>
+        <include refid="from"/>
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderGiftRule">
-        SELECT * FROM shopwizard.tOrdOrderGiftRule WHERE RuleNo = #{ruleNo}
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE R.RuleNo = #{ruleNo}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.order.model.OrderGiftRule">
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderGiftRule" useGeneratedKeys="true" keyProperty="ruleNo" keyColumn="RuleNo">
         INSERT INTO shopwizard.tOrdOrderGiftRule (
             ShopCode, ChnlCode, ChnlProdCode, ChnlProdName, DealName,
             TotalOrderQtyStart, TotalOrderQtyEnd, TotalOrderAmtStart, TotalOrderAmtEnd,
             GiftProdCode1, GiftProdName1, GiftProdCode2, GiftProdName2, GiftProdCode3, GiftProdName3,
             GiftProdCode4, GiftProdName4, GiftProdCode5, GiftProdName5,
-            GiftQty, PromotFee, DupYn, State, Remark, RegistId, RegistName, RegistDate
+            GiftQty, PromotFee, DupYn, GiftStartDate, GiftEndDate, State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
             #{shopCode}, #{chnlCode}, #{chnlProdCode}, #{chnlProdName}, #{dealName},
             #{totalOrderQtyStart}, #{totalOrderQtyEnd}, #{totalOrderAmtStart}, #{totalOrderAmtEnd},
             #{giftProdCode1}, #{giftProdName1}, #{giftProdCode2}, #{giftProdName2}, #{giftProdCode3}, #{giftProdName3},
             #{giftProdCode4}, #{giftProdName4}, #{giftProdCode5}, #{giftProdName5},
-            #{giftQty}, #{promotFee}, #{dupYn}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
+            #{giftQty}, #{promotFee}, #{dupYn}, #{giftStartDate}, #{giftEndDate}, #{state}, #{remark}, #{registId}, #{registName}, NOW()
         )
     </insert>
 
@@ -64,12 +83,25 @@
             GiftProdCode4 = #{giftProdCode4}, GiftProdName4 = #{giftProdName4},
             GiftProdCode5 = #{giftProdCode5}, GiftProdName5 = #{giftProdName5},
             GiftQty = #{giftQty}, PromotFee = #{promotFee}, DupYn = #{dupYn},
-            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+            GiftStartDate = #{giftStartDate}, GiftEndDate = #{giftEndDate},
+            Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE RuleNo = #{ruleNo}
     </update>
 
     <delete id="delete" parameterType="com.shopwizard.order.model.OrderGiftRule">
         DELETE FROM shopwizard.tOrdOrderGiftRule WHERE RuleNo = #{ruleNo}
     </delete>
+
+    <select id="countShop" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <select id="countChnl" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpChnl WHERE ChnlCode = #{chnlCode}
+    </select>
+
+    <select id="countUprice" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tOrdOrderUprice WHERE MatchUpriceCode = #{matchUpriceCode}
+    </select>
 
 </mapper>
