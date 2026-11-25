@@ -35,6 +35,29 @@ public class UpriceMatchController {
         return upriceMatchService.selectDetail(prodName, itemName);
     }
 
+    // ── 단가매칭결과 화면(order-uprice-match-result): 규칙 목록·줄 조회·삭제. 등록·수정은 아래 /save 를 같이 쓴다. ──
+
+    @GetMapping("/list")
+    public List<Map<String, Object>> rules(@RequestParam Map<String, Object> params) {
+        return upriceMatchService.selectRules(params);
+    }
+
+    @GetMapping("/count")
+    public int ruleCount(@RequestParam Map<String, Object> params) {
+        return upriceMatchService.selectRuleCount(params);
+    }
+
+    /** 규칙의 줄 — 사용 중지·삭제된 코드도 나온다(/detail 은 사용 중인 코드만). */
+    @GetMapping("/lines")
+    public List<UpriceMatchDetail> lines(@RequestParam String prodName, @RequestParam(defaultValue = "") String itemName) {
+        return upriceMatchService.selectRuleLines(prodName, itemName);
+    }
+
+    @DeleteMapping
+    public void delete(@RequestParam String prodName, @RequestParam(defaultValue = "") String itemName) {
+        upriceMatchService.deleteRule(prodName, itemName);
+    }
+
     @PostMapping("/save")
     public void save(@RequestBody UpriceMatchSaveRequest req) {
         upriceMatchService.saveMatch(req.getProdName(), req.getItemName(), req.getLines(),

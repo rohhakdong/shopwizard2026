@@ -2,46 +2,73 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.order.mapper.ProdCodeMatchMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.ProdCodeMatch">
-        SELECT *
-        FROM shopwizard.tOrdProdCodeMatch
+    <!-- 상품매칭결과(shopwizard.tOrdProdCodeMatch, 기본키 ProdName+ProdOption). 규칙이 가리키는 판매 상품(이름·상점)은 LEFT JOIN 으로 붙인다.
+         서비스/상점 제한은 그 상품의 상점으로 건다(규칙 자체에는 상점 컬럼이 없다) — DataScopeFilter 가 GET 의 pSvcCode/pShopCode 를 세션 값으로 고정. -->
+    <sql id="listWhere">
         <where>
-            <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
+            <if test="pProdName != null and pProdName != ''">AND M.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pProdOption != null and pProdOption != ''">AND M.ProdOption LIKE CONCAT('%',#{pProdOption},'%')</if>
+            <if test="pProdCode != null and pProdCode != ''">AND M.ProdCode LIKE CONCAT('%',#{pProdCode},'%')</if>
+            <if test="pShopCode != null and pShopCode != ''">AND P.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.ProdCodeMatch">
+        SELECT M.ProdName, M.ProdOption, M.ProdCode, M.State, M.Remark, M.RegistId, M.RegistName,
+               CAST(M.RegistDate AS CHAR) AS RegistDate, M.ChangeId, M.ChangeName, CAST(M.ChangeDate AS CHAR) AS ChangeDate,
+               P.ProdName AS MatchedProdName, P.ShopCode AS ShopCode, S.ShopName AS ShopName
+        FROM shopwizard.tOrdProdCodeMatch M
+        LEFT OUTER JOIN shopion.tPrdProd P ON P.ProdCode = M.ProdCode
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = P.ShopCode
+        <include refid="listWhere"/>
+        ORDER BY M.RegistDate DESC, M.ProdName, M.ProdOption
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tOrdProdCodeMatch
-        <where>
-            <if test="pProdName != null and pProdName != ''">AND ProdName = #{pProdName}</if>
-        </where>
+        FROM shopwizard.tOrdProdCodeMatch M
+        LEFT OUTER JOIN shopion.tPrdProd P ON P.ProdCode = M.ProdCode
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = P.ShopCode
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.ProdCodeMatch">
-        SELECT * FROM shopwizard.tOrdProdCodeMatch WHERE ProdName = #{prodName}
+        SELECT M.ProdName, M.ProdOption, M.ProdCode, M.State, M.Remark, M.RegistId, M.RegistName,
+               CAST(M.RegistDate AS CHAR) AS RegistDate, M.ChangeId, M.ChangeName, CAST(M.ChangeDate AS CHAR) AS ChangeDate,
+               P.ProdName AS MatchedProdName, P.ShopCode AS ShopCode, S.ShopName AS ShopName
+        FROM shopwizard.tOrdProdCodeMatch M
+        LEFT OUTER JOIN shopion.tPrdProd P ON P.ProdCode = M.ProdCode
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = P.ShopCode
+        WHERE M.ProdName = #{prodName} AND M.ProdOption = #{prodOption}
+    </select>
+
+    <!-- 이 코드의 판매 상품이 있는가(등록·수정 검증) -->
+    <select id="countProd" resultType="int">
+        SELECT COUNT(*) FROM shopion.tPrdProd WHERE ProdCode = #{prodCode}
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.order.model.ProdCodeMatch">
         INSERT INTO shopwizard.tOrdProdCodeMatch (
-            ProdName, ProdOption, ProdCode, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+            ProdName, ProdOption, ProdCode, State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (
-            #{prodName}, #{prodOption}, #{prodCode}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+            #{prodName}, #{prodOption}, #{prodCode}, 1, #{remark}, #{registId}, #{registName}, NOW()
         )
     </insert>
 
+    <!-- 기본키(상품명+옵션)는 바꾸지 않고 상품코드만 바꾼다 -->
     <update id="update" parameterType="com.shopwizard.order.model.ProdCodeMatch">
         UPDATE shopwizard.tOrdProdCodeMatch SET
-            ProdName = #{prodName}, ProdOption = #{prodOption}, ProdCode = #{prodCode},
-            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
-        WHERE ProdName = #{prodName}
+            ProdCode = #{prodCode}, State = 1, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE ProdName = #{prodName} AND ProdOption = #{prodOption}
     </update>
 
     <delete id="delete" parameterType="com.shopwizard.order.model.ProdCodeMatch">
-        DELETE FROM shopwizard.tOrdProdCodeMatch WHERE ProdName = #{prodName}
+        DELETE FROM shopwizard.tOrdProdCodeMatch WHERE ProdName = #{prodName} AND ProdOption = #{prodOption}
     </delete>
 
     <!-- 실제 PK 는 (ProdName, ProdOption). 수집 자동매칭·매칭화면에서 사용. -->

@@ -2,20 +2,28 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.order.mapper.OrderUpriceMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderUprice">
-        SELECT *
-        FROM shopwizard.tOrdOrderUprice
+    <!-- 발주단가표(shopwizard.tOrdOrderUprice). 서비스 제한은 상점 마스터로 걸되, 상점이 비어 있는 "공통" 행(발주단가매칭 모달에서
+         새 코드를 만들면 상점 없이 저장된다)은 모든 서비스에 보인다. DataScopeFilter 가 GET 의 pSvcCode/pShopCode 를 세션 값으로 고정한다. -->
+    <sql id="listWhere">
         <where>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND U.ShopCode = #{pShopCode}</if>
             <if test="pSvcCode != null and pSvcCode != ''">
-                AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop SVC_S WHERE SVC_S.ShopCode = shopwizard.tOrdOrderUprice.ShopCode AND SVC_S.SvcCode = #{pSvcCode})
+                AND (IFNULL(U.ShopCode, '') = '' OR S.SvcCode = #{pSvcCode})
             </if>
-            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
-            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
-            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
-            <if test="pCapa != null and pCapa != ''">AND Capa = #{pCapa}</if>
-            <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
+            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND U.MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
+            <if test="pOrderProdName != null and pOrderProdName != ''">AND U.OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND U.Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa != null and pCapa != ''">AND U.Capa = #{pCapa}</if>
+            <if test="pUseYn != null and (pUseYn == '1' or pUseYn == '0')">AND U.UseYn = #{pUseYn}</if>
         </where>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderUprice">
+        SELECT U.*, S.ShopName AS ShopName
+        FROM shopwizard.tOrdOrderUprice U
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = U.ShopCode
+        <include refid="listWhere"/>
+        ORDER BY U.Keywrd, U.Capa, U.MatchUpriceCode
         <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시
              MySQL 이 LIMIT '0','20' 로 거부하므로, 숫자 검증 후 ${} 치환한다(반복 등장하는 패턴). -->
         <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
@@ -25,28 +33,35 @@
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tOrdOrderUprice
-        <where>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
-            <if test="pSvcCode != null and pSvcCode != ''">
-                AND EXISTS (SELECT 1 FROM shopwizard.tCmpShop SVC_S WHERE SVC_S.ShopCode = shopwizard.tOrdOrderUprice.ShopCode AND SVC_S.SvcCode = #{pSvcCode})
-            </if>
-            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode LIKE CONCAT('%',#{pMatchUpriceCode},'%')</if>
-            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName LIKE CONCAT('%',#{pOrderProdName},'%')</if>
-            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
-            <if test="pCapa != null and pCapa != ''">AND Capa = #{pCapa}</if>
-            <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
-        </where>
+        FROM shopwizard.tOrdOrderUprice U
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = U.ShopCode
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderUprice">
-        SELECT * FROM shopwizard.tOrdOrderUprice
+        SELECT U.*, S.ShopName AS ShopName
+        FROM shopwizard.tOrdOrderUprice U
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = U.ShopCode
         <where>
-            <if test="matchUpriceCode != null and matchUpriceCode != ''">AND MatchUpriceCode = #{matchUpriceCode}</if>
-            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND MatchUpriceCode != #{pMatchUpriceCode}</if>
-            <if test="pOrderProdName != null and pOrderProdName != ''">AND OrderProdName = #{pOrderProdName}</if>
-            <if test="pUseYn != null and pUseYn != ''">AND UseYn = #{pUseYn}</if>
+            <if test="matchUpriceCode != null and matchUpriceCode != ''">AND U.MatchUpriceCode = #{matchUpriceCode}</if>
+            <if test="pMatchUpriceCode != null and pMatchUpriceCode != ''">AND U.MatchUpriceCode != #{pMatchUpriceCode}</if>
+            <if test="pOrderProdName != null and pOrderProdName != ''">AND U.OrderProdName = #{pOrderProdName}</if>
+            <if test="pUseYn != null and pUseYn != ''">AND U.UseYn = #{pUseYn}</if>
         </where>
+        LIMIT 1
+    </select>
+
+    <!-- 같은 상점(공통끼리 포함)에서 같은 발주상품명칭이 같은 사용여부로 이미 있는 다른 코드 수 — 레거시 중복 검사 -->
+    <select id="countSameName" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tOrdOrderUprice
+        WHERE IFNULL(ShopCode, '') = IFNULL(#{shopCode}, '') AND OrderProdName = #{orderProdName} AND UseYn = #{useYn}
+          AND MatchUpriceCode &lt;&gt; #{excludeCode}
+    </select>
+
+    <!-- 이 코드를 쓰는 곳 — 단가매칭 규칙(출고지시 원가 계산)과 발주견적 상세. 쓰고 있으면 지우지 못하게 한다. -->
+    <select id="countUsage" resultType="int">
+        SELECT (SELECT COUNT(*) FROM shopwizard.tOrdUpriceMatch WHERE MatchUpriceCode = #{matchUpriceCode})
+             + (SELECT COUNT(*) FROM shopwizard.tOrdOrderQuotDetail WHERE MatchUpriceCode = #{matchUpriceCode})
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderUprice">
@@ -59,6 +74,7 @@
         )
     </insert>
 
+    <!-- 발주상품명칭·키워드·용량(= 코드의 재료)은 바꾸지 않는다(레거시와 같음) -->
     <update id="update" parameterType="com.shopwizard.order.model.OrderUprice">
         UPDATE shopwizard.tOrdOrderUprice SET
             ShopCode = #{shopCode}, Uprice = #{uprice}, UnitName = #{unitName}, UseYn = #{useYn},

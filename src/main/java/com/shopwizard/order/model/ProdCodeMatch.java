@@ -15,4 +15,9 @@ public class ProdCodeMatch {
     private String changeId;
     private String changeName;
     private String changeDate;
+
+    // 조회 전용: 규칙이 가리키는 판매 상품(없으면 null)
+    private String matchedProdName;
+    private String shopCode;
+    private String shopName;
 }

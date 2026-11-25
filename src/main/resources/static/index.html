@@ -133,6 +133,10 @@
   <script src="/js/pages/order-prod-match.js"></script>
   <script src="/js/pages/order-excel-upload.js"></script>
   <script src="/js/pages/order-uprice-match.js"></script>
+  <script src="/js/pages/order-prod-code.js"></script>
+  <script src="/js/pages/order-prod-match-result.js"></script>
+  <script src="/js/pages/order-uprice.js"></script>
+  <script src="/js/pages/order-uprice-match-result.js"></script>
   <script src="/js/pages/order-cancel.js"></script>
   <script src="/js/pages/order-refund-confirm.js"></script>
   <script src="/js/pages/store-store.js"></script>
@@ -172,11 +176,20 @@
         items: [
           { key: 'order-list',        label: '주문관리',      icon: '📋', page: 'order/list' },
           { key: 'shoplinker-collect', label: '샵링커 수집',   icon: '🔻', page: 'order/shoplinker' },
-          { key: 'order-prod-match',  label: '상품 매칭',      icon: '🔗', page: 'order/prodmatch' },
           { key: 'order-excel-upload', label: '주문엑셀등록',  icon: '📥', page: 'order/excelupload' },
-          { key: 'order-uprice-match', label: '발주단가매칭',  icon: '🧮', page: 'order/upricematch' },
           { key: 'order-cancel',      label: '주문취소접수',  icon: '🚫', page: 'order/cancel' },
           { key: 'order-refund-confirm', label: '환불확정',   icon: '💸', page: 'order/refundconfirm' },
+        ]
+      },
+      {
+        section: '발주',
+        items: [
+          { key: 'order-prod-code',   label: '발주상품코드',  icon: '🧾', page: 'order/prodcode' },
+          { key: 'order-prod-match',  label: '상품 매칭',      icon: '🔗', page: 'order/prodmatch' },
+          { key: 'order-prod-match-result', label: '상품매칭결과', icon: '📑', page: 'order/prodmatchresult' },
+          { key: 'order-uprice',      label: '발주단가표',    icon: '💰', page: 'order/uprice' },
+          { key: 'order-uprice-match', label: '발주단가매칭',  icon: '🧮', page: 'order/upricematch' },
+          { key: 'order-uprice-match-result', label: '단가매칭결과', icon: '📊', page: 'order/upricematchresult' },
         ]
       },
       {
@@ -342,6 +355,14 @@
         PageOrderExcelUpload.render(content);
       } else if (key === 'order-uprice-match') {
         PageOrderUpriceMatch.render(content);
+      } else if (key === 'order-prod-code') {
+        PageOrderProdCode.render(content);
+      } else if (key === 'order-prod-match-result') {
+        PageOrderProdMatchResult.render(content);
+      } else if (key === 'order-uprice') {
+        PageOrderUprice.render(content);
+      } else if (key === 'order-uprice-match-result') {
+        PageOrderUpriceMatchResult.render(content);
       } else if (key === 'order-cancel') {
         PageOrderCancel.render(content);
       } else if (key === 'order-refund-confirm') {

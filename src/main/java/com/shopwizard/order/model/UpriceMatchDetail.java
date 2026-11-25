@@ -28,4 +28,6 @@ public class UpriceMatchDetail {
     private String capa;
     private Integer uprice;
     private String unitName;
+    /** 발주단가표의 사용여부(코드가 없으면 null) — 규칙 편집 화면에서 사용 중지·삭제된 코드를 알리는 데 쓴다. */
+    private Integer upriceUseYn;
 }

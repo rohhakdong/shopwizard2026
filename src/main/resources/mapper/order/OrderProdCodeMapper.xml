@@ -2,39 +2,46 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.order.mapper.OrderProdCodeMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProdCode">
-        SELECT *
-        FROM shopwizard.tOrdOrderProdCode
+    <!-- 발주상품코드(shopwizard.tOrdOrderProdCode). 상점 이름은 LEFT JOIN, 서비스/상점 제한은 상점 마스터로 건다
+         (DataScopeFilter 가 GET 의 pSvcCode/pShopCode 를 세션 값으로 고정한다). -->
+    <sql id="listWhere">
         <where>
-            <if test="pProdCode != null and pProdCode != ''">AND ProdCode LIKE CONCAT('%',#{pProdCode},'%')</if>
-            <if test="pProdName != null and pProdName != ''">AND ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
-            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
-            <if test="pCapa1 != null and pCapa1 != ''">AND Capa1 = #{pCapa1}</if>
-            <if test="pCapa2 != null and pCapa2 != ''">AND Capa2 = #{pCapa2}</if>
-            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode LIKE CONCAT('%',#{pShopCode},'%')</if>
-            <if test="pUseYn != null and (pUseYn == '1' or pUseYn == '0')">AND UseYn = #{pUseYn}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND PC.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pProdCode != null and pProdCode != ''">AND PC.ProdCode LIKE CONCAT('%',#{pProdCode},'%')</if>
+            <if test="pProdName != null and pProdName != ''">AND PC.ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
+            <if test="pKeywrd != null and pKeywrd != ''">AND PC.Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
+            <if test="pCapa1 != null and pCapa1 != ''">AND PC.Capa1 = #{pCapa1}</if>
+            <if test="pCapa2 != null and pCapa2 != ''">AND PC.Capa2 = #{pCapa2}</if>
+            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND PC.MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
+            <if test="pUseYn != null and (pUseYn == '1' or pUseYn == '0')">AND PC.UseYn = #{pUseYn}</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderProdCode">
+        SELECT PC.*, S.ShopName AS ShopName
+        FROM shopwizard.tOrdOrderProdCode PC
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = PC.ShopCode
+        <include refid="listWhere"/>
+        ORDER BY PC.ShopCode, PC.ProdCode, PC.MatchProdCode
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tOrdOrderProdCode
-        <where>
-            <if test="pProdCode != null and pProdCode != ''">AND ProdCode LIKE CONCAT('%',#{pProdCode},'%')</if>
-            <if test="pProdName != null and pProdName != ''">AND ProdName LIKE CONCAT('%',#{pProdName},'%')</if>
-            <if test="pKeywrd != null and pKeywrd != ''">AND Keywrd LIKE CONCAT('%',#{pKeywrd},'%')</if>
-            <if test="pCapa1 != null and pCapa1 != ''">AND Capa1 = #{pCapa1}</if>
-            <if test="pCapa2 != null and pCapa2 != ''">AND Capa2 = #{pCapa2}</if>
-            <if test="pMatchProdCode != null and pMatchProdCode != ''">AND MatchProdCode LIKE CONCAT('%',#{pMatchProdCode},'%')</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode LIKE CONCAT('%',#{pShopCode},'%')</if>
-            <if test="pUseYn != null and (pUseYn == '1' or pUseYn == '0')">AND UseYn = #{pUseYn}</if>
-        </where>
+        FROM shopwizard.tOrdOrderProdCode PC
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = PC.ShopCode
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderProdCode">
-        SELECT * FROM shopwizard.tOrdOrderProdCode WHERE MatchProdCode = #{matchProdCode}
+        SELECT PC.*, S.ShopName AS ShopName
+        FROM shopwizard.tOrdOrderProdCode PC
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = PC.ShopCode
+        WHERE PC.MatchProdCode = #{matchProdCode}
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.order.model.OrderProdCode">
@@ -47,10 +54,11 @@
         )
     </insert>
 
+    <!-- 키워드·용량(= MatchProdCode 의 재료)은 바꾸지 않는다(레거시와 같음) -->
     <update id="update" parameterType="com.shopwizard.order.model.OrderProdCode">
         UPDATE shopwizard.tOrdOrderProdCode SET
             ShopCode = #{shopCode}, ProdCode = #{prodCode}, ProdName = #{prodName}, UseYn = #{useYn},
-            ResultType = #{resultType}, ResultMessag = #{resultMessag}, State = #{state}, Remark = #{remark},
+            ResultType = #{resultType}, ResultMessag = #{resultMessag},
             ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE MatchProdCode = #{matchProdCode}
     </update>

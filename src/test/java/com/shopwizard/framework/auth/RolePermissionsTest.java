@@ -139,4 +139,30 @@ class RolePermissionsTest {
         assertFalse(p.full());
         assertFalse(p.view().contains("adjust"));
     }
+
+    @Test
+    void 발주_메뉴의_레거시_화면은_새_발주_화면에_그대로_이어진다() {
+        RolePermissions p = RolePermissions.compute(
+                List.of(
+                        menu("1012001000000", "/wizardn/order/wOrdOrderUpriceList.wzn"),
+                        menu("1012002000000", "/wizardn/order/wOrdOrderProdCodeList.wzn"),
+                        menu("1012003000000", "/wizardn/order/wOrdOrderProdMatchList.wzn"),
+                        menu("1012004000000", "/wizardn/order/wOrdOrderUpriceMatchList.wzn")),
+                List.of(
+                        functn("1012002000000", "/wizardn/order/xOrdOrderProdCodeInsert.wzn"),
+                        functn("1012004000000", "/wizardn/order/xOrdOrderUpriceMatchUpdate.wzn")));
+
+        // 발주단가표는 자기 화면만 — 발주단가매칭 작업 화면과는 더 이상 권한을 공유하지 않는다.
+        assertTrue(p.view().contains("order-uprice"));
+        assertFalse(p.write().contains("order-uprice"));
+        // 발주상품코드
+        assertTrue(p.view().contains("order-prod-code"));
+        assertTrue(p.write().contains("order-prod-code"));
+        // 발주상품매칭 = 상품 매칭 작업 화면 + 상품매칭결과 (조회 기능만 있으면 쓰기는 없다)
+        assertTrue(p.view().containsAll(List.of("order-prod-match", "order-prod-match-result")));
+        assertFalse(p.write().contains("order-prod-match-result"));
+        // 발주단가매칭 = 발주단가매칭 작업 화면 + 단가매칭결과
+        assertTrue(p.view().containsAll(List.of("order-uprice-match", "order-uprice-match-result")));
+        assertTrue(p.write().containsAll(List.of("order-uprice-match", "order-uprice-match-result")));
+    }
 }

@@ -15,6 +15,9 @@ public interface ProdCodeMatchMapper {
     int update(ProdCodeMatch prodCodeMatch);
     int delete(ProdCodeMatch prodCodeMatch);
 
+    /** 이 상품코드의 판매 상품(shopion.tPrdProd)이 있는가 — 등록·수정 검증. */
+    int countProd(@Param("prodCode") String prodCode);
+
     /** 실제 PK 는 (ProdName, ProdOption) 복합키. 상품명+옵션으로 매칭 규칙 1건 조회. */
     ProdCodeMatch selectByNameOption(@Param("prodName") String prodName, @Param("prodOption") String prodOption);
 

@@ -60,6 +60,48 @@
         ORDER BY UM.MatchSeq
     </select>
 
+    <!-- 단가매칭결과 — 규칙(상품명+옵션)별로 묶은 목록. 원가 합계는 출고지시(selectPriced)와 같이 "사용 중인 코드"만 센다. -->
+    <sql id="ruleWhere">
+        <where>
+            <if test="pProdName != null and pProdName != ''">AND UM.ProdName LIKE CONCAT('%', #{pProdName}, '%')</if>
+            <if test="pItemName != null and pItemName != ''">AND UM.ItemName LIKE CONCAT('%', #{pItemName}, '%')</if>
+        </where>
+    </sql>
+
+    <select id="selectRules" parameterType="map" resultType="map">
+        SELECT UM.ProdName AS prodName, UM.ItemName AS itemName, COUNT(*) AS lineCnt,
+               GROUP_CONCAT(CONCAT(UM.MatchUpriceCode, ' x ', UM.Qty) ORDER BY UM.MatchSeq SEPARATOR ' + ') AS composition,
+               SUM(CASE WHEN U.MatchUpriceCode IS NOT NULL AND U.UseYn = 1 THEN UM.Qty * U.Uprice ELSE 0 END) AS totalBuy,
+               SUM(CASE WHEN U.MatchUpriceCode IS NULL OR U.UseYn &lt;&gt; 1 THEN 1 ELSE 0 END) AS invalidCnt,
+               CAST(MAX(UM.RegistDate) AS CHAR) AS registDate, MAX(UM.RegistName) AS registName
+        FROM shopwizard.tOrdUpriceMatch UM
+        LEFT OUTER JOIN shopwizard.tOrdOrderUprice U ON U.MatchUpriceCode = UM.MatchUpriceCode
+        <include refid="ruleWhere"/>
+        GROUP BY UM.ProdName, UM.ItemName
+        ORDER BY MAX(UM.RegistDate) DESC, UM.ProdName, UM.ItemName
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
+    </select>
+
+    <select id="selectRuleCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT 1 FROM shopwizard.tOrdUpriceMatch UM
+            <include refid="ruleWhere"/>
+            GROUP BY UM.ProdName, UM.ItemName
+        ) g
+    </select>
+
+    <select id="selectRuleLines" resultType="com.shopwizard.order.model.UpriceMatchDetail">
+        SELECT UM.ProdName, UM.ItemName, UM.MatchSeq, UM.MatchUpriceCode, UM.Qty,
+               U.Keywrd, U.Capa, U.Uprice, U.UnitName, U.UseYn AS UpriceUseYn
+        FROM shopwizard.tOrdUpriceMatch UM
+        LEFT OUTER JOIN shopwizard.tOrdOrderUprice U ON U.MatchUpriceCode = UM.MatchUpriceCode
+        WHERE UM.ProdName = #{prodName} AND UM.ItemName = #{itemName}
+        ORDER BY UM.MatchSeq
+    </select>
+
     <delete id="deleteByProdItem">
         DELETE FROM shopwizard.tOrdUpriceMatch WHERE ProdName = #{prodName} AND ItemName = #{itemName}
     </delete>

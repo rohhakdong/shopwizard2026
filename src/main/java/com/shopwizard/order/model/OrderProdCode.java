@@ -24,4 +24,7 @@ public class OrderProdCode {
     private String changeId;
     private String changeName;
     private String changeDate;
+
+    // 조회 전용(상점 마스터 조인)
+    private String shopName;
 }
