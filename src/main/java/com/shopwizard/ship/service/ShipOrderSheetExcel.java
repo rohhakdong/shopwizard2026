@@ -105,7 +105,7 @@ public final class ShipOrderSheetExcel {
                     num(r.get("salePrice")) + num(r.get("nvPrice")),
                     r.get("recverName"), r.get("recverPhoneNo"), r.get("recverMobileNo"), r.get("recverZipcode"), r.get("recverAddr"),
                     r.get("orderMemo"), r.get("deliMemo"),
-                    qty > 0 ? buy / qty : 0, buy, num(r.get("deliFeeAmt")), r.get("deliFeeType"), r.get("chnlName"),
+                    qty > 0 ? buy / qty : 0, buy, num(r.get("deliFeeAmt")), deliType(r.get("deliFeeType")), r.get("chnlName"),
                     bundled ? "합배송" : ""};
             Row row = sheet.createRow(rowNo++);
             for (int i = 0; i < values.length; i++) {
@@ -141,6 +141,17 @@ public final class ShipOrderSheetExcel {
             candidate = (name.length() + suffix.length() > 31 ? name.substring(0, 31 - suffix.length()) : name) + suffix;
         }
         return candidate;
+    }
+
+    /** 배송유형: 샵링커 수집분은 0/1/2 로 들어 있어 한글(무료/선불/착불)로 바꿔 출력한다. */
+    static String deliType(Object v) {
+        String t = str(v).trim();
+        return switch (t) {
+            case "0" -> "무료";
+            case "1" -> "선불";
+            case "2" -> "착불";
+            default -> t;
+        };
     }
 
     private static String day(String dt) { return dt.length() >= 10 ? dt.substring(0, 10) : dt; }

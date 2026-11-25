@@ -81,7 +81,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/company/shop/me",
                         "/order/orderprod/shop/list",
-                        "/order/orderprod/shop/list/count"
+                        "/order/orderprod/shop/list/count",
+                        "/vendor/shop/**"   // 업체 발주 목록·발주서 다운로드
                 );
 
         // 창고(거래처) 계정 API 인증 체크: 창고(WAREHS)로 로그인한 서버 세션 필요
@@ -89,7 +90,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 접근할 수 없다. 현재 범위는 본인 정보 조회까지 (로그인 + 내 정보).
         registry.addInterceptor(new AuthInterceptor(AuthSession.Type.WAREHS))
                 .addPathPatterns(
-                        "/company/warehs/me"
+                        "/company/warehs/me",
+                        "/vendor/warehs/**"   // 창고 발주 목록·발주서 다운로드
                 );
     }
 }

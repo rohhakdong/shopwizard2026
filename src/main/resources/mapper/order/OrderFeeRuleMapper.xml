@@ -2,50 +2,82 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.order.mapper.OrderFeeRuleMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderFeeRule">
-        SELECT *
-        FROM shopwizard.tOrdOrderFeeRule
+    <!-- 배송비·판촉비 규칙(shopwizard.tOrdOrderFeeRule). 서비스 제한은 규칙의 상점 마스터로 건다(DataScopeFilter 가 GET 의 pSvcCode/pShopCode 를 고정). -->
+    <sql id="cols">
+        R.RuleNo, R.ShopCode, S.ShopName AS ShopName, IFNULL(R.ChnlCode, '') AS ChnlCode, C.ChnlName AS ChnlName,
+        IFNULL(R.ProdName, '') AS ProdName, IFNULL(R.DealName, '') AS DealName,
+        R.OrderQtyStart, R.OrderQtyEnd, R.OrderAmtStart, R.OrderAmtEnd,
+        R.DeliFee, R.DeliFeeSect, R.PromotFee, R.ChnlFeeRate,
+        R.State, R.Remark, R.RegistId, R.RegistName, CAST(R.RegistDate AS CHAR) AS RegistDate,
+        R.ChangeId, R.ChangeName, CAST(R.ChangeDate AS CHAR) AS ChangeDate
+    </sql>
+
+    <sql id="from">
+        FROM shopwizard.tOrdOrderFeeRule R
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = R.ShopCode
+        LEFT OUTER JOIN shopwizard.tCmpChnl C ON C.ChnlCode = R.ChnlCode
+    </sql>
+
+    <sql id="listWhere">
         <where>
-            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
-            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
+            <if test="pRuleNo != null and pRuleNo != '' and pRuleNo.toString().matches('^[0-9]+$')">AND R.RuleNo = #{pRuleNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND R.ShopCode = #{pShopCode}</if>
+            <if test="pChnlCode != null and pChnlCode != ''">AND R.ChnlCode = #{pChnlCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pProdName != null and pProdName != ''">AND R.ProdName LIKE CONCAT('%', #{pProdName}, '%')</if>
+            <if test="pDealName != null and pDealName != ''">AND R.DealName LIKE CONCAT('%', #{pDealName}, '%')</if>
+            <if test="pDeliFeeSect != null and pDeliFeeSect != ''">AND R.DeliFeeSect = #{pDeliFeeSect}</if>
         </where>
-        <if test="pPageSize != null">LIMIT #{pPageOffset}, #{pPageSize}</if>
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.order.model.OrderFeeRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        <include refid="listWhere"/>
+        ORDER BY R.RuleNo DESC
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
+        </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tOrdOrderFeeRule
-        <where>
-            <if test="pRuleNo != null and pRuleNo != ''">AND RuleNo = #{pRuleNo}</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
-            <if test="pChnlCode != null and pChnlCode != ''">AND ChnlCode = #{pChnlCode}</if>
-        </where>
+        <include refid="from"/>
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderFeeRule">
-        SELECT * FROM shopwizard.tOrdOrderFeeRule
-        WHERE RuleNo = #{ruleNo}
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE R.RuleNo = #{ruleNo}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.order.model.OrderFeeRule">
+    <select id="selectByShop" resultType="com.shopwizard.order.model.OrderFeeRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE R.ShopCode = #{shopCode}
+        ORDER BY R.RuleNo
+    </select>
+
+    <insert id="insert" parameterType="com.shopwizard.order.model.OrderFeeRule" useGeneratedKeys="true" keyProperty="ruleNo" keyColumn="RuleNo">
         INSERT INTO shopwizard.tOrdOrderFeeRule (
-            RuleNo, ShopCode, ChnlCode, ProdCode, ProdName, DealName,
+            ShopCode, ChnlCode, ProdName, DealName,
             OrderQtyStart, OrderQtyEnd, OrderAmtStart, OrderAmtEnd, DeliFee,
             DeliFeeSect, PromotFee, ChnlFeeRate, State, Remark,
-            RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
+            RegistId, RegistName, RegistDate
         ) VALUES (
-            #{ruleNo}, #{shopCode}, #{chnlCode}, #{prodCode}, #{prodName}, #{dealName},
+            #{shopCode}, #{chnlCode}, #{prodName}, #{dealName},
             #{orderQtyStart}, #{orderQtyEnd}, #{orderAmtStart}, #{orderAmtEnd}, #{deliFee},
             #{deliFeeSect}, #{promotFee}, #{chnlFeeRate}, #{state}, #{remark},
-            #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
+            #{registId}, #{registName}, NOW()
         )
     </insert>
 
     <update id="update" parameterType="com.shopwizard.order.model.OrderFeeRule">
         UPDATE shopwizard.tOrdOrderFeeRule SET
-            ShopCode = #{shopCode}, ChnlCode = #{chnlCode}, ProdCode = #{prodCode}, ProdName = #{prodName},
-            DealName = #{dealName}, OrderQtyStart = #{orderQtyStart}, OrderQtyEnd = #{orderQtyEnd},
+            ShopCode = #{shopCode}, ChnlCode = #{chnlCode}, ProdName = #{prodName}, DealName = #{dealName},
+            OrderQtyStart = #{orderQtyStart}, OrderQtyEnd = #{orderQtyEnd},
             OrderAmtStart = #{orderAmtStart}, OrderAmtEnd = #{orderAmtEnd}, DeliFee = #{deliFee},
             DeliFeeSect = #{deliFeeSect}, PromotFee = #{promotFee}, ChnlFeeRate = #{chnlFeeRate},
             State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
@@ -55,5 +87,13 @@
     <delete id="delete" parameterType="com.shopwizard.order.model.OrderFeeRule">
         DELETE FROM shopwizard.tOrdOrderFeeRule WHERE RuleNo = #{ruleNo}
     </delete>
+
+    <select id="countShop" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <select id="countChnl" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpChnl WHERE ChnlCode = #{chnlCode}
+    </select>
 
 </mapper>

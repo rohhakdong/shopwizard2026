@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.LegacyUpriceMigrationMapper">
+
+    <!-- 레거시 구성 행 + 원본 주문 라인(레거시는 OrderProdNo=1 만 가정했다) + 발주단가표(사용 여부·발주상품명칭). -->
+    <select id="selectCandidates" resultType="map">
+        SELECT C.OrderNo AS orderNo, C.OrderProdNo AS seq,
+               IFNULL(OP.ProdName, '') AS prodName, IFNULL(OP.ItemName, '') AS itemName, OP.ProdQty AS orderQty,
+               C.MatchProdCode AS code, C.TotalQty AS totalQty,
+               U.UseYn AS upriceUseYn, U.OrderProdName AS upriceName
+        FROM shopwizard.tOrdCurrOrderProd C
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = C.OrderNo AND OP.OrderProdNo = 1
+        LEFT OUTER JOIN shopwizard.tOrdOrderUprice U ON U.MatchUpriceCode = C.MatchProdCode
+        ORDER BY C.OrderNo, C.OrderProdNo
+    </select>
+
+    <select id="selectExistingRules" resultType="map">
+        SELECT ProdName AS prodName, ItemName AS itemName, MatchSeq AS matchSeq, MatchUpriceCode AS code, Qty AS qty
+        FROM shopwizard.tOrdUpriceMatch
+        ORDER BY ProdName, ItemName, MatchSeq
+    </select>
+
+    <select id="selectUnmappableHeaders" resultType="map">
+        SELECT M.ChnlName AS chnlName, LEFT(M.ProdName, 80) AS prodName, LEFT(IFNULL(M.PrevProdOption, ''), 60) AS prevOption, M.OrderNo AS orderNo
+        FROM shopwizard.tOrdOrderUpriceMatch M
+        WHERE NOT EXISTS (SELECT 1 FROM shopwizard.tOrdCurrOrderProd C WHERE C.OrderNo = M.OrderNo)
+        ORDER BY M.RegistDate DESC
+    </select>
+
+    <select id="countLegacyHeaders" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tOrdOrderUpriceMatch
+    </select>
+
+    <select id="countKey" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tOrdUpriceMatch WHERE ProdName = #{prodName} AND ItemName = #{itemName}
+    </select>
+
+</mapper>

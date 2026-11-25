@@ -1,6 +1,7 @@
 package com.shopwizard.ship.web;
 
 import com.shopwizard.framework.auth.AuthSession;
+import com.shopwizard.order.service.OrderFeeApplyService;
 import com.shopwizard.order.web.OrderMasterGuard;
 import com.shopwizard.ship.service.ShipAutoOrderService;
 import com.shopwizard.ship.service.ShipDataBuildService;
@@ -34,6 +35,7 @@ public class ShipAutoOrderController {
 
     private final ShipAutoOrderService service;
     private final ShipDataBuildService buildService;
+    private final OrderFeeApplyService feeApplyService;
     private final OrderMasterGuard guard;
 
     /** 현황 카드: 지불완료·상품 미매칭·발주단가 미매칭·출고지시·발주서 대기. */
@@ -41,6 +43,15 @@ public class ShipAutoOrderController {
     public Map<String, Object> summary(@RequestParam("pShopCode") String shopCode, HttpServletRequest request) {
         guard.requireShop(request, shopCode);
         return service.summary(shopCode);
+    }
+
+    /** 수수료 규칙 적용 — 지불완료 라인의 배송비·판촉비·공급가를 배송비·판촉비 규칙대로 고친다(출고지시 전에 실행). */
+    @PostMapping("/apply-fee")
+    public OrderFeeApplyService.Result applyFee(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        String shopCode = body == null ? null : body.get("shopCode");
+        guard.requireShop(request, shopCode);
+        AuthSession.Actor actor = AuthSession.actor(request);
+        return feeApplyService.apply(shopCode, actor == null ? null : actor.loginId(), actor == null ? null : actor.name());
     }
 
     /** 배송 데이터 생성(출고지·사은품·묶음배송·출력순서). 몇 번을 다시 실행해도 같은 결과다. */

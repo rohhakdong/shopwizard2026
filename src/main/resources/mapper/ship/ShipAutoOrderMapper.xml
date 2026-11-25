@@ -136,6 +136,7 @@
               WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '지불완료'
                 AND NOT EXISTS (SELECT 1 FROM shopwizard.tOrdUpriceMatch UM
                                 WHERE UM.ProdName = IFNULL(OP.ProdName, '') AND UM.ItemName = IFNULL(OP.ItemName, ''))) AS upriceUnmatchedCnt,
+            (SELECT COUNT(*) FROM shopwizard.tOrdOrderFeeRule FR WHERE FR.ShopCode = #{shopCode}) AS feeRuleCnt,
             (SELECT COUNT(*) FROM shopion.tOrdOrderProd OP WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '출고지시') AS issuedCnt,
             (SELECT COUNT(*) FROM (
                 SELECT DISTINCT SD.OrderNo, SD.OrderProdNo

@@ -190,4 +190,15 @@ class RolePermissionsTest {
         assertTrue(check.view().contains("ship-direct-check"));   // 발주 목록은 발주확인 화면 안에 있다
         assertFalse(check.view().contains("ship-auto-order"));
     }
+
+    @Test
+    void 배송비판촉비규칙_레거시_메뉴는_수수료규칙_화면_하나에_이어진다() {
+        RolePermissions p = RolePermissions.compute(
+                List.of(menu("1012008000000", "/wizardn/order/wOrdOrderFeeRuleList.wzn")),
+                List.of(functn("1012008000000", "/wizardn/order/xOrdOrderFeeRuleInsert.wzn")));
+
+        assertTrue(p.view().contains("order-fee-rule"));
+        assertTrue(p.write().contains("order-fee-rule"));
+        assertFalse(p.view().contains("order-gift-rule"));
+    }
 }

@@ -83,10 +83,16 @@
         <div id="pagination" style="margin-top:14px"></div>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card-header">발주 목록 · 발주서 받기</div>
+      <div class="card-body" id="vendorSheets"></div>
+    </div>
   </div>
 
   <script src="/js/api.js"></script>
   <script src="/js/shop-auth.js"></script>
+  <script src="/js/vendor-sheets.js"></script>
   <script>
     const PAGE_SIZE = 20;
     let currentPage = 1;
@@ -122,6 +128,7 @@
       document.getElementById('searchBtn').addEventListener('click', () => { currentPage = 1; loadList(); });
 
       loadList();
+      VendorSheets.mount(document.getElementById('vendorSheets'), { base: '/vendor/shop' });
     }
 
     function renderInfo(info) {

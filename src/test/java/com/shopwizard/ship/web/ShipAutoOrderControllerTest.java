@@ -4,6 +4,7 @@ import com.shopwizard.framework.auth.AuthSession;
 import com.shopwizard.framework.auth.DataScopeGuard;
 import com.shopwizard.framework.auth.mapper.DataScopeMapper;
 import com.shopwizard.order.web.OrderMasterGuard;
+import com.shopwizard.order.service.OrderFeeApplyService;
 import com.shopwizard.ship.model.ShipCheck;
 import com.shopwizard.ship.service.ShipAutoOrderService;
 import com.shopwizard.ship.service.ShipCheckService;
@@ -31,6 +32,7 @@ class ShipAutoOrderControllerTest {
     private ShipAutoOrderService service;
     private ShipDataBuildService buildService;
     private ShipCheckService checkService;
+    private OrderFeeApplyService feeApplyService;
     private ShipAutoOrderController controller;
     private ShipCheckController checkController;
 
@@ -44,7 +46,8 @@ class ShipAutoOrderControllerTest {
         when(service.download(any(), any(), any(), any())).thenReturn(new ShipAutoOrderService.Download("a.xls", new byte[0]));
         buildService = mock(ShipDataBuildService.class);
         checkService = mock(ShipCheckService.class);
-        controller = new ShipAutoOrderController(service, buildService, guard);
+        feeApplyService = mock(OrderFeeApplyService.class);
+        controller = new ShipAutoOrderController(service, buildService, feeApplyService, guard);
         checkController = new ShipCheckController(checkService, guard);
     }
 
@@ -83,6 +86,17 @@ class ShipAutoOrderControllerTest {
         assertThrows(ResponseStatusException.class, () -> controller.sheetExcel("SHOP2", null, shop));
         assertThrows(ResponseStatusException.class, () -> controller.build(Map.of("shopCode", "SHOP2"), shop));
         verify(buildService, org.mockito.Mockito.times(1)).build(any(), any(), any());
+    }
+
+    @Test
+    void 수수료_규칙_적용도_상점_범위를_검사하고_행위자는_세션에서_읽는다() {
+        MockHttpServletRequest shop = login(SHOP);
+
+        controller.applyFee(Map.of("shopCode", "SHOP1"), shop);
+        assertThrows(ResponseStatusException.class, () -> controller.applyFee(Map.of("shopCode", "SHOP2"), shop));
+        assertThrows(ResponseStatusException.class, () -> controller.applyFee(Map.of("shopCode", "SHOP1"), login(CHNL)));
+
+        verify(feeApplyService, org.mockito.Mockito.times(1)).apply("SHOP1", "u", "사용자");
     }
 
     @Test

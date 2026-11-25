@@ -1,6 +1,6 @@
 /**
  * 자동발주 (배송 > 자동발주) — 레거시 자동발주 팝업(autoOrderWork.jsp)의 발주서 파이프라인.
- *   ① 상점 선택 + 현황  →  ② 점검(상품·발주단가 미매칭)  →  ③ 출고지시(기존 issue-batch, 발주서 행 생성)
+ *   ① 상점 선택 + 현황  →  ② 점검(상품·발주단가 미매칭)  →  ②-2 수수료 규칙 적용  →  ③ 출고지시(기존 issue-batch, 발주서 행 생성)
  *   →  ④ 배송 데이터 생성(출고지·사은품 규칙·묶음배송·출력순서)  →  ⑤ 발주서 엑셀 + 발주확인  →  ⑥ 발주 목록(다시 받기)
  *
  *   각 단계는 순서를 강제하지 않고 그 시점의 데이터로 독립 실행된다(레거시도 단계 게이트가 없었다).
@@ -59,6 +59,16 @@ const PageShipAutoOrder = (() => {
         <div class="card-header">② 점검</div>
         <div class="card-body" style="padding:12px 16px" id="aoCheck"></div>
       </div>
+      <div class="card" id="aoFeeCard" style="display:none">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>②-2 수수료 규칙 적용 <span style="font-weight:400;font-size:12px;color:var(--text-muted)">— 지불완료 주문의 배송비·판촉비·공급가를 수수료규칙대로 고칩니다(출고지시 전에)</span></span>
+          <button class="btn btn-primary" id="aoApplyFee" type="button">수수료 규칙 적용</button>
+        </div>
+        <div class="card-body" style="padding:12px 16px;font-size:12px;line-height:1.7">
+          <div id="aoFeeInfo"></div>
+          <div id="aoFeeResult" style="margin-top:6px"></div>
+        </div>
+      </div>
       <div class="card" id="aoIssueCard" style="display:none">
         <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
           <span>③ 출고지시 <span style="font-weight:400;font-size:12px;color:var(--text-muted)">— 처리하면 발주서 행이 만들어집니다(발주단가매칭 규칙 줄마다 1행)</span></span>
@@ -105,6 +115,7 @@ const PageShipAutoOrder = (() => {
     el('aoRefresh').addEventListener('click', () => { if (shopCode) loadAll(); });
     el('aoSelAll').addEventListener('click', selectAllShop);
     el('aoIssue').addEventListener('click', issueSelected);
+    el('aoApplyFee').addEventListener('click', applyFee);
     el('aoBuild').addEventListener('click', buildShipData);
     el('aoDownload').addEventListener('click', () => download({ pShopCode: shopCode }));
     el('aoConfirm').addEventListener('click', confirmOrders);
@@ -126,8 +137,9 @@ const PageShipAutoOrder = (() => {
     selected.clear();
     issuePage = 1;
     sheetPage = 1;
-    ['aoCheckCard', 'aoIssueCard', 'aoBuildCard', 'aoSheetCard', 'aoHistoryCard'].forEach(id => { el(id).style.display = shopCode ? '' : 'none'; });
+    ['aoCheckCard', 'aoFeeCard', 'aoIssueCard', 'aoBuildCard', 'aoSheetCard', 'aoHistoryCard'].forEach(id => { el(id).style.display = shopCode ? '' : 'none'; });
     el('aoBuildResult').innerHTML = '';
+    el('aoFeeResult').innerHTML = '';
     if (!shopCode) { el('aoSummary').innerHTML = ''; return; }
     loadAll();
   }
@@ -166,6 +178,10 @@ const PageShipAutoOrder = (() => {
     el('aoCheck').innerHTML = items.length
       ? items.map(h => `<div style="font-size:12px;line-height:2">⚠ ${h}</div>`).join('')
       : '<div style="font-size:12px;color:var(--text-muted)">점검할 미매칭 항목이 없습니다.</div>';
+    el('aoFeeInfo').innerHTML = num(summary.feeRuleCnt) > 0
+      ? `이 상점의 수수료규칙 <b>${won(summary.feeRuleCnt)}건</b>을 규칙 번호 순으로 적용합니다(나중 규칙이 앞 규칙을 덮어쓰고, 사용 여부와 상관없이 전부 적용). <button class="btn btn-ghost" data-go="order-fee-rule" data-label="수수료규칙" type="button" style="font-size:11px">수수료규칙 열기</button>`
+      : '이 상점에는 수수료규칙이 없습니다 — 적용해도 바뀌는 것이 없습니다. <button class="btn btn-ghost" data-go="order-fee-rule" data-label="수수료규칙" type="button" style="font-size:11px">수수료규칙 열기</button>';
+    el('aoFeeInfo').querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => goto(b.dataset.go, b.dataset.label)));
     el('aoCheck').querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => goto(b.dataset.go, b.dataset.label)));
   }
 
@@ -255,6 +271,19 @@ const PageShipAutoOrder = (() => {
         loadAll();
       } catch (e) { UI.toast(e.message, 'error'); updateIssueButton(); }
     });
+  }
+
+  // ── ②-2 수수료 규칙 적용 ───────────────────────────────────────────
+  async function applyFee() {
+    const btn = el('aoApplyFee');
+    btn.disabled = true;
+    try {
+      const r = await Api.post('/ship/auto-order/apply-fee', { shopCode });
+      el('aoFeeResult').innerHTML = `<span style="color:var(--success,#2e7d32)">✔ 완료</span> — 규칙 <b>${won(r.rules)}</b>건, 대상 지불완료 라인 <b>${won(r.lines)}</b>건 중 <b>${won(r.changed)}</b>건 변경
+        (묶음 배송비 0 처리 ${won(r.bundleZeroed)}건${r.skipped ? `, 그 사이 상태가 바뀌어 건너뜀 ${won(r.skipped)}건` : ''})`;
+      UI.toast('수수료 규칙을 적용했습니다', 'success');
+      loadSummary();
+    } catch (e) { UI.toast(e.message, 'error'); } finally { btn.disabled = false; }
   }
 
   // ── ④ 배송 데이터 생성 ─────────────────────────────────────────────

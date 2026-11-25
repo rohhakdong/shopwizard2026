@@ -80,4 +80,41 @@
         GROUP BY SD.ShopCode
     </select>
 
+    <sql id="vendorWhere">
+        <where>
+            C.ShopCode IN <foreach collection="shopCodes" item="sc" open="(" separator="," close=")">#{sc}</foreach>
+            <if test="shopCode != null and shopCode != ''">AND C.ShopCode = #{shopCode}</if>
+            <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+                <![CDATA[
+                AND C.ShipCheckDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d')
+                AND C.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+                ]]>
+            </if>
+        </where>
+    </sql>
+
+    <!-- 업체(상점·창고) 화면용 발주 목록. offset/limit 은 정수 인자라 ${} 로 안전하게 치환한다. -->
+    <select id="selectListByShops" resultType="com.shopwizard.ship.model.ShipCheck">
+        SELECT C.ShipCheckNo, C.ShopCode, S.ShopName AS ShopName, C.ShipCheckDesc, CAST(C.ShipCheckDate AS CHAR) AS ShipCheckDate,
+               C.OrderCount, C.PrintCount
+        FROM shopwizard.tShpShipCheck C
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = C.ShopCode
+        <include refid="vendorWhere"/>
+        ORDER BY C.ShipCheckNo DESC
+        LIMIT ${offset}, ${limit}
+    </select>
+
+    <select id="selectCountByShops" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tShpShipCheck C
+        <include refid="vendorWhere"/>
+    </select>
+
+    <select id="selectShopsByWarehs" resultType="map">
+        SELECT S.ShopCode AS shopCode, S.ShopName AS shopName
+        FROM shopwizard.tCmpShopWarehs SW
+        INNER JOIN shopwizard.tCmpShop S ON S.ShopCode = SW.ShopCode
+        WHERE SW.WarehsCode = #{warehsCode} AND SW.State = 1 AND S.State = 1
+        ORDER BY S.ShopName
+    </select>
+
 </mapper>

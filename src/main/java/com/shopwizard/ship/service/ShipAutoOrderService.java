@@ -63,6 +63,12 @@ public class ShipAutoOrderService {
      */
     @Transactional(rollbackFor = Exception.class)
     public Download download(String shopCode, Integer shipCheckNo, String actorId, String actorName) {
+        return download(shopCode, shipCheckNo, actorId, actorName, true);
+    }
+
+    /** bumpPrintCount=false 는 업체(상점·창고) 다운로드 — 관리자의 출력 횟수 기록을 업체가 올리지 않게 한다. */
+    @Transactional(rollbackFor = Exception.class)
+    public Download download(String shopCode, Integer shipCheckNo, String actorId, String actorName, boolean bumpPrintCount) {
         if (shipCheckNo == null) {
             String shop = requireShop(shopCode);
             List<Map<String, Object>> rows = mapper.selectSheetRows(shop, null, null, null);
@@ -71,11 +77,13 @@ public class ShipAutoOrderService {
         ShipCheck header = shipCheckService.find(shipCheckNo);
         if (header == null) throw new ResponseStatusException(NOT_FOUND, "발주 목록을 찾을 수 없습니다.");
         List<Map<String, Object>> rows = mapper.selectSheetRows(header.getShopCode(), header.getShipCheckDate(), null, null);
-        ShipCheck bump = new ShipCheck();
-        bump.setShipCheckNo(shipCheckNo);
-        bump.setChangeId(actorId);
-        bump.setChangeName(actorName);
-        shipCheckService.updatePrintCount(bump);
+        if (bumpPrintCount) {
+            ShipCheck bump = new ShipCheck();
+            bump.setShipCheckNo(shipCheckNo);
+            bump.setChangeId(actorId);
+            bump.setChangeName(actorName);
+            shipCheckService.updatePrintCount(bump);
+        }
         String name = header.getShipCheckDesc() == null || header.getShipCheckDesc().isBlank() ? "발주서_" + shipCheckNo : header.getShipCheckDesc();
         return new Download(sanitize(name) + ".xls", ShipOrderSheetExcel.build(rows));
     }

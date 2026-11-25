@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.order.mapper.OrderFeeApplyMapper">
+
+    <!-- 수수료 규칙을 적용할 라인: 상점에 배정된(OP.ShopCode) 지불완료 라인. 결제 행이 없는 주문도 빠지지 않게 주문·채널만 조인한다. -->
+    <select id="selectPayCompleteLines" resultType="com.shopwizard.order.model.FeeLine">
+        SELECT OP.OrderNo, OP.OrderProdNo, O.ChnlCode, Ch.ChnlName, OP.ProdName, OP.ItemName, OP.DealName,
+               OP.ProdQty, OP.SalePrice, OP.SupplyPrice, OP.DeliFeeType, OP.DeliFeeAmt, OP.PromotFeeAmt,
+               CONCAT_WS(' ', O.RecverAddr1, O.RecverAddr2) AS RecverAddr, O.RecverName
+        FROM shopion.tOrdOrderProd OP
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = OP.OrderNo
+        LEFT OUTER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = O.ChnlCode
+        WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '지불완료'
+        ORDER BY OP.OrderNo, OP.OrderProdNo
+    </select>
+
+</mapper>
