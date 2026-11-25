@@ -17,12 +17,15 @@ public interface ShipDirectMapper {
     int insert(ShipDirect shipDirect);
     int insertShipDirect(Map<String, Object> params);
     int insertShipDirectPrint(Map<String, Object> params);
+    int insertShipDirectPrintPart(Map<String, Object> params);
+    int deletePendingPrint(Map<String, Object> params);
     int insertShipDirectPrintByMatching(Map<String, Object> params);
     int checkShipDirectPrintByMatchingSocial(Map<String, Object> params);
     int insertShipDirectPrintByMatchingSocial(Map<String, Object> params);
     int insertShipDirectPrintWithGift(Map<String, Object> params);
     int update(Map<String, Object> params);
     int updatePrint(Map<String, Object> params);
+    int confirmPrint(Map<String, Object> params);
     int updatePrintSortName(Map<String, Object> params);
     int updateRefundCancel(Map<String, Object> params);
     int updateInvoice(Map<String, Object> params);

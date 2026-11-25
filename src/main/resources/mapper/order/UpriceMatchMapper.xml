@@ -53,7 +53,7 @@
 
     <select id="selectPriced" resultType="com.shopwizard.order.model.UpriceMatchDetail">
         SELECT UM.ProdName, UM.ItemName, UM.MatchSeq, UM.MatchUpriceCode, UM.Qty,
-               U.Keywrd, U.Capa, U.Uprice, U.UnitName
+               U.Keywrd, U.Capa, U.Uprice, U.UnitName, U.OrderProdName
         FROM shopwizard.tOrdUpriceMatch UM
         INNER JOIN shopwizard.tOrdOrderUprice U ON U.MatchUpriceCode = UM.MatchUpriceCode AND U.UseYn = 1
         WHERE UM.ProdName = #{prodName} AND UM.ItemName = #{itemName}

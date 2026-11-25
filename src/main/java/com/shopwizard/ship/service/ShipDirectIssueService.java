@@ -23,7 +23,8 @@ import java.util.Map;
  *    그 시점 발주단가로 BuyPrice/마진을 다시 계산해 원본 라인에 반영한다(항상 최신 규칙 적용).
  * 1) tShpShipDirect 로 주문데이터 이전(OrderState='출고지시', ShipDirectDate=NOW() 로 SELECT-INSERT)
  *    — 방금 갱신한 BuyPrice 를 그대로 복사해가므로 별도 반영 작업이 필요 없다.
- * 2) 원본 tOrdOrderProd.OrderState 를 '출고지시' 로 갱신 (ShipDirectDate 도 같이 채워짐)
+ * 2) 발주서 테이블(tShpShipDirectPrint)에 구성 행 생성 — 발주단가매칭 규칙 줄마다 1행
+ * 3) 원본 tOrdOrderProd.OrderState 를 '출고지시' 로 갱신 (ShipDirectDate 도 같이 채워짐)
  *
  * <p>ShipDirectService(오케스트레이션, issueBatch)와 다른 빈으로 분리한 이유는 건별
  * {@code REQUIRES_NEW} 격리를 위해서다 — 같은 클래스 안에서 호출하면 프록시를 안 거쳐
@@ -90,6 +91,8 @@ public class ShipDirectIssueService {
             return "지불완료 상태가 아니거나 이미 출고지시 처리된 주문입니다.";
         }
 
+        insertPrintRows(op, priced, orderNo, orderProdNo, registId, registName);
+
         Map<String, Object> upd = new HashMap<>();
         upd.put("orderNo", orderNo);
         upd.put("orderProdNo", orderProdNo);
@@ -99,6 +102,40 @@ public class ShipDirectIssueService {
         orderProdMapper.updateOrderState(upd);
 
         return null;
+    }
+
+    /**
+     * 발주서(tShpShipDirectPrint) 행을 만든다 — 발주단가매칭 규칙 1줄이 구성 행 1개(OrderChangeNo=1..N).
+     * 상품명은 발주단가표의 발주상품명칭, 수량은 규칙수량 x 주문수량, 원가는 규칙수량 x 단가 x 주문수량(행 합 = 라인 BuyPrice).
+     * 금액 컬럼(판매·공급·배송비 등)은 첫 행에만 복사해 발주서 합계가 이중으로 잡히지 않게 한다.
+     * 사은품 행은 여기서 만들지 않는다 — 규칙 적용은 배송 데이터 생성(ShipDataBuildService)이 한다.
+     */
+    private void insertPrintRows(OrderProd op, List<UpriceMatchDetail> priced, Integer orderNo, Integer orderProdNo,
+                                 String registId, String registName) {
+        Map<String, Object> key = new HashMap<>();
+        key.put("orderNo", orderNo);
+        key.put("orderProdNo", orderProdNo);
+        shipDirectMapper.deletePendingPrint(key);   // 발주확인 전 행만 지운다 — 재시도 때 PK 충돌 방지
+
+        int orderQty = Math.max(1, nvl(op.getProdQty()));
+        int seq = 0;
+        for (UpriceMatchDetail d : priced) {
+            seq++;
+            long partBuy = (long) nvl(d.getQty()) * nvl(d.getUprice()) * orderQty;   // 합계는 위에서 int 범위를 확인했다
+            String name = nz(d.getOrderProdName()).isEmpty() ? nz(op.getProdName()) : nz(d.getOrderProdName());
+            if (name.length() > 255) name = name.substring(0, 255);
+
+            Map<String, Object> row = new HashMap<>(key);
+            row.put("orderChangeNo", seq);
+            row.put("orderType", "정상주문");
+            row.put("prodName", name);
+            row.put("prodQty", nvl(d.getQty()) * orderQty);
+            row.put("buyPrice", (int) partBuy);
+            row.put("moneyFactor", seq == 1 ? 1 : 0);
+            row.put("registId", registId);
+            row.put("registName", registName);
+            shipDirectMapper.insertShipDirectPrintPart(row);
+        }
     }
 
     private static String nz(String s) { return s == null ? "" : s.trim(); }

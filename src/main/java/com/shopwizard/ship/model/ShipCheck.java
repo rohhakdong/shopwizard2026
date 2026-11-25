@@ -6,6 +6,8 @@ import lombok.Data;
 public class ShipCheck {
     private Integer shipCheckNo;
     private String shopCode;
+    /** 조회 전용(tCmpShop 조인). */
+    private String shopName;
     private String shipCheckDesc;
     private String shipCheckDate;
     private Integer orderCount;

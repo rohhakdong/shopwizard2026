@@ -365,6 +365,48 @@
         AND OP.OrderState = '지불완료'
     </insert>
 
+    <!-- 발주서(Print) 구성 행 1줄. 한 주문라인이 발주단가매칭 규칙 N줄이면 OrderChangeNo=1..N 으로 N행을 만든다.
+         판매·공급·할인·배송비 등 금액은 moneyFactor=1 인 첫 행에만 복사하고 나머지는 0 (발주서 합계가 이중으로 잡히지 않게).
+         BuyPrice 는 구성 행 몫(규칙수량 x 단가 x 주문수량)이라 행마다 다르다. -->
+    <insert id="insertShipDirectPrintPart" parameterType="map">
+        INSERT INTO shopwizard.tShpShipDirectPrint (
+            OrderNo, OrderProdNo, OrderChangeNo, OrderType, ChnlCode,
+            ChnlOrderNo, ChnlOrderProdNo, SlnkOrderCode, DealName, OrderName, OrderPhoneNo, OrderMobileNo,
+            RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr,
+            DeliMemo, OrderMemo, DeliHopeDate, SupplyCode, SupplyName,
+            ShopCode, ShopName, BundleYn, StoreCode, ProdCode,
+            ShopProdCode, ProdName, ProdImg, MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode, ItemName,
+            ProdQty, VatRate, VatAmt, OfferYn, ListPrice, PrevPrice,
+            SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt,
+            SupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt,
+            CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, PromotFeeAmt,
+            OrderState, ExchngReason, ExchngReasonDetail, PayCmpletDate, ShipDirectDate,
+            OrderProdName, OrderItemName, OrderProdQty, State, RegistId, RegistName, RegistDate
+        ) SELECT
+            #{orderNo}, #{orderProdNo}, #{orderChangeNo}, #{orderType}, O.ChnlCode,
+            OP.ChnlOrderNo, OP.ChnlOrderProdNo, OP.SlnkOrderCode, OP.DealName, O.OrderName, O.OrderPhoneNo, O.OrderMobileNo,
+            O.RecverName, O.RecverPhoneNo, O.RecverMobileNo, O.RecverZipcode, CONCAT_WS(' ', O.RecverAddr1, O.RecverAddr2),
+            O.DeliMemo, O.OrderMemo, O.DeliHopeDate, OP.SupplyCode, OP.SupplyName,
+            OP.ShopCode, OP.ShopName, 0, OP.StoreCode, OP.ProdCode,
+            OP.ShopProdCode, #{prodName}, OP.ProdImg, OP.MakerName, OP.ModelName, OP.ProdUnit, OP.ProdMemo01, OP.ItemCode, '',
+            #{prodQty}, OP.VatRate, OP.VatAmt * #{moneyFactor}, 0, OP.ListPrice * #{moneyFactor}, OP.PrevPrice * #{moneyFactor},
+            OP.SalePrice * #{moneyFactor}, OP.SaleDiscntAmt * #{moneyFactor}, OP.CustCpnDiscntAmt * #{moneyFactor}, OP.ProdCpnDiscntAmt * #{moneyFactor}, OP.PointUseAmt * #{moneyFactor},
+            OP.SupplyPrice * #{moneyFactor}, #{buyPrice}, OP.NvPrice * #{moneyFactor}, OP.PvPrice * #{moneyFactor}, OP.PointSaveAmt * #{moneyFactor},
+            OP.DeliFeeAmt * #{moneyFactor}, OP.DeliFeeId, OP.DeliFeeType, OP.DeliFeeAmt * #{moneyFactor}, OP.PromotFeeAmt * #{moneyFactor},
+            '출고지시', OP.ExchngReason, OP.ExchngReasonDetail, O.PayCmpletDate, NOW(),
+            OP.ProdName, OP.ItemName, OP.ProdQty, 1, #{registId}, #{registName}, NOW()
+        FROM shopion.tOrdOrder O
+        INNER JOIN shopion.tOrdOrderProd OP ON O.OrderNo = OP.OrderNo
+        WHERE OP.OrderNo = #{orderNo}
+        AND OP.OrderProdNo = #{orderProdNo}
+    </insert>
+
+    <!-- 같은 라인의 아직 발주확인 전인 발주서 행을 지운다(재시도·재생성 때 PK 충돌 방지). 확인된 행(ShipCheckDate 있음)은 건드리지 않는다. -->
+    <delete id="deletePendingPrint" parameterType="map">
+        DELETE FROM shopwizard.tShpShipDirectPrint
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND ShipCheckDate IS NULL
+    </delete>
+
     <insert id="insertShipDirectPrint" parameterType="map">
         INSERT INTO shopwizard.tShpShipDirectPrint (
             OrderNo, OrderProdNo, OrderChangeNo, OrderType, ChnlCode,
@@ -545,6 +587,14 @@
         AND OrderChangeNo = #{orderChangeNo}
         <if test="orderState == '발주확인'">AND OrderState = '출고지시'</if>
         <if test="orderState == '배송완료'">AND OrderState = '배송시작'</if>
+    </update>
+
+    <!-- 발주확인: 한 주문라인의 발주서 행(구성·사은품 전부)을 같은 ShipCheckDate 로 확인 처리. 이미 확인된 행은 건드리지 않는다. -->
+    <update id="confirmPrint" parameterType="map">
+        UPDATE shopwizard.tShpShipDirectPrint SET
+            OrderState = '발주확인', ShipCheckDate = #{shipCheckDate},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = #{shipCheckDate}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND ShipCheckDate IS NULL
     </update>
 
     <update id="updatePrintSortName" parameterType="map">

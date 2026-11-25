@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 자동발주(배송 데이터 생성·발주서). 대상 = 원본 라인(shopion.tOrdOrderProd)이 '출고지시'이고 발주서 행이 아직 발주확인 전(ShipCheckDate IS NULL)인 것.
+     묶음배송·출력순서는 DB 의 동등 비교(대소문자·끝 공백 무시)로 그룹을 짓는다. -->
+<mapper namespace="com.shopwizard.ship.mapper.ShipAutoOrderMapper">
+
+    <sql id="pendingFrom">
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP
+            ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo AND OP.OrderState = '출고지시'
+    </sql>
+
+    <select id="selectShopName" resultType="string">
+        SELECT ShopName FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <select id="selectShopProdDesc" resultType="string">
+        SELECT ProdDesc FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+    <delete id="deletePendingGifts">
+        DELETE SD
+        <include refid="pendingFrom"/>
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL AND SD.OrderType = '사은품'
+    </delete>
+
+    <update id="updateShipPlaceAndZip">
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP
+            ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo AND OP.OrderState = '출고지시'
+        SET SD.ShipPlace = #{shipPlace}, SD.RecverZipcode = REPLACE(SD.RecverZipcode, '--', '-'),
+            SD.ChangeId = #{actorId}, SD.ChangeName = #{actorName}, SD.ChangeDate = NOW()
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+    </update>
+
+    <select id="selectPendingRows" resultType="com.shopwizard.ship.model.PrintRow">
+        SELECT SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo, SD.OrderType, SD.ChnlCode, SD.DealName,
+               SD.OrderProdName, SD.ProdName, SD.ProdQty, SD.OrderProdQty, SD.SalePrice,
+               SD.RecverAddr, SD.RecverName, CAST(SD.PayCmpletDate AS CHAR) AS PayCmpletDate
+        <include refid="pendingFrom"/>
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+        ORDER BY SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo
+    </select>
+
+    <update id="updateGiftTotals">
+        UPDATE shopwizard.tShpShipDirectPrint
+        SET GiftQty = #{giftQty}, GiftAmt = #{giftAmt}
+        WHERE OrderNo = #{orderNo} AND OrderProdNo = #{orderProdNo} AND OrderChangeNo = 1 AND ShipCheckDate IS NULL
+    </update>
+
+    <!-- 사은품 행: 앵커(구성 1번 행)의 주문·수신자 정보를 복사하고 상품은 사은품명, 원가·금액·배송비는 0. 상품코드는 비운다(재고·정산에 잡히지 않게). -->
+    <insert id="insertGiftRow">
+        INSERT INTO shopwizard.tShpShipDirectPrint (
+            OrderNo, OrderProdNo, OrderChangeNo, OrderType, ChnlCode,
+            ChnlOrderNo, ChnlOrderProdNo, SlnkOrderCode, DealName, OrderName, OrderPhoneNo, OrderMobileNo,
+            RecverName, RecverPhoneNo, RecverMobileNo, RecverZipcode, RecverAddr,
+            DeliMemo, OrderMemo, DeliHopeDate, SupplyCode, SupplyName,
+            ShopCode, ShopName, BundleYn, StoreCode, ProdCode,
+            ShopProdCode, ProdName, ProdImg, MakerName, ModelName, ProdUnit, ProdMemo01, ItemCode, ItemName,
+            ProdQty, VatRate, VatAmt, OfferYn, ListPrice, PrevPrice,
+            SalePrice, SaleDiscntAmt, CustCpnDiscntAmt, ProdCpnDiscntAmt, PointUseAmt,
+            SupplyPrice, BuyPrice, NvPrice, PvPrice, PointSaveAmt,
+            CustChrgDeliFee, DeliFeeId, DeliFeeType, DeliFeeAmt, PromotFeeAmt,
+            OrderState, ExchngReason, ExchngReasonDetail, PayCmpletDate, ShipDirectDate, ShipPlace,
+            OrderProdName, OrderItemName, OrderProdQty, State, RegistId, RegistName, RegistDate
+        ) SELECT
+            SD.OrderNo, SD.OrderProdNo,
+            (SELECT IFNULL(MAX(P2.OrderChangeNo), 0) + 1 FROM shopwizard.tShpShipDirectPrint P2 WHERE P2.OrderNo = SD.OrderNo AND P2.OrderProdNo = SD.OrderProdNo),
+            '사은품', SD.ChnlCode,
+            SD.ChnlOrderNo, SD.ChnlOrderProdNo, SD.SlnkOrderCode, SD.DealName, SD.OrderName, SD.OrderPhoneNo, SD.OrderMobileNo,
+            SD.RecverName, SD.RecverPhoneNo, SD.RecverMobileNo, SD.RecverZipcode, SD.RecverAddr,
+            SD.DeliMemo, SD.OrderMemo, SD.DeliHopeDate, SD.SupplyCode, SD.SupplyName,
+            SD.ShopCode, SD.ShopName, SD.BundleYn, SD.StoreCode, '',
+            '', #{giftName}, '', SD.MakerName, SD.ModelName, SD.ProdUnit, SD.ProdMemo01, SD.ItemCode, '',
+            #{giftQty}, SD.VatRate, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0,
+            0, SD.DeliFeeId, SD.DeliFeeType, 0, 0,
+            SD.OrderState, SD.ExchngReason, SD.ExchngReasonDetail, SD.PayCmpletDate, SD.ShipDirectDate, SD.ShipPlace,
+            SD.OrderProdName, SD.OrderItemName, SD.OrderProdQty, 1, #{registId}, #{registName}, NOW()
+        FROM shopwizard.tShpShipDirectPrint SD
+        WHERE SD.OrderNo = #{orderNo} AND SD.OrderProdNo = #{orderProdNo} AND SD.OrderChangeNo = 1 AND SD.ShipCheckDate IS NULL
+    </insert>
+
+    <update id="resetBundle">
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP
+            ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo AND OP.OrderState = '출고지시'
+        SET SD.BundleYn = 0
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL AND IFNULL(SD.BundleYn, 0) &lt;&gt; 0
+    </update>
+
+    <update id="markBundle">
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP
+            ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo AND OP.OrderState = '출고지시'
+        INNER JOIN (
+            SELECT S2.ShipPlace AS ShipPlace, S2.RecverAddr AS RecverAddr, S2.RecverName AS RecverName
+            FROM shopwizard.tShpShipDirectPrint S2
+            INNER JOIN shopion.tOrdOrderProd O2
+                ON O2.OrderNo = S2.OrderNo AND O2.OrderProdNo = S2.OrderProdNo AND O2.OrderState = '출고지시'
+            WHERE S2.ShopCode = #{shopCode} AND S2.ShipCheckDate IS NULL
+            GROUP BY S2.ShipPlace, S2.RecverAddr, S2.RecverName
+            HAVING COUNT(DISTINCT S2.OrderNo) &gt; 1
+        ) B ON B.RecverAddr = SD.RecverAddr AND B.RecverName = SD.RecverName AND B.ShipPlace &lt;=&gt; SD.ShipPlace
+        SET SD.BundleYn = 1
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+    </update>
+
+    <update id="updateSortNames">
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP
+            ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo AND OP.OrderState = '출고지시'
+        INNER JOIN (
+            SELECT S2.RecverAddr AS RecverAddr, S2.RecverName AS RecverName,
+                   LEFT(CONCAT_WS('@@@', S2.RecverAddr, S2.RecverName,
+                        GROUP_CONCAT(CONCAT(S2.ProdName, '-', S2.ProdQty) ORDER BY S2.ProdName, S2.OrderNo SEPARATOR '#')), 500) AS SortName
+            FROM shopwizard.tShpShipDirectPrint S2
+            INNER JOIN shopion.tOrdOrderProd O2
+                ON O2.OrderNo = S2.OrderNo AND O2.OrderProdNo = S2.OrderProdNo AND O2.OrderState = '출고지시'
+            WHERE S2.ShopCode = #{shopCode} AND S2.ShipCheckDate IS NULL
+            GROUP BY S2.RecverAddr, S2.RecverName
+        ) G ON G.RecverAddr = SD.RecverAddr AND G.RecverName = SD.RecverName
+        SET SD.PrintSortName = G.SortName
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+    </update>
+
+    <!-- 현황: 상품 미매칭 = 상품코드 없음, 발주단가 미매칭 = 발주단가매칭 규칙(상품명+옵션)이 없음(출고지시가 막히는 조건과 같다). -->
+    <select id="selectSummary" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM shopion.tOrdOrderProd OP WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '지불완료') AS payCompleteCnt,
+            (SELECT COUNT(*) FROM shopion.tOrdOrderProd OP
+              WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '지불완료' AND (OP.ProdCode IS NULL OR OP.ProdCode = '')) AS prodUnmatchedCnt,
+            (SELECT COUNT(*) FROM shopion.tOrdOrderProd OP
+              WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '지불완료'
+                AND NOT EXISTS (SELECT 1 FROM shopwizard.tOrdUpriceMatch UM
+                                WHERE UM.ProdName = IFNULL(OP.ProdName, '') AND UM.ItemName = IFNULL(OP.ItemName, ''))) AS upriceUnmatchedCnt,
+            (SELECT COUNT(*) FROM shopion.tOrdOrderProd OP WHERE OP.ShopCode = #{shopCode} AND OP.OrderState = '출고지시') AS issuedCnt,
+            (SELECT COUNT(*) FROM (
+                SELECT DISTINCT SD.OrderNo, SD.OrderProdNo
+                <include refid="pendingFrom"/>
+                WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL) x) AS sheetLineCnt,
+            (SELECT COUNT(*) FROM (
+                SELECT DISTINCT SD.OrderNo, SD.OrderProdNo
+                <include refid="pendingFrom"/>
+                WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL AND SD.ShipPlace IS NULL) y) AS unbuiltLineCnt
+    </select>
+
+    <sql id="sheetFrom">
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = SD.OrderNo AND OP.OrderProdNo = SD.OrderProdNo
+        INNER JOIN shopion.tOrdOrder O ON O.OrderNo = SD.OrderNo
+        LEFT OUTER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = SD.ChnlCode
+        WHERE SD.ShopCode = #{shopCode}
+        <choose>
+            <when test="confirmedAt != null and confirmedAt != ''">AND SD.ShipCheckDate = #{confirmedAt}</when>
+            <otherwise>AND SD.ShipCheckDate IS NULL AND OP.OrderState = '출고지시'</otherwise>
+        </choose>
+    </sql>
+
+    <select id="selectSheetRows" resultType="map">
+        SELECT SD.OrderNo AS orderNo, SD.OrderProdNo AS orderProdNo, SD.OrderChangeNo AS orderChangeNo, SD.OrderType AS orderType,
+               SD.ChnlOrderNo AS chnlOrderNo, CAST(O.OrderReciptDate AS CHAR) AS orderReciptDate, SD.OrderName AS orderName,
+               SD.ProdCode AS prodCode, SD.ProdName AS prodName, SD.ItemName AS itemName, SD.ProdQty AS prodQty,
+               SD.SalePrice AS salePrice, SD.NvPrice AS nvPrice, SD.BuyPrice AS buyPrice,
+               SD.RecverName AS recverName, SD.RecverPhoneNo AS recverPhoneNo, SD.RecverMobileNo AS recverMobileNo,
+               SD.RecverZipcode AS recverZipcode, SD.RecverAddr AS recverAddr, SD.OrderMemo AS orderMemo, SD.DeliMemo AS deliMemo,
+               SD.DeliFeeAmt AS deliFeeAmt, SD.DeliFeeType AS deliFeeType, Ch.ChnlName AS chnlName, IFNULL(SD.BundleYn, 0) AS bundleYn,
+               IFNULL(SD.ShipPlace, '기본출고지') AS shipPlace, SD.PrintSortName AS printSortName, SD.DealName AS dealName,
+               SD.OrderProdName AS orderProdName
+        <include refid="sheetFrom"/>
+        ORDER BY IFNULL(SD.ShipPlace, '기본출고지'), SD.PrintSortName, IFNULL(SD.BundleYn, 0) DESC, SD.RecverAddr, SD.RecverName,
+                 SD.ProdName, SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo
+        <if test="offset != null and limit != null">LIMIT ${offset}, ${limit}</if>
+    </select>
+
+    <select id="selectSheetCount" resultType="int">
+        SELECT COUNT(*) <include refid="sheetFrom"/>
+    </select>
+
+    <select id="selectPendingLines" resultType="map">
+        SELECT DISTINCT SD.OrderNo AS orderNo, SD.OrderProdNo AS orderProdNo
+        <include refid="pendingFrom"/>
+        WHERE SD.ShopCode = #{shopCode} AND SD.ShipCheckDate IS NULL
+        ORDER BY SD.OrderNo, SD.OrderProdNo
+        LIMIT ${limit}
+    </select>
+
+</mapper>

@@ -78,14 +78,43 @@ const PageShipDirectCheck = (() => {
 
           <div id="scPagination" style="margin-top:12px"></div>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-header">발주 목록 <span style="font-weight:400;font-size:12px;color:var(--text-muted)">— 발주확인한 묶음(최근 20건, 위 상점 필터 적용). 발주서를 다시 받을 수 있습니다</span></div>
+        <div class="card-body" style="padding:12px 16px"><div id="scHistory"></div></div>
       </div>`;
 
-    document.getElementById('scBtnSearch').addEventListener('click', () => { currentPage = 1; loadList(); });
+    document.getElementById('scBtnSearch').addEventListener('click', () => { currentPage = 1; loadList(); loadHistory(); });
     document.getElementById('scOrderNo').addEventListener('keydown', e => { if (e.key === 'Enter') { currentPage = 1; loadList(); } });
     document.getElementById('scBtnCheck').addEventListener('click', checkSelected);
 
     loadFilterOptions();
     loadList();
+    loadHistory();
+  }
+
+  // 발주 목록(tShpShipCheck) — 발주확인 한 묶음당 상점별 1건. 발주서 다시 받기는 자동발주 화면의 다운로드를 같이 쓴다.
+  async function loadHistory() {
+    const box = document.getElementById('scHistory');
+    if (!box) return;
+    try {
+      const list = await Api.get('/ship/ship-check/list', {
+        pShopCode: document.getElementById('scShopCode')?.value || '', pPageOffset: 0, pPageSize: 20,
+      });
+      if (!list.length) { box.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">발주확인한 내역이 없습니다.</div>'; return; }
+      box.innerHTML = `
+        <div class="table-wrap"><table style="width:100%;font-size:12px">
+          <thead><tr><th>번호</th><th>발주서</th><th>확인 시각</th><th style="text-align:right">주문 수</th><th style="text-align:right">출력 횟수</th><th></th></tr></thead>
+          <tbody>${list.map(h => `
+            <tr><td>${esc(h.shipCheckNo)}</td><td>${esc(h.shipCheckDesc)}</td><td>${esc(h.shipCheckDate)}</td>
+              <td style="text-align:right">${won(h.orderCount)}</td><td style="text-align:right">${won(h.printCount)}</td>
+              <td><button class="btn btn-ghost" data-check="${esc(h.shipCheckNo)}" type="button" style="padding:2px 7px;font-size:11px">다시 받기</button></td></tr>`).join('')}</tbody>
+        </table></div>`;
+      box.querySelectorAll('[data-check]').forEach(b => b.addEventListener('click', async () => {
+        await PageShipAutoOrder.download({ pShipCheckNo: b.dataset.check });
+        loadHistory();
+      }));
+    } catch (e) { box.innerHTML = `<div style="color:var(--danger);font-size:12px">${esc(e.message)}</div>`; }
   }
 
   // 채널/상점/담당MD 드롭다운. 로드가 늦거나 실패해도 목록은 동작한다.
@@ -236,6 +265,7 @@ const PageShipDirectCheck = (() => {
           selected.clear();
           close();
           loadList();
+          loadHistory();
         } catch (e) {
           UI.toast(e.message, 'error');
           btn.disabled = false;

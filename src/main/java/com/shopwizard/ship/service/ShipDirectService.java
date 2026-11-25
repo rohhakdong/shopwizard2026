@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,12 +23,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Transactional
 public class ShipDirectService {
+    private static final DateTimeFormatter CHECK_DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final ShipDirectMapper shipDirectMapper;
     private final OrderProdMapper orderProdMapper;
     private final OrderLineLock lineLock;   // 상태 확인~갱신 사이에 다른 요청이 끼어들지 못하게 행 잠금
     private final ShipDirectIssueService shipDirectIssueService;
     private final ShipDirectCheckService shipDirectCheckService;
     private final ShipDirectCompleteService shipDirectCompleteService;
+    private final ShipCheckService shipCheckService;   // 발주확인 묶음의 발주 목록(tShpShipCheck) 헤더
 
     /**
      * 선택한 지불완료 주문라인들을 건별로 출고지시 전환한다 (출고지시 화면, ship-direct-issue.js).
@@ -62,10 +66,13 @@ public class ShipDirectService {
     public ShipDirectIssueResult checkBatch(ShipDirectCheckRequest req) {
         ShipDirectIssueResult result = new ShipDirectIssueResult();
         if (req.getLines() == null) return result;
+        // 한 묶음은 모두 같은 확인 시각을 쓴다 — 발주 목록 헤더와 발주서·출고 행이 이 시각의 동등 비교로 이어진다.
+        String shipCheckDate = LocalDateTime.now().format(CHECK_DT);
         for (ShipDirectCheckRequest.Line line : req.getLines()) {
             try {
                 String err = shipDirectCheckService.checkOne(
-                        line.getOrderNo(), line.getOrderProdNo(), line.getOrderChangeNo(), req.getRegistId(), req.getRegistName());
+                        line.getOrderNo(), line.getOrderProdNo(), line.getOrderChangeNo(), req.getRegistId(), req.getRegistName(),
+                        shipCheckDate);
                 if (err != null) {
                     result.setFailed(result.getFailed() + 1);
                     result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + err);
@@ -75,6 +82,14 @@ public class ShipDirectService {
             } catch (Exception e) {
                 result.setFailed(result.getFailed() + 1);
                 result.getFailDetails().add(line.getOrderNo() + "-" + line.getOrderProdNo() + " : " + e.getMessage());
+            }
+        }
+        if (result.getSuccess() > 0) {
+            try {
+                shipCheckService.recordBatch(shipCheckDate, req.getRegistId(), req.getRegistName());
+            } catch (Exception e) {
+                // 헤더(발주 목록) 기록 실패가 이미 커밋된 발주확인을 되돌리진 않는다 — 결과 메시지에만 남긴다.
+                result.getFailDetails().add("발주 목록 기록 실패(발주확인은 처리됨): " + e.getMessage());
             }
         }
         return result;

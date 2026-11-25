@@ -102,6 +102,63 @@ class ShipDirectIssueServiceTest {
     }
 
     @Test
+    void 출고지시하면_발주단가매칭_규칙_줄마다_발주서_구성_행을_만든다_금액은_첫_행에만() {
+        OrderProd order = line();
+        order.setProdQty(3);
+        when(lineLock.lockLine(any(), any())).thenReturn(order);
+        UpriceMatchDetail a = detail(2, 3000); a.setOrderProdName("힣사은 아님 A");
+        UpriceMatchDetail b = detail(1, 1500); b.setOrderProdName("B 상품");
+        when(upriceMatchMapper.selectPriced("번들 상품", "옵션A")).thenReturn(List.of(a, b));
+        when(shipDirectMapper.insertShipDirect(any())).thenReturn(1);
+
+        assertThat(service.issueOne(5, 2, "admin", "관리자")).isNull();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> rows = ArgumentCaptor.forClass(Map.class);
+        InOrder inOrder = inOrder(shipDirectMapper, orderProdMapper);
+        inOrder.verify(shipDirectMapper).insertShipDirect(any());
+        inOrder.verify(shipDirectMapper).deletePendingPrint(any());
+        inOrder.verify(shipDirectMapper, org.mockito.Mockito.times(2)).insertShipDirectPrintPart(rows.capture());
+        inOrder.verify(orderProdMapper).updateOrderState(any());
+
+        Map<String, Object> first = rows.getAllValues().get(0);
+        Map<String, Object> second = rows.getAllValues().get(1);
+        assertThat(first).containsEntry("orderNo", 5).containsEntry("orderProdNo", 2).containsEntry("orderChangeNo", 1)
+                .containsEntry("prodName", "힣사은 아님 A").containsEntry("prodQty", 6).containsEntry("buyPrice", 18000)
+                .containsEntry("moneyFactor", 1);
+        assertThat(second).containsEntry("orderChangeNo", 2).containsEntry("prodName", "B 상품")
+                .containsEntry("prodQty", 3).containsEntry("buyPrice", 4500).containsEntry("moneyFactor", 0);
+        // 구성 행 원가의 합 = 라인 BuyPrice (3 x (2x3000 + 1x1500))
+        assertThat((int) first.get("buyPrice") + (int) second.get("buyPrice")).isEqualTo(22500);
+    }
+
+    @Test
+    void 발주단가표에_발주상품명칭이_없으면_주문_상품명으로_발주서_행을_만든다() {
+        when(lineLock.lockLine(any(), any())).thenReturn(line());
+        when(upriceMatchMapper.selectPriced(anyString(), anyString())).thenReturn(List.of(detail(1, 1000)));
+        when(shipDirectMapper.insertShipDirect(any())).thenReturn(1);
+
+        service.issueOne(1, 1, "admin", "관리자");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> row = ArgumentCaptor.forClass(Map.class);
+        verify(shipDirectMapper).insertShipDirectPrintPart(row.capture());
+        assertThat(row.getValue()).containsEntry("prodName", "번들 상품").containsEntry("prodQty", 1);
+    }
+
+    @Test
+    void 출고지시가_실패하면_발주서_행도_만들지_않는다() {
+        when(lineLock.lockLine(any(), any())).thenReturn(line());
+        when(upriceMatchMapper.selectPriced(anyString(), anyString())).thenReturn(List.of(detail(1, 1000)));
+        when(shipDirectMapper.insertShipDirect(any())).thenReturn(0);
+
+        service.issueOne(1, 1, "admin", "관리자");
+
+        verify(shipDirectMapper, never()).deletePendingPrint(any());
+        verify(shipDirectMapper, never()).insertShipDirectPrintPart(any());
+    }
+
+    @Test
     void 이미_출고지시됐거나_지불완료가_아니면_상태를_바꾸지_않고_사유를_돌려준다() {
         when(lineLock.lockLine(any(), any())).thenReturn(line());
         when(upriceMatchMapper.selectPriced(anyString(), anyString())).thenReturn(List.of(detail(1, 1000)));

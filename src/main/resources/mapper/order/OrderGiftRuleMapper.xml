@@ -50,6 +50,14 @@
         <include refid="listWhere"/>
     </select>
 
+    <!-- 배송 데이터 생성이 쓰는 규칙 — 사용 중(State=1)인 것만, 번호 순. 레거시는 State 를 안 봤지만 레거시 규칙 4건이 전부 State=0 이라 그대로 적용하면 안 된다. -->
+    <select id="selectActiveByShop" resultType="com.shopwizard.order.model.OrderGiftRule">
+        SELECT <include refid="cols"/>
+        <include refid="from"/>
+        WHERE R.ShopCode = #{shopCode} AND R.State = 1
+        ORDER BY R.RuleNo
+    </select>
+
     <select id="select" parameterType="map" resultType="com.shopwizard.order.model.OrderGiftRule">
         SELECT <include refid="cols"/>
         <include refid="from"/>
@@ -84,7 +92,7 @@
             GiftProdCode5 = #{giftProdCode5}, GiftProdName5 = #{giftProdName5},
             GiftQty = #{giftQty}, PromotFee = #{promotFee}, DupYn = #{dupYn},
             GiftStartDate = #{giftStartDate}, GiftEndDate = #{giftEndDate},
-            Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+            State = #{state}, Remark = #{remark}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE RuleNo = #{ruleNo}
     </update>
 

@@ -20,7 +20,7 @@ import java.util.Map;
  *
  * <p>수량/금액 구간의 0(또는 비움)은 "제한 없음"이다(레거시 SQL 이 0 이면 조건을 건너뛴다). {@code DupYn}: 0 = 수신자당 한 세트만,
  * N(≥1) = 총 주문수량 N개마다 증정수량을 곱한다(레거시 SQL 은 {@code 증정수량 × (총수량 DIV DupYn)} 이라 0 이면 NULL 이 됐다).
- * 이 서비스는 규칙을 저장·관리할 뿐이고, 출고지시·발주 행에 반영하는 로직(레거시 자동발주 8단계)은 아직 새 시스템에 없다.</p>
+ * 이 서비스는 규칙을 저장·관리한다. 사용 중(State=1)인 규칙은 자동발주의 배송 데이터 생성({@code ShipDataBuildService})이 발주서 사은품 행으로 반영한다.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -50,7 +50,7 @@ public class OrderGiftRuleService {
     public OrderGiftRule create(OrderGiftRule in) {
         OrderGiftRule row = normalize(in);
         checkMasters(row, null);
-        row.setState(1);
+        row.setState(state(in.getState(), 1));   // 비우면 사용 중
         row.setRegistId(in.getRegistId());
         row.setRegistName(in.getRegistName());
         mapper.insert(row);
@@ -64,6 +64,7 @@ public class OrderGiftRuleService {
         OrderGiftRule row = normalize(in);
         checkMasters(row, existing);
         row.setRuleNo(existing.getRuleNo());
+        row.setState(state(in.getState(), existing.getState() == null ? 0 : existing.getState()));   // 비우면 지금 값 유지
         row.setChangeId(in.getChangeId());
         row.setChangeName(in.getChangeName());
         mapper.update(row);
@@ -78,6 +79,13 @@ public class OrderGiftRuleService {
     }
 
     /** 형식·범위 검증과 값 정리(공백 제거, 빈 값은 "" / 0). 마스터 존재 여부는 {@link #checkMasters} 에서. */
+    /** 사용 여부(1=사용, 0=사용 안 함). 사용 중인 규칙만 배송 데이터 생성에서 사은품으로 적용된다. */
+    private static int state(Integer v, int fallback) {
+        if (v == null) return fallback;
+        if (v != 0 && v != 1) throw bad("사용 여부는 사용(1) 또는 사용 안 함(0) 이어야 합니다.");
+        return v;
+    }
+
     private OrderGiftRule normalize(OrderGiftRule in) {
         OrderGiftRule r = new OrderGiftRule();
         r.setShopCode(required(in.getShopCode(), "상점", 50));

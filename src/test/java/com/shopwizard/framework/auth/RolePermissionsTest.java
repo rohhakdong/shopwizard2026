@@ -176,4 +176,18 @@ class RolePermissionsTest {
         assertTrue(p.write().contains("order-gift-rule"));
         assertFalse(p.view().contains("order-uprice"));   // 이웃 발주 화면 권한은 따라오지 않는다
     }
+
+    @Test
+    void 주문관리_레거시_메뉴는_자동발주_화면에도_이어지고_발주확인_메뉴는_발주_목록을_같이_연다() {
+        RolePermissions order = RolePermissions.compute(
+                List.of(menu("1005003000000", "/wizardn/order/wOrdOrderProdList.wzn")),
+                List.of(functn("1005003000000", "/wizardn/order/xOrdOrderWorkStep04UpdateItemCode.wzn")));
+        assertTrue(order.view().containsAll(List.of("order-list", "ship-auto-order")));
+        assertTrue(order.write().contains("ship-auto-order"));
+
+        RolePermissions check = RolePermissions.compute(
+                List.of(menu("1001001000000", "/wizardn/ship/wShpShipCheckList.wzn")), List.of());
+        assertTrue(check.view().contains("ship-direct-check"));   // 발주 목록은 발주확인 화면 안에 있다
+        assertFalse(check.view().contains("ship-auto-order"));
+    }
 }

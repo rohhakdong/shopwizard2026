@@ -1,52 +1,55 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
+<!-- 발주 목록(tShpShipCheck) — 발주확인 한 묶음당 상점별 1건. 서비스 제한은 상점 마스터로 건다(pSvcCode). -->
 <mapper namespace="com.shopwizard.ship.mapper.ShipCheckMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.ShipCheck">
-        SELECT *
-        FROM shopwizard.tShpShipCheck
+    <sql id="listWhere">
         <where>
-            <if test="pShipCheckNo != null and pShipCheckNo != ''">AND ShipCheckNo = #{pShipCheckNo}</if>
-            <if test="pShopCode != null and pShopCode != ''">AND ShopCode = #{pShopCode}</if>
-            <if test="pShipCheckDesc != null and pShipCheckDesc != ''">AND ShipCheckDesc = #{pShipCheckDesc}</if>
-            <if test="pShipCheckDate != null and pShipCheckDate != ''">AND ShipCheckDate = #{pShipCheckDate}</if>
+            <if test="pShipCheckNo != null and pShipCheckNo != '' and pShipCheckNo.toString().matches('^[0-9]+$')">AND C.ShipCheckNo = #{pShipCheckNo}</if>
+            <if test="pShopCode != null and pShopCode != ''">AND C.ShopCode = #{pShopCode}</if>
+            <if test="pSvcCode != null and pSvcCode != ''">AND S.SvcCode = #{pSvcCode}</if>
+            <if test="pShipCheckDesc != null and pShipCheckDesc != ''">AND C.ShipCheckDesc LIKE CONCAT('%', #{pShipCheckDesc}, '%')</if>
+            <if test="pShipCheckDate != null and pShipCheckDate != ''">AND C.ShipCheckDate = #{pShipCheckDate}</if>
             <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
                 <![CDATA[
                 AND (
-                    ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND
-                    ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+                    C.ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND
+                    C.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
                 )
                 ]]>
             </if>
         </where>
-        <if test="pPageSize != null and pPageSize != ''">
-            LIMIT #{pPageOffset}, #{pPageSize}
+    </sql>
+
+    <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.ShipCheck">
+        SELECT C.ShipCheckNo, C.ShopCode, S.ShopName AS ShopName, C.ShipCheckDesc, CAST(C.ShipCheckDate AS CHAR) AS ShipCheckDate,
+               C.OrderCount, C.PrintCount, C.State, C.Remark, C.RegistId, C.RegistName, CAST(C.RegistDate AS CHAR) AS RegistDate,
+               C.ChangeId, C.ChangeName, CAST(C.ChangeDate AS CHAR) AS ChangeDate
+        FROM shopwizard.tShpShipCheck C
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = C.ShopCode
+        <include refid="listWhere"/>
+        ORDER BY C.ShipCheckNo DESC
+        <!-- pPageOffset/pPageSize 는 @RequestParam Map 을 통해 String 으로 들어와 #{} 바인딩 시 MySQL 이 LIMIT '0','20' 로 거부하므로 숫자 검증 후 ${} 치환 -->
+        <if test="pPageSize != null and pPageSize.toString().matches('^[0-9]+$') and pPageOffset != null and pPageOffset.toString().matches('^[0-9]+$')">
+            LIMIT ${pPageOffset}, ${pPageSize}
         </if>
     </select>
 
     <select id="selectCount" parameterType="map" resultType="int">
         SELECT COUNT(*)
-        FROM shopwizard.tShpShipCheck
-        <where>
-            <if test="pShipCheckNo != null and pShipCheckNo != ''">AND ShipCheckNo = #{pShipCheckNo}</if>
-            <if test="pShipCheckDesc != null and pShipCheckDesc != ''">AND ShipCheckDesc = #{pShipCheckDesc}</if>
-            <if test="pShipCheckDate != null and pShipCheckDate != ''">AND ShipCheckDate = #{pShipCheckDate}</if>
-            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
-                <![CDATA[
-                AND (
-                    ShipCheckDate >= DATE_FORMAT(#{pStartDate}, '%Y-%m-%d') AND
-                    ShipCheckDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
-                )
-                ]]>
-            </if>
-        </where>
+        FROM shopwizard.tShpShipCheck C
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = C.ShopCode
+        <include refid="listWhere"/>
     </select>
 
     <select id="select" parameterType="map" resultType="com.shopwizard.ship.model.ShipCheck">
-        SELECT *
-        FROM shopwizard.tShpShipCheck
-        WHERE ShipCheckNo = #{shipCheckNo}
+        SELECT C.ShipCheckNo, C.ShopCode, S.ShopName AS ShopName, C.ShipCheckDesc, CAST(C.ShipCheckDate AS CHAR) AS ShipCheckDate,
+               C.OrderCount, C.PrintCount, C.State, C.Remark, C.RegistId, C.RegistName, CAST(C.RegistDate AS CHAR) AS RegistDate,
+               C.ChangeId, C.ChangeName, CAST(C.ChangeDate AS CHAR) AS ChangeDate
+        FROM shopwizard.tShpShipCheck C
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = C.ShopCode
+        WHERE C.ShipCheckNo = #{shipCheckNo}
     </select>
 
     <insert id="insert" parameterType="com.shopwizard.ship.model.ShipCheck">
@@ -59,7 +62,7 @@
 
     <update id="updatePrintCount" parameterType="com.shopwizard.ship.model.ShipCheck">
         UPDATE shopwizard.tShpShipCheck SET
-            PrintCount = PrintCount + 1, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+            PrintCount = IFNULL(PrintCount, 0) + 1, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE ShipCheckNo = #{shipCheckNo}
     </update>
 
@@ -67,5 +70,14 @@
         DELETE FROM shopwizard.tShpShipCheck
         WHERE ShipCheckNo = #{shipCheckNo}
     </delete>
+
+    <!-- 이번 발주확인(같은 ShipCheckDate)에서 확인된 주문을 상점별로. 상점이 없는 라인은 발주 목록에 올리지 않는다. -->
+    <select id="selectBatchSummary" parameterType="map" resultType="map">
+        SELECT SD.ShopCode AS shopCode, MAX(S.ShopName) AS shopName, COUNT(DISTINCT SD.OrderNo) AS orderCount
+        FROM shopwizard.tShpShipDirect SD
+        LEFT OUTER JOIN shopwizard.tCmpShop S ON S.ShopCode = SD.ShopCode
+        WHERE SD.ShipCheckDate = #{shipCheckDate} AND SD.ShopCode IS NOT NULL AND SD.ShopCode &lt;&gt; ''
+        GROUP BY SD.ShopCode
+    </select>
 
 </mapper>

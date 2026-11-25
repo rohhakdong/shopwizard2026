@@ -40,6 +40,7 @@ class ShipDirectServiceTest {
     @Mock private ShipDirectIssueService issueService;
     @Mock private ShipDirectCheckService checkService;
     @Mock private ShipDirectCompleteService completeService;
+    @Mock private ShipCheckService shipCheckService;
     @InjectMocks private ShipDirectService service;
 
     private static OrderProd lineIn(String state) {
@@ -130,8 +131,8 @@ class ShipDirectServiceTest {
 
     @Test
     void 발주확인_배송완료_배치도_한_건이_실패해도_나머지를_계속_처리한다() {
-        when(checkService.checkOne(eq(1), eq(1), eq(1), anyString(), anyString())).thenReturn("출고지시 상태가 아니거나");
-        when(checkService.checkOne(eq(2), eq(1), eq(1), anyString(), anyString())).thenReturn(null);
+        when(checkService.checkOne(eq(1), eq(1), eq(1), anyString(), anyString(), anyString())).thenReturn("출고지시 상태가 아니거나");
+        when(checkService.checkOne(eq(2), eq(1), eq(1), anyString(), anyString(), anyString())).thenReturn(null);
         when(completeService.completeOne(eq(1), eq(1), eq(1), anyString(), anyString())).thenReturn(null);
         when(completeService.completeOne(eq(2), eq(1), eq(1), anyString(), anyString())).thenThrow(new RuntimeException("오류"));
 
@@ -151,11 +152,47 @@ class ShipDirectServiceTest {
     }
 
     @Test
+    void 발주확인_묶음은_모두_같은_확인_시각을_쓰고_성공이_있으면_발주_목록_헤더를_만든다() {
+        when(checkService.checkOne(any(), any(), any(), anyString(), anyString(), anyString())).thenReturn(null);
+        ShipDirectCheckRequest req = new ShipDirectCheckRequest();
+        req.setRegistId("admin");
+        req.setRegistName("관리자");
+        req.setLines(List.of(checkLine(1), checkLine(2), checkLine(3)));
+
+        ShipDirectIssueResult result = service.checkBatch(req);
+
+        ArgumentCaptor<String> dates = ArgumentCaptor.forClass(String.class);
+        verify(checkService, org.mockito.Mockito.times(3)).checkOne(any(), any(), any(), eq("admin"), eq("관리자"), dates.capture());
+        assertThat(dates.getAllValues()).hasSize(3).containsOnly(dates.getAllValues().get(0));
+        verify(shipCheckService).recordBatch(dates.getAllValues().get(0), "admin", "관리자");
+        assertThat(result.getSuccess()).isEqualTo(3);
+    }
+
+    @Test
+    void 성공한_건이_없으면_발주_목록_헤더를_만들지_않고_헤더_기록이_실패해도_발주확인_결과는_그대로다() {
+        when(checkService.checkOne(any(), any(), any(), anyString(), anyString(), anyString())).thenReturn("실패");
+        ShipDirectCheckRequest req = new ShipDirectCheckRequest();
+        req.setRegistId("admin");
+        req.setRegistName("관리자");
+        req.setLines(List.of(checkLine(1)));
+        service.checkBatch(req);
+        verify(shipCheckService, never()).recordBatch(any(), any(), any());
+
+        when(checkService.checkOne(any(), any(), any(), anyString(), anyString(), anyString())).thenReturn(null);
+        when(shipCheckService.recordBatch(any(), any(), any())).thenThrow(new RuntimeException("DB"));
+        ShipDirectIssueResult result = service.checkBatch(req);
+
+        assertThat(result.getSuccess()).isEqualTo(1);
+        assertThat(result.getFailed()).isZero();
+        assertThat(result.getFailDetails()).anyMatch(d -> d.contains("발주 목록 기록 실패"));
+    }
+
+    @Test
     void 선택한_라인이_없으면_빈_결과를_돌려준다() {
         assertThat(service.issueBatch(new ShipDirectIssueRequest()).getSuccess()).isZero();
         assertThat(service.checkBatch(new ShipDirectCheckRequest()).getFailed()).isZero();
         assertThat(service.completeBatch(new ShipDirectCheckRequest()).getFailed()).isZero();
-        verifyNoInteractions(issueService, checkService, completeService);
+        verifyNoInteractions(issueService, checkService, completeService, shipCheckService);
     }
 
     private static ShipDirectIssueRequest.Line issueLine(int orderNo) {

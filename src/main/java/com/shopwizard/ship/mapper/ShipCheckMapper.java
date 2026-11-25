@@ -12,5 +12,7 @@ public interface ShipCheckMapper {
     ShipCheck select(Map<String, Object> params);
     int insert(ShipCheck shipCheck);
     int updatePrintCount(ShipCheck shipCheck);
+    /** 한 번의 발주확인(같은 ShipCheckDate)에 들어간 상점별 주문 수 — 발주 목록 헤더를 만드는 데 쓴다. */
+    List<Map<String, Object>> selectBatchSummary(Map<String, Object> params);
     int delete(ShipCheck shipCheck);
 }

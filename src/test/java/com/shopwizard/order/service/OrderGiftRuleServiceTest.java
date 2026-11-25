@@ -156,6 +156,41 @@ class OrderGiftRuleServiceTest {
         verify(mapper, never()).countChnl(anyString());
     }
 
+    @Test
+    void 사용_여부는_등록에서_비우면_사용_중_수정에서_비우면_지금_값_유지_0_1이_아니면_400() {
+        service.create(in());
+        ArgumentCaptor<OrderGiftRule> cap = ArgumentCaptor.forClass(OrderGiftRule.class);
+        verify(mapper).insert(cap.capture());
+        assertEquals(1, cap.getValue().getState());
+        clearInvocations(mapper);
+
+        OrderGiftRule off = in(); off.setState(0);
+        service.create(off);
+        verify(mapper).insert(cap.capture());
+        assertEquals(0, cap.getValue().getState());
+        clearInvocations(mapper);
+
+        OrderGiftRule bad = in(); bad.setState(2);
+        expectBad(bad, "사용 여부");
+    }
+
+    @Test
+    void 수정에서_사용_여부를_바꾸거나_비우면_기존_값을_지킨다() {
+        OrderGiftRule e = existing();   // 레거시 규칙처럼 State=0 으로 가정
+        e.setState(0);
+        OrderGiftRule keep = in(); keep.setRuleNo(3); keep.setGiftProdCode1("힣증정고농축피죤-175");
+        service.modify(keep);
+        ArgumentCaptor<OrderGiftRule> cap = ArgumentCaptor.forClass(OrderGiftRule.class);
+        verify(mapper).update(cap.capture());
+        assertEquals(0, cap.getValue().getState());   // 비우면 그대로 — 저장했다고 레거시 규칙이 갑자기 켜지지 않는다
+        clearInvocations(mapper);
+
+        OrderGiftRule on = in(); on.setRuleNo(3); on.setGiftProdCode1("힣증정고농축피죤-175"); on.setState(1);
+        service.modify(on);
+        verify(mapper).update(cap.capture());
+        assertEquals(1, cap.getValue().getState());
+    }
+
     private OrderGiftRule existing() {
         OrderGiftRule e = in();
         e.setRuleNo(3);

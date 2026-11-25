@@ -4,7 +4,7 @@
  *   사은품(1번 필수, 2~5 선택)을 증정수량만큼 붙인다. 구간의 0 은 "제한 없음".
  *   사은품 코드는 발주단가표의 코드(예: 증정마스크-소)이고, 명칭은 발주서에 찍히는 이름이다(관례상 '힣' 접두).
  *   중복여부: 0 = 수신자당 한 세트만, N = 총 주문수량 N개마다 증정수량을 곱함.
- *   ※ 규칙을 저장·관리하는 화면이다. 출고지시·발주 행에 사은품을 붙이는 처리(레거시 자동발주 8단계)는 아직 새 시스템에 없다.
+ *   사용 여부가 '사용'인 규칙만 자동발주의 "배송 데이터 생성"에서 발주서 사은품 행으로 반영된다.
  *   백엔드: /order/gift-rule (list, count, POST, PUT, DELETE ?ruleNo), 사은품 코드 선택 /order/uprice/list
  */
 const PageOrderGiftRule = (() => {
@@ -29,7 +29,7 @@ const PageOrderGiftRule = (() => {
         <div class="card-body" style="padding:12px 16px">
           <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:12px;line-height:1.7">
             상점별로 "어떤 주문에 어떤 사은품을 몇 개 줄지"를 정해 두는 규칙입니다. 수량·금액 구간의 <b>0은 제한 없음</b>이며, 채널·채널상품명·딜명은 비워 두면 조건에서 빠집니다.<br>
-            <b>아직 규칙이 출고지시·발주 데이터에 자동으로 반영되지는 않습니다</b>(레거시의 자동발주 단계에서 적용하던 처리는 새 시스템에 아직 없습니다).
+            <b>사용 여부가 '사용'인 규칙</b>만 자동발주의 "배송 데이터 생성" 단계에서 발주서 사은품 행으로 반영됩니다(규칙 번호 순, 규칙끼리 서로 영향을 주지 않고 각각 적용).
           </div>
           <div class="search-bar" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
             <div class="form-group"><label>상점</label>
@@ -117,7 +117,7 @@ const PageOrderGiftRule = (() => {
       <table style="width:100%;font-size:12px">
         <thead><tr><th>번호</th><th>상점</th><th>채널</th><th>채널상품명</th><th>딜명</th>
           <th>총 주문수량</th><th>총 주문금액</th><th>사은품</th>
-          <th style="text-align:right">증정수량</th><th style="text-align:right">판촉비</th><th>중복</th><th>기간</th><th></th></tr></thead>
+          <th style="text-align:right">증정수량</th><th style="text-align:right">판촉비</th><th>중복</th><th>기간</th><th>사용</th><th></th></tr></thead>
         <tbody>${list.map((r, i) => {
           const extra = extraGifts(r);
           return `
@@ -135,6 +135,7 @@ const PageOrderGiftRule = (() => {
             <td style="text-align:right">${won(r.promotFee)}</td>
             <td>${r.dupYn ? `${esc(r.dupYn)}개마다` : '한 세트'}</td>
             <td style="white-space:nowrap">${r.giftStartDate ? `${esc(day(r.giftStartDate))}<br>~ ${esc(day(r.giftEndDate))}` : '<span style="color:var(--text-muted)">상시</span>'}</td>
+            <td>${Number(r.state) === 1 ? '<span style="color:var(--success,#2e7d32)">사용</span>' : '<span style="color:var(--text-muted)">안 함</span>'}</td>
             <td style="white-space:nowrap">
               <button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" data-edit="${i}" type="button">수정</button>
               <button class="btn btn-danger" style="padding:2px 7px;font-size:11px" data-del="${i}" type="button">삭제</button>
@@ -182,7 +183,7 @@ const PageOrderGiftRule = (() => {
           <select class="input" id="grFShop"><option value="">선택</option>${shopOpts}${shopExtra}</select></div>
         <div class="form-group"><label>채널</label>
           <select class="input" id="grFChnl"><option value="">전체 채널</option>${chnlOpts}${chnlExtra}</select></div>
-        <div class="form-group"><label>채널상품코드</label><input class="input" id="grFChnlProdCode" maxlength="50" value="${esc(v.chnlProdCode)}"></div>
+        <div class="form-group"><label>채널상품코드(참고용)</label><input class="input" id="grFChnlProdCode" maxlength="50" value="${esc(v.chnlProdCode)}"></div>
         <div class="form-group"><label>딜명칭(포함)</label><input class="input" id="grFDeal" maxlength="50" value="${esc(v.dealName)}"></div>
         <div class="form-group full"><label>채널상품명칭(포함)</label><input class="input" id="grFChnlProdName" maxlength="255" value="${esc(v.chnlProdName)}" placeholder="이 문구가 상품명에 들어 있는 주문만"></div>
         <div class="form-group"><label>총 주문수량 시작</label><input class="input" id="grFQtyS" type="number" min="0" value="${v.totalOrderQtyStart ?? 0}"></div>
@@ -201,6 +202,8 @@ const PageOrderGiftRule = (() => {
         <div class="form-group"><label>증정 수량 *</label><input class="input" id="grFGiftQty" type="number" min="1" value="${v.giftQty ?? 1}"></div>
         <div class="form-group"><label>판촉 수수료(원)</label><input class="input" id="grFFee" type="number" min="0" value="${v.promotFee ?? 0}"></div>
         <div class="form-group"><label>중복 여부</label><input class="input" id="grFDup" type="number" min="0" value="${v.dupYn ?? 0}"></div>
+        <div class="form-group"><label>사용 여부</label>
+          <select class="input" id="grFState"><option value="1" ${v.state == null || Number(v.state) === 1 ? 'selected' : ''}>사용</option><option value="0" ${v.state != null && Number(v.state) !== 1 ? 'selected' : ''}>사용 안 함</option></select></div>
         <div class="form-group"><label>비고</label><input class="input" id="grFRemark" maxlength="50" value="${esc(v.remark)}"></div>
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:4px">중복 여부: <b>0</b> = 수신자당 한 세트만 증정, <b>N</b> = 총 주문수량 N개마다 증정 수량을 곱해 증정(예: 1 → 주문 수량만큼).</div>`;
@@ -227,7 +230,7 @@ const PageOrderGiftRule = (() => {
           totalOrderQtyStart: num('grFQtyS'), totalOrderQtyEnd: num('grFQtyE'),
           totalOrderAmtStart: num('grFAmtS'), totalOrderAmtEnd: num('grFAmtE'),
           giftQty: num('grFGiftQty'), promotFee: num('grFFee'), dupYn: num('grFDup'),
-          giftStartDate: val('grFStart'), giftEndDate: val('grFEnd'), remark: val('grFRemark'),
+          giftStartDate: val('grFStart'), giftEndDate: val('grFEnd'), remark: val('grFRemark'), state: Number(val('grFState')),
         };
         for (let n = 1; n <= 5; n++) { payload['giftProdCode' + n] = val('grFCode' + n); payload['giftProdName' + n] = val('grFName' + n); }
         if (!isNew) payload.ruleNo = v.ruleNo;

@@ -16,6 +16,9 @@ public interface OrderGiftRuleMapper {
     int update(OrderGiftRule orderGiftRule);
     int delete(OrderGiftRule orderGiftRule);
 
+    /** 배송 데이터 생성에 쓰는 규칙 — 사용 중(State=1)만, 규칙번호 순. */
+    List<OrderGiftRule> selectActiveByShop(@Param("shopCode") String shopCode);
+
     /** 이 상점이 있는가(등록·수정 검증). */
     int countShop(@Param("shopCode") String shopCode);
     /** 이 채널이 있는가. */

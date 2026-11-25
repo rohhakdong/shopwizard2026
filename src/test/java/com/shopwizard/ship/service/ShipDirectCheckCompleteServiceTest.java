@@ -60,6 +60,32 @@ class ShipDirectCheckCompleteServiceTest {
     }
 
     @Test
+    void 발주확인은_같은_확인_시각으로_발주서_행도_확인_처리한다() {
+        ShipDirectCheckService service = new ShipDirectCheckService(shipDirectMapper, orderProdMapper, lineLock);
+        when(lineLock.lockLine(5, 2)).thenReturn(line("출고지시"));
+        when(shipDirectMapper.update(any())).thenReturn(1);
+
+        assertThat(service.checkOne(5, 2, 1, "admin", "관리자", "2026-11-25 14:30:00")).isNull();
+
+        assertThat(capture(true)).containsEntry("changeDate", "2026-11-25 14:30:00");   // 출고 행의 ShipCheckDate
+        ArgumentCaptor<Map<String, Object>> print = ArgumentCaptor.forClass(Map.class);
+        verify(shipDirectMapper).confirmPrint(print.capture());
+        assertThat(print.getValue()).containsEntry("orderNo", 5).containsEntry("orderProdNo", 2)
+                .containsEntry("shipCheckDate", "2026-11-25 14:30:00");
+    }
+
+    @Test
+    void 발주확인이_0행이면_발주서_행도_건드리지_않는다() {
+        ShipDirectCheckService service = new ShipDirectCheckService(shipDirectMapper, orderProdMapper, lineLock);
+        when(lineLock.lockLine(5, 2)).thenReturn(line("출고지시"));
+        when(shipDirectMapper.update(any())).thenReturn(0);
+
+        service.checkOne(5, 2, 1, "admin", "관리자", "2026-11-25 14:30:00");
+
+        verify(shipDirectMapper, never()).confirmPrint(any());
+    }
+
+    @Test
     void 발주확인_0행이면_라인_상태를_건드리지_않는다() {
         ShipDirectCheckService service = new ShipDirectCheckService(shipDirectMapper, orderProdMapper, lineLock);
         when(lineLock.lockLine(5, 2)).thenReturn(line("출고지시"));
