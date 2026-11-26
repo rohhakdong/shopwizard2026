@@ -167,6 +167,7 @@
   <script src="/js/pages/operate-notice.js"></script>
   <script src="/js/pages/operate-supply-notice.js"></script>
   <script src="/js/pages/operate-conslt.js"></script>
+  <script src="/js/pages/operate-mantnc.js"></script>
   <script>
     // ── 메뉴 정의 ──────────────────────────────────────────────────────
     const MENU = [
@@ -235,6 +236,7 @@
           { key: 'operate-notice',        label: '공지사항',    icon: '📢', page: 'operate/notice' },
           { key: 'operate-supply-notice', label: '공급사 공지', icon: '📣', page: 'operate/supplynotice' },
           { key: 'operate-conslt',        label: '고객문의',    icon: '🎧', page: 'operate/conslt' },
+          { key: 'operate-mantnc',        label: '유지보수',    icon: '🛠️', page: 'operate/mantnc' },
         ]
       },
       {
@@ -409,6 +411,8 @@
         PageOperateSupplyNotice.render(content);
       } else if (key === 'operate-conslt') {
         PageOperateConslt.render(content);
+      } else if (key === 'operate-mantnc') {
+        PageOperateMantnc.render(content);
       } else if (key === 'company-comp') {
         PageCompanyComp.render(content);
       } else if (key === 'company-supply') {

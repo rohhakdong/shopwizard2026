@@ -63,6 +63,7 @@ public final class ScreenRegistry {
         new Screen("operate-notice", List.of("wOprNoticeList")),
         new Screen("operate-supply-notice", List.of("wCmpSupplyCompNoticeList")),
         new Screen("operate-conslt", List.of("wOprCustConsltList")),
+        new Screen("operate-mantnc", List.of("wOprMantncList")),
         new Screen("company-comp", List.of("wCmpCompList")),
         new Screen("company-supply", List.of("wCmpSupplyCompList")),
         new Screen("company-shop", List.of("wCmpShopList")),
@@ -376,6 +377,14 @@ public final class ScreenRegistry {
         {"PUT", "/company/supply-comp-notice", "operate-supply-notice"},
         {"DELETE", "/company/supply-comp-notice/*", "operate-supply-notice"},
         {"GET", "/operate/conslt/list", "operate-conslt"},
+        {"GET", "/operate/mantnc/list", "operate-mantnc"},
+        {"GET", "/operate/mantnc/summary", "operate-mantnc"},
+        {"GET", "/operate/mantnc/*", "operate-mantnc"},
+        {"POST", "/operate/mantnc", "operate-mantnc"},
+        {"PUT", "/operate/mantnc", "operate-mantnc"},
+        {"PUT", "/operate/mantnc/schedule", "operate-mantnc"},
+        {"PUT", "/operate/mantnc/complete", "operate-mantnc"},
+        {"DELETE", "/operate/mantnc/*", "operate-mantnc"},
     };
 
     public static final Map<String, Screen> BY_KEY =

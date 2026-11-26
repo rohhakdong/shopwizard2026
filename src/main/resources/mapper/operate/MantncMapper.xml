@@ -2,46 +2,94 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopwizard.operate.mapper.MantncMapper">
 
-    <select id="selectList" parameterType="map" resultType="com.shopwizard.operate.model.Mantnc">
-        SELECT M.*, CR.ConstrValDesc AS ExecStateName
+    <!--
+      유지보수 요청(운영 > 유지보수). 상태는 ExecState: recipt 요청 · exec 작업중(예정일 입력) · cmplet 작업완료.
+      지연 = 미완료이면서 작업 예정일이 오늘보다 앞. 정렬은 미완료 먼저 + 번호 역순으로 고정, 쪽 나눔은 정수 바인딩.
+    -->
+    <sql id="overdueCase">(CASE WHEN M.ExecState &lt;&gt; 'cmplet' AND M.ExecExpectDate &lt; CURDATE() THEN 1 ELSE 0 END)</sql>
+
+    <sql id="listWhere">
+        <where>
+            <if test="ownerId != null">AND M.ReciptId = #{ownerId}</if>
+            <if test="status != null and status != 'overdue'">AND M.ExecState = #{status}</if>
+            <if test="status != null and status == 'overdue'">AND <include refid="overdueCase"/> = 1</if>
+            <if test="keyword != null">AND (M.ReciptTitle LIKE CONCAT('%', #{keyword}, '%') OR M.ReciptCntnts LIKE CONCAT('%', #{keyword}, '%') OR M.MenuName LIKE CONCAT('%', #{keyword}, '%'))</if>
+            <if test="requester != null">AND M.ReciptName LIKE CONCAT('%', #{requester}, '%')</if>
+            <if test="start != null and end != null">
+                <![CDATA[AND M.ReciptDate >= #{start} AND M.ReciptDate < ADDDATE(#{end}, INTERVAL 1 DAY)]]>
+            </if>
+        </where>
+    </sql>
+
+    <sql id="columns">
+        M.MantncNo, M.MenuName, M.ReciptId, M.ReciptName, M.ReciptTitle, CAST(M.ReciptDate AS CHAR) AS ReciptDate, M.ExecState,
+        DATE_FORMAT(M.ExecExpectDate, '%Y-%m-%d') AS ExecExpectDate, M.ExecCntnts, CAST(M.ExecDate AS CHAR) AS ExecDate, M.ExecId, M.ExecName,
+        M.CmpletCntnts, CAST(M.CmpletDate AS CHAR) AS CmpletDate, M.CmpletId, M.CmpletName,
+        <include refid="overdueCase"/> AS Overdue
+    </sql>
+
+    <select id="selectList" resultType="com.shopwizard.operate.model.Mantnc">
+        SELECT <include refid="columns"/>
         FROM shopwizard.tOprMantnc M
-        LEFT OUTER JOIN (SELECT ConstrVal, ConstrValDesc FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cExecState') CR ON M.ExecState = CR.ConstrVal
-        <where>
-            <if test="pMantncNo != null and pMantncNo != ''">AND MantncNo = #{pMantncNo}</if>
-            <if test="pReciptTitle != null and pReciptTitle != ''">AND M.ReciptTitle LIKE CONCAT('%',#{pReciptTitle},'%')</if>
-            <if test="pReciptCntnts != null and pReciptCntnts != ''">AND M.ReciptCntnts LIKE CONCAT('%',#{pReciptCntnts},'%')</if>
-            <if test="pExecState != null and pExecState != ''">AND M.ExecState = #{pExecState}</if>
-            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
-                <![CDATA[AND M.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND M.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
-            </if>
-        </where>
-        <choose>
-            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
-            <otherwise>ORDER BY M.MantncNo DESC</otherwise>
-        </choose>
-        <if test="pPageSize != null and pPageSize != ''">LIMIT #{pPageOffset}, #{pPageSize}</if>
+        <include refid="listWhere"/>
+        ORDER BY (M.ExecState = 'cmplet'), M.MantncNo DESC
+        LIMIT #{offset}, #{limit}
     </select>
 
-    <select id="selectCount" parameterType="map" resultType="int">
+    <select id="selectCount" resultType="int">
         SELECT COUNT(*) FROM shopwizard.tOprMantnc M
-        LEFT OUTER JOIN (SELECT ConstrVal, ConstrValDesc FROM wizardn.tCodConstrVal WHERE ConstrCode = 'cExecState') CR ON M.ExecState = CR.ConstrVal
-        <where>
-            <if test="pMantncNo != null and pMantncNo != ''">AND MantncNo = #{pMantncNo}</if>
-            <if test="pReciptTitle != null and pReciptTitle != ''">AND M.ReciptTitle LIKE CONCAT('%',#{pReciptTitle},'%')</if>
-            <if test="pReciptCntnts != null and pReciptCntnts != ''">AND M.ReciptCntnts LIKE CONCAT('%',#{pReciptCntnts},'%')</if>
-            <if test="pExecState != null and pExecState != ''">AND M.ExecState = #{pExecState}</if>
-            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
-                <![CDATA[AND M.RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d') AND M.RegistDate < ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY)]]>
-            </if>
-        </where>
+        <include refid="listWhere"/>
     </select>
 
-    <select id="select" parameterType="map" resultType="com.shopwizard.operate.model.Mantnc">
-        SELECT * FROM shopwizard.tOprMantnc WHERE MantncNo = #{mantncNo}
+    <select id="selectSummary" resultType="map">
+        SELECT IFNULL(SUM(M.ExecState = 'recipt'), 0) AS recipt, IFNULL(SUM(M.ExecState = 'exec'), 0) AS exec,
+               IFNULL(SUM(M.ExecState = 'cmplet'), 0) AS cmplet, IFNULL(SUM(<include refid="overdueCase"/>), 0) AS overdue
+        FROM shopwizard.tOprMantnc M
+        <where><if test="ownerId != null">AND M.ReciptId = #{ownerId}</if></where>
     </select>
 
-    <select id="selectMax" parameterType="map" resultType="int">
-        SELECT IFNULL(MAX(MantncNo),0) FROM shopwizard.tOprMantnc
+    <select id="select" resultType="com.shopwizard.operate.model.Mantnc">
+        SELECT <include refid="columns"/>, M.ReciptCntnts
+        FROM shopwizard.tOprMantnc M
+        WHERE M.MantncNo = #{mantncNo}
     </select>
+
+    <!-- RoleUid·MenuCode 는 NOT NULL 컬럼 — 요청자의 역할을 넣고 화면 코드는 쓰지 않는다(대상 화면은 MenuName 에 글로 적는다). -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="key.id" keyColumn="MantncNo">
+        INSERT INTO shopwizard.tOprMantnc (
+            RoleUid, MenuCode, MenuName, ReciptId, ReciptName, ReciptTitle, ReciptCntnts, ReciptDate, ExecState, State, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{roleUid}, '', #{menuName}, #{registId}, #{registName}, #{title}, #{content}, NOW(), 'recipt', 1, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="updateRequest">
+        UPDATE shopwizard.tOprMantnc SET
+            ReciptTitle = #{title}, ReciptCntnts = #{content}, MenuName = #{menuName},
+            ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
+        WHERE MantncNo = #{mantncNo} AND ExecState &lt;&gt; 'cmplet'
+    </update>
+
+    <!-- MySQL 은 SET 을 왼쪽부터 평가하므로 ExecState 를 바꾸기 전에 "처음 입력인가" 를 쓰는 열(ExecDate·ExecId·ExecName)을 먼저 둔다. -->
+    <update id="updateSchedule">
+        UPDATE shopwizard.tOprMantnc SET
+            ExecDate = IF(ExecState = 'recipt', NOW(), ExecDate),
+            ExecId = IF(ExecState = 'recipt', #{execId}, ExecId),
+            ExecName = IF(ExecState = 'recipt', #{execName}, ExecName),
+            ExecExpectDate = #{expectDate}, ExecCntnts = #{memo}, ExecState = 'exec',
+            ChangeId = #{execId}, ChangeName = #{execName}, ChangeDate = NOW()
+        WHERE MantncNo = #{mantncNo} AND ExecState &lt;&gt; 'cmplet'
+    </update>
+
+    <update id="updateComplete">
+        UPDATE shopwizard.tOprMantnc SET
+            ExecState = 'cmplet', CmpletCntnts = #{cntnts}, CmpletDate = NOW(), CmpletId = #{cmpletId}, CmpletName = #{cmpletName},
+            ChangeId = #{cmpletId}, ChangeName = #{cmpletName}, ChangeDate = NOW()
+        WHERE MantncNo = #{mantncNo} AND ExecState &lt;&gt; 'cmplet'
+    </update>
+
+    <delete id="delete">
+        DELETE FROM shopwizard.tOprMantnc WHERE MantncNo = #{mantncNo} AND ExecState &lt;&gt; 'cmplet'
+    </delete>
 
 </mapper>
