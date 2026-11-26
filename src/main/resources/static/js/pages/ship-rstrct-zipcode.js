@@ -53,11 +53,11 @@ const PageShipRstrctZipcode = (() => {
     try { sects = await Api.get('/ship/rstrct-zipcode/sects', {}); } catch (_) { sects = []; }
     const sel = document.getElementById('rzSect');
     const cur = sel.value;
-    sel.innerHTML = '<option value="">전체</option>' + sects.map(s => `<option value="${esc(s.sect)}">${esc(s.sect)} (${Number(s.cnt).toLocaleString()})</option>`).join('');
+    sel.innerHTML = '<option value="">전체</option>' + sects.map(s => `<option value="${esc(s.sect)}">${esc(s.sect)}${s.label ? ' — ' + esc(s.label) : ''} (${Number(s.cnt).toLocaleString()})</option>`).join('');
     sel.value = sects.some(s => s.sect === cur) ? cur : '';
     document.getElementById('rzBtnDelSect').disabled = !sel.value;
     document.getElementById('rzSects').innerHTML = sects.length
-      ? sects.map(s => `<span style="border:1px solid var(--border);border-radius:var(--radius);padding:3px 10px;font-size:12px"><b>${esc(s.sect)}</b> ${Number(s.cnt).toLocaleString()}건</span>`).join('')
+      ? sects.map(s => `<span style="border:1px solid var(--border);border-radius:var(--radius);padding:3px 10px;font-size:12px;${Number(s.cnt) ? '' : 'color:var(--text-muted)'}"><b>${esc(s.sect)}</b>${s.label ? ' ' + esc(s.label) : ''} · ${Number(s.cnt).toLocaleString()}건</span>`).join('')
       : '<span style="font-size:12px;color:var(--text-muted)">등록된 구분이 없습니다. [붙여넣어 등록]으로 시작하세요.</span>';
   }
 
@@ -126,13 +126,19 @@ const PageShipRstrctZipcode = (() => {
   function openBulkModal() {
     const body = document.createElement('div');
     body.innerHTML = `
-      <div class="form-group"><label>구분 * <span style="font-weight:400;color:var(--text-muted)">(기존 구분을 고르거나 새로 입력)</span></label>
-        <input class="input" id="rzFSect" list="rzSectList" maxlength="50" placeholder="예: DeliFeeUpStar" value="${esc(document.getElementById('rzSect').value)}">
-        <datalist id="rzSectList">${sects.map(s => `<option value="${esc(s.sect)}">`).join('')}</datalist></div>
+      <div class="form-group"><label>구분 *</label>
+        <select class="input" id="rzFSectSel">
+          <option value="">구분을 선택하세요</option>
+          ${sects.map(s => `<option value="${esc(s.sect)}" ${document.getElementById('rzSect').value === s.sect ? 'selected' : ''}>${esc(s.sect)}${s.label ? ' — ' + esc(s.label) : ''} (${Number(s.cnt).toLocaleString()}건)</option>`).join('')}
+          <option value="__new__">직접 입력(새 구분)…</option>
+        </select>
+        <input class="input" id="rzFSect" maxlength="50" placeholder="새 구분 이름 (영문·숫자·한글·_·-)" style="display:none;margin-top:6px"></div>
       <div class="form-group" style="margin-top:8px"><label>우편번호 * <span style="font-weight:400;color:var(--text-muted)">(줄·쉼표·공백으로 구분, 하이픈 자동 제거)</span></label>
         <textarea class="input" id="rzFZips" rows="9" style="width:100%;font-family:monospace" placeholder="06236&#10;13529, 13530&#10;12-345"></textarea></div>
       <div id="rzFPreview" style="font-size:12px;margin-top:8px;color:var(--text-muted)">우편번호를 붙여넣으면 인식 결과가 여기에 표시됩니다.</div>`;
     const q = id => body.querySelector('#' + id);
+    q('rzFSectSel').addEventListener('change', () => { q('rzFSect').style.display = q('rzFSectSel').value === '__new__' ? '' : 'none'; });
+    const chosenSect = () => (q('rzFSectSel').value === '__new__' ? q('rzFSect').value.trim() : q('rzFSectSel').value.trim());
     let timer = null;
     q('rzFZips').addEventListener('input', () => {
       clearTimeout(timer);
@@ -149,10 +155,10 @@ const PageShipRstrctZipcode = (() => {
     UI.modal({
       title: '배송제한 우편번호 붙여넣어 등록', body, confirmText: '등록',
       onConfirm: async close => {
-        if (!q('rzFSect').value.trim()) return UI.toast('구분을 입력하세요', 'error');
+        if (!chosenSect()) return UI.toast('구분을 선택하거나 새로 입력하세요', 'error');
         if (!q('rzFZips').value.trim()) return UI.toast('우편번호를 입력하세요', 'error');
         try {
-          const r = await Api.post('/ship/rstrct-zipcode/bulk', { sect: q('rzFSect').value.trim(), zipcodes: q('rzFZips').value });
+          const r = await Api.post('/ship/rstrct-zipcode/bulk', { sect: chosenSect(), zipcodes: q('rzFZips').value });
           UI.toast(`${r.added.toLocaleString()}건 등록${r.alreadyExisted ? ` · 이미 있음 ${r.alreadyExisted}` : ''}${r.invalid.length ? ` · 읽지 못함 ${r.invalid.length}` : ''}`, 'success');
           close();
           document.getElementById('rzSect').value = '';

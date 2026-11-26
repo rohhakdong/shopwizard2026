@@ -11,6 +11,8 @@ import java.util.Map;
 public interface DeliRstrctZipcodeMapper {
     /** 구분별 우편번호 건수. */
     List<Map<String, Object>> selectSects();
+    /** 배송제한 규칙이 가리키는 우편번호 구분(우편번호가 아직 없어도 구분은 고를 수 있어야 한다). */
+    List<String> selectRuleSects();
     List<DeliRstrctZipcode> selectList(Map<String, Object> params);
     int selectCount(Map<String, Object> params);
     /** 이미 등록된 우편번호(구분 안에서) — 일괄 등록의 중복 판정. */

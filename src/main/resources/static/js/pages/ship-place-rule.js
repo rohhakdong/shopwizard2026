@@ -167,7 +167,7 @@ const PageShipPlaceRule = (() => {
         <input type="checkbox" class="prFExChnl" value="${esc(c.chnlCode)}" ${exceptSet.has(c.chnlCode) ? 'checked' : ''}> ${esc(c.chnlName)}</label>`).join('');
     // 목록에 없는 기존 제외 채널 코드는 그대로 보존한다(수정하다 조용히 사라지지 않게)
     const unknownCh = [...exceptSet].filter(c => !chnlList.some(x => x.chnlCode === c));
-    const sectOptions = `<option value="">(사용 안 함)</option>` + sectList.map(s => `<option value="${esc(s.sect)}" ${v.zipSect === s.sect ? 'selected' : ''}>${esc(s.sect)} (${Number(s.cnt).toLocaleString()}건)</option>`).join('')
+    const sectOptions = `<option value="">(사용 안 함)</option>` + sectList.map(s => `<option value="${esc(s.sect)}" ${v.zipSect === s.sect ? 'selected' : ''}>${esc(s.sect)}${s.label ? ' — ' + esc(s.label) : ''} (${Number(s.cnt).toLocaleString()}건)</option>`).join('')
       + (v.zipSect && !sectList.some(s => s.sect === v.zipSect) ? `<option value="${esc(v.zipSect)}" selected>${esc(v.zipSect)} (등록된 우편번호 없음)</option>` : '');
 
     const body = document.createElement('div');

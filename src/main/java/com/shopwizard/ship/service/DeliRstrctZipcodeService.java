@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +39,41 @@ public class DeliRstrctZipcodeService {
     /** 일괄 등록 결과. */
     public record BulkResult(String sect, int added, int alreadyExisted, int duplicatedInInput, List<String> invalid) {}
 
+    /** 레거시 피죤 규칙이 쓰던 표준 구분 — 우편번호가 하나도 없어도 구분 목록에 항상 보인다(처음 입력할 때 고를 수 있게). */
+    static final Map<String, String> STANDARD_SECTS = new LinkedHashMap<>();
+    static {
+        STANDARD_SECTS.put("DeliFeeUpStar", "택배비인상 ★");
+        STANDARD_SECTS.put("DeliFeeUpSquare", "택배비인상 ■");
+        STANDARD_SECTS.put("DeliFeeUpDoubleStar", "택배비인상 ★★");
+        STANDARD_SECTS.put("DeliFeeUpDoubleSquare", "택배비인상 ■■");
+        STANDARD_SECTS.put("JerrycanLimit", "배송불가 · 말통");
+        STANDARD_SECTS.put("18JerrycanLimit", "배송불가 · 18리터");
+    }
+
+    /**
+     * 구분 목록 = 표준 구분(건수 0 이어도) + 우편번호가 등록된 구분 + 배송제한 규칙이 가리키는 구분. 각 항목은 {sect, cnt, label}.
+     * 우편번호 표가 비어 있으면 구분이 하나도 안 떠서 처음 입력할 수 없던 문제를 막는다.
+     */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> sects() { return mapper.selectSects(); }
+    public List<Map<String, Object>> sects() {
+        Map<String, Map<String, Object>> out = new LinkedHashMap<>();
+        STANDARD_SECTS.forEach((sect, label) -> out.put(sect, entry(sect, 0, label)));
+        for (Map<String, Object> r : mapper.selectSects()) {
+            String sect = String.valueOf(r.get("sect"));
+            int cnt = r.get("cnt") instanceof Number n ? n.intValue() : 0;
+            out.put(sect, entry(sect, cnt, STANDARD_SECTS.getOrDefault(sect, "")));
+        }
+        for (String sect : mapper.selectRuleSects()) out.computeIfAbsent(sect, k -> entry(k, 0, ""));
+        return new ArrayList<>(out.values());
+    }
+
+    private static Map<String, Object> entry(String sect, int cnt, String label) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("sect", sect);
+        m.put("cnt", cnt);
+        m.put("label", label);
+        return m;
+    }
 
     @Transactional(readOnly = true)
     public List<DeliRstrctZipcode> selectList(Map<String, Object> params) { return mapper.selectList(params); }

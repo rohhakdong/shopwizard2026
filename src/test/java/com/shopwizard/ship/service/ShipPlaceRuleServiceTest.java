@@ -192,6 +192,29 @@ class ShipPlaceRuleServiceTest {
         assertEquals(400, assertThrows(ResponseStatusException.class, () -> zipService.remove("S1", "abc")).getStatusCode().value());
     }
 
+    @Test
+    void 구분_목록은_표준_구분을_우편번호가_없어도_보여주고_등록된_구분과_규칙이_쓰는_구분을_합친다() {
+        when(zipMapper.selectSects()).thenReturn(List.of(Map.of("sect", "DeliFeeUpStar", "cnt", 12L), Map.of("sect", "MyCustom", "cnt", 3L)));
+        when(zipMapper.selectRuleSects()).thenReturn(List.of("RuleOnly", "MyCustom"));
+
+        var list = zipService.sects();
+
+        assertThat(list).extracting(m -> m.get("sect")).containsExactly("DeliFeeUpStar", "DeliFeeUpSquare", "DeliFeeUpDoubleStar",
+                "DeliFeeUpDoubleSquare", "JerrycanLimit", "18JerrycanLimit", "MyCustom", "RuleOnly");
+        assertThat(list.get(0)).containsEntry("cnt", 12).containsEntry("label", "택배비인상 ★");
+        assertThat(list.get(1)).containsEntry("cnt", 0);                       // 표준 구분은 건수 0 이어도 나온다
+        assertThat(list.get(6)).containsEntry("cnt", 3).containsEntry("label", "");
+        assertThat(list.get(7)).containsEntry("cnt", 0);                       // 규칙만 가리키는 구분
+    }
+
+    @Test
+    void 우편번호_표가_비어_있어도_표준_구분_여섯_개는_고를_수_있다() {
+        when(zipMapper.selectSects()).thenReturn(List.of());
+        when(zipMapper.selectRuleSects()).thenReturn(List.of());
+
+        assertThat(zipService.sects()).hasSize(6);
+    }
+
     // ── 배송 데이터 생성에서의 적용 ─────────────────────────────
 
     private final com.shopwizard.ship.mapper.ShipAutoOrderMapper autoMapper = mock(com.shopwizard.ship.mapper.ShipAutoOrderMapper.class);

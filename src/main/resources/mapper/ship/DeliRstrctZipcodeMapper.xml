@@ -17,6 +17,10 @@
         ORDER BY DeliRstrctSect
     </select>
 
+    <select id="selectRuleSects" resultType="string">
+        SELECT DISTINCT ZipSect FROM shopwizard.tShpShipPlaceRule WHERE ZipSect IS NOT NULL AND ZipSect &lt;&gt; '' ORDER BY ZipSect
+    </select>
+
     <select id="selectList" parameterType="map" resultType="com.shopwizard.ship.model.DeliRstrctZipcode">
         SELECT DeliRstrctSect, Zipcode, State, Remark, RegistId, RegistName, CAST(RegistDate AS CHAR) AS RegistDate
         FROM shopwizard.tShpDeliRstrctZipcodeAddr
