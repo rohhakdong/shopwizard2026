@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.operate.mapper.ConsltInquiryMapper">
+
+    <!--
+      고객문의 전체 조회(운영 > 고객문의). 코드표·채널·상품은 LEFT JOIN — 표에서 빠진 옛 값이나 줄이 없는 상담도 목록에서 사라지지 않게.
+      서비스 제한은 채널의 서비스(Ch.SvcCode)로, 채널 제한은 상담 행의 채널로 건다. 정렬·쪽 나눔은 서버 고정값.
+    -->
+    <sql id="joins">
+        FROM shopion.tOprCustConslt C
+        LEFT OUTER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = C.ChnlCode
+        LEFT OUTER JOIN wizardn.tCodConstrVal T ON T.ConstrCode = 'cCustConsltType' AND T.ConstrVal = C.CustConsltType
+        LEFT OUTER JOIN wizardn.tCodConstrVal R ON R.ConstrCode = 'cCustConsltReasonType' AND R.ConstrVal = C.CustConsltReasonType
+        LEFT OUTER JOIN wizardn.tCodConstrVal M ON M.ConstrCode = 'cConsltMediaType' AND M.ConstrVal = C.ConsltMediaType
+        LEFT OUTER JOIN shopion.tOrdOrderProd OP ON OP.OrderNo = CAST(C.OrderNo AS UNSIGNED) AND OP.OrderProdNo = CAST(C.OrderProdNo AS UNSIGNED)
+    </sql>
+
+    <sql id="where">
+        <where>
+            <if test="q.svcCode != null">AND Ch.SvcCode = #{q.svcCode}</if>
+            <if test="q.chnlCode != null">AND C.ChnlCode = #{q.chnlCode}</if>
+            <if test="q.type != null">AND C.CustConsltType = #{q.type}</if>
+            <if test="q.reason != null">AND C.CustConsltReasonType = #{q.reason}</if>
+            <if test="q.media != null">AND C.ConsltMediaType = #{q.media}</if>
+            <if test="q.answered != null and q.answered == 1">AND C.AnswrCntnts IS NOT NULL AND C.AnswrCntnts &lt;&gt; ''</if>
+            <if test="q.answered != null and q.answered == 0">AND (C.AnswrCntnts IS NULL OR C.AnswrCntnts = '')</if>
+            <if test="q.orderNo != null">AND C.OrderNo = #{q.orderNo}</if>
+            <if test="q.custName != null">AND C.CustName LIKE CONCAT('%', #{q.custName}, '%')</if>
+            <if test="q.phone != null">
+                AND (REPLACE(REPLACE(IFNULL(C.CustMobileNo, ''), '-', ''), ' ', '') LIKE CONCAT('%', #{q.phone}, '%')
+                  OR REPLACE(REPLACE(IFNULL(C.CustPhoneNo, ''), '-', ''), ' ', '') LIKE CONCAT('%', #{q.phone}, '%'))
+            </if>
+            <if test="q.keyword != null">AND (C.ConsltTitle LIKE CONCAT('%', #{q.keyword}, '%') OR C.ConsltCntnts LIKE CONCAT('%', #{q.keyword}, '%'))</if>
+            <if test="q.mngrName != null">AND C.MngrName LIKE CONCAT('%', #{q.mngrName}, '%')</if>
+            <if test="q.start != null and q.end != null">
+                <![CDATA[
+                AND C.ConsltDate >= #{q.start} AND C.ConsltDate < ADDDATE(#{q.end}, INTERVAL 1 DAY)
+                ]]>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectList" resultType="com.shopwizard.operate.model.ConsltInquiry">
+        SELECT C.CustConsltNo, C.CustConsltType, T.ConstrValDesc AS CustConsltTypeName,
+               C.CustConsltReasonType, R.ConstrValDesc AS CustConsltReasonTypeName,
+               C.ConsltMediaType, M.ConstrValDesc AS ConsltMediaTypeName,
+               C.CustId, C.CustName, C.CustEmail, C.CustPhoneNo, C.CustMobileNo, C.ConsltTitle, C.ConsltCntnts,
+               CAST(C.ConsltDate AS CHAR) AS ConsltDate, C.MngrId, C.MngrName, C.AnswrTitle, C.AnswrCntnts,
+               CAST(C.AnswrDate AS CHAR) AS AnswrDate, C.OrderNo, C.OrderProdNo, C.ProdCode, OP.ProdName AS ProdName, C.ItemName,
+               C.ChnlCode, Ch.ChnlName AS ChnlName,
+               (CASE WHEN C.AnswrCntnts IS NOT NULL AND C.AnswrCntnts &lt;&gt; '' THEN 1 ELSE 0 END) AS Answered
+        <include refid="joins"/>
+        <include refid="where"/>
+        ORDER BY C.CustConsltNo DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        <include refid="joins"/>
+        <include refid="where"/>
+    </select>
+
+</mapper>

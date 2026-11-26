@@ -27,4 +27,9 @@ public class Notice {
     private String changeId;
     private String changeName;
     private String changeDate;
+
+    // 조회에서만 채우는 표시용 값
+    private String chnlName;
+    /** 게시 상태: ING 게시중 · WAIT 예정 · END 종료 */
+    private String status;
 }

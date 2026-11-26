@@ -3,60 +3,75 @@
 
 <mapper namespace="com.shopwizard.company.mapper.SupplyCompNoticeMapper">
 
-    <resultMap id="SupplyCompNoticeResult" type="com.shopwizard.company.model.SupplyCompNotice">
-        <result property="noticeNo" column="NoticeNo"/>
-        <result property="title" column="Title"/>
-        <result property="cntnts" column="Cntnts"/>
-        <result property="startDate" column="StartDate"/>
-        <result property="endDate" column="EndDate"/>
-        <result property="popupYn" column="PopupYn"/>
-        <result property="horiznLoc" column="HoriznLoc"/>
-        <result property="verticLoc" column="VerticLoc"/>
-        <result property="popupWidth" column="PopupWidth"/>
-        <result property="popupLenght" column="PopupLenght"/>
-        <result property="linkAddr" column="LinkAddr"/>
-        <result property="remark" column="Remark"/>
-        <result property="state" column="State"/>
-        <result property="registId" column="RegistId"/>
-        <result property="registName" column="RegistName"/>
-        <result property="registDate" column="RegistDate"/>
-        <result property="changeId" column="ChangeId"/>
-        <result property="changeName" column="ChangeName"/>
-        <result property="changeDate" column="ChangeDate"/>
-    </resultMap>
+    <!-- 공급사 공지 관리. 게시기간·상태 규칙은 쇼핑몰 공지(NoticeMapper)와 같다 — 종료일 당일까지 게시. -->
+    <sql id="statusCase">
+        (CASE WHEN NOW() &lt; N.StartDate THEN 'WAIT'
+              WHEN NOW() &gt;= ADDDATE(COALESCE(N.EndDate, '2999-12-31'), INTERVAL 1 DAY) THEN 'END'
+              ELSE 'ING' END)
+    </sql>
 
-    <select id="selectList" parameterType="map" resultMap="SupplyCompNoticeResult">
-        SELECT *
-        FROM shopwizard.tCmpSupplyCompNotice
+    <sql id="listWhere">
         <where>
-            <if test="pNoticeNo != null and pNoticeNo != ''">AND NoticeNo = #{pNoticeNo}</if>
-            <if test="pStartDate != null and pStartDate != '' and pEndDate != null and pEndDate != ''">
+            <if test="title != null">AND N.Title LIKE CONCAT('%', #{title}, '%')</if>
+            <if test="status != null">AND <include refid="statusCase"/> = #{status}</if>
+            <if test="start != null and end != null">
                 <![CDATA[
-                AND (RegistDate >= DATE_FORMAT(#{pStartDate}, '%Y%m%d')
-                AND RegistDate <  ADDDATE(DATE_FORMAT(#{pEndDate}, '%Y%m%d'), INTERVAL 1 DAY))
+                AND COALESCE(N.StartDate, '1970-01-01') < ADDDATE(#{end}, INTERVAL 1 DAY)
+                AND ADDDATE(COALESCE(N.EndDate, '2999-12-31'), INTERVAL 1 DAY) > #{start}
                 ]]>
             </if>
-            <if test="pActiveNotice != null and pActiveNotice != ''">
-                <![CDATA[ AND StartDate <= CURDATE() AND EndDate >= CURDATE() ]]>
-            </if>
         </where>
-        <choose>
-            <when test="sidx != null and sidx != ''">ORDER BY ${sidx} ${sord}</when>
-            <otherwise>ORDER BY NoticeNo DESC</otherwise>
-        </choose>
-        <if test="countPerPage != null">LIMIT #{topCnt}, #{countPerPage}</if>
+    </sql>
+
+    <sql id="columns">
+        N.NoticeNo AS noticeNo, N.Title AS title, N.PopupYn AS popupYn, N.HoriznLoc AS horiznLoc, N.VerticLoc AS verticLoc,
+        N.PopupWidth AS popupWidth, N.PopupLenght AS popupLenght, N.LinkAddr AS linkAddr, N.Remark AS remark, N.State AS state,
+        CAST(N.StartDate AS CHAR) AS startDate, CAST(N.EndDate AS CHAR) AS endDate,
+        N.RegistId AS registId, N.RegistName AS registName, CAST(N.RegistDate AS CHAR) AS registDate,
+        <include refid="statusCase"/> AS status
+    </sql>
+
+    <select id="selectList" resultType="com.shopwizard.company.model.SupplyCompNotice">
+        SELECT <include refid="columns"/>
+        FROM shopwizard.tCmpSupplyCompNotice N
+        <include refid="listWhere"/>
+        ORDER BY N.NoticeNo DESC
+        LIMIT #{offset}, #{limit}
     </select>
 
-    <select id="select" parameterType="map" resultMap="SupplyCompNoticeResult">
-        SELECT *
-        FROM shopwizard.tCmpSupplyCompNotice
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpSupplyCompNotice N
+        <include refid="listWhere"/>
+    </select>
+
+    <!-- 단건(내용 포함) -->
+    <select id="select" resultType="com.shopwizard.company.model.SupplyCompNotice">
+        SELECT <include refid="columns"/>, N.Cntnts AS cntnts,
+               N.ChangeId AS changeId, N.ChangeName AS changeName, CAST(N.ChangeDate AS CHAR) AS changeDate
+        FROM shopwizard.tCmpSupplyCompNotice N
+        WHERE N.NoticeNo = #{noticeNo}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="key.id" keyColumn="NoticeNo">
+        INSERT INTO shopwizard.tCmpSupplyCompNotice (
+            Title, Cntnts, StartDate, EndDate, PopupYn, HoriznLoc, VerticLoc, PopupWidth, PopupLenght, LinkAddr,
+            State, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{n.title}, #{n.content}, #{n.startDate}, #{n.endDate}, #{n.popupYn}, #{n.horiznLoc}, #{n.verticLoc}, #{n.popupWidth}, #{n.popupLenght}, #{n.linkAddr},
+            1, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE shopwizard.tCmpSupplyCompNotice SET
+            Title = #{n.title}, Cntnts = #{n.content}, StartDate = #{n.startDate}, EndDate = #{n.endDate}, PopupYn = #{n.popupYn},
+            HoriznLoc = #{n.horiznLoc}, VerticLoc = #{n.verticLoc}, PopupWidth = #{n.popupWidth}, PopupLenght = #{n.popupLenght},
+            LinkAddr = #{n.linkAddr}, ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE NoticeNo = #{noticeNo}
-    </select>
+    </update>
 
-    <select id="selectCntnts" parameterType="int" resultType="string">
-        SELECT Cntnts
-        FROM shopwizard.tCmpSupplyCompNotice
-        WHERE NoticeNo = #{value}
-    </select>
+    <delete id="delete">
+        DELETE FROM shopwizard.tCmpSupplyCompNotice WHERE NoticeNo = #{noticeNo}
+    </delete>
 
 </mapper>
