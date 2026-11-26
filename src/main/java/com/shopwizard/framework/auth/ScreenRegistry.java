@@ -53,6 +53,9 @@ public final class ScreenRegistry {
         // 배송제한 우편번호·규칙은 상점 설정의 일부라 레거시 상점관리 메뉴와 권한을 공유한다(새 화면용 레거시 메뉴가 없다).
         new Screen("ship-rstrct-zipcode", List.of("wCmpShopList")),
         new Screen("ship-place-rule", List.of("wCmpShopList")),
+        // 발주내역·발주내역2 는 레거시 화면 파일명(wShpShipDirectPrintList / wShpShipDirectPrint2List)을 그대로 써서 레거시 역할이 자동으로 보게 한다.
+        new Screen("ship-print-list", List.of("wShpShipDirectPrintList")),
+        new Screen("ship-print-detail", List.of("wShpShipDirectPrint2List")),
         new Screen("order-cancel", List.of("wOrdCancelList")),
         new Screen("order-refund-confirm", List.of("wOrdRefundCancelList")),
         new Screen("profile-cust", List.of("wPrfCustList")),
@@ -280,6 +283,13 @@ public final class ScreenRegistry {
         {"GET", "/ship/place-rule/zip-count", "ship-place-rule"},
         {"POST", "/ship/place-rule", "ship-place-rule"},
         {"PUT", "/ship/place-rule", "ship-place-rule"},
+        {"GET", "/ship/print/list", "ship-print-list"},
+        {"GET", "/ship/print/excel", "ship-print-list"},
+        {"GET", "/ship/print/list2", "ship-print-detail"},
+        {"GET", "/ship/print/excel2", "ship-print-detail"},
+        {"POST", "/ship/print/gift-option-run", "ship-print-detail"},
+        {"GET", "/ship/print/gift-option-runs", "ship-print-detail"},
+        {"GET", "/ship/print/gift-option-run-details", "ship-print-detail"},
         {"DELETE", "/order/fee-rule", "order-fee-rule"},
         {"GET", "/order/fee-rule", "order-fee-rule"},
         {"GET", "/order/fee-rule/count", "order-fee-rule"},

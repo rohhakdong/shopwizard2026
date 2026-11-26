@@ -133,7 +133,7 @@ public final class ShipOrderSheetExcel {
         return n.length() > 31 ? n.substring(0, 31) : n;
     }
 
-    private static String uniqueName(String name, Set<String> used) {
+    static String uniqueName(String name, Set<String> used) {
         String candidate = name;
         int i = 2;
         while (!used.add(candidate.toLowerCase())) {

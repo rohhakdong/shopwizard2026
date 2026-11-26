@@ -142,6 +142,8 @@
   <script src="/js/pages/order-keywrd.js"></script>
   <script src="/js/pages/ship-place-rule.js"></script>
   <script src="/js/pages/ship-rstrct-zipcode.js"></script>
+  <script src="/js/pages/ship-print-list.js"></script>
+  <script src="/js/pages/ship-print-detail.js"></script>
   <script src="/js/pages/order-cancel.js"></script>
   <script src="/js/pages/order-refund-confirm.js"></script>
   <script src="/js/pages/store-store.js"></script>
@@ -201,6 +203,8 @@
           { key: 'order-keywrd',      label: '키워드규칙',    icon: '🔑', page: 'order/keywrd' },
           { key: 'ship-place-rule',   label: '배송제한규칙',  icon: '📮', page: 'ship/placerule' },
           { key: 'ship-rstrct-zipcode', label: '배송제한우편번호', icon: '🚫', page: 'ship/rstrctzip' },
+          { key: 'ship-print-list',   label: '발주내역',      icon: '📋', page: 'ship/printlist' },
+          { key: 'ship-print-detail', label: '발주내역2',     icon: '📑', page: 'ship/printdetail' },
         ]
       },
       {
@@ -385,6 +389,10 @@
         PageShipPlaceRule.render(content);
       } else if (key === 'ship-rstrct-zipcode') {
         PageShipRstrctZipcode.render(content);
+      } else if (key === 'ship-print-list') {
+        PageShipPrintList.render(content);
+      } else if (key === 'ship-print-detail') {
+        PageShipPrintDetail.render(content);
       } else if (key === 'order-cancel') {
         PageOrderCancel.render(content);
       } else if (key === 'order-refund-confirm') {

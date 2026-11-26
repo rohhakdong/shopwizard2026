@@ -38,6 +38,17 @@
         </where>
     </select>
 
+    <!-- 개인정보 조회 기록. 레거시(custInfoLogService.runInsertCustInfoLog)와 같은 열을 채운다. -->
+    <insert id="insert" parameterType="com.shopwizard.profile.model.CustInfoLog" useGeneratedKeys="true" keyProperty="logId" keyColumn="LogId">
+        INSERT INTO shopion.tPrfCustInfoLog (
+            CustId, MenuName, ExecCntnts, SvcName, DaoName, TableName, OrderNo, MngrUid, MngrLoginId, MngrName, MngrIp,
+            State, Remark, RegistId, RegistName, RegistDate
+        ) VALUES (
+            #{custId}, #{menuName}, #{execCntnts}, #{svcName}, #{daoName}, #{tableName}, #{orderNo}, #{mngrUid}, #{mngrLoginId}, #{mngrName}, #{mngrIp},
+            #{state}, #{remark}, #{registId}, #{registName}, NOW()
+        )
+    </insert>
+
     <select id="select" parameterType="int" resultType="com.shopwizard.profile.model.CustInfoLog">
         SELECT *
         FROM shopion.tPrfCustInfoLog

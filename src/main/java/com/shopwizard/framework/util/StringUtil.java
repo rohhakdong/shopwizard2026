@@ -84,8 +84,9 @@ public class StringUtil {
         Matcher matcher = Pattern.compile("\\s[0-9,]{1,9}원\\s[0-9,]{1,9}개").matcher(itemName);
         int optionAmt = 0;
         while (matcher.find()) {
-            String priceString = matcher.group().replaceAll(",", "").replaceAll(" ", "").replaceAll("원", "");
-            String[] priceSplit = priceString.split("개");
+            // 레거시와 같게: 쉼표·공백·"개" 를 떼고 "원" 으로 나눠 {금액, 수량} (예 " 1,000원 2개" → "1000원2" → [1000, 2])
+            String priceString = matcher.group().replaceAll(",", "").replaceAll(" ", "").replaceAll("개", "");
+            String[] priceSplit = priceString.split("원");
             if (priceSplit.length > 1) {
                 optionAmt += Integer.parseInt(priceSplit[0]) * Integer.parseInt(priceSplit[1]);
             }

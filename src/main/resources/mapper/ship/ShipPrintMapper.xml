@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shopwizard.ship.mapper.ShipPrintMapper">
+
+    <!--
+      발주내역·발주내역2 조회(읽기 전용). 레거시 simpleGridView 의 list(pType=printShipDirect)/listPrint2 를 옮기되
+      정렬·페이징은 서버가 정한 값만 쓴다(레거시는 sidx/pPageOffset 을 그대로 SQL 에 끼워 넣었다).
+      결과는 camelCase 별칭 map — 행 가공(공급단가·금액 등)은 ShipPrintRows 가 한 곳에서 한다.
+    -->
+
+    <sql id="cancelFilter">
+        (SD.ShipCancelRqstDate IS NULL OR SD.ShipCancelRqstDate = '')
+        AND (SD.ShipCancelCmpletDate IS NULL OR SD.ShipCancelCmpletDate = '')
+    </sql>
+
+    <!-- 발주내역: 발주일(ShipCheckDate) 범위는 시작·종료가 모두 있을 때만 건다(레거시와 같음 — 발주일 NULL 행은 범위를 걸면 빠진다). -->
+    <sql id="listWhere">
+        WHERE <include refid="cancelFilter"/>
+        AND SD.ShopCode = #{shopCode}
+        <if test="svcCode != null and svcCode != ''">AND Ch.SvcCode = #{svcCode}</if>
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            <![CDATA[
+            AND SD.ShipCheckDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d')
+            AND SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+        </if>
+    </sql>
+
+    <select id="selectList" resultType="map">
+        SELECT SD.OrderNo AS orderNo, SD.OrderProdNo AS orderProdNo, SD.OrderChangeNo AS orderChangeNo, SD.ChnlOrderNo AS chnlOrderNo,
+               CAST(O.OrderReciptDate AS CHAR) AS orderReciptDate, SD.OrderName AS orderName,
+               SD.ProdCode AS prodCode, SD.ProdName AS prodName, SD.ItemName AS itemName, SD.ProdQty AS prodQty,
+               SD.SalePrice AS salePrice, SD.NvPrice AS nvPrice,
+               SD.RecverName AS recverName, SD.RecverPhoneNo AS recverPhoneNo, SD.RecverMobileNo AS recverMobileNo,
+               SD.RecverZipcode AS recverZipcode, SD.RecverAddr AS recverAddr, SD.OrderMemo AS orderMemo, SD.DeliMemo AS deliMemo,
+               SD.BuyPrice AS buyPrice, SD.DeliFeeAmt AS deliFeeAmt, SD.DeliFeeType AS deliFeeType, SD.OrderState AS orderState,
+               SD.ShopName AS shopName, Ch.ChnlName AS chnlName, CAST(SD.ShipCheckDate AS CHAR) AS shipCheckDate,
+               IFNULL(SD.ShipPlace, '기본출고지') AS shipPlace, IFNULL(SD.BundleYn, 0) AS bundleYn
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrder O ON SD.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopwizard.tCmpShop S ON SD.ShopCode = S.ShopCode
+        <include refid="listWhere"/>
+        ORDER BY IFNULL(SD.ShipPlace, '기본출고지'), SD.BundleYn DESC, SD.RecverAddr, SD.RecverName, SD.ProdName, SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo
+        <if test="limit != null">LIMIT #{offset}, #{limit}</if>
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrder O ON SD.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopwizard.tCmpShop S ON SD.ShopCode = S.ShopCode
+        <include refid="listWhere"/>
+    </select>
+
+    <!--
+      발주내역2: 사은품 행은 목록·건수 모두에서 뺀다(레거시는 건수에서만 빠져 쪽 수가 어긋났다).
+      레거시 사은품 행은 상품명이 '힣' 으로 시작하고, 새 배송 데이터 생성의 사은품 행은 OrderType='사은품' 이다.
+    -->
+    <sql id="list2Where">
+        WHERE <include refid="cancelFilter"/>
+        AND SD.ProdName NOT LIKE '힣%'
+        AND IFNULL(SD.OrderType, '') &lt;&gt; '사은품'
+        AND SD.ShopCode = #{shopCode}
+        <if test="svcCode != null and svcCode != ''">AND Ch.SvcCode = #{svcCode}</if>
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            <choose>
+                <when test='dateType == "O"'>
+                    <![CDATA[
+                    AND O.OrderReciptDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d')
+                    AND O.OrderReciptDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+                    ]]>
+                </when>
+                <otherwise>
+                    <![CDATA[
+                    AND SD.ShipCheckDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d')
+                    AND SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+                    ]]>
+                </otherwise>
+            </choose>
+        </if>
+        <if test="chnlCode != null and chnlCode != ''">AND SD.ChnlCode = #{chnlCode}</if>
+        <if test="mdCode != null and mdCode != ''">AND S.MngrMd = #{mdCode}</if>
+        <if test="prodName != null and prodName != ''">AND SD.ProdName LIKE CONCAT('%', #{prodName}, '%')</if>
+    </sql>
+
+    <select id="selectList2" resultType="map">
+        SELECT SD.OrderNo AS orderNo, SD.OrderProdNo AS orderProdNo, SD.OrderChangeNo AS orderChangeNo, SD.ChnlOrderNo AS chnlOrderNo,
+               CAST(O.OrderReciptDate AS CHAR) AS orderReciptDate, CAST(SD.ShipCheckDate AS CHAR) AS shipCheckDate,
+               SD.RecverName AS recverName, SD.OrderState AS orderState, SD.ShopProdCode AS shopProdCode,
+               IFNULL(SD.ProdMemo01, '') AS prodMemo01, SD.OrderProdName AS orderProdName, SD.ProdName AS prodName,
+               <!-- 단량: 레거시는 단가표를 LEFT JOIN 해 같은 속성명이 여러 건이면 행이 불어났다 — 한 건만 고른다. -->
+               (SELECT OU.UnitName FROM shopwizard.tOrdOrderUprice OU
+                 WHERE OU.OrderProdName = SD.ProdName AND OU.UseYn = 1 ORDER BY OU.UnitName LIMIT 1) AS unitName,
+               SD.ItemName AS itemName, SD.ProdQty AS prodQty, SD.OrderProdQty AS orderProdQty,
+               SD.SalePrice AS salePrice, SD.NvPrice AS nvPrice, SD.SupplyPrice AS supplyPrice, SD.BuyPrice AS buyPrice,
+               SD.DeliFeeAmt AS deliFeeAmt, SD.DeliFeeType AS deliFeeType, Ch.ChnlName AS chnlName, IFNULL(SD.BundleYn, 0) AS bundleYn,
+               SD.RecverAddr AS recverAddr
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrder O ON SD.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopwizard.tCmpShop S ON SD.ShopCode = S.ShopCode
+        <include refid="list2Where"/>
+        ORDER BY SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo
+        <if test="limit != null">LIMIT #{offset}, #{limit}</if>
+    </select>
+
+    <select id="selectCount2" resultType="int">
+        SELECT COUNT(*)
+        FROM shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrder O ON SD.OrderNo = O.OrderNo
+        INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
+        INNER JOIN shopwizard.tCmpShop S ON SD.ShopCode = S.ShopCode
+        <include refid="list2Where"/>
+    </select>
+
+    <select id="selectShopName" resultType="string">
+        SELECT ShopName FROM shopwizard.tCmpShop WHERE ShopCode = #{shopCode}
+    </select>
+
+</mapper>

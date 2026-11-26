@@ -11,6 +11,7 @@
             <if test="pUpdateDetailNo != null and pUpdateDetailNo != ''">AND UpdateDetailNo = #{pUpdateDetailNo}</if>
             <if test="pOrderNo != null and pOrderNo != ''">AND OrderNo = #{pOrderNo}</if>
         </where>
+        ORDER BY UpdateId, UpdateDetailNo
         <if test="pPageSize != null and pPageSize != ''">
             LIMIT #{pPageOffset}, #{pPageSize}
         </if>
@@ -69,11 +70,15 @@
         ]]>
     </select>
 
+    <!-- 발주내역2생성이 주문 한 건의 발주서 행을 읽을 때: shopCode 가 있으면 그 상점 행만, 사은품 판정·덮어쓰기 가드에 OrderType/ItemName/Remark 도 쓴다. -->
     <select id="selectShipDirectPrintList" parameterType="map" resultType="com.shopwizard.ship.model.ShipDirect">
-        SELECT SD.OrderNo, SD.OrderProdNo, SD.ProdName, SD.ProdQty, SD.ListPrice, SD.OrderProdName, SD.OrderItemName, SD.OrderProdQty, SD.ChnlCode, Ch.ChnlName
+        SELECT SD.OrderNo, SD.OrderProdNo, SD.OrderChangeNo, SD.OrderType, SD.ProdName, SD.ItemName, SD.Remark, SD.ProdQty, SD.ListPrice,
+               SD.OrderProdName, SD.OrderItemName, SD.OrderProdQty, SD.ChnlCode, Ch.ChnlName
         FROM shopwizard.tShpShipDirectPrint SD
         INNER JOIN shopwizard.tCmpChnl Ch ON SD.ChnlCode = Ch.ChnlCode
         WHERE SD.OrderNo = #{orderNo}
+        <if test="shopCode != null and shopCode != ''">AND SD.ShopCode = #{shopCode}</if>
+        ORDER BY SD.OrderProdNo, SD.OrderChangeNo, SD.ProdName
     </select>
 
     <update id="updateShipDirectPrint" parameterType="map">
@@ -82,6 +87,34 @@
             ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE OrderNo = #{orderNo}
         AND OrderProdNo = 1
+        AND IFNULL(OrderType, '') &lt;&gt; '사은품'   <!-- 새 배송 데이터 생성의 사은품 행은 첫 상품과 같은 주문순번이라 제외 — 사은품 문자열은 상품 행의 속성명에 쓴다 -->
+        <if test="shopCode != null and shopCode != ''">AND ShopCode = #{shopCode}</if>
+    </update>
+
+    <!-- 발주내역2생성 대상 주문: 그 상점·발주일 범위의 발주 행이 있는 주문번호(중복 없이). -->
+    <select id="selectRunOrderNos" resultType="int">
+        <![CDATA[
+        SELECT DISTINCT SD.OrderNo
+        FROM shopwizard.tShpShipDirect SD
+        WHERE SD.ShipCheckDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d')
+          AND SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+          AND SD.ShopCode = #{shopCode}
+        ORDER BY SD.OrderNo
+        ]]>
+    </select>
+
+    <!-- 채널상품번호(샵링커 GoodAuctionno)를 발주서 행의 ProdMemo01 에 채운다. 샵링커 값이 비었거나 열 길이(50)를 넘으면 건드리지 않는다. -->
+    <update id="updatePrintAuctionnoByShop">
+        <![CDATA[
+        UPDATE shopwizard.tShpShipDirectPrint SD
+        INNER JOIN shopion.tOrdOrderShoplinker S ON SD.OrderNo = S.ShopionOrderNo
+        SET SD.ProdMemo01 = S.GoodAuctionno
+        WHERE SD.ShipCheckDate >= DATE_FORMAT(#{startDate}, '%Y-%m-%d')
+          AND SD.ShipCheckDate <  ADDDATE(DATE_FORMAT(#{endDate}, '%Y-%m-%d'), INTERVAL 1 DAY)
+          AND SD.ShopCode = #{shopCode}
+          AND IFNULL(S.GoodAuctionno, '') <> ''
+          AND CHAR_LENGTH(S.GoodAuctionno) <= 50
+        ]]>
     </update>
 
     <update id="updateShipDirectPrintAutionno" parameterType="map">

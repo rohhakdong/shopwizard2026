@@ -9,6 +9,7 @@
         <where>
             <if test="pUpdateId != null and pUpdateId != ''">AND UpdateId = #{pUpdateId}</if>
             <if test="pResultType != null and pResultType != ''">AND ResultType = #{pResultType}</if>
+            <if test="pRemark != null and pRemark != ''">AND Remark = #{pRemark}</if>
             <if test="pUpdateStartDate != null and pUpdateStartDate != '' and pUpdateEndDate != null and pUpdateEndDate != ''">
                 <![CDATA[
                 AND (
@@ -18,7 +19,7 @@
                 ]]>
             </if>
         </where>
-        ORDER BY RegistDate DESC
+        ORDER BY RegistDate DESC, UpdateId DESC
         <if test="pPageSize != null and pPageSize != ''">
             LIMIT #{pPageOffset}, #{pPageSize}
         </if>
@@ -47,7 +48,15 @@
         WHERE UpdateId = #{updateId}
     </select>
 
-    <insert id="insert" parameterType="com.shopwizard.ship.model.GiftOptionUpdate">
+    <!-- 서버가 멈추거나 요청이 끊겨 '진행' 으로 남은 실행은 영원히 다음 실행을 막는다(레거시는 DB 를 직접 고쳐야 했다) — 오래된 것은 실패로 돌린다. -->
+    <update id="failStale">
+        UPDATE shopwizard.tShpGiftOptionUpdate
+        SET ResultType = '실패', ResultMessag = CONCAT(#{minutes}, '분 넘게 끝나지 않아 중단된 것으로 처리했습니다.'),
+            UpdateEndDate = DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s'), ChangeDate = NOW()
+        WHERE ResultType = '진행' AND RegistDate &lt; DATE_SUB(NOW(), INTERVAL #{minutes} MINUTE)
+    </update>
+
+    <insert id="insert" parameterType="com.shopwizard.ship.model.GiftOptionUpdate" useGeneratedKeys="true" keyProperty="updateId" keyColumn="UpdateId">
         INSERT INTO shopwizard.tShpGiftOptionUpdate (
             StartDate, EndDate, ResultType, ResultMessag, UpdateStartDate, UpdateEndDate, State, Remark, RegistId, RegistName, RegistDate
         ) VALUES (

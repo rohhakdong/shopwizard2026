@@ -13,4 +13,6 @@ public interface GiftOptionUpdateMapper {
     int insert(GiftOptionUpdate giftOptionUpdate);
     int update(GiftOptionUpdate giftOptionUpdate);
     int delete(GiftOptionUpdate giftOptionUpdate);
+    /** '진행' 인 채 minutes 분이 지난 실행을 '실패' 로 돌린다. */
+    int failStale(@org.apache.ibatis.annotations.Param("minutes") int minutes);
 }
