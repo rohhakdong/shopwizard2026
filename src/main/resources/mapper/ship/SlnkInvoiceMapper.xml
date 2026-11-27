@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shopwizard.ship.mapper.SlnkInvoiceMapper">
+
+    <!-- 샵링커 송장 전송 대상 줄. 택배사는 이름으로 마스터와 맞춰 "샵링커 택배사명"(SlnkDeliName)을 가져온다(비면 호출 쪽이 DeliCompName 을 쓴다). -->
+    <sql id="columns">
+        SD.OrderNo AS orderNo, SD.OrderProdNo AS orderProdNo, SD.OrderChangeNo AS orderChangeNo, SD.OrderState AS orderState,
+        SD.ShopCode AS shopCode, SD.ChnlCode AS chnlCode, Ch.ChnlName AS chnlName, SD.SlnkOrderCode AS slnkOrderCode,
+        SD.DeliCompName AS deliCompName, DC.SlnkDeliName AS slnkDeliName, SD.InvNo AS invNo,
+        CAST(SD.ShipCmpletDate AS CHAR) AS shipCmpletDate, SD.OrderName AS orderName, SD.RecverName AS recverName
+    </sql>
+
+    <sql id="joins">
+        FROM shopwizard.tShpShipDirect SD
+        LEFT OUTER JOIN shopwizard.tCmpChnl Ch ON Ch.ChnlCode = SD.ChnlCode
+        LEFT OUTER JOIN shopwizard.tCmpDeliComp DC ON DC.DeliCompName = SD.DeliCompName
+    </sql>
+
+    <select id="selectLine" resultType="com.shopwizard.ship.model.SlnkInvoiceLine">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        WHERE SD.OrderNo = #{orderNo} AND SD.OrderProdNo = #{orderProdNo} AND SD.OrderChangeNo = #{orderChangeNo}
+    </select>
+
+    <select id="countDeliComp" resultType="int">
+        SELECT COUNT(*) FROM shopwizard.tCmpDeliComp WHERE DeliCompName = #{name}
+    </select>
+
+    <sql id="pendingWhere">
+        <where>
+            SD.OrderState IN ('배송시작', '배송완료')
+            AND SD.InvNo IS NOT NULL AND SD.InvNo &lt;&gt; ''
+            AND SD.SlnkOrderCode IS NOT NULL AND SD.SlnkOrderCode &lt;&gt; ''
+            AND SD.ShipCmpletDate &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+            <if test="excluded != null and !excluded.isEmpty()">
+                AND SD.ChnlCode NOT IN <foreach collection="excluded" item="c" open="(" separator="," close=")">#{c}</foreach>
+            </if>
+            <if test="shopCode != null">AND SD.ShopCode = #{shopCode}</if>
+            <if test="chnlCode != null">AND SD.ChnlCode = #{chnlCode}</if>
+            <if test="svcCode != null">AND Ch.SvcCode = #{svcCode}</if>
+            AND NOT EXISTS (
+                SELECT 1 FROM shopwizard.tPrdSlinkLog L
+                WHERE L.LogType = '송장' AND L.OrderNo = SD.OrderNo AND L.OrderProdNo = SD.OrderProdNo AND L.OrderChangeNo = SD.OrderChangeNo
+                  AND L.InvNo = SD.InvNo AND L.ResultType NOT IN ('dry', 'false', 'error')
+            )
+        </where>
+    </sql>
+
+    <select id="selectPending" resultType="com.shopwizard.ship.model.SlnkInvoiceLine">
+        SELECT <include refid="columns"/>
+        <include refid="joins"/>
+        <include refid="pendingWhere"/>
+        ORDER BY SD.ShipCmpletDate DESC, SD.OrderNo DESC, SD.OrderProdNo, SD.OrderChangeNo
+        LIMIT #{limit}
+    </select>
+
+    <select id="countPending" resultType="int">
+        SELECT COUNT(*)
+        <include refid="joins"/>
+        <include refid="pendingWhere"/>
+    </select>
+
+</mapper>

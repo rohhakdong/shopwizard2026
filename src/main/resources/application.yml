@@ -93,3 +93,12 @@ shoplinker:
   image-base-url:     ${SHOPLINKER_IMAGE_BASE_URL:http://www.shopion.co.kr}
   product-svc-code:   ${SHOPLINKER_PRODUCT_SVC_CODE:SHP001}
   product-timeout-sec: ${SHOPLINKER_PRODUCT_TIMEOUT_SEC:30}
+
+  # ── 송장 전송(송장입력 시 샵링커 주문에 택배사·송장번호를 알린다) ──
+  # 샵링커 주문코드(SlnkOrderCode)가 있는 줄만 보낸다. 운영 샵링커에 반영되는 외부 연동이라 기본은 dry-run(요청만 만들어 이력에 남김).
+  # 계정 ID 는 위 customer-id 를 함께 쓴다. 성공 응답 형식이 문서·이력에 없어 첫 live 1건으로 확인한다(docs/운영-배포-체크리스트.md 2-D).
+  invoice-url:         ${SHOPLINKER_INVOICE_URL:https://admin.shoplinker.co.kr/shoplinker_API/delivery.php}
+  invoice-mode:        ${SHOPLINKER_INVOICE_MODE:dry-run}   # dry-run | live
+  invoice-timeout-sec: ${SHOPLINKER_INVOICE_TIMEOUT_SEC:10}
+  # 송장을 보내지 않는 채널(레거시 규칙: 스마일배송 2208183676Z7/Z8/Z9·2148602085Z4/Z5, 11번가 풀필먼트 104863696Z13). 쉼표 구분.
+  invoice-exclude-chnl: ${SHOPLINKER_INVOICE_EXCLUDE_CHNL:2208183676Z7,2208183676Z8,2208183676Z9,2148602085Z4,2148602085Z5,104863696Z13}

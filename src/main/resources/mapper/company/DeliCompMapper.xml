@@ -9,6 +9,7 @@
         <result property="deliCompDesc" column="DeliCompDesc"/>
         <result property="linkUrl" column="LinkUrl"/>
         <result property="invNoVar" column="InvNoVar"/>
+        <result property="slnkDeliName" column="SlnkDeliName"/>
         <result property="remark" column="Remark"/>
         <result property="state" column="State"/>
         <result property="registId" column="RegistId"/>
@@ -46,10 +47,10 @@
 
     <insert id="insert" parameterType="com.shopwizard.company.model.DeliComp">
         INSERT INTO shopwizard.tCmpDeliComp (
-            DeliCompCode, DeliCompName, DeliCompDesc, LinkUrl, InvNoVar,
+            DeliCompCode, DeliCompName, DeliCompDesc, LinkUrl, InvNoVar, SlnkDeliName,
             State, Remark, RegistId, RegistName, RegistDate, ChangeId, ChangeName, ChangeDate
         ) VALUES (
-            #{deliCompCode}, #{deliCompName}, #{deliCompDesc}, #{linkUrl}, #{invNoVar},
+            #{deliCompCode}, #{deliCompName}, #{deliCompDesc}, #{linkUrl}, #{invNoVar}, #{slnkDeliName},
             #{state}, #{remark}, #{registId}, #{registName}, NOW(), #{changeId}, #{changeName}, NOW()
         )
     </insert>
@@ -57,7 +58,7 @@
     <update id="update" parameterType="com.shopwizard.company.model.DeliComp">
         UPDATE shopwizard.tCmpDeliComp SET
             DeliCompName = #{deliCompName}, DeliCompDesc = #{deliCompDesc},
-            LinkUrl = #{linkUrl}, InvNoVar = #{invNoVar},
+            LinkUrl = #{linkUrl}, InvNoVar = #{invNoVar}, SlnkDeliName = #{slnkDeliName},
             ChangeId = #{changeId}, ChangeName = #{changeName}, ChangeDate = NOW()
         WHERE DeliCompCode = #{deliCompCode}
     </update>

@@ -1,14 +1,17 @@
 package com.shopwizard.ship.web;
 
+import com.shopwizard.framework.auth.AuthSession;
 import com.shopwizard.framework.auth.DataScopeGuard;
 import com.shopwizard.ship.model.ShipDirect;
 import com.shopwizard.ship.model.ShipDirectCheckRequest;
 import com.shopwizard.ship.model.ShipDirectIssueRequest;
 import com.shopwizard.ship.model.ShipDirectIssueResult;
 import com.shopwizard.ship.service.ShipDirectService;
+import com.shopwizard.ship.service.SlnkInvoiceService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +22,7 @@ public class ShipDirectController {
     private final ShipDirectService shipDirectService;
     // 상점/채널로 제한된 관리자는 자기 라인만 다룬다(DataScopeGuard) — 목록은 DataScopeFilter 가 pShopCode/pChnlCode 로 거른다.
     private final DataScopeGuard scopeGuard;
+    private final SlnkInvoiceService slnkInvoiceService;   // 송장 저장 뒤 샵링커로 알린다
     @GetMapping("/list") public List<ShipDirect> selectList(@RequestParam Map<String, Object> params) { return shipDirectService.selectList(params); }
     @GetMapping("/count") public int selectCount(@RequestParam Map<String, Object> params) { return shipDirectService.selectCount(params); }
     @GetMapping public ShipDirect select(@RequestParam Map<String, Object> params, HttpServletRequest request) {
@@ -53,10 +57,19 @@ public class ShipDirectController {
         return shipDirectService.completeBatch(req);
     }
     @GetMapping("/social-check") public int checkShipDirectPrintByMatchingSocial(@RequestParam Map<String, Object> params) { return shipDirectService.checkShipDirectPrintByMatchingSocial(params); }
-    /** 송장입력 화면(ship-direct.js) — 발주확인 건에 택배사/송장번호를 입력하고 배송시작으로 전환(상태는 서버가 고정). */
-    @PutMapping("/invoice") public int updateInvoice(@RequestBody Map<String, Object> params, HttpServletRequest request) {
-        scopeGuard.requireLine(request, toInt(params.get("orderNo")), toInt(params.get("orderProdNo")));
-        return shipDirectService.updateInvoice(params);
+    /** 송장입력 화면(ship-direct.js) — 발주확인 건에 택배사/송장번호를 입력하고 배송시작으로 전환(상태는 서버가 고정). 저장되면 샵링커 주문의 송장을 샵링커에도 알린다 — 응답 {updated, slnk:{status,message}}(updated 0 = 발주확인이 아니거나 이미 입력됨). */
+    @PutMapping("/invoice") public Map<String, Object> updateInvoice(@RequestBody Map<String, Object> params, HttpServletRequest request) {
+        Integer orderNo = toInt(params.get("orderNo"));
+        Integer orderProdNo = toInt(params.get("orderProdNo"));
+        scopeGuard.requireLine(request, orderNo, orderProdNo);
+        int updated = shipDirectService.updateInvoice(params);   // 서비스가 커밋하고 돌아온다 — 샵링커 호출 동안 행 잠금을 쥐지 않는다
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("updated", updated);
+        if (updated > 0) {
+            SlnkInvoiceService.Result slnk = slnkInvoiceService.pushLine(orderNo, orderProdNo, toInt(params.get("orderChangeNo")), AuthSession.actor(request));
+            out.put("slnk", Map.of("status", slnk.status(), "message", slnk.message()));
+        }
+        return out;
     }
     private static Integer toInt(Object v) {
         try { return v == null ? null : Integer.valueOf(String.valueOf(v).trim()); } catch (NumberFormatException e) { return null; }

@@ -66,7 +66,7 @@ class DataScopeControllersTest {
     @Test
     void 발주확인_배치에_남의_라인이_섞이면_서비스를_호출하지_않고_403() {
         ShipDirectService service = mock(ShipDirectService.class);
-        var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard);
+        var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard, org.mockito.Mockito.mock(com.shopwizard.ship.service.SlnkInvoiceService.class));
         when(mapper.countLines(1, 1, "MINE", null, null)).thenReturn(1);
         when(mapper.countLines(2, 1, "MINE", null, null)).thenReturn(0);
 
@@ -84,7 +84,7 @@ class DataScopeControllersTest {
     @Test
     void 송장입력은_남의_라인이면_403_내_라인은_서비스로() {
         ShipDirectService service = mock(ShipDirectService.class);
-        var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard);
+        var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard, org.mockito.Mockito.mock(com.shopwizard.ship.service.SlnkInvoiceService.class));
         when(mapper.countLines(5, 1, "MINE", null, null)).thenReturn(1);
 
         assertThrows(ResponseStatusException.class,
@@ -98,7 +98,7 @@ class DataScopeControllersTest {
     @Test
     void 단건_조회는_결과_행의_상점이_다르면_403() {
         ShipDirectService service = mock(ShipDirectService.class);
-        var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard);
+        var controller = new com.shopwizard.ship.web.ShipDirectController(service, guard, org.mockito.Mockito.mock(com.shopwizard.ship.service.SlnkInvoiceService.class));
         ShipDirect foreign = new ShipDirect();
         foreign.setShopCode("OTHER");
         when(service.select(any())).thenReturn(foreign);

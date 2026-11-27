@@ -363,6 +363,11 @@ public final class ScreenRegistry {
         {"POST", "/ship/ship-direct/complete-batch", "ship-direct-complete"},
         {"GET", "/ship/ship-direct/count", "ship-direct-check,ship-direct-complete,ship-direct"},
         {"PUT", "/ship/ship-direct/invoice", "ship-direct"},
+        {"GET", "/ship/ship-direct/invoice-excel/template", "ship-direct"},
+        {"POST", "/ship/ship-direct/invoice-excel/preview", "ship-direct"},
+        {"POST", "/ship/ship-direct/invoice-excel/import", "ship-direct"},
+        {"GET", "/ship/ship-direct/invoice-slnk/pending", "ship-direct"},
+        {"POST", "/ship/ship-direct/invoice-slnk/resend", "ship-direct"},
         {"POST", "/ship/ship-direct/issue-batch", "ship-auto-order,ship-direct-issue"},
         {"GET", "/ship/ship-direct/list", "ship-direct-check,ship-direct-complete,ship-direct"},
         // 운영: 공지사항(쇼핑몰 공지)·공급사 공지·고객문의. 고객문의에서 여는 주문상세는 읽기만(위 order 행의 operate-conslt) — 상담 등록·처리 수정은 주문관리 권한.

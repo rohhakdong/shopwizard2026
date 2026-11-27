@@ -220,6 +220,10 @@ const PageCompanyDeli = (() => {
           <label>운송장번호 형식</label>
           <input class="input" id="dlFInvNoVar" value="${esc(v.invNoVar || '')}">
         </div>
+        <div class="form-group full">
+          <label>샵링커 택배사명 <span style="font-weight:400;color:var(--text-muted)">(송장을 샵링커로 보낼 때 쓰는 이름 — 우리 택배사명과 다를 때만 입력, 비우면 택배사명 그대로)</span></label>
+          <input class="input" id="dlFSlnkDeliName" maxlength="50" value="${esc(v.slnkDeliName || '')}">
+        </div>
         <div class="form-group">
           <label>상태</label>
           <select class="input" id="dlFState">
@@ -247,6 +251,7 @@ const PageCompanyDeli = (() => {
           deliCompDesc: document.getElementById('dlFDeliCompDesc').value.trim(),
           linkUrl:      document.getElementById('dlFLinkUrl').value.trim(),
           invNoVar:     document.getElementById('dlFInvNoVar').value.trim(),
+          slnkDeliName: document.getElementById('dlFSlnkDeliName').value.trim(),
           state:        parseInt(document.getElementById('dlFState').value),
           remark:       document.getElementById('dlFRemark').value.trim(),
           registId:     (typeof info !== 'undefined' && info?.loginId) || '',
